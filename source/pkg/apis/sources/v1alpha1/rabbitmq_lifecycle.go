@@ -29,7 +29,7 @@ const (
 
 	RabbitmqConditionDeployed apis.ConditionType = "Deployed"
 
-	RabbitmqConditionResources apis.ConditionType = "ResourcesCorrect"
+	RabbitmqConditionResources apis.ConditionType = "ResourcesReady"
 )
 
 var RabbitmqSourceCondSet = apis.NewLivingConditionSet(
@@ -40,24 +40,28 @@ func (s *RabbitmqSourceStatus) GetCondition(t apis.ConditionType) *apis.Conditio
 	return RabbitmqSourceCondSet.Manage(s).GetCondition(t)
 }
 
+func (s *RabbitmqSourceStatus) GetTopLevelCondition() *apis.Condition {
+	return RabbitmqSourceCondSet.Manage(s).GetTopLevelCondition()
+}
+
 func (s *RabbitmqSourceStatus) IsReady() bool {
 	return RabbitmqSourceCondSet.Manage(s).IsHappy()
 }
 
-func (s *RabbitmqSourceStatus) InitializeConditions()  {
+func (s *RabbitmqSourceStatus) InitializeConditions() {
 	RabbitmqSourceCondSet.Manage(s).InitializeConditions()
 }
 
-func (s *RabbitmqSourceStatus) MarkSink(uri *apis.URL)  {
+func (s *RabbitmqSourceStatus) MarkSink(uri *apis.URL) {
 	s.SinkURI = uri
 	if !uri.IsEmpty() {
 		RabbitmqSourceCondSet.Manage(s).MarkTrue(RabbitmqConditionSinkProvided)
 	} else {
-		RabbitmqSourceCondSet.Manage(s).MarkUnknown(RabbitmqConditionSinkProvided, "SinkEmpty", "Sink has resolved to empty.%s", "")
+		RabbitmqSourceCondSet.Manage(s).MarkUnknown(RabbitmqConditionSinkProvided, "SinkEmpty", "Sink has resolved to empty")
 	}
 }
 
-func (s *RabbitmqSourceStatus) MarkNoSink(reason, messageFormat string, messageA ...interface{})  {
+func (s *RabbitmqSourceStatus) MarkNoSink(reason, messageFormat string, messageA ...interface{}) {
 	RabbitmqSourceCondSet.Manage(s).MarkFalse(RabbitmqConditionSinkProvided, reason, messageFormat, messageA...)
 }
 
@@ -70,7 +74,7 @@ func DeploymentIsAvailable(d *appsv1.DeploymentStatus, def bool) bool {
 	return def
 }
 
-func (s *RabbitmqSourceStatus) MarkDeployed(d *appsv1.Deployment)  {
+func (s *RabbitmqSourceStatus) MarkDeployed(d *appsv1.Deployment) {
 	if duck.DeploymentIsAvailable(&d.Status, false) {
 		RabbitmqSourceCondSet.Manage(s).MarkTrue(RabbitmqConditionDeployed)
 	} else {
@@ -78,11 +82,11 @@ func (s *RabbitmqSourceStatus) MarkDeployed(d *appsv1.Deployment)  {
 	}
 }
 
-func (s *RabbitmqSourceStatus) MarkDeploying(reason, messageFormat string, messageA ...interface{})  {
+func (s *RabbitmqSourceStatus) MarkDeploying(reason, messageFormat string, messageA ...interface{}) {
 	RabbitmqSourceCondSet.Manage(s).MarkUnknown(RabbitmqConditionDeployed, reason, messageFormat, messageA...)
 }
 
-func (s *RabbitmqSourceStatus) MarkNotDeployed(reason, messageFormat string, messageA ...interface{})  {
+func (s *RabbitmqSourceStatus) MarkNotDeployed(reason, messageFormat string, messageA ...interface{}) {
 	RabbitmqSourceCondSet.Manage(s).MarkFalse(RabbitmqConditionDeployed, reason, messageFormat, messageA...)
 }
 

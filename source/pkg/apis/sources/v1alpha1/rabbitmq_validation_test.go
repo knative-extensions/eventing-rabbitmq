@@ -45,18 +45,18 @@ var (
 		},
 		Sink: &duckv1.Destination{
 			Ref: &duckv1.KReference{
-					APIVersion: "foo",
-					Kind:       "bar",
-					Namespace:  "baz",
-					Name:       "qux",
-				},
+				APIVersion: "foo",
+				Kind:       "bar",
+				Namespace:  "baz",
+				Name:       "qux",
+			},
 		},
 		ServiceAccountName: "service-account-name",
 	}
 )
 
 func TestRabbitmqSourceCheckImmutableFields(t *testing.T) {
-	testCases := map[string]struct{
+	testCases := map[string]struct {
 		orig    *RabbitmqSourceSpec
 		updated RabbitmqSourceSpec
 		allowed bool

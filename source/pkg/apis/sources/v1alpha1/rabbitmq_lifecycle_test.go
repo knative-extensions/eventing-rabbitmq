@@ -39,7 +39,7 @@ var (
 		},
 	}
 	condReady = apis.Condition{
-		Type: RabbitmqConditionReady,
+		Type:   RabbitmqConditionReady,
 		Status: corev1.ConditionTrue,
 	}
 )

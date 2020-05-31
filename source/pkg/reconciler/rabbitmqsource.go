@@ -30,8 +30,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
-	"knative.dev/eventing-rabbitmq/source/pkg/client/clientset/versioned"
 	"knative.dev/eventing-rabbitmq/source/pkg/apis/sources/v1alpha1"
+	"knative.dev/eventing-rabbitmq/source/pkg/client/clientset/versioned"
 	reconcilerrabbitmqsource "knative.dev/eventing-rabbitmq/source/pkg/client/injection/reconciler/sources/v1alpha1/rabbitmqsource"
 	listers "knative.dev/eventing-rabbitmq/source/pkg/client/listers/sources/v1alpha1"
 	"knative.dev/eventing-rabbitmq/source/pkg/reconciler/resources"
@@ -45,14 +45,14 @@ import (
 )
 
 const (
-	raImageEnvVar              		= "RABBITMQ_RA_IMAGE"
-	rabbitmqReadinessChanged   		= "RabbitmqSourceReadinessChanged"
+	raImageEnvVar                   = "RABBITMQ_RA_IMAGE"
+	rabbitmqReadinessChanged        = "RabbitmqSourceReadinessChanged"
 	rabbitmqUpdateStatusFailed      = "RabbitmqSourceUpdateStatusFailed"
 	rabbitmqSourceDeploymentCreated = "RabbitmqSourceDeploymentCreated"
 	rabbitmqSourceDeploymentUpdated = "RabbitmqSourceDeploymentUpdated"
 	rabbitmqSourceDeploymentFailed  = "RabbitmqSourceDeploymentUpdated"
 	rabbitmqSourceReconciled        = "RabbitmqSourceReconciled"
-	component       				= "rabbitmqsource"
+	component                       = "rabbitmqsource"
 )
 
 var (
@@ -77,18 +77,18 @@ type Reconciler struct {
 
 	receiveAdapterImage string
 
-	rabbitmqLister	 listers.RabbitmqSourceLister
+	rabbitmqLister   listers.RabbitmqSourceLister
 	deploymentLister appsv1listers.DeploymentLister
 
-	rabbitmqClientSet   versioned.Interface
-	loggingContext		context.Context
-	loggingConfig 		*pkgLogging.Config
-	metricsConfig 		*metrics.ExporterOptions
+	rabbitmqClientSet versioned.Interface
+	loggingContext    context.Context
+	loggingConfig     *pkgLogging.Config
+	metricsConfig     *metrics.ExporterOptions
 
-	sinkResolver		*resolver.URIResolver
+	sinkResolver *resolver.URIResolver
 }
 
-var _ reconcilerrabbitmqsource.Interface  = (*Reconciler)(nil)
+var _ reconcilerrabbitmqsource.Interface = (*Reconciler)(nil)
 
 func (r *Reconciler) ReconcileKind(ctx context.Context, src *v1alpha1.RabbitmqSource) pkgreconciler.Event {
 	src.Status.InitializeConditions()
@@ -219,13 +219,13 @@ func (r *Reconciler) UpdateFromLoggingConfigMap(cfg *corev1.ConfigMap) {
 	logging.FromContext(r.loggingContext).Info("Update from logging ConfigMap", zap.Any("ConfigMap", cfg))
 }
 
-func (r *Reconciler) UpdateFromMetricsConfigMap(cfg *corev1.ConfigMap)  {
+func (r *Reconciler) UpdateFromMetricsConfigMap(cfg *corev1.ConfigMap) {
 	if cfg != nil {
 		delete(cfg.Data, "_example")
 	}
 
 	r.metricsConfig = &metrics.ExporterOptions{
-		Domain: metrics.Domain(),
+		Domain:    metrics.Domain(),
 		Component: component,
 		ConfigMap: cfg.Data,
 	}

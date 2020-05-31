@@ -20,24 +20,24 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/cloudevents/sdk-go/v2/protocol/http"
-	nethttp "net/http"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
-	"go.uber.org/zap"
+	"github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/sbcd90/wabbit"
 	"github.com/sbcd90/wabbit/amqp"
 	"github.com/sbcd90/wabbit/amqptest"
+	"go.uber.org/zap"
+	sourcesv1alpha1 "knative.dev/eventing-rabbitmq/source/pkg/apis/sources/v1alpha1"
+	"knative.dev/eventing/pkg/adapter/v2"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/source"
-	"knative.dev/eventing/pkg/adapter/v2"
+	nethttp "net/http"
 	"strings"
-	sourcesv1alpha1 "knative.dev/eventing-rabbitmq/source/pkg/apis/sources/v1alpha1"
 )
 
 const (
-	resourceGroup 	  = "rabbitmqsources.sources.knative.dev"
+	resourceGroup = "rabbitmqsources.sources.knative.dev"
 )
 
 type ExchangeConfig struct {
@@ -80,11 +80,11 @@ func NewEnvConfig() adapter.EnvConfigAccessor {
 }
 
 type Adapter struct {
-	config 			  *adapterConfig
+	config            *adapterConfig
 	httpMessageSender *kncloudevents.HttpMessageSender
-	reporter 		  source.StatsReporter
-	logger 			  *zap.Logger
-	context			  context.Context
+	reporter          source.StatsReporter
+	logger            *zap.Logger
+	context           context.Context
 }
 
 var _ adapter.MessageAdapter = (*Adapter)(nil)
@@ -95,11 +95,11 @@ func NewAdapter(ctx context.Context, processed adapter.EnvConfigAccessor, httpMe
 	config := processed.(*adapterConfig)
 
 	return &Adapter{
-		config: 		   config,
+		config:            config,
 		httpMessageSender: httpMessageSender,
-		reporter:		   reporter,
-		logger: 		   logger,
-		context: 		   ctx,
+		reporter:          reporter,
+		logger:            logger,
+		context:           ctx,
 	}
 }
 
@@ -139,7 +139,12 @@ func (a *Adapter) CreateChannel(conn *amqp.Conn, connTest *amqptest.Conn,
 func (a *Adapter) Start(stopCh <-chan struct{}) error {
 	logger := a.logger
 
-	logger.Info("Starting with config: ", zap.Any("adapter", a))
+	logger.Info("Starting with config: ",
+		zap.String("ExchangeConfigType", a.config.ExchangeConfig.TypeOf),
+		zap.String("RoutingKey", a.config.QueueConfig.RoutingKey),
+		zap.String("SinkURI", a.config.Sink),
+		zap.String("Name", a.config.Name),
+		zap.String("Namespace", a.config.Namespace))
 
 	conn, err := a.CreateConn(a.config.User, a.config.Password, logger)
 	if err == nil {
@@ -171,7 +176,7 @@ func (a *Adapter) StartAmqpClient(ch *wabbit.Channel) (*wabbit.Queue, error) {
 			"delete":   exchangeConfig.AutoDeleted,
 			"internal": exchangeConfig.Internal,
 			"noWait":   exchangeConfig.NoWait,
-		},)
+		})
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
@@ -184,7 +189,7 @@ func (a *Adapter) StartAmqpClient(ch *wabbit.Channel) (*wabbit.Queue, error) {
 			"delete":    a.config.QueueConfig.DeleteWhenUnused,
 			"exclusive": a.config.QueueConfig.Exclusive,
 			"noWait":    a.config.QueueConfig.NoWait,
-		},)
+		})
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
@@ -200,7 +205,7 @@ func (a *Adapter) StartAmqpClient(ch *wabbit.Channel) (*wabbit.Queue, error) {
 				exchangeConfig.Name,
 				wabbit.Option{
 					"noWait": a.config.QueueConfig.NoWait,
-				},)
+				})
 			if err != nil {
 				logger.Error(err.Error())
 				return nil, err
@@ -233,7 +238,7 @@ func (a *Adapter) ConsumeMessages(channel *wabbit.Channel,
 			"exclusive": a.config.QueueConfig.Exclusive,
 			"noLocal":   false,
 			"noWait":    a.config.QueueConfig.NoWait,
-		},)
+		})
 
 	if err != nil {
 		logger.Error(err.Error())
@@ -294,7 +299,12 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 	event.SetSubject(msg.MessageId())
 	event.SetExtension("key", msg.MessageId())
 
-	err = event.SetData(*cloudevents.StringOfApplicationJSON(), a.JsonEncode(msg.Body()))
+	eventData, err := a.JsonEncode(msg.Body())
+	if err != nil {
+		return err
+	}
+
+	err = event.SetData(*cloudevents.StringOfApplicationJSON(), eventData)
 	if err != nil {
 		return err
 	}
@@ -317,7 +327,7 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 	}
 
 	reportArgs := &source.ReportArgs{
-		Namespace: 	   a.config.Namespace,
+		Namespace:     a.config.Namespace,
 		Name:          a.config.Name,
 		ResourceGroup: resourceGroup,
 	}
@@ -326,16 +336,16 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 	return nil
 }
 
-func (a *Adapter) JsonEncode(body []byte) interface{} {
+func (a *Adapter) JsonEncode(body []byte) (interface{}, error) {
 	var payload map[string]interface{}
 
 	logger := a.logger
 
 	if err := json.Unmarshal(body, &payload); err != nil {
 		logger.Info("Error unmarshalling JSON: ", zap.Error(err))
-		return body
+		return body, err
 	} else {
-		return payload
+		return payload, nil
 	}
 }
 

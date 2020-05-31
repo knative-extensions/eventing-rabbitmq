@@ -18,20 +18,20 @@ package resources
 
 import (
 	"fmt"
-	v1alpha1 "knative.dev/eventing-rabbitmq/source/pkg/apis/sources/v1alpha1"
+	"k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/api/apps/v1"
+	v1alpha1 "knative.dev/eventing-rabbitmq/source/pkg/apis/sources/v1alpha1"
 	"knative.dev/eventing/pkg/utils"
 	"knative.dev/pkg/kmeta"
 	"strconv"
 )
 
 type ReceiveAdapterArgs struct {
-	Image   string
-	Source  *v1alpha1.RabbitmqSource
-	Labels  map[string]string
-	SinkURI string
+	Image         string
+	Source        *v1alpha1.RabbitmqSource
+	Labels        map[string]string
+	SinkURI       string
 	MetricsConfig string
 	LoggingConfig string
 }
@@ -81,43 +81,43 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 			Value: args.Source.Spec.ExchangeConfig.TypeOf,
 		},
 		{
-			Name: "RABBITMQ_EXCHANGE_CONFIG_DURABLE",
+			Name:  "RABBITMQ_EXCHANGE_CONFIG_DURABLE",
 			Value: strconv.FormatBool(args.Source.Spec.ExchangeConfig.Durable),
 		},
 		{
-			Name: "RABBITMQ_EXCHANGE_CONFIG_AUTO_DELETED",
+			Name:  "RABBITMQ_EXCHANGE_CONFIG_AUTO_DELETED",
 			Value: strconv.FormatBool(args.Source.Spec.ExchangeConfig.AutoDeleted),
 		},
 		{
-			Name: "RABBITMQ_EXCHANGE_CONFIG_INTERNAL",
+			Name:  "RABBITMQ_EXCHANGE_CONFIG_INTERNAL",
 			Value: strconv.FormatBool(args.Source.Spec.ExchangeConfig.Internal),
 		},
 		{
-			Name: "RABBITMQ_EXCHANGE_CONFIG_NOWAIT",
+			Name:  "RABBITMQ_EXCHANGE_CONFIG_NOWAIT",
 			Value: strconv.FormatBool(args.Source.Spec.ExchangeConfig.NoWait),
 		},
 		{
-			Name: "RABBITMQ_QUEUE_CONFIG_NAME",
+			Name:  "RABBITMQ_QUEUE_CONFIG_NAME",
 			Value: args.Source.Spec.QueueConfig.Name,
 		},
 		{
-			Name: "RABBITMQ_QUEUE_CONFIG_DURABLE",
+			Name:  "RABBITMQ_QUEUE_CONFIG_DURABLE",
 			Value: strconv.FormatBool(args.Source.Spec.QueueConfig.Durable),
 		},
 		{
-			Name: "RABBITMQ_QUEUE_CONFIG_AUTO_DELETED",
+			Name:  "RABBITMQ_QUEUE_CONFIG_AUTO_DELETED",
 			Value: strconv.FormatBool(args.Source.Spec.QueueConfig.DeleteWhenUnused),
 		},
 		{
-			Name: "RABBITMQ_QUEUE_CONFIG_EXCLUSIVE",
+			Name:  "RABBITMQ_QUEUE_CONFIG_EXCLUSIVE",
 			Value: strconv.FormatBool(args.Source.Spec.QueueConfig.Exclusive),
 		},
 		{
-			Name: "RABBITMQ_QUEUE_CONFIG_NOWAIT",
+			Name:  "RABBITMQ_QUEUE_CONFIG_NOWAIT",
 			Value: strconv.FormatBool(args.Source.Spec.QueueConfig.NoWait),
 		},
 		{
-			Name: "SINK_URI",
+			Name:  "SINK_URI",
 			Value: args.SinkURI,
 		},
 		{
@@ -168,10 +168,10 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 					ServiceAccountName: args.Source.Spec.ServiceAccountName,
 					Containers: []corev1.Container{
 						{
-							Name:  "receive-adapter",
-							Image: args.Image,
+							Name:            "receive-adapter",
+							Image:           args.Image,
 							ImagePullPolicy: "IfNotPresent",
-							Env: env,
+							Env:             env,
 						},
 					},
 				},

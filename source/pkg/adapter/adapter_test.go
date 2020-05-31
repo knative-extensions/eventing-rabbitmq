@@ -34,7 +34,7 @@ import (
 )
 
 func TestPostMessage_ServeHttp(t *testing.T) {
-	testCases := map[string]struct{
+	testCases := map[string]struct {
 		sink              func(http.ResponseWriter, *http.Request)
 		reqBody           string
 		attributes        map[string]string
@@ -69,8 +69,8 @@ func TestPostMessage_ServeHttp(t *testing.T) {
 
 			a := &Adapter{
 				config: &adapterConfig{
-					Topic:          "topic",
-					Brokers:        "amqp://guest:guest@localhost:5672/",
+					Topic:   "topic",
+					Brokers: "amqp://guest:guest@localhost:5672/",
 					ExchangeConfig: ExchangeConfig{
 						TypeOf:      "topic",
 						Durable:     true,
@@ -78,7 +78,7 @@ func TestPostMessage_ServeHttp(t *testing.T) {
 						Internal:    false,
 						NoWait:      false,
 					},
-					QueueConfig:   QueueConfig{
+					QueueConfig: QueueConfig{
 						Name:             "",
 						Durable:          false,
 						DeleteWhenUnused: false,
@@ -86,10 +86,10 @@ func TestPostMessage_ServeHttp(t *testing.T) {
 						NoWait:           false,
 					},
 				},
-				context: 		   context.TODO(),
+				context:           context.TODO(),
 				httpMessageSender: s,
-				logger: 		   zap.NewNop(),
-				reporter: 		   statsReporter,
+				logger:            zap.NewNop(),
+				reporter:          statsReporter,
 			}
 
 			data, err := json.Marshal(map[string]string{"key": "value"})
@@ -126,8 +126,8 @@ func TestAdapter_CreateConn(t *testing.T) {
 
 	a := &Adapter{
 		config: &adapterConfig{
-			Topic:          "",
-			Brokers:        "amqp://localhost:5672/%2f",
+			Topic:   "",
+			Brokers: "amqp://localhost:5672/%2f",
 			ExchangeConfig: ExchangeConfig{
 				TypeOf:      "direct",
 				Durable:     true,
@@ -135,7 +135,7 @@ func TestAdapter_CreateConn(t *testing.T) {
 				Internal:    false,
 				NoWait:      false,
 			},
-			QueueConfig:   QueueConfig{
+			QueueConfig: QueueConfig{
 				Name:             "",
 				Durable:          false,
 				DeleteWhenUnused: false,
@@ -143,8 +143,8 @@ func TestAdapter_CreateConn(t *testing.T) {
 				NoWait:           false,
 			},
 		},
-		logger: 		   zap.NewNop(),
-		reporter: 		   statsReporter,
+		logger:   zap.NewNop(),
+		reporter: statsReporter,
 	}
 
 	conn, _ := a.CreateConn("", "", logging.FromContext(context.TODO()))
@@ -175,8 +175,8 @@ func TestAdapter_CreateChannel(t *testing.T) {
 
 	a := &Adapter{
 		config: &adapterConfig{
-			Topic:          "",
-			Brokers:        "amqp://localhost:5672/%2f",
+			Topic:   "",
+			Brokers: "amqp://localhost:5672/%2f",
 			ExchangeConfig: ExchangeConfig{
 				TypeOf:      "direct",
 				Durable:     true,
@@ -184,7 +184,7 @@ func TestAdapter_CreateChannel(t *testing.T) {
 				Internal:    false,
 				NoWait:      false,
 			},
-			QueueConfig:   QueueConfig{
+			QueueConfig: QueueConfig{
 				Name:             "",
 				Durable:          false,
 				DeleteWhenUnused: false,
@@ -192,8 +192,8 @@ func TestAdapter_CreateChannel(t *testing.T) {
 				NoWait:           false,
 			},
 		},
-		logger: 		   zap.NewNop(),
-		reporter: 		   statsReporter,
+		logger:   zap.NewNop(),
+		reporter: statsReporter,
 	}
 
 	for i := 1; i <= 2048; i++ {
@@ -231,8 +231,8 @@ func TestAdapter_StartAmqpClient(t *testing.T) {
 
 	a := &Adapter{
 		config: &adapterConfig{
-			Topic:          "",
-			Brokers:        "amqp://localhost:5672/%2f",
+			Topic:   "",
+			Brokers: "amqp://localhost:5672/%2f",
 			ExchangeConfig: ExchangeConfig{
 				TypeOf:      "direct",
 				Durable:     true,
@@ -240,7 +240,7 @@ func TestAdapter_StartAmqpClient(t *testing.T) {
 				Internal:    false,
 				NoWait:      false,
 			},
-			QueueConfig:   QueueConfig{
+			QueueConfig: QueueConfig{
 				Name:             "",
 				Durable:          false,
 				DeleteWhenUnused: false,
@@ -248,8 +248,8 @@ func TestAdapter_StartAmqpClient(t *testing.T) {
 				NoWait:           false,
 			},
 		},
-		logger: 		   zap.NewNop(),
-		reporter: 		   statsReporter,
+		logger:   zap.NewNop(),
+		reporter: statsReporter,
 	}
 
 	_, err = a.StartAmqpClient(&channel)
@@ -262,8 +262,8 @@ func TestAdapter_StartAmqpClient(t *testing.T) {
 	*/
 	a = &Adapter{
 		config: &adapterConfig{
-			Topic:          "",
-			Brokers:        "amqp://localhost:5672/%2f",
+			Topic:   "",
+			Brokers: "amqp://localhost:5672/%2f",
 			ExchangeConfig: ExchangeConfig{
 				TypeOf:      "fanout",
 				Durable:     true,
@@ -271,7 +271,7 @@ func TestAdapter_StartAmqpClient(t *testing.T) {
 				Internal:    false,
 				NoWait:      false,
 			},
-			QueueConfig:   QueueConfig{
+			QueueConfig: QueueConfig{
 				Name:             "",
 				Durable:          false,
 				DeleteWhenUnused: false,
@@ -279,8 +279,8 @@ func TestAdapter_StartAmqpClient(t *testing.T) {
 				NoWait:           false,
 			},
 		},
-		logger: 		   zap.NewNop(),
-		reporter: 		   statsReporter,
+		logger:   zap.NewNop(),
+		reporter: statsReporter,
 	}
 	_, err = a.StartAmqpClient(&channel)
 	if err != nil {
@@ -292,8 +292,8 @@ func TestAdapter_StartAmqpClient(t *testing.T) {
 	*/
 	a = &Adapter{
 		config: &adapterConfig{
-			Topic:          "",
-			Brokers:        "amqp://localhost:5672/%2f",
+			Topic:   "",
+			Brokers: "amqp://localhost:5672/%2f",
 			ExchangeConfig: ExchangeConfig{
 				TypeOf:      "topic",
 				Durable:     true,
@@ -301,7 +301,7 @@ func TestAdapter_StartAmqpClient(t *testing.T) {
 				Internal:    false,
 				NoWait:      false,
 			},
-			QueueConfig:   QueueConfig{
+			QueueConfig: QueueConfig{
 				Name:             "",
 				Durable:          false,
 				DeleteWhenUnused: false,
@@ -309,8 +309,8 @@ func TestAdapter_StartAmqpClient(t *testing.T) {
 				NoWait:           false,
 			},
 		},
-		logger: 		   zap.NewNop(),
-		reporter: 		   statsReporter,
+		logger:   zap.NewNop(),
+		reporter: statsReporter,
 	}
 	_, err = a.StartAmqpClient(&channel)
 	if err != nil {
@@ -344,8 +344,8 @@ func TestAdapter_StartAmqpClient_InvalidExchangeType(t *testing.T) {
 
 	a := &Adapter{
 		config: &adapterConfig{
-			Topic:          "",
-			Brokers:        "amqp://localhost:5674/%2f",
+			Topic:   "",
+			Brokers: "amqp://localhost:5674/%2f",
 			ExchangeConfig: ExchangeConfig{
 				TypeOf:      "",
 				Durable:     true,
@@ -353,7 +353,7 @@ func TestAdapter_StartAmqpClient_InvalidExchangeType(t *testing.T) {
 				Internal:    false,
 				NoWait:      false,
 			},
-			QueueConfig:   QueueConfig{
+			QueueConfig: QueueConfig{
 				Name:             "",
 				Durable:          false,
 				DeleteWhenUnused: false,
@@ -361,8 +361,8 @@ func TestAdapter_StartAmqpClient_InvalidExchangeType(t *testing.T) {
 				NoWait:           false,
 			},
 		},
-		logger: 		   zap.NewNop(),
-		reporter: 		   statsReporter,
+		logger:   zap.NewNop(),
+		reporter: statsReporter,
 	}
 	_, err = a.StartAmqpClient(&channel)
 	if err != nil {
@@ -392,8 +392,8 @@ func TestAdapter_ConsumeMessages(t *testing.T) {
 
 	a := &Adapter{
 		config: &adapterConfig{
-			Topic:          "",
-			Brokers:        "amqp://localhost:5672/%2f",
+			Topic:   "",
+			Brokers: "amqp://localhost:5672/%2f",
 			ExchangeConfig: ExchangeConfig{
 				TypeOf:      "direct",
 				Durable:     true,
@@ -401,7 +401,7 @@ func TestAdapter_ConsumeMessages(t *testing.T) {
 				Internal:    false,
 				NoWait:      false,
 			},
-			QueueConfig:   QueueConfig{
+			QueueConfig: QueueConfig{
 				Name:             "",
 				Durable:          false,
 				DeleteWhenUnused: false,
@@ -409,8 +409,8 @@ func TestAdapter_ConsumeMessages(t *testing.T) {
 				NoWait:           false,
 			},
 		},
-		logger: 		   zap.NewNop(),
-		reporter: 		   statsReporter,
+		logger:   zap.NewNop(),
+		reporter: statsReporter,
 	}
 	queue, err := a.StartAmqpClient(&channel)
 	if err != nil {
@@ -427,8 +427,8 @@ func TestAdapter_JsonEncode(t *testing.T) {
 
 	a := &Adapter{
 		config: &adapterConfig{
-			Topic:          "",
-			Brokers:        "amqp://localhost:5672/%2f",
+			Topic:   "",
+			Brokers: "amqp://localhost:5672/%2f",
 			ExchangeConfig: ExchangeConfig{
 				TypeOf:      "direct",
 				Durable:     true,
@@ -436,7 +436,7 @@ func TestAdapter_JsonEncode(t *testing.T) {
 				Internal:    false,
 				NoWait:      false,
 			},
-			QueueConfig:   QueueConfig{
+			QueueConfig: QueueConfig{
 				Name:             "",
 				Durable:          false,
 				DeleteWhenUnused: false,
@@ -444,8 +444,8 @@ func TestAdapter_JsonEncode(t *testing.T) {
 				NoWait:           false,
 			},
 		},
-		logger: 		   zap.NewNop(),
-		reporter: 		   statsReporter,
+		logger:   zap.NewNop(),
+		reporter: statsReporter,
 	}
 	data := a.JsonEncode([]byte("test json"))
 	if data == nil {
@@ -460,7 +460,7 @@ type fakeHandler struct {
 	handler func(http.ResponseWriter, *http.Request)
 }
 
-func (h *fakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)  {
+func (h *fakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.header = r.Header
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {

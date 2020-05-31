@@ -52,10 +52,6 @@ rules:
   - apiGroups:
       - ""
     resources:
-      - pods
-      - services
-      - endpoints
-      - persistentvolumeclaims
       - events
       - configmaps
       - secrets

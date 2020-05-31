@@ -51,7 +51,7 @@ func NewController(
 	deploymentInformer := deploymentinformer.Get(ctx)
 
 	c := &Reconciler{
-		KubeClientSet: 		 kubeclient.Get(ctx),
+		KubeClientSet:       kubeclient.Get(ctx),
 		rabbitmqClientSet:   rabbitmqclient.Get(ctx),
 		rabbitmqLister:      rabbitmqInformer.Lister(),
 		deploymentLister:    deploymentInformer.Lister(),

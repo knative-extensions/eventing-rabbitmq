@@ -28,7 +28,7 @@ func (current *RabbitmqSource) Validate(ctx context.Context) *apis.FieldError {
 		if diff, err := kmp.ShortDiff(original.Spec, current.Spec); err != nil {
 			return &apis.FieldError{
 				Message: "Failed to diff RabbitmqSource",
-				Paths: []string{"spec"},
+				Paths:   []string{"spec"},
 				Details: err.Error(),
 			}
 		} else if diff != "" {

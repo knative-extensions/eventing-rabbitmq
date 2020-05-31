@@ -71,7 +71,7 @@ func TestMakeReceiveAdapter(t *testing.T) {
 	}
 
 	got := MakeReceiveAdapter(&ReceiveAdapterArgs{
-		Image : "test-image",
+		Image:  "test-image",
 		Source: src,
 		Labels: map[string]string{
 			"test-key1": "test-value1",
@@ -83,23 +83,22 @@ func TestMakeReceiveAdapter(t *testing.T) {
 	one := int32(1)
 	want := &v1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "rabbitmqsource-source-name-",
-			Namespace: "source-namespace",
+			Name:         "rabbitmqsource-source-name-",
+			Namespace:    "source-namespace",
 			GenerateName: "source-name-",
 			Labels: map[string]string{
 				"test-key1": "test-value1",
 				"test-key2": "test-value2",
 			},
-			OwnerReferences:
-				[]metav1.OwnerReference{
-				 	{
-				 		APIVersion:         "sources.knative.dev/v1alpha1",
-				 		Kind:               "RabbitmqSource",
-				 		Name:               "source-name",
-				 		Controller:			&[]bool{true}[0],
-				 		BlockOwnerDeletion: &[]bool{true}[0],
-					},
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion:         "sources.knative.dev/v1alpha1",
+					Kind:               "RabbitmqSource",
+					Name:               "source-name",
+					Controller:         &[]bool{true}[0],
+					BlockOwnerDeletion: &[]bool{true}[0],
 				},
+			},
 		},
 		Spec: v1.DeploymentSpec{
 			Selector: &metav1.LabelSelector{
@@ -136,7 +135,7 @@ func TestMakeReceiveAdapter(t *testing.T) {
 									Value: "topic",
 								},
 								{
-									Name:      "RABBITMQ_USER",
+									Name: "RABBITMQ_USER",
 									ValueFrom: &corev1.EnvVarSource{
 										SecretKeyRef: &corev1.SecretKeySelector{
 											LocalObjectReference: corev1.LocalObjectReference{
@@ -226,7 +225,7 @@ func TestMakeReceiveAdapter(t *testing.T) {
 									Value: "source-name",
 								},
 								{
-									Name: "NAMESPACE",
+									Name:  "NAMESPACE",
 									Value: "source-namespace",
 								},
 								{
