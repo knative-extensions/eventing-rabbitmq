@@ -27,6 +27,8 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
+	"knative.dev/eventing/pkg/leaderelection"
+	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/profiling"
@@ -35,7 +37,7 @@ import (
 )
 
 type Adapter interface {
-	Start(stopCh <-chan struct{}) error
+	Start(ctx context.Context) error
 }
 
 type AdapterConstructor func(ctx context.Context, env EnvConfigAccessor, client cloudevents.Client) Adapter
@@ -105,17 +107,29 @@ func MainWithContext(ctx context.Context, component string, ector EnvConfigConst
 
 	eventsClient, err := NewCloudEventsClient(env.GetSink(), ceOverrides, reporter)
 	if err != nil {
-		logger.Fatal("error building cloud event client", zap.Error(err))
+		logger.Fatal("Error building cloud event client", zap.Error(err))
 	}
 
 	// Configuring the adapter
 	adapter := ctor(ctx, env, eventsClient)
 
-	logger.Info("Starting Receive Adapter", zap.Any("adapter", adapter))
-
-	if err := adapter.Start(ctx.Done()); err != nil {
-		logger.Warn("start returned an error", zap.Error(err))
+	// Build the leader elector
+	leConfig, err := env.GetLeaderElectionConfig()
+	if err != nil {
+		logger.Error("Error loading the leader election configuration", zap.Error(err))
 	}
+
+	if leConfig.LeaderElect {
+		// Signal that we are executing in a context with leader election.
+		ctx = leaderelection.WithStandardLeaderElectorBuilder(ctx, kubeclient.Get(ctx), *leConfig)
+	}
+
+	elector, err := leaderelection.BuildAdapterElector(ctx, adapter)
+	if err != nil {
+		logger.Fatal("Error creating the adapter elector", zap.Error(err))
+	}
+
+	elector.Run(ctx)
 }
 
 func flush(logger *zap.SugaredLogger) {

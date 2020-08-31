@@ -136,7 +136,11 @@ func (a *Adapter) CreateChannel(conn *amqp.Conn, connTest *amqptest.Conn,
 	return ch, err
 }
 
-func (a *Adapter) Start(stopCh <-chan struct{}) error {
+func (a *Adapter) Start(ctx context.Context) error {
+	return a.start(ctx.Done())
+}
+
+func (a *Adapter) start(stopCh <-chan struct{}) error {
 	logger := a.logger
 
 	logger.Info("Starting with config: ",
