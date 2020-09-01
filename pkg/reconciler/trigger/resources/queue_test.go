@@ -21,10 +21,10 @@ import (
 	"fmt"
 	"testing"
 
-	"knative.dev/eventing-rabbitmq/pkg/reconciler/internal/testrabbit"
-	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
 	"gotest.tools/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/eventing-rabbitmq/pkg/reconciler/internal/testrabbit"
+	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
 	eventingv1beta1 "knative.dev/eventing/pkg/apis/eventing/v1beta1"
 )
 

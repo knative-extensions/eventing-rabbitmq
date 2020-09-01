@@ -20,8 +20,8 @@ package client
 import (
 	context "context"
 
-	versioned "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/clientset/versioned"
 	rest "k8s.io/client-go/rest"
+	versioned "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/clientset/versioned"
 	injection "knative.dev/pkg/injection"
 	logging "knative.dev/pkg/logging"
 )

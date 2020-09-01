@@ -22,13 +22,13 @@ import (
 	sync "sync"
 	time "time"
 
-	versioned "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/clientset/versioned"
-	internalinterfaces "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/informers/externalversions/internalinterfaces"
-	keda "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/informers/externalversions/keda"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
+	versioned "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/clientset/versioned"
+	internalinterfaces "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/informers/externalversions/internalinterfaces"
+	keda "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/informers/externalversions/keda"
 )
 
 // SharedInformerOption defines the functional option type for SharedInformerFactory.

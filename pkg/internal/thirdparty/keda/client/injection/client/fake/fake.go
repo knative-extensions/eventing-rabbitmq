@@ -20,10 +20,10 @@ package fake
 import (
 	context "context"
 
-	fake "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/clientset/versioned/fake"
-	client "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/injection/client"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	rest "k8s.io/client-go/rest"
+	fake "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/clientset/versioned/fake"
+	client "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/injection/client"
 	injection "knative.dev/pkg/injection"
 	logging "knative.dev/pkg/logging"
 )
