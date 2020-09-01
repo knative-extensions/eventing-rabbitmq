@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"testing"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	appsv1 "k8s.io/api/apps/v1"
@@ -24,7 +26,6 @@ import (
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/apis/duck"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
-	"testing"
 )
 
 var (
@@ -216,7 +217,7 @@ func TestRabbitmqSourceStatusGetCondition(t *testing.T) {
 			Type:    RabbitmqConditionReady,
 			Status:  corev1.ConditionUnknown,
 			Reason:  "SinkEmpty",
-			Message: "Sink has resolved to empty.",
+			Message: "Sink has resolved to empty",
 		},
 	}, {
 		name: "mark sink empty and deployed then sink",

@@ -19,18 +19,19 @@ package rabbitmq
 import (
 	"context"
 	"encoding/json"
+	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
 	"github.com/sbcd90/wabbit/amqp"
 	"github.com/sbcd90/wabbit/amqptest"
 	"github.com/sbcd90/wabbit/amqptest/server"
 	origamqp "github.com/streadway/amqp"
 	"go.uber.org/zap"
-	"io/ioutil"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/eventing/pkg/logging"
 	"knative.dev/pkg/source"
-	"net/http"
-	"net/http/httptest"
-	"testing"
 )
 
 func TestPostMessage_ServeHttp(t *testing.T) {
@@ -447,7 +448,10 @@ func TestAdapter_JsonEncode(t *testing.T) {
 		logger:   zap.NewNop(),
 		reporter: statsReporter,
 	}
-	data := a.JsonEncode([]byte("test json"))
+	data, err := a.JsonEncode([]byte(`{"Test":"json"}`))
+	if err != nil {
+		t.Errorf("JsonEncode failed: %s", err)
+	}
 	if data == nil {
 		t.Errorf("Json decoded incorrectly")
 	}
