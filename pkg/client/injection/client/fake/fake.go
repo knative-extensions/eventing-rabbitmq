@@ -23,8 +23,8 @@ import (
 
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	rest "k8s.io/client-go/rest"
-	fake "knative.dev/eventing-rabbitmq/source/pkg/client/clientset/versioned/fake"
-	client "knative.dev/eventing-rabbitmq/source/pkg/client/injection/client"
+	fake "knative.dev/eventing-rabbitmq/pkg/client/clientset/versioned/fake"
+	client "knative.dev/eventing-rabbitmq/pkg/client/injection/client"
 	injection "knative.dev/pkg/injection"
 	logging "knative.dev/pkg/logging"
 )
@@ -48,7 +48,7 @@ func Get(ctx context.Context) *fake.Clientset {
 	untyped := ctx.Value(client.Key{})
 	if untyped == nil {
 		logging.FromContext(ctx).Panic(
-			"Unable to fetch knative.dev/eventing-rabbitmq/source/pkg/client/clientset/versioned/fake.Clientset from context.")
+			"Unable to fetch knative.dev/eventing-rabbitmq/pkg/client/clientset/versioned/fake.Clientset from context.")
 	}
 	return untyped.(*fake.Clientset)
 }

@@ -25,8 +25,8 @@ import (
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	rest "k8s.io/client-go/rest"
-	v1alpha1 "knative.dev/eventing-rabbitmq/source/pkg/apis/sources/v1alpha1"
-	scheme "knative.dev/eventing-rabbitmq/source/pkg/client/clientset/versioned/scheme"
+	v1alpha1 "knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
+	scheme "knative.dev/eventing-rabbitmq/pkg/client/clientset/versioned/scheme"
 )
 
 // RabbitmqSourcesGetter has a method to return a RabbitmqSourceInterface.

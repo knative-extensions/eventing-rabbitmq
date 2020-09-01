@@ -21,8 +21,8 @@ package rabbitmqsource
 import (
 	context "context"
 
-	v1alpha1 "knative.dev/eventing-rabbitmq/source/pkg/client/informers/externalversions/sources/v1alpha1"
-	factory "knative.dev/eventing-rabbitmq/source/pkg/client/injection/informers/factory"
+	v1alpha1 "knative.dev/eventing-rabbitmq/pkg/client/informers/externalversions/sources/v1alpha1"
+	factory "knative.dev/eventing-rabbitmq/pkg/client/injection/informers/factory"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
 	logging "knative.dev/pkg/logging"
@@ -46,7 +46,7 @@ func Get(ctx context.Context) v1alpha1.RabbitmqSourceInformer {
 	untyped := ctx.Value(Key{})
 	if untyped == nil {
 		logging.FromContext(ctx).Panic(
-			"Unable to fetch knative.dev/eventing-rabbitmq/source/pkg/client/informers/externalversions/sources/v1alpha1.RabbitmqSourceInformer from context.")
+			"Unable to fetch knative.dev/eventing-rabbitmq/pkg/client/informers/externalversions/sources/v1alpha1.RabbitmqSourceInformer from context.")
 	}
 	return untyped.(v1alpha1.RabbitmqSourceInformer)
 }

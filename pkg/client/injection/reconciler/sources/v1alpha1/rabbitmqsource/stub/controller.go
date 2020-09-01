@@ -21,8 +21,8 @@ package rabbitmqsource
 import (
 	context "context"
 
-	rabbitmqsource "knative.dev/eventing-rabbitmq/source/pkg/client/injection/informers/sources/v1alpha1/rabbitmqsource"
-	v1alpha1rabbitmqsource "knative.dev/eventing-rabbitmq/source/pkg/client/injection/reconciler/sources/v1alpha1/rabbitmqsource"
+	rabbitmqsource "knative.dev/eventing-rabbitmq/pkg/client/injection/informers/sources/v1alpha1/rabbitmqsource"
+	v1alpha1rabbitmqsource "knative.dev/eventing-rabbitmq/pkg/client/injection/reconciler/sources/v1alpha1/rabbitmqsource"
 	configmap "knative.dev/pkg/configmap"
 	controller "knative.dev/pkg/controller"
 	logging "knative.dev/pkg/logging"

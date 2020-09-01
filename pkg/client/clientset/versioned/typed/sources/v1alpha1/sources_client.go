@@ -20,8 +20,8 @@ package v1alpha1
 
 import (
 	rest "k8s.io/client-go/rest"
-	v1alpha1 "knative.dev/eventing-rabbitmq/source/pkg/apis/sources/v1alpha1"
-	"knative.dev/eventing-rabbitmq/source/pkg/client/clientset/versioned/scheme"
+	v1alpha1 "knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
+	"knative.dev/eventing-rabbitmq/pkg/client/clientset/versioned/scheme"
 )
 
 type SourcesV1alpha1Interface interface {

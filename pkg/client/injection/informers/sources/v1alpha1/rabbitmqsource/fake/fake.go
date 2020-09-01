@@ -21,8 +21,8 @@ package fake
 import (
 	context "context"
 
-	fake "knative.dev/eventing-rabbitmq/source/pkg/client/injection/informers/factory/fake"
-	rabbitmqsource "knative.dev/eventing-rabbitmq/source/pkg/client/injection/informers/sources/v1alpha1/rabbitmqsource"
+	fake "knative.dev/eventing-rabbitmq/pkg/client/injection/informers/factory/fake"
+	rabbitmqsource "knative.dev/eventing-rabbitmq/pkg/client/injection/informers/sources/v1alpha1/rabbitmqsource"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
 )

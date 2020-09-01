@@ -17,7 +17,7 @@ limitations under the License.
 package apis
 
 import (
-	v1alpha1 "knative.dev/eventing-rabbitmq/source/pkg/apis/sources/v1alpha1"
+	v1alpha1 "knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 )
 
 func init() {

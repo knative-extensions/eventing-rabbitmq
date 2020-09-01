@@ -22,8 +22,8 @@ import (
 	context "context"
 
 	v1 "k8s.io/api/core/v1"
-	v1alpha1 "knative.dev/eventing-rabbitmq/source/pkg/apis/sources/v1alpha1"
-	rabbitmqsource "knative.dev/eventing-rabbitmq/source/pkg/client/injection/reconciler/sources/v1alpha1/rabbitmqsource"
+	v1alpha1 "knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
+	rabbitmqsource "knative.dev/eventing-rabbitmq/pkg/client/injection/reconciler/sources/v1alpha1/rabbitmqsource"
 	reconciler "knative.dev/pkg/reconciler"
 )
 

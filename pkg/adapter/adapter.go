@@ -27,7 +27,7 @@ import (
 	"github.com/sbcd90/wabbit/amqp"
 	"github.com/sbcd90/wabbit/amqptest"
 	"go.uber.org/zap"
-	sourcesv1alpha1 "knative.dev/eventing-rabbitmq/source/pkg/apis/sources/v1alpha1"
+	sourcesv1alpha1 "knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 	"knative.dev/eventing/pkg/adapter/v2"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/pkg/logging"

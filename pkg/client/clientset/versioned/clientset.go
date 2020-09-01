@@ -24,7 +24,7 @@ import (
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
-	sourcesv1alpha1 "knative.dev/eventing-rabbitmq/source/pkg/client/clientset/versioned/typed/sources/v1alpha1"
+	sourcesv1alpha1 "knative.dev/eventing-rabbitmq/pkg/client/clientset/versioned/typed/sources/v1alpha1"
 )
 
 type Interface interface {

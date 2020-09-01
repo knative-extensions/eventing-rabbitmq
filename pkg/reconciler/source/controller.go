@@ -19,9 +19,9 @@ package rabbitmq
 import (
 	"context"
 	"k8s.io/client-go/tools/cache"
-	rabbitmqclient "knative.dev/eventing-rabbitmq/source/pkg/client/injection/client"
-	rabbitmqinformer "knative.dev/eventing-rabbitmq/source/pkg/client/injection/informers/sources/v1alpha1/rabbitmqsource"
-	"knative.dev/eventing-rabbitmq/source/pkg/client/injection/reconciler/sources/v1alpha1/rabbitmqsource"
+	rabbitmqclient "knative.dev/eventing-rabbitmq/pkg/client/injection/client"
+	rabbitmqinformer "knative.dev/eventing-rabbitmq/pkg/client/injection/informers/sources/v1alpha1/rabbitmqsource"
+	"knative.dev/eventing-rabbitmq/pkg/client/injection/reconciler/sources/v1alpha1/rabbitmqsource"
 	"knative.dev/eventing/pkg/apis/sources/v1alpha1"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"

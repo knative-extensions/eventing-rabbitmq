@@ -19,7 +19,7 @@ package main
 import (
 	"knative.dev/eventing/pkg/adapter/v2"
 
-	kadapter "knative.dev/eventing-rabbitmq/source/pkg/adapter"
+	kadapter "knative.dev/eventing-rabbitmq/pkg/adapter"
 )
 
 func main() {
