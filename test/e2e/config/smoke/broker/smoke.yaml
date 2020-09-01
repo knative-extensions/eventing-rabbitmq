@@ -12,18 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-
----
-
 apiVersion: eventing.knative.dev/v1beta1
 kind: Broker
 metadata:
   name: smoke
+  namespace: {{ .namespace }}
   annotations:
     eventing.knative.dev/broker.class: RabbitMQBroker
 spec:
   config:
     apiVersion: v1
     kind: Secret
-    name: smoke-rabbitmq-broker-secret
+    name: rabbitmqc-rabbitmq-admin

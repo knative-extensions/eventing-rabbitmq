@@ -16,7 +16,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package example
+package rabbit_test
 
 import (
 	"testing"
@@ -26,10 +26,10 @@ import (
 	"knative.dev/pkg/test/logstream"
 )
 
-// TestSmoke makes sure a ClusterDuckType goes ready.
-func TestSmoke(t *testing.T) {
+// TestSmokeBroker makes sure a Broker goes ready as a RabbitMQ Broker Class.
+func TestSmokeBroker(t *testing.T) {
 	cancel := logstream.Start(t) // I think there is more to do to get logstream to work.
 	defer cancel()
 
-	SmokeTestImpl(t)
+	SmokeTestBrokerImpl(t)
 }

@@ -16,6 +16,6 @@ apiVersion: rabbitmq.com/v1beta1
 kind: RabbitmqCluster
 metadata:
   name: rabbitmqc
-  namespace: default #{{ .namespace }}
+  namespace: {{ .namespace }}
 spec:
   replicas: 1

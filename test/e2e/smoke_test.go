@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package example
+package rabbit_test
 
 import (
 	"github.com/n3wscott/rigging"
@@ -26,7 +26,7 @@ import (
 func SmokeTesBrokertImpl(t *testing.T) {
 	opts := []rigging.Option{}
 
-	rig, err := rigging.NewInstall(opts, []string{"smoke/broker"}, map[string]string{})
+	rig, err := rigging.NewInstall(opts, []string{"rabbitmq", "smoke/broker"}, map[string]string{})
 	if err != nil {
 		t.Fatalf("failed to create rig, %s", err)
 	}
