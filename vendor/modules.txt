@@ -266,6 +266,13 @@ github.com/michaelklishin/rabbit-hole
 github.com/modern-go/concurrent
 # github.com/modern-go/reflect2 v1.0.1
 github.com/modern-go/reflect2
+# github.com/n3wscott/rigging v0.0.1
+## explicit
+github.com/n3wscott/rigging
+github.com/n3wscott/rigging/pkg/images
+github.com/n3wscott/rigging/pkg/installer
+github.com/n3wscott/rigging/pkg/lifecycle
+github.com/n3wscott/rigging/pkg/manifest
 # github.com/opencontainers/go-digest v1.0.0-rc1
 github.com/opencontainers/go-digest
 # github.com/opencontainers/image-spec v1.0.1
@@ -1059,6 +1066,7 @@ knative.dev/pkg/metrics
 knative.dev/pkg/metrics/metricskey
 knative.dev/pkg/network
 knative.dev/pkg/profiling
+knative.dev/pkg/ptr
 knative.dev/pkg/reconciler
 knative.dev/pkg/resolver
 knative.dev/pkg/signals
@@ -1070,6 +1078,7 @@ knative.dev/pkg/test/ghutil
 knative.dev/pkg/test/helpers
 knative.dev/pkg/test/ingress
 knative.dev/pkg/test/logging
+knative.dev/pkg/test/logstream
 knative.dev/pkg/test/mako
 knative.dev/pkg/test/mako/alerter
 knative.dev/pkg/test/mako/alerter/github

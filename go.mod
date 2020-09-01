@@ -12,6 +12,7 @@ require (
 	github.com/influxdata/tdigest v0.0.1 // indirect
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/michaelklishin/rabbit-hole v1.5.0
+	github.com/n3wscott/rigging v0.0.1
 	github.com/sbcd90/wabbit v0.0.0-20190419210920-43bc2261e0e0
 	github.com/streadway/amqp v0.0.0-20190404075320-75d898a42a94
 	github.com/testcontainers/testcontainers-go v0.7.0

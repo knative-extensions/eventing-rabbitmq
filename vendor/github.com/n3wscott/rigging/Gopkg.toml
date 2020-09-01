@@ -1,0 +1,63 @@
+# Refer to https://github.com/golang/dep/blob/master/docs/Gopkg.toml.md
+# for detailed Gopkg.toml documentation.
+
+required = [
+  "k8s.io/apimachinery/pkg/util/sets/types",
+  "k8s.io/code-generator/cmd/deepcopy-gen",
+  "k8s.io/code-generator/cmd/defaulter-gen",
+  "k8s.io/code-generator/cmd/client-gen",
+  "k8s.io/code-generator/cmd/lister-gen",
+  "k8s.io/code-generator/cmd/informer-gen",
+  "knative.dev/pkg/codegen/cmd/injection-gen",
+  "knative.dev/pkg/testutils/clustermanager/perf-tests",
+  "knative.dev/test-infra/scripts",
+  "knative.dev/test-infra/tools/dep-collector",
+  "golang.org/x/net/http2/h2c",
+  "go.opencensus.io/metric/metricexport"
+]
+
+[[override]]
+  name = "gopkg.in/yaml.v2"
+  version = "v2.2.1"
+
+[[override]]
+  name = "knative.dev/pkg"
+  branch = "release-0.11"
+
+[[override]]
+  name = "go.uber.org/zap"
+  revision = "67bc79d13d155c02fd008f721863ff8cc5f30659"
+
+[[override]]
+  name = "k8s.io/api"
+  version = "kubernetes-1.15.3"
+
+[[override]]
+  name = "k8s.io/apimachinery"
+  version = "kubernetes-1.15.3"
+
+[[override]]
+  name = "k8s.io/code-generator"
+  version = "kubernetes-1.15.3"
+
+[[override]]
+  name = "k8s.io/client-go"
+  version = "kubernetes-1.15.3"
+
+[prune]
+  go-tests = true
+  unused-packages = true
+  non-go = true
+
+[[prune.project]]
+  name = "knative.dev/test-infra"
+  non-go = false
+
+[[prune.project]]
+  name = "knative.dev/pkg"
+  unused-packages = false
+  non-go = false
+
+[[constraint]]
+  branch = "master"
+  name = "golang.org/x/net"
