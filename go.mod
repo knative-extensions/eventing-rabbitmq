@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	github.com/NeowayLabs/wabbit v0.0.0-20200409220312-12e68ab5b0c6 // indirect
-	github.com/cloudevents/sdk-go/v2 v2.1.0
+	github.com/cloudevents/sdk-go/v2 v2.2.0
 	github.com/docker/go-connections v0.4.0
 	github.com/fsouza/go-dockerclient v1.6.5 // indirect
 	github.com/google/go-cmp v0.5.1
@@ -24,9 +24,9 @@ require (
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/code-generator v0.18.6
 	k8s.io/kube-openapi v0.0.0-20200410145947-bcb3869e6f29
-	knative.dev/eventing v0.16.1
-	knative.dev/pkg v0.0.0-20200901180515-7dab04a79ef1
-	knative.dev/test-infra v0.0.0-20200828211307-9d4372c9b1c7
+	knative.dev/eventing v0.17.1-0.20200901194416-b53ff73cda0b
+	knative.dev/pkg v0.0.0-20200901225315-2ee0e988033c
+	knative.dev/test-infra v0.0.0-20200831235415-fac473dda98b
 )
 
 replace (
