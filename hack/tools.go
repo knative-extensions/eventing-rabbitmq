@@ -19,8 +19,19 @@ limitations under the License.
 package tools
 
 import (
-	_ "knative.dev/pkg/hack"
+	_ "k8s.io/code-generator"
+	_ "k8s.io/code-generator/cmd/client-gen"
+	_ "k8s.io/code-generator/cmd/deepcopy-gen"
+	_ "k8s.io/code-generator/cmd/defaulter-gen"
+	_ "k8s.io/code-generator/cmd/informer-gen"
+	_ "k8s.io/code-generator/cmd/lister-gen"
+	_ "k8s.io/kube-openapi/cmd/openapi-gen"
+	_ "knative.dev/pkg/codegen/cmd/injection-gen"
+
 	_ "knative.dev/test-infra/scripts"
+
+	// codegen: hack/generate-knative.sh
+	_ "knative.dev/pkg/hack"
 
 	// Test images from eventing
 	_ "knative.dev/eventing/test/test_images/event-sender"
@@ -31,4 +42,10 @@ import (
 	_ "knative.dev/eventing/test/test_images/recordevents"
 	_ "knative.dev/eventing/test/test_images/sequencestepper"
 	_ "knative.dev/eventing/test/test_images/transformevents"
+
+	// Licenseclassifier
+	_ "github.com/google/licenseclassifier"
+
+	// For chaos testing the leaderelection stuff.
+	_ "knative.dev/pkg/leaderelection/chaosduck"
 )
