@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/docker/go-connections/nat"
-	"knative.dev/eventing-rabbitmq/broker/pkg/reconciler/trigger/resources"
+	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"gotest.tools/assert"

@@ -20,7 +20,7 @@ import (
 	"context"
 	"log"
 
-	kedaclient "knative.dev/eventing-rabbitmq/broker/pkg/internal/thirdparty/keda/client/injection/client"
+	kedaclient "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/injection/client"
 	eventingclient "knative.dev/eventing/pkg/client/injection/client"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/injection/clients/dynamicclient"
@@ -32,7 +32,7 @@ import (
 	"knative.dev/eventing/pkg/apis/eventing"
 	"knative.dev/eventing/pkg/apis/eventing/v1beta1"
 
-	triggerauthenticationinformer "knative.dev/eventing-rabbitmq/broker/pkg/internal/thirdparty/keda/client/injection/informers/keda/v1alpha1/triggerauthentication"
+	triggerauthenticationinformer "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/injection/informers/keda/v1alpha1/triggerauthentication"
 	brokerinformer "knative.dev/eventing/pkg/client/injection/informers/eventing/v1beta1/broker"
 	brokerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1beta1/broker"
 	"knative.dev/eventing/pkg/duck"

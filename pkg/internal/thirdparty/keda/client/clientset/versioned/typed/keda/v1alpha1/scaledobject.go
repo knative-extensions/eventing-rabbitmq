@@ -20,8 +20,8 @@ package v1alpha1
 import (
 	"time"
 
-	scheme "knative.dev/eventing-rabbitmq/broker/pkg/internal/thirdparty/keda/client/clientset/versioned/scheme"
-	v1alpha1 "knative.dev/eventing-rabbitmq/broker/pkg/internal/thirdparty/keda/v1alpha1"
+	scheme "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/clientset/versioned/scheme"
+	v1alpha1 "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"

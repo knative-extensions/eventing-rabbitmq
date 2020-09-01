@@ -20,8 +20,8 @@ package fake
 import (
 	context "context"
 
-	fake "knative.dev/eventing-rabbitmq/broker/pkg/internal/thirdparty/keda/client/injection/informers/factory/fake"
-	triggerauthentication "knative.dev/eventing-rabbitmq/broker/pkg/internal/thirdparty/keda/client/injection/informers/keda/v1alpha1/triggerauthentication"
+	fake "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/injection/informers/factory/fake"
+	triggerauthentication "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/injection/informers/keda/v1alpha1/triggerauthentication"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
 )

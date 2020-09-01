@@ -20,7 +20,7 @@ package versioned
 import (
 	"fmt"
 
-	kedav1alpha1 "knative.dev/eventing-rabbitmq/broker/pkg/internal/thirdparty/keda/client/clientset/versioned/typed/keda/v1alpha1"
+	kedav1alpha1 "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/clientset/versioned/typed/keda/v1alpha1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"

@@ -20,9 +20,9 @@ package fake
 import (
 	context "context"
 
-	externalversions "knative.dev/eventing-rabbitmq/broker/pkg/internal/thirdparty/keda/client/informers/externalversions"
-	fake "knative.dev/eventing-rabbitmq/broker/pkg/internal/thirdparty/keda/client/injection/client/fake"
-	factory "knative.dev/eventing-rabbitmq/broker/pkg/internal/thirdparty/keda/client/injection/informers/factory"
+	externalversions "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/informers/externalversions"
+	fake "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/injection/client/fake"
+	factory "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/injection/informers/factory"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
 )

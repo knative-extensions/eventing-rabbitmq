@@ -20,8 +20,8 @@ package triggerauthentication
 import (
 	context "context"
 
-	v1alpha1 "knative.dev/eventing-rabbitmq/broker/pkg/internal/thirdparty/keda/client/informers/externalversions/keda/v1alpha1"
-	factory "knative.dev/eventing-rabbitmq/broker/pkg/internal/thirdparty/keda/client/injection/informers/factory"
+	v1alpha1 "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/informers/externalversions/keda/v1alpha1"
+	factory "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/injection/informers/factory"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
 	logging "knative.dev/pkg/logging"
@@ -45,7 +45,7 @@ func Get(ctx context.Context) v1alpha1.TriggerAuthenticationInformer {
 	untyped := ctx.Value(Key{})
 	if untyped == nil {
 		logging.FromContext(ctx).Panic(
-			"Unable to fetch knative.dev/eventing-rabbitmq/broker/pkg/internal/thirdparty/keda/client/informers/externalversions/keda/v1alpha1.TriggerAuthenticationInformer from context.")
+			"Unable to fetch knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/informers/externalversions/keda/v1alpha1.TriggerAuthenticationInformer from context.")
 	}
 	return untyped.(v1alpha1.TriggerAuthenticationInformer)
 }

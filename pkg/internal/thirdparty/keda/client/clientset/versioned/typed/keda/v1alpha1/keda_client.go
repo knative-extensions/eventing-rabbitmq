@@ -18,8 +18,8 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"knative.dev/eventing-rabbitmq/broker/pkg/internal/thirdparty/keda/client/clientset/versioned/scheme"
-	v1alpha1 "knative.dev/eventing-rabbitmq/broker/pkg/internal/thirdparty/keda/v1alpha1"
+	"knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/clientset/versioned/scheme"
+	v1alpha1 "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/v1alpha1"
 	rest "k8s.io/client-go/rest"
 )
 

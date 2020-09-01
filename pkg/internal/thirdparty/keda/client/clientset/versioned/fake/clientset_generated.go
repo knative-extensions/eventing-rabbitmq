@@ -18,9 +18,9 @@ limitations under the License.
 package fake
 
 import (
-	clientset "knative.dev/eventing-rabbitmq/broker/pkg/internal/thirdparty/keda/client/clientset/versioned"
-	kedav1alpha1 "knative.dev/eventing-rabbitmq/broker/pkg/internal/thirdparty/keda/client/clientset/versioned/typed/keda/v1alpha1"
-	fakekedav1alpha1 "knative.dev/eventing-rabbitmq/broker/pkg/internal/thirdparty/keda/client/clientset/versioned/typed/keda/v1alpha1/fake"
+	clientset "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/clientset/versioned"
+	kedav1alpha1 "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/clientset/versioned/typed/keda/v1alpha1"
+	fakekedav1alpha1 "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/clientset/versioned/typed/keda/v1alpha1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"

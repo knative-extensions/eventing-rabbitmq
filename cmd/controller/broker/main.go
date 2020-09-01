@@ -21,8 +21,8 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"knative.dev/pkg/injection/sharedmain"
 
-	"knative.dev/eventing-rabbitmq/broker/pkg/reconciler/broker"
-	"knative.dev/eventing-rabbitmq/broker/pkg/reconciler/trigger"
+	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker"
+	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger"
 )
 
 func main() {

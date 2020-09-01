@@ -18,8 +18,8 @@ limitations under the License.
 package keda
 
 import (
-	internalinterfaces "knative.dev/eventing-rabbitmq/broker/pkg/internal/thirdparty/keda/client/informers/externalversions/internalinterfaces"
-	v1alpha1 "knative.dev/eventing-rabbitmq/broker/pkg/internal/thirdparty/keda/client/informers/externalversions/keda/v1alpha1"
+	internalinterfaces "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/informers/externalversions/internalinterfaces"
+	v1alpha1 "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/informers/externalversions/keda/v1alpha1"
 )
 
 // Interface provides access to each of this group's versions.

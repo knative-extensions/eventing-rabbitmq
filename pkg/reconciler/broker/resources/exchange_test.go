@@ -3,8 +3,8 @@ package resources_test
 import (
 	"context"
 	"fmt"
-	"knative.dev/eventing-rabbitmq/broker/pkg/reconciler/broker/resources"
-	"knative.dev/eventing-rabbitmq/broker/pkg/reconciler/internal/testrabbit"
+	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
+	"knative.dev/eventing-rabbitmq/pkg/reconciler/internal/testrabbit"
 	"gotest.tools/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	eventingv1beta1 "knative.dev/eventing/pkg/apis/eventing/v1beta1"

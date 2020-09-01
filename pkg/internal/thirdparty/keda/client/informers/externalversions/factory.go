@@ -22,9 +22,9 @@ import (
 	sync "sync"
 	time "time"
 
-	versioned "knative.dev/eventing-rabbitmq/broker/pkg/internal/thirdparty/keda/client/clientset/versioned"
-	internalinterfaces "knative.dev/eventing-rabbitmq/broker/pkg/internal/thirdparty/keda/client/informers/externalversions/internalinterfaces"
-	keda "knative.dev/eventing-rabbitmq/broker/pkg/internal/thirdparty/keda/client/informers/externalversions/keda"
+	versioned "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/clientset/versioned"
+	internalinterfaces "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/informers/externalversions/internalinterfaces"
+	keda "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/informers/externalversions/keda"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

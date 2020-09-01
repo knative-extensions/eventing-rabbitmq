@@ -18,7 +18,7 @@ package resources
 
 import (
 	"fmt"
-	"knative.dev/eventing-rabbitmq/broker/pkg/reconciler/io"
+	"knative.dev/eventing-rabbitmq/pkg/reconciler/io"
 
 	"github.com/streadway/amqp"
 
