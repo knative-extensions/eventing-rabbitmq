@@ -17,7 +17,7 @@ limitations under the License.
 package main
 
 import (
-	rabbitmq "knative.dev/eventing-rabbitmq/pkg/reconciler"
+	rabbitmq "knative.dev/eventing-rabbitmq/pkg/reconciler/source"
 	"knative.dev/pkg/injection/sharedmain"
 )
 

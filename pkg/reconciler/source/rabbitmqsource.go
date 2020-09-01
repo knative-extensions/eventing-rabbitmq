@@ -19,6 +19,7 @@ package rabbitmq
 import (
 	"context"
 	"fmt"
+
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/apps/v1"
@@ -34,7 +35,7 @@ import (
 	"knative.dev/eventing-rabbitmq/pkg/client/clientset/versioned"
 	reconcilerrabbitmqsource "knative.dev/eventing-rabbitmq/pkg/client/injection/reconciler/sources/v1alpha1/rabbitmqsource"
 	listers "knative.dev/eventing-rabbitmq/pkg/client/listers/sources/v1alpha1"
-	"knative.dev/eventing-rabbitmq/pkg/reconciler/resources"
+	"knative.dev/eventing-rabbitmq/pkg/reconciler/source/resources"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/logging"
