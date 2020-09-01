@@ -20,6 +20,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	"knative.dev/eventing/pkg/apis/duck"
 	"knative.dev/pkg/apis"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 const (
@@ -42,6 +43,14 @@ func (s *RabbitmqSourceStatus) GetCondition(t apis.ConditionType) *apis.Conditio
 
 func (s *RabbitmqSourceStatus) GetTopLevelCondition() *apis.Condition {
 	return RabbitmqSourceCondSet.Manage(s).GetTopLevelCondition()
+}
+
+func (in *RabbitmqSource) GetStatus() *duckv1.Status {
+	return &in.Status.Status
+}
+
+func (in *RabbitmqSource) GetConditionSet() apis.ConditionSet {
+	return RabbitmqSourceCondSet
 }
 
 func (s *RabbitmqSourceStatus) IsReady() bool {
