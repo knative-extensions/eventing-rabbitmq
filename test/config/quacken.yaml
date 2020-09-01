@@ -16,7 +16,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: chaosduck
-  namespace: knative-discovery
+  namespace: knative-eventing # TODO: move this to knative-rabbitmq
   labels:
     discovery.knative.dev/release: devel
 
@@ -25,7 +25,7 @@ kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: chaosduck
-  namespace: knative-discovery
+  namespace: knative-eventing
   labels:
     discovery.knative.dev/release: devel
 rules:
@@ -41,7 +41,7 @@ kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: chaosduck
-  namespace: knative-discovery
+  namespace: knative-eventing
   labels:
     discovery.knative.dev/release: devel
 roleRef:
@@ -51,14 +51,14 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: chaosduck
-  namespace: knative-discovery
+  namespace: knative-eventing
 
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: chaosduck
-  namespace: knative-discovery
+  namespace: knative-eventing
   labels:
     discovery.knative.dev/release: devel
 spec:

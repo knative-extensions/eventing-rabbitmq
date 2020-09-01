@@ -59,7 +59,7 @@ jobs:
         # Create a cluster!
         kind create cluster --config kind.yaml
 
-    - name: Install Knaitve Component
+    - name: Install Knative Component
       working-directory: ./src/knative.dev/${{github.event.pull_request.head.repo.name}}
       run: |
         set -x
