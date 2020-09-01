@@ -30,7 +30,7 @@ chmod +x ${CODEGEN_PKG}/generate-groups.sh
 chmod +x ${KNATIVE_CODEGEN_PKG}/hack/generate-knative.sh
 
 # Just Sources
-API_DIRS_SOURCES=(source/pkg )
+API_DIRS_SOURCES=(pkg )
 
 for DIR in "${API_DIRS_SOURCES[@]}"; do
   # generate the code with:
@@ -40,20 +40,20 @@ for DIR in "${API_DIRS_SOURCES[@]}"; do
   ${CODEGEN_PKG}/generate-groups.sh "deepcopy,client,informer,lister" \
     "knative.dev/eventing-rabbitmq/${DIR}/client" "knative.dev/eventing-rabbitmq/${DIR}/apis" \
     "sources:v1alpha1" \
-    --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate.go.txt
+    --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
 
   # Knative Injection
   ${KNATIVE_CODEGEN_PKG}/hack/generate-knative.sh "injection" \
     "knative.dev/eventing-rabbitmq/${DIR}/client" "knative.dev/eventing-rabbitmq/${DIR}/apis" \
     "sources:v1alpha1" \
-    --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate.go.txt
+    --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
 done
 
 # Depends on generate-groups.sh to install bin/deepcopy-gen
 ${GOPATH}/bin/deepcopy-gen \
   -O zz_generated.deepcopy \
-  --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate.go.txt \
-  -i knative.dev/eventing-rabbitmq/source/pkg/apis
+  --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt \
+  -i knative.dev/eventing-rabbitmq/pkg/apis
 
 # Make sure our dependencies are up-to-date
 ${REPO_ROOT_DIR}/hack/update-deps.sh
