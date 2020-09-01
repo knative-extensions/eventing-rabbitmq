@@ -20,14 +20,14 @@ package v1alpha1
 import (
 	time "time"
 
-	versioned "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/clientset/versioned"
-	internalinterfaces "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/informers/externalversions/internalinterfaces"
-	v1alpha1 "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/listers/keda/v1alpha1"
-	kedav1alpha1 "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
+	versioned "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/clientset/versioned"
+	internalinterfaces "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/informers/externalversions/internalinterfaces"
+	v1alpha1 "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/listers/keda/v1alpha1"
+	kedav1alpha1 "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/v1alpha1"
 )
 
 // ScaledObjectInformer provides access to a shared informer and lister for
