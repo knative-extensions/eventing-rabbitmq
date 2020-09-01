@@ -30,7 +30,7 @@ import (
 	origamqp "github.com/streadway/amqp"
 	"go.uber.org/zap"
 	"knative.dev/eventing/pkg/kncloudevents"
-	"knative.dev/eventing/pkg/logging"
+	"knative.dev/pkg/logging"
 	"knative.dev/pkg/source"
 )
 
@@ -148,12 +148,12 @@ func TestAdapter_CreateConn(t *testing.T) {
 		reporter: statsReporter,
 	}
 
-	conn, _ := a.CreateConn("", "", logging.FromContext(context.TODO()))
+	conn, _ := a.CreateConn("", "", logging.FromContext(context.TODO()).Desugar())
 	if conn != nil {
 		t.Errorf("Failed to connect to RabbitMQ")
 	}
 
-	conn, _ = a.CreateConn("guest", "guest", logging.FromContext(context.TODO()))
+	conn, _ = a.CreateConn("guest", "guest", logging.FromContext(context.TODO()).Desugar())
 	if conn != nil {
 		t.Errorf("Failed to connect to RabbitMQ")
 	}
@@ -198,7 +198,7 @@ func TestAdapter_CreateChannel(t *testing.T) {
 	}
 
 	for i := 1; i <= 2048; i++ {
-		channel, _ := a.CreateChannel(nil, conn, logging.FromContext(context.TODO()))
+		channel, _ := a.CreateChannel(nil, conn, logging.FromContext(context.TODO()).Desugar())
 		if channel == nil {
 			t.Logf("Failed to open a channel")
 			break
@@ -417,7 +417,7 @@ func TestAdapter_ConsumeMessages(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to start RabbitMQ")
 	}
-	_, err = a.ConsumeMessages(&channel, queue, logging.FromContext(context.TODO()))
+	_, err = a.ConsumeMessages(&channel, queue, logging.FromContext(context.TODO()).Desugar())
 	if err != nil {
 		t.Errorf("Failed to consume from RabbitMQ")
 	}

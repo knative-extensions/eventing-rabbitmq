@@ -29,7 +29,6 @@ jobs:
     - name: Check out code onto GOPATH
       uses: actions/checkout@v2
       with:
-        fetch-depth: 1
         path: ./src/knative.dev/${{github.event.pull_request.head.repo.name}}
 
     - name: Install KinD
@@ -60,7 +59,7 @@ jobs:
         # Create a cluster!
         kind create cluster --config kind.yaml
 
-    - name: Install Knaitve Component
+    - name: Install Knative Component
       working-directory: ./src/knative.dev/${{github.event.pull_request.head.repo.name}}
       run: |
         set -x
@@ -81,12 +80,21 @@ jobs:
         # Deploy the controllers we published to the cluster.
         kubectl apply -f build.yaml
 
+    - name: Fetch rabbitmq/cluster-operator
+      uses: actions/checkout@v2
+      with:
+        repository: rabbitmq/cluster-operator
+        path: ./src/github.com/rabbitmq/cluster-operator
+
     - name: Install Dependencies
-      working-directory: ./src/knative.dev/${{github.event.pull_request.head.repo.name}}
+      working-directory: ./src/github.com/rabbitmq/cluster-operator
       run: |
         set -x
 
-        echo TODO... Install RabbitMQ here. See https://github.com/rabbitmq/cluster-operator
+        kubectl create -f config/namespace/base/namespace.yaml
+        kubectl create -f config/crd/bases/rabbitmq.com_rabbitmqclusters.yaml
+        kubectl -n rabbitmq-system create --kustomize config/rbac/
+        kubectl -n rabbitmq-system create --kustomize config/manager/
 
     - name: Wait for Ready
       working-directory: ./src/knative.dev/${{github.event.pull_request.head.repo.name}}

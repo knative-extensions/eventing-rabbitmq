@@ -47,6 +47,7 @@ var _ resourcesemantics.GenericCRD = (*RabbitmqSource)(nil)
 var _ kmeta.OwnerRefable = (*RabbitmqSource)(nil)
 var _ apis.Defaultable = (*RabbitmqSource)(nil)
 var _ apis.Validatable = (*RabbitmqSource)(nil)
+var _ duckv1.KRShaped = (*RabbitmqSource)(nil)
 
 type RabbitmqChannelConfigSpec struct {
 	// Channel Prefetch count
