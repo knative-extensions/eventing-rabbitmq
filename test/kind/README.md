@@ -1,6 +1,7 @@
 # Using KinD
 
-The following is what is needed to use KinD to run the e2e tests. Base path is assumed to be the top level project.
+The following is what is needed to use KinD to run the e2e tests. Base path is
+assumed to be the top level project.
 
 Startup a cluster:
 
