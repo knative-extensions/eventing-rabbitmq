@@ -1,4 +1,4 @@
-apiVersion: sources.eventing.knative.dev/v1alpha1
+apiVersion: sources.knative.dev/v1alpha1
 kind: RabbitmqSource
 metadata:
   name: rabbitmq-source
@@ -26,8 +26,8 @@ spec:
     delete_when_unused: false
     exclusive: false
     nowait: false
-
   sink:
-    apiVersion: serving.knative.dev/v1alpha1
-    kind: Service
-    name: event-display
+    ref:
+      apiVersion: serving.knative.dev/v1
+      kind: Service
+      name: event-display
