@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	"fmt"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -70,7 +71,7 @@ type RabbitmqSourceExchangeConfigSpec struct {
 	Durable bool `json:"durable,omitempty"`
 	// Exchange can be AutoDeleted or not
 	// +optional
-	AutoDeleted bool `json:"auto_detected,omitempty"`
+	AutoDeleted bool `json:"auto_deleted,omitempty"`
 	// Declare exchange as internal or not.
 	// Exchanges declared as `internal` do not accept accept publishings.
 	// +optional

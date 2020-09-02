@@ -32,6 +32,6 @@ spec:
     nowait: RABBITMQ_QUEUE_CONFIG_NOWAIT
 
   sink:
-    apiVersion: serving.knative.dev/v1alpha1
+    apiVersion: serving.knative.dev/v1
     kind: Service
     name: event-display
