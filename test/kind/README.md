@@ -9,6 +9,12 @@ Startup a cluster:
 ./test/kind/bootstrap.sh
 ```
 
+Install the Prerequisites:
+
+```shell
+./test/kind/prerequisites.sh
+```
+
 Install the Eventing Rabbit Controllers:
 
 ```shell

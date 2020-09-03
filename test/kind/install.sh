@@ -28,4 +28,4 @@ pwd
 
 echo "Installing Knative Eventing RabbitMQ API"
 
-ko apply -f ${REPO_ROOT_DIR}/config
+ko apply -Rf ${REPO_ROOT_DIR}/config
