@@ -24,7 +24,7 @@ import (
 )
 
 // SmokeTestBrokerImpl makes sure an RabbitMQ Broker goes ready.
-func SmokeTesBrokertImpl(t *testing.T) {
+func SmokeTestBrokerImpl(t *testing.T) {
 	opts := []rigging.Option{}
 
 	rig, err := rigging.NewInstall(opts, []string{"rabbitmq", "smoke/broker"}, map[string]string{})
@@ -49,3 +49,15 @@ func SmokeTesBrokertImpl(t *testing.T) {
 		// Pass!
 	}
 }
+
+/*
+Smoke test does not work because the secret needs to be in the form (from the readme):
+
+```sh
+PASSWORD=$(kubectl get secret --namespace default rokn-rabbitmq -o jsonpath="{.data.rabbitmq-password}" | base64 --decode)
+
+kubectl create secret generic rokn-rabbitmq-broker-secret \
+    --from-literal=brokerURL="amqp://user:$PASSWORD@rokn-rabbitmq.default:5672"
+```
+
+*/

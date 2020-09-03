@@ -59,13 +59,58 @@ jobs:
         # Create a cluster!
         kind create cluster --config kind.yaml
 
-    - name: Install Knative Component
+    - name: Fetch rabbitmq/cluster-operator
+      uses: actions/checkout@v2
+      with:
+        repository: rabbitmq/cluster-operator
+        path: ./src/github.com/rabbitmq/cluster-operator
+
+    - name: Install rabbitmq/cluster-operator
+      working-directory: ./src/github.com/rabbitmq/cluster-operator
+      run: |
+        set -x
+
+        kubectl apply -f config/namespace/base/namespace.yaml
+        kubectl apply -f config/crd/bases/rabbitmq.com_rabbitmqclusters.yaml
+        sleep 2 # Wait for the CRDs to be reconciled.
+        kubectl -n rabbitmq-system apply --kustomize config/rbac/
+        kubectl -n rabbitmq-system apply --kustomize config/manager/
+
+    - name: Fetch kedacore/keda
+      uses: actions/checkout@v2
+      with:
+        repository: kedacore/keda
+        path: ./src/github.com/kedacore/keda
+        ref: v1.5.0
+
+    - name: Install kedacore/keda
+      working-directory: ./src/github.com/kedacore/keda
+      run: |
+        set -x
+
+        kubectl apply -f deploy/crds/keda.k8s.io_scaledobjects_crd.yaml
+        kubectl apply -f deploy/crds/keda.k8s.io_triggerauthentications_crd.yaml
+        sleep 2 # Wait for the CRDs to be reconciled.
+        kubectl apply -f deploy/
+
+    - name: Install Knative Eventing
+      working-directory: ./src/github.com/rabbitmq/cluster-operator
+      run: |
+        set -x
+
+        kubectl apply --filename https://github.com/knative/eventing/releases/download/v0.17.0/eventing-crds.yaml
+        sleep 2 # Wait for the CRDs to be reconciled.
+        kubectl apply --filename https://github.com/knative/eventing/releases/download/v0.17.0/eventing-core.yaml
+
+    - name: Install Eventing RabbitMQ
       working-directory: ./src/knative.dev/${{github.event.pull_request.head.repo.name}}
       run: |
         set -x
 
         # Build and Publish our test images to the docker daemon.
         # ./test/upload-test-images.sh # <-- Skip for now.
+
+        # TODO: need to use the release yaml, not this.
 
         # Build and Publish our containers to the docker daemon (including test assets)
         export GO111MODULE=on
@@ -79,22 +124,6 @@ jobs:
 
         # Deploy the controllers we published to the cluster.
         kubectl apply -f build.yaml
-
-    - name: Fetch rabbitmq/cluster-operator
-      uses: actions/checkout@v2
-      with:
-        repository: rabbitmq/cluster-operator
-        path: ./src/github.com/rabbitmq/cluster-operator
-
-    - name: Install Dependencies
-      working-directory: ./src/github.com/rabbitmq/cluster-operator
-      run: |
-        set -x
-
-        kubectl create -f config/namespace/base/namespace.yaml
-        kubectl create -f config/crd/bases/rabbitmq.com_rabbitmqclusters.yaml
-        kubectl -n rabbitmq-system create --kustomize config/rbac/
-        kubectl -n rabbitmq-system create --kustomize config/manager/
 
     - name: Wait for Ready
       working-directory: ./src/knative.dev/${{github.event.pull_request.head.repo.name}}
