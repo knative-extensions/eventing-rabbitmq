@@ -18,6 +18,8 @@ package rabbitmq
 
 import (
 	"context"
+	"os"
+
 	"k8s.io/client-go/tools/cache"
 	rabbitmqclient "knative.dev/eventing-rabbitmq/pkg/client/injection/client"
 	rabbitmqinformer "knative.dev/eventing-rabbitmq/pkg/client/injection/informers/sources/v1alpha1/rabbitmqsource"
@@ -30,7 +32,6 @@ import (
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/resolver"
-	"os"
 )
 
 const (
