@@ -4,15 +4,18 @@
 
 ## Prerequisites
 
-install Knative Serving and Eventing as documented [here](https://knative.dev/docs/install/any-kubernetes-cluster/)
+install Knative Serving and Eventing as documented
+[here](https://knative.dev/docs/install/any-kubernetes-cluster/)
 
 create a RabbitMQ cluster:
+
 ```sh
 helm repo add bitnami https://charts.bitnami.com/bitnami
 helm install rokn bitnami/rabbitmq --set service.type=LoadBalancer
 ```
 
 create a secret containing the brokerURL for that cluster:
+
 ```sh
 PASSWORD=$(kubectl get secret --namespace default rokn-rabbitmq -o jsonpath="{.data.rabbitmq-password}" | base64 --decode)
 
@@ -25,6 +28,7 @@ install KEDA as documented [here](https://keda.sh/docs/latest/deploy/).
 ## Installation
 
 install the broker-controller from this repository:
+
 ```
 ko apply -f config/
 ```
@@ -50,6 +54,7 @@ EOF
 ```
 
 create a trigger:
+
 ```
 kubectl apply -f - << EOF
   apiVersion: eventing.knative.dev/v1beta1
@@ -71,6 +76,7 @@ EOF
 ```
 
 create a Ping Source:
+
 ```
 kubectl apply -f - << EOF
   apiVersion: sources.knative.dev/v1alpha2
@@ -89,6 +95,7 @@ EOF
 ```
 
 create an event_display subscriber:
+
 ```
 kubectl apply -f - << EOF
   apiVersion: serving.knative.dev/v1
@@ -104,7 +111,8 @@ kubectl apply -f - << EOF
 EOF
 ```
 
-tail the logs on the subscriber's depoyment, and you should see a "Hello world!" event once per minute; for example using [kail](https://github.com/boz/kail):
+tail the logs on the subscriber's depoyment, and you should see a "Hello world!"
+event once per minute; for example using [kail](https://github.com/boz/kail):
 
 ```sh
 $ kail -d subscriber-4kf8l-deployment
