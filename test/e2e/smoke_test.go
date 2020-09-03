@@ -50,7 +50,6 @@ func SmokeTestBrokerImpl(t *testing.T) {
 	}
 }
 
-
 /*
 Smoke test does not work because the secret needs to be in the form (from the readme):
 
@@ -61,4 +60,4 @@ kubectl create secret generic rokn-rabbitmq-broker-secret \
     --from-literal=brokerURL="amqp://user:$PASSWORD@rokn-rabbitmq.default:5672"
 ```
 
- */
+*/
