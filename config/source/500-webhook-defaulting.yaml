@@ -15,7 +15,7 @@
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
-  name: webhook.rabbitmq.eventing.knative.dev
+  name: webhook.rabbitmq.sources.knative.dev
   labels:
     eventing.knative.dev/release: devel
 webhooks:
@@ -26,5 +26,5 @@ webhooks:
       namespace: knative-sources
   sideEffects: None
   failurePolicy: Fail
-  name: webhook.rabbitmq.eventing.knative.dev
+  name: webhook.rabbitmq.sources.knative.dev
   timeoutSeconds: 2

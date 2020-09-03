@@ -53,7 +53,7 @@ func NewDefaultingAdmissionController(ctx context.Context, cmw configmap.Watcher
 	return defaulting.NewAdmissionController(ctx,
 
 		// Name of the resource webhook.
-		"webhook.rabbitmq.eventing.knative.dev",
+		"webhook.rabbitmq.sources.knative.dev",
 
 		// The path on which to serve the webhook.
 		"/defaulting",
@@ -77,7 +77,7 @@ func NewValidationAdmissionController(ctx context.Context, cmw configmap.Watcher
 	return validation.NewAdmissionController(ctx,
 
 		// Name of the resource webhook.
-		"validation.webhook.rabbitmq.eventing.knative.dev",
+		"validation.webhook.rabbitmq.sources.knative.dev",
 
 		// The path on which to serve the webhook.
 		"/resource-validation",
@@ -99,7 +99,7 @@ func NewValidationAdmissionController(ctx context.Context, cmw configmap.Watcher
 func NewConfigValidationController(ctx context.Context, _ configmap.Watcher) *controller.Impl {
 	return configmaps.NewAdmissionController(ctx,
 		// Name of the configmap webhook.
-		"config.webhook.rabbitmq.eventing.knative.dev",
+		"config.webhook.rabbitmq.sources.knative.dev",
 
 		// The path on which to serve the webhook.
 		"/config-validation",
