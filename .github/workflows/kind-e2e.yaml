@@ -84,7 +84,7 @@ jobs:
         ref: v1.5.0
 
     - name: Install kedacore/keda
-      working-directory: ./src/github.com/rabbitmq/cluster-operator
+      working-directory: ./src/github.com/kedacore/keda
       run: |
         set -x
 
