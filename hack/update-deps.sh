@@ -64,3 +64,6 @@ rm -rf $(find vendor/ -name '*_test.go')
 export GOFLAGS=-mod=vendor
 
 update_licenses third_party/VENDOR-LICENSE "./..."
+
+rm -rf $(find third_party/ -name '*.mod')
+rm -rf $(find third_party/ -name '*.go')
