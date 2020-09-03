@@ -17,9 +17,10 @@ limitations under the License.
 package rabbit_test
 
 import (
-	"github.com/n3wscott/rigging"
 	"testing"
 	"time"
+
+	"github.com/n3wscott/rigging"
 )
 
 // SmokeTestBrokerImpl makes sure an RabbitMQ Broker goes ready.
