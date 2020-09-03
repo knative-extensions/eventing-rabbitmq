@@ -15,7 +15,7 @@
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
-  name: config.webhook.rabbitmq.eventing.knative.dev
+  name: config.webhook.rabbitmq.sources.knative.dev
   labels:
     eventing.knative.dev/release: devel
 webhooks:
@@ -26,7 +26,7 @@ webhooks:
       namespace: knative-sources
   sideEffects: None
   failurePolicy: Fail
-  name: config.webhook.rabbitmq.eventing.knative.dev
+  name: config.webhook.rabbitmq.sources.knative.dev
   namespaceSelector:
     matchExpressions:
     - key: eventing.knative.dev/release
