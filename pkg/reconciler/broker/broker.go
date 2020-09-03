@@ -38,9 +38,9 @@ import (
 	brokerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1beta1/broker"
 	eventinglisters "knative.dev/eventing/pkg/client/listers/eventing/v1beta1"
 
-	kedaclientset "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/clientset/versioned"
-	kedalisters "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/listers/keda/v1alpha1"
-	kedav1alpha1 "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/v1alpha1"
+	kedav1alpha1 "github.com/kedacore/keda/pkg/apis/keda/v1alpha1"
+	kedaclientset "github.com/kedacore/keda/pkg/generated/clientset/versioned"
+	kedalisters "github.com/kedacore/keda/pkg/generated/listers/keda/v1alpha1"
 
 	"knative.dev/eventing/pkg/duck"
 	"knative.dev/eventing/pkg/reconciler/names"

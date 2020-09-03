@@ -20,6 +20,11 @@ import (
 	"context"
 	"log"
 
+	kedaclient "knative.dev/eventing-autoscaler-keda/pkg/client/injection/keda/client"
+	eventingclient "knative.dev/eventing/pkg/client/injection/client"
+	kubeclient "knative.dev/pkg/client/injection/kube/client"
+	"knative.dev/pkg/injection/clients/dynamicclient"
+
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	"k8s.io/client-go/tools/cache"
@@ -27,6 +32,8 @@ import (
 	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	eventingclient "knative.dev/eventing/pkg/client/injection/client"
+
+	triggerauthenticationinformer "github.com/kedacore/keda/pkg/generated/informers/externalversions/keda/v1alpha1"
 	brokerinformer "knative.dev/eventing/pkg/client/injection/informers/eventing/v1beta1/broker"
 	brokerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1beta1/broker"
 	"knative.dev/eventing/pkg/duck"

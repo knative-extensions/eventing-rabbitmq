@@ -46,8 +46,8 @@ import (
 	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/resolver"
 
-	kedaclientset "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/clientset/versioned"
-	kedalisters "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/listers/keda/v1alpha1"
+	kedaclientset "github.com/kedacore/keda/pkg/generated/clientset/versioned"
+	kedalisters "github.com/kedacore/keda/pkg/generated/listers/keda/v1alpha1"
 	brokerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
 )
 
