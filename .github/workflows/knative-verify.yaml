@@ -72,7 +72,6 @@ jobs:
         else
             repoDiff=$(git diff-index --name-only HEAD --)
             echo "Found diffs in: $repoDiff"
-            git diff
             echo "${{ github.repository }} is out of date. Please run hack/update-codegen.sh"
             exit 1
         fi
