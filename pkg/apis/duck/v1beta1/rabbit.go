@@ -77,7 +77,7 @@ func (s *Rabbit) GetFullType() duck.Populatable {
 
 // Populate implements duck.Populatable
 func (c *Rabbit) Populate() {
-	// TOOD: fill this out.
+	// TODO: fill this out.
 }
 
 // GetListType implements apis.Listable
