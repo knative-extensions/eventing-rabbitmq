@@ -18,8 +18,9 @@ package resources
 
 import (
 	"fmt"
-	corev1 "k8s.io/api/core/v1"
 	"net/url"
+
+	corev1 "k8s.io/api/core/v1"
 
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/io"
 

@@ -18,6 +18,7 @@ package resources
 
 import (
 	"fmt"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/eventing/pkg/apis/eventing"
@@ -28,7 +29,7 @@ const (
 	BrokerURLSecretKey = "brokerURL"
 )
 
-// MakeIngress creates the in-memory representation of the Broker's ingress Deployment.
+// MakeSecret creates the secret for Broker deployments for Rabbit Broker.
 func MakeSecret(args *ExchangeArgs) *corev1.Secret {
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{

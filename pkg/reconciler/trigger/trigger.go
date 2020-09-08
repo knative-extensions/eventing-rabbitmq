@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	resources2 "knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
 
 	"github.com/streadway/amqp"
 
@@ -49,6 +48,7 @@ import (
 
 	kedaclientset "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/clientset/versioned"
 	kedalisters "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/listers/keda/v1alpha1"
+	brokerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
 )
 
 const (
@@ -230,7 +230,7 @@ func (r *Reconciler) reconcileDispatcherDeployment(ctx context.Context, t *v1bet
 		//ServiceAccountName string
 		RabbitMQSecretName: rabbitmqSecret.Name,
 		QueueName:          t.Name,
-		BrokerUrlSecretKey: resources2.BrokerURLSecretKey,
+		BrokerUrlSecretKey: brokerresources.BrokerURLSecretKey,
 		BrokerIngressURL:   b.Status.Address.URL,
 		Subscriber:         sub,
 	})
@@ -331,9 +331,9 @@ func (r *Reconciler) rabbitmqURL(ctx context.Context, t *v1beta1.Trigger) (strin
 	if err != nil {
 		return "", err
 	}
-	val := s.Data[resources2.BrokerURLSecretKey]
+	val := s.Data[brokerresources.BrokerURLSecretKey]
 	if val == nil {
-		return "", fmt.Errorf("Secret missing key %s", resources2.BrokerURLSecretKey)
+		return "", fmt.Errorf("Secret missing key %s", brokerresources.BrokerURLSecretKey)
 	}
 	return string(val), nil
 }
@@ -343,7 +343,7 @@ func (r *Reconciler) reconcileScaledObject(queue *amqp.Queue, deployment *v1.Dep
 		DispatcherDeployment:      deployment,
 		QueueName:                 queue.Name,
 		Trigger:                   trigger,
-		BrokerUrlSecretKey:        resources2.BrokerURLSecretKey,
+		BrokerUrlSecretKey:        brokerresources.BrokerURLSecretKey,
 		TriggerAuthenticationName: fmt.Sprintf("%s-trigger-auth", trigger.Spec.Broker),
 	})
 

@@ -23,10 +23,10 @@ import (
 	"knative.dev/pkg/apis/duck"
 )
 
+// At the moment, a Rabbit is the subset of RabbitmqCluster from https://github.com/rabbitmq/cluster-operator/
+
 // +genduck
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// At the moment, a Rabbit is the subset of RabbitmqCluster from https://github.com/rabbitmq/cluster-operator/
 
 // Rabbit is a skeleton type wrapping limited fields from RabbitmqCluster.
 // This is not a real resource.

@@ -7,7 +7,8 @@
 install Knative Serving and Eventing as documented
 [here](https://knative.dev/docs/install/any-kubernetes-cluster/)
 
-Install the RabbitMQ Operator as documented [here](https://github.com/rabbitmq/cluster-operator).
+Install the RabbitMQ Operator as documented
+[here](https://github.com/rabbitmq/cluster-operator).
 
 Create a RabbitMQ Cluster:
 
@@ -23,7 +24,8 @@ spec:
 EOF
 ```
 
-create a secret containing the brokerURL for that cluster (skip this if using _way two_):
+create a secret containing the brokerURL for that cluster (skip this if using
+_way two_):
 
 ```sh
 R_USERNAME=$(kubectl get secret --namespace default rokn-rabbitmq-admin -o jsonpath="{.data.username}" | base64 --decode)
@@ -80,7 +82,6 @@ kubectl apply -f - << EOF
       name: rokn
 EOF
 ```
-
 
 create a trigger:
 
