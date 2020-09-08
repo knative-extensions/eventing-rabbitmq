@@ -23,12 +23,9 @@ import (
 	"knative.dev/pkg/apis/duck"
 )
 
-// +genduck
-
-var _ duck.Implementable = (*Rabbit)(nil)
-
 // At the moment, a Rabbit is the subset of RabbitmqCluster from https://github.com/rabbitmq/cluster-operator/
 
+// +genduck
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // Rabbit is a skeleton type wrapping limited fields from RabbitmqCluster.
@@ -43,6 +40,8 @@ type Rabbit struct {
 	// RabbitmqClusterStatus
 	Status RabbitStatus `json:"status"`
 }
+
+var _ duck.Implementable = (*Rabbit)(nil)
 
 // RabbiSpec
 type RabbitSpec struct{}

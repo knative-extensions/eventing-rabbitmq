@@ -43,7 +43,7 @@ func TestQueueDeclaration(t *testing.T) {
 				Namespace: namespace,
 			},
 		},
-		RabbitmqURL: testrabbit.BrokerUrl(t, ctx, rabbitContainer),
+		RabbitmqURL: testrabbit.BrokerUrl(t, ctx, rabbitContainer).String(),
 	})
 
 	assert.NilError(t, err)
@@ -64,7 +64,7 @@ func TestIncompatibleQueueDeclarationFailure(t *testing.T) {
 				Namespace: namespace,
 			},
 		},
-		RabbitmqURL: testrabbit.BrokerUrl(t, ctx, rabbitContainer),
+		RabbitmqURL: testrabbit.BrokerUrl(t, ctx, rabbitContainer).String(),
 	})
 
 	assert.ErrorContains(t, err, fmt.Sprintf("inequivalent arg 'durable' for queue '%s'", queueName))
@@ -84,7 +84,7 @@ func TestQueueDeletion(t *testing.T) {
 				Namespace: namespace,
 			},
 		},
-		RabbitmqURL: testrabbit.BrokerUrl(t, ctx, rabbitContainer),
+		RabbitmqURL: testrabbit.BrokerUrl(t, ctx, rabbitContainer).String(),
 	})
 
 	assert.NilError(t, err)

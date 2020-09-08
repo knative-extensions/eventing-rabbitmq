@@ -36,7 +36,6 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/logging"
 
-	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
 	"knative.dev/eventing/pkg/apis/eventing/v1beta1"
 	clientset "knative.dev/eventing/pkg/client/clientset/versioned"
@@ -49,6 +48,7 @@ import (
 
 	kedaclientset "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/clientset/versioned"
 	kedalisters "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/listers/keda/v1alpha1"
+	brokerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
 )
 
 const (
@@ -230,7 +230,7 @@ func (r *Reconciler) reconcileDispatcherDeployment(ctx context.Context, t *v1bet
 		//ServiceAccountName string
 		RabbitMQSecretName: rabbitmqSecret.Name,
 		QueueName:          t.Name,
-		BrokerUrlSecretKey: broker.BrokerUrlSecretKey,
+		BrokerUrlSecretKey: brokerresources.BrokerURLSecretKey,
 		BrokerIngressURL:   b.Status.Address.URL,
 		Subscriber:         sub,
 	})
@@ -331,9 +331,9 @@ func (r *Reconciler) rabbitmqURL(ctx context.Context, t *v1beta1.Trigger) (strin
 	if err != nil {
 		return "", err
 	}
-	val := s.Data[broker.BrokerUrlSecretKey]
+	val := s.Data[brokerresources.BrokerURLSecretKey]
 	if val == nil {
-		return "", fmt.Errorf("Secret missing key %s", broker.BrokerUrlSecretKey)
+		return "", fmt.Errorf("Secret missing key %s", brokerresources.BrokerURLSecretKey)
 	}
 	return string(val), nil
 }
@@ -343,7 +343,7 @@ func (r *Reconciler) reconcileScaledObject(queue *amqp.Queue, deployment *v1.Dep
 		DispatcherDeployment:      deployment,
 		QueueName:                 queue.Name,
 		Trigger:                   trigger,
-		BrokerUrlSecretKey:        broker.BrokerUrlSecretKey,
+		BrokerUrlSecretKey:        brokerresources.BrokerURLSecretKey,
 		TriggerAuthenticationName: fmt.Sprintf("%s-trigger-auth", trigger.Spec.Broker),
 	})
 

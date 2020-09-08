@@ -15,9 +15,6 @@ limitations under the License.
 */
 
 // Package v1alpha1 contains API Schema definitions for the sources v1alpha1 API group
-// +k8s:openapi-gen=true
-// +k8s:deepcopy-gen=package,register
-// +k8s:conversion-gen=knative.dev/eventing-rabbitmq/pkg/apis/sources
-// +k8s:defaulter-gen=TypeMeta
+// +k8s:deepcopy-gen=package
 // +groupName=sources.knative.dev
 package v1alpha1

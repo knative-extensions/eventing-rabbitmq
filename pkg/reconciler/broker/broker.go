@@ -18,15 +18,12 @@ package broker
 
 import (
 	"context"
-	"errors"
-	"fmt"
 
 	"go.uber.org/zap"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
@@ -53,8 +50,6 @@ import (
 )
 
 const (
-	BrokerUrlSecretKey = "brokerURL"
-
 	// Name of the corev1.Events emitted from the Broker reconciliation process.
 	brokerReconciled = "BrokerReconciled"
 )
@@ -69,6 +64,7 @@ type Reconciler struct {
 	brokerLister                eventinglisters.BrokerLister
 	serviceLister               corev1listers.ServiceLister
 	endpointsLister             corev1listers.EndpointsLister
+	secretLister                corev1listers.SecretLister
 	deploymentLister            appsv1listers.DeploymentLister
 	triggerAuthenticationLister kedalisters.TriggerAuthenticationLister
 
@@ -90,8 +86,6 @@ type Reconciler struct {
 var _ brokerreconciler.Interface = (*Reconciler)(nil)
 var _ brokerreconciler.Finalizer = (*Reconciler)(nil)
 
-var brokerGVK = v1beta1.SchemeGroupVersion.WithKind("Broker")
-
 // ReconcilerArgs are the arguments needed to create a broker.Reconciler.
 type ReconcilerArgs struct {
 	IngressImage              string
@@ -103,46 +97,47 @@ func newReconciledNormal(namespace, name string) pkgreconciler.Event {
 }
 
 func (r *Reconciler) ReconcileKind(ctx context.Context, b *v1beta1.Broker) pkgreconciler.Event {
-	logging.FromContext(ctx).Debug("Reconciling", zap.Any("Broker", b))
-	//b.Status.InitializeConditions()
+	logging.FromContext(ctx).Debugw("Reconciling", zap.Any("Broker", b))
 
-	// TODO broker coupled to channels
+	// TODO: broker coupled to channels
 	b.Status.PropagateTriggerChannelReadiness(&duckv1beta1.ChannelableStatus{
 		AddressStatus: pkgduckv1.AddressStatus{
 			Address: &pkgduckv1.Addressable{},
 		},
 	})
-	b.Status.ObservedGeneration = b.Generation
 
 	// 1. RabbitMQ Exchange
 	// 2. Ingress Deployment
 	// 3. K8s Service that points to the Ingress Deployment
 	// 4. KEDA TriggerAuthentication to be used by ScaledObjects
 
-	rabbitmqURL, err := r.rabbitmqURL(ctx, b)
+	args, err := r.getExchangeArgs(ctx, b)
 	if err != nil {
 		return err
 	}
 
-	err = resources.DeclareExchange(&resources.ExchangeArgs{
-		Broker:      b,
-		RabbitmqURL: rabbitmqURL,
-	})
+	s, err := resources.DeclareExchange(args)
 	if err != nil {
-		logging.FromContext(ctx).Error("Problem creating RabbitMQ Exchange", zap.Error(err))
+		logging.FromContext(ctx).Errorw("Problem creating RabbitMQ Exchange", zap.Error(err))
 		b.Status.MarkIngressFailed("ExchangeFailure", "%v", err)
 		return err
 	}
 
+	if err := r.reconcileSecret(ctx, s); err != nil {
+		logging.FromContext(ctx).Errorw("Problem reconciling Secret", zap.Error(err))
+		b.Status.MarkIngressFailed("SecretFailure", "%v", err)
+		return err
+	}
+
 	if err := r.reconcileIngressDeployment(ctx, b); err != nil {
-		logging.FromContext(ctx).Error("Problem reconciling ingress Deployment", zap.Error(err))
+		logging.FromContext(ctx).Errorw("Problem reconciling ingress Deployment", zap.Error(err))
 		b.Status.MarkIngressFailed("DeploymentFailure", "%v", err)
 		return err
 	}
 
 	ingressEndpoints, err := r.reconcileIngressService(ctx, b)
 	if err != nil {
-		logging.FromContext(ctx).Error("Problem reconciling ingress Service", zap.Error(err))
+		logging.FromContext(ctx).Errorw("Problem reconciling ingress Service", zap.Error(err))
 		b.Status.MarkIngressFailed("ServiceFailure", "%v", err)
 		return err
 	}
@@ -157,7 +152,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *v1beta1.Broker) pkgre
 
 	_, err = r.reconcileScaleTriggerAuthentication(ctx, b)
 	if err != nil {
-		logging.FromContext(ctx).Error("Problem creating TriggerAuthentication", zap.Error(err))
+		logging.FromContext(ctx).Errorw("Problem creating TriggerAuthentication", zap.Error(err))
 		b.Status.MarkIngressFailed("TriggerAuthenticationFailure", "%v", err)
 		return err
 	}
@@ -168,15 +163,36 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *v1beta1.Broker) pkgre
 }
 
 func (r *Reconciler) FinalizeKind(ctx context.Context, b *v1beta1.Broker) pkgreconciler.Event {
-	rabbitmqURL, err := r.rabbitmqURL(ctx, b)
+	args, err := r.getExchangeArgs(ctx, b)
 	if err != nil {
 		return err
 	}
-	resources.DeleteExchange(&resources.ExchangeArgs{
-		Broker:      b,
-		RabbitmqURL: rabbitmqURL,
-	})
-	return newReconciledNormal(b.Namespace, b.Name)
+	if err := resources.DeleteExchange(args); err != nil {
+		logging.FromContext(ctx).Errorw("Problem deleting exchange", zap.Error(err))
+	}
+	return nil
+}
+
+// reconcileSecret reconciles the K8s Secret 's'.
+func (r *Reconciler) reconcileSecret(ctx context.Context, s *corev1.Secret) error {
+	current, err := r.secretLister.Secrets(s.Namespace).Get(s.Name)
+	if apierrs.IsNotFound(err) {
+		_, err = r.kubeClientSet.CoreV1().Secrets(s.Namespace).Create(s)
+		if err != nil {
+			return err
+		}
+	} else if err != nil {
+		return err
+	} else if !equality.Semantic.DeepDerivative(s.StringData, current.StringData) {
+		// Don't modify the informers copy.
+		desired := current.DeepCopy()
+		desired.StringData = s.StringData
+		_, err = r.kubeClientSet.CoreV1().Secrets(desired.Namespace).Update(desired)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // reconcileDeployment reconciles the K8s Deployment 'd'.
@@ -231,15 +247,11 @@ func (r *Reconciler) reconcileService(ctx context.Context, svc *corev1.Service) 
 
 // reconcileIngressDeploymentCRD reconciles the Ingress Deployment.
 func (r *Reconciler) reconcileIngressDeployment(ctx context.Context, b *v1beta1.Broker) error {
-	secret, err := r.getRabbitmqSecret(ctx, b)
-	if err != nil {
-		return err
-	}
 	expected := resources.MakeIngressDeployment(&resources.IngressArgs{
 		Broker:             b,
 		Image:              r.ingressImage,
-		RabbitMQSecretName: secret.Name,
-		BrokerUrlSecretKey: BrokerUrlSecretKey,
+		RabbitMQSecretName: resources.SecretName(b.Name),
+		BrokerUrlSecretKey: resources.BrokerURLSecretKey,
 	})
 	return r.reconcileDeployment(ctx, expected)
 }
@@ -250,24 +262,12 @@ func (r *Reconciler) reconcileIngressService(ctx context.Context, b *v1beta1.Bro
 	return r.reconcileService(ctx, expected)
 }
 
-/* TODO: Enable once we start filtering by classes of brokers
-func brokerLabels(name string) map[string]string {
-	return map[string]string{
-		brokerAnnotationKey: name,
-	}
-}
-*/
-
 func (r *Reconciler) reconcileScaleTriggerAuthentication(ctx context.Context, b *v1beta1.Broker) (*kedav1alpha1.TriggerAuthentication, error) {
-	secret, err := r.getRabbitmqSecret(ctx, b)
-	if err != nil {
-		return nil, err
-	}
 	namespace := b.Namespace
 	triggerAuthentication := resources.MakeTriggerAuthentication(&resources.TriggerAuthenticationArgs{
 		Broker:     b,
-		SecretName: secret.Name,
-		SecretKey:  BrokerUrlSecretKey,
+		SecretName: resources.SecretName(b.Name),
+		SecretKey:  resources.BrokerURLSecretKey,
 	})
 
 	current, err := r.triggerAuthenticationLister.TriggerAuthentications(namespace).Get(triggerAuthentication.Name)
@@ -292,35 +292,4 @@ func (r *Reconciler) reconcileScaleTriggerAuthentication(ctx context.Context, b 
 		return desired, nil
 	}
 	return current, nil
-}
-
-func (r *Reconciler) getRabbitmqSecret(ctx context.Context, b *v1beta1.Broker) (*corev1.Secret, error) {
-	if b.Spec.Config != nil {
-		if b.Spec.Config.Kind == "Secret" && b.Spec.Config.APIVersion == "v1" {
-			if b.Spec.Config.Namespace == "" || b.Spec.Config.Name == "" {
-				logging.FromContext(ctx).Error("Broker.Spec.Config name and namespace are required",
-					zap.String("namespace", b.Namespace), zap.String("name", b.Name))
-				return nil, errors.New("Broker.Spec.Config name and namespace are required")
-			}
-			s, err := r.kubeClientSet.CoreV1().Secrets(b.Spec.Config.Namespace).Get(b.Spec.Config.Name, metav1.GetOptions{})
-			if err != nil {
-				return nil, err
-			}
-			return s, nil
-		}
-		return nil, errors.New("Broker.Spec.Config configuration not supported, only [kind: Secret, apiVersion: v1]")
-	}
-	return nil, errors.New("Broker.Spec.Config is required")
-}
-
-func (r *Reconciler) rabbitmqURL(ctx context.Context, b *v1beta1.Broker) (string, error) {
-	s, err := r.getRabbitmqSecret(ctx, b)
-	if err != nil {
-		return "", err
-	}
-	val := s.Data[BrokerUrlSecretKey]
-	if val == nil {
-		return "", fmt.Errorf("Secret missing key %s", BrokerUrlSecretKey)
-	}
-	return string(val), nil
 }
