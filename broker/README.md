@@ -7,20 +7,30 @@
 install Knative Serving and Eventing as documented
 [here](https://knative.dev/docs/install/any-kubernetes-cluster/)
 
-create a RabbitMQ cluster:
+Install the RabbitMQ Operator as documented [here](https://github.com/rabbitmq/cluster-operator).
 
-```sh
-helm repo add bitnami https://charts.bitnami.com/bitnami
-helm install rokn bitnami/rabbitmq --set service.type=LoadBalancer
+Create a RabbitMQ Cluster:
+
+```
+kubectl apply -f - << EOF
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata:
+  name: rokn
+  namespace: default
+spec:
+  replicas: 1
+EOF
 ```
 
-create a secret containing the brokerURL for that cluster:
+create a secret containing the brokerURL for that cluster (skip this if using _way two_):
 
 ```sh
-PASSWORD=$(kubectl get secret --namespace default rokn-rabbitmq -o jsonpath="{.data.rabbitmq-password}" | base64 --decode)
+R_USERNAME=$(kubectl get secret --namespace default rokn-rabbitmq-admin -o jsonpath="{.data.username}" | base64 --decode)
+R_PASSWORD=$(kubectl get secret --namespace default rokn-rabbitmq-admin -o jsonpath="{.data.password}" | base64 --decode)
 
 kubectl create secret generic rokn-rabbitmq-broker-secret \
-    --from-literal=brokerURL="amqp://user:$PASSWORD@rokn-rabbitmq.default:5672"
+    --from-literal=brokerURL="amqp://$R_USERNAME:$R_PASSWORD@rokn-rabbitmq-client.default:5672"
 ```
 
 install KEDA as documented [here](https://keda.sh/docs/latest/deploy/).
@@ -39,7 +49,7 @@ create a broker:
 
 ```
 kubectl apply -f - << EOF
-  apiVersion: eventing.knative.dev/v1beta1
+  apiVersion: eventing.knative.dev/v1
   kind: Broker
   metadata:
     name: default
@@ -53,11 +63,30 @@ kubectl apply -f - << EOF
 EOF
 ```
 
+or _way two_:
+
+```
+kubectl apply -f - << EOF
+  apiVersion: eventing.knative.dev/v1
+  kind: Broker
+  metadata:
+    name: default
+    annotations:
+      eventing.knative.dev/broker.class: RabbitMQBroker
+  spec:
+    config:
+      apiVersion: rabbitmq.com/v1beta1
+      kind: RabbitmqCluster
+      name: rokn
+EOF
+```
+
+
 create a trigger:
 
 ```
 kubectl apply -f - << EOF
-  apiVersion: eventing.knative.dev/v1beta1
+  apiVersion: eventing.knative.dev/v1
   kind: Trigger
   metadata:
     name: ping-trigger

@@ -41,7 +41,7 @@ func TestBindingDeclaration(t *testing.T) {
 
 	err := resources.MakeBinding(&resources.BindingArgs{
 		RoutingKey:             "some-key",
-		BrokerURL:              testrabbit.BrokerUrl(t, ctx, rabbitContainer),
+		BrokerURL:              testrabbit.BrokerUrl(t, ctx, rabbitContainer).String(),
 		RabbitmqManagementPort: testrabbit.ManagementPort(t, ctx, rabbitContainer),
 		Trigger: &eventingv1beta1.Trigger{
 			ObjectMeta: metav1.ObjectMeta{
@@ -78,9 +78,11 @@ func TestMissingExchangeBindingDeclarationFailure(t *testing.T) {
 	queueName := "queue-te"
 	brokerName := "some-broke-herr"
 
+	brokerURL := testrabbit.BrokerUrl(t, ctx, rabbitContainer).String()
+
 	err := resources.MakeBinding(&resources.BindingArgs{
 		RoutingKey:             "some-key",
-		BrokerURL:              testrabbit.BrokerUrl(t, ctx, rabbitContainer),
+		BrokerURL:              brokerURL,
 		RabbitmqManagementPort: testrabbit.ManagementPort(t, ctx, rabbitContainer),
 		Trigger: &eventingv1beta1.Trigger{
 			ObjectMeta: metav1.ObjectMeta{

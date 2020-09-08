@@ -20,37 +20,32 @@ import (
 	"context"
 	"log"
 
-	kedaclient "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/injection/client"
-	eventingclient "knative.dev/eventing/pkg/client/injection/client"
-	kubeclient "knative.dev/pkg/client/injection/kube/client"
-	"knative.dev/pkg/injection/clients/dynamicclient"
-
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	"k8s.io/client-go/tools/cache"
 
 	"knative.dev/eventing/pkg/apis/eventing"
-	"knative.dev/eventing/pkg/apis/eventing/v1beta1"
-
-	triggerauthenticationinformer "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/injection/informers/keda/v1alpha1/triggerauthentication"
+	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
+	eventingclient "knative.dev/eventing/pkg/client/injection/client"
 	brokerinformer "knative.dev/eventing/pkg/client/injection/informers/eventing/v1beta1/broker"
 	brokerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1beta1/broker"
 	"knative.dev/eventing/pkg/duck"
 	"knative.dev/pkg/client/injection/ducks/duck/v1/addressable"
 	"knative.dev/pkg/client/injection/ducks/duck/v1/conditions"
+	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
 	endpointsinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/endpoints"
+	secretinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/secret"
 	serviceinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/service"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
+	"knative.dev/pkg/injection/clients/dynamicclient"
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/resolver"
-)
 
-const (
-	// ReconcilerName is the name of the reconciler
-	ReconcilerName = "Brokers"
+	kedaclient "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/injection/client"
+	triggerauthenticationinformer "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/injection/informers/keda/v1alpha1/triggerauthentication"
 )
 
 type envConfig struct {
@@ -73,6 +68,7 @@ func NewController(
 		log.Fatal("Failed to process env var", zap.Error(err))
 	}
 
+	secretInformer := secretinformer.Get(ctx)
 	deploymentInformer := deploymentinformer.Get(ctx)
 	brokerInformer := brokerinformer.Get(ctx)
 	serviceInformer := serviceinformer.Get(ctx)
@@ -85,6 +81,7 @@ func NewController(
 		dynamicClientSet:            dynamicclient.Get(ctx),
 		kubeClientSet:               kubeclient.Get(ctx),
 		brokerLister:                brokerInformer.Lister(),
+		secretLister:                secretInformer.Lister(),
 		serviceLister:               serviceInformer.Lister(),
 		endpointsLister:             endpointsInformer.Lister(),
 		deploymentLister:            deploymentInformer.Lister(),
@@ -108,7 +105,12 @@ func NewController(
 	})
 
 	serviceInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterGroupKind(v1beta1.Kind("Broker")),
+		FilterFunc: controller.FilterControllerGK(eventingv1.Kind("Broker")),
+		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
+	})
+
+	secretInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.FilterControllerGK(eventingv1.Kind("Broker")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
@@ -118,7 +120,7 @@ func NewController(
 	})
 
 	deploymentInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterGroupKind(v1beta1.Kind("Broker")),
+		FilterFunc: controller.FilterControllerGK(eventingv1.Kind("Broker")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 

@@ -18,6 +18,8 @@ package resources
 
 import (
 	"fmt"
+	corev1 "k8s.io/api/core/v1"
+	"net/url"
 
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/io"
 
@@ -28,25 +30,25 @@ import (
 // ExchangeArgs are the arguments to create a RabbitMQ Exchange.
 type ExchangeArgs struct {
 	Broker      *eventingv1beta1.Broker
-	RabbitmqURL string
+	RabbitMQURL *url.URL
 }
 
 // DeclareExchange declares the Exchange for a Broker.
-func DeclareExchange(args *ExchangeArgs) error {
-	conn, err := amqp.Dial(args.RabbitmqURL)
+func DeclareExchange(args *ExchangeArgs) (*corev1.Secret, error) {
+	conn, err := amqp.Dial(args.RabbitMQURL.String())
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer io.CloseAmqpResourceAndExitOnError(conn)
 
 	channel, err := conn.Channel()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer io.CloseAmqpResourceAndExitOnError(channel)
 
 	exchangeName := fmt.Sprintf("%s/%s", args.Broker.Namespace, ExchangeName(args.Broker.Name))
-	return channel.ExchangeDeclare(
+	return MakeSecret(args), channel.ExchangeDeclare(
 		exchangeName,
 		"headers", // kind
 		true,      // durable
@@ -59,7 +61,7 @@ func DeclareExchange(args *ExchangeArgs) error {
 
 // DeleteExchange deletes the Exchange for a Broker.
 func DeleteExchange(args *ExchangeArgs) error {
-	conn, err := amqp.Dial(args.RabbitmqURL)
+	conn, err := amqp.Dial(args.RabbitMQURL.String())
 	if err != nil {
 		return err
 	}

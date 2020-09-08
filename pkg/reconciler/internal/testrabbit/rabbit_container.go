@@ -46,8 +46,9 @@ func TerminateContainer(t *testing.T, ctx context.Context, rabbitContainer testc
 	assert.NilError(t, rabbitContainer.Terminate(ctx))
 }
 
-func BrokerUrl(t *testing.T, ctx context.Context, rabbitContainer testcontainers.Container) string {
-	return authenticatedContainerUrl(t, ctx, rabbitContainer, "amqp", RabbitUsername, RabbitPassword, BrokerPort)
+func BrokerUrl(t *testing.T, ctx context.Context, rabbitContainer testcontainers.Container) *url.URL {
+	u, _ := url.Parse(authenticatedContainerUrl(t, ctx, rabbitContainer, "amqp", RabbitUsername, RabbitPassword, BrokerPort))
+	return u
 }
 
 func ManagementUrl(t *testing.T, ctx context.Context, rabbitContainer testcontainers.Container) string {

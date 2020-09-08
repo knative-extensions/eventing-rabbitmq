@@ -20,14 +20,14 @@ func TestExchangeDeclaration(t *testing.T) {
 	defer testrabbit.TerminateContainer(t, ctx, rabbitContainer)
 	brokerName := "x-change"
 
-	err := resources.DeclareExchange(&resources.ExchangeArgs{
+	_, err := resources.DeclareExchange(&resources.ExchangeArgs{
 		Broker: &eventingv1beta1.Broker{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      brokerName,
 				Namespace: namespace,
 			},
 		},
-		RabbitmqURL: testrabbit.BrokerUrl(t, ctx, rabbitContainer),
+		RabbitMQURL: testrabbit.BrokerUrl(t, ctx, rabbitContainer),
 	})
 
 	assert.NilError(t, err)
@@ -49,14 +49,14 @@ func TestIncompatibleExchangeDeclarationFailure(t *testing.T) {
 	exchangeName := fmt.Sprintf("%s/knative-%s", namespace, brokerName)
 	testrabbit.CreateExchange(t, ctx, rabbitContainer, exchangeName, "direct")
 
-	err := resources.DeclareExchange(&resources.ExchangeArgs{
+	_, err := resources.DeclareExchange(&resources.ExchangeArgs{
 		Broker: &eventingv1beta1.Broker{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      brokerName,
 				Namespace: namespace,
 			},
 		},
-		RabbitmqURL: testrabbit.BrokerUrl(t, ctx, rabbitContainer),
+		RabbitMQURL: testrabbit.BrokerUrl(t, ctx, rabbitContainer),
 	})
 
 	assert.ErrorContains(t, err, fmt.Sprintf("inequivalent arg 'type' for exchange '%s'", exchangeName))
@@ -77,7 +77,7 @@ func TestExchangeDeletion(t *testing.T) {
 				Namespace: namespace,
 			},
 		},
-		RabbitmqURL: testrabbit.BrokerUrl(t, ctx, rabbitContainer),
+		RabbitMQURL: testrabbit.BrokerUrl(t, ctx, rabbitContainer),
 	})
 
 	assert.NilError(t, err)
