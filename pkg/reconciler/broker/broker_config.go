@@ -89,5 +89,5 @@ func (r *Reconciler) rabbitmqURLFromSecret(ctx context.Context, ref *duckv1.KRef
 
 func (r *Reconciler) rabbitmqURLFromRabbit(ctx context.Context, ref *duckv1.KReference) (*url.URL, error) {
 	// TODO:
-	return nil, nil
+	return nil, errors.New("TODO: implement rabbitmqURLFromRabbit")
 }
