@@ -24,10 +24,8 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"sync"
 	"time"
 
-	"k8s.io/apimachinery/pkg/util/sets"
 	"knative.dev/pkg/test/logging"
 	"knative.dev/pkg/test/spoof"
 )
@@ -85,36 +83,6 @@ func IsStatusOK(resp *spoof.Response) (bool, error) {
 	return IsOneOfStatusCodes(http.StatusOK)(resp)
 }
 
-// MatchesAllBodies checks that the *first* response body matches the "expected" body, otherwise failing.
-func MatchesAllBodies(all ...string) spoof.ResponseChecker {
-	var m sync.Mutex
-	// This helps with two things:
-	// 1. we can use Equal on sets
-	// 2. it will collapse the duplicates
-	want := sets.NewString(all...)
-	seen := make(sets.String, len(all))
-
-	return func(resp *spoof.Response) (bool, error) {
-		bs := string(resp.Body)
-		for expected := range want {
-			if !strings.Contains(bs, expected) {
-				// See if the next one matches.
-				continue
-			}
-
-			m.Lock()
-			defer m.Unlock()
-			seen.Insert(expected)
-
-			// Stop once we've seen them all.
-			return want.Equal(seen), nil
-		}
-
-		// Returning (true, err) causes SpoofingClient.Poll to fail.
-		return true, fmt.Errorf("body = %s, want one of: %s", bs, all)
-	}
-}
-
 // MatchesBody checks that the *first* response body matches the "expected" body, otherwise failing.
 func MatchesBody(expected string) spoof.ResponseChecker {
 	return func(resp *spoof.Response) (bool, error) {
@@ -131,8 +99,12 @@ func MatchesBody(expected string) spoof.ResponseChecker {
 // TODO(#1178): Delete me. We don't want to need this; we should be waiting for an appropriate Status instead.
 func EventuallyMatchesBody(expected string) spoof.ResponseChecker {
 	return func(resp *spoof.Response) (bool, error) {
-		// Returning (false, nil) causes SpoofingClient.Poll to retry.
-		return strings.Contains(string(resp.Body), expected), nil
+		if !strings.Contains(string(resp.Body), expected) {
+			// Returning (false, nil) causes SpoofingClient.Poll to retry.
+			return false, nil
+		}
+
+		return true, nil
 	}
 }
 

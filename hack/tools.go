@@ -48,6 +48,4 @@ import (
 
 	// For chaos testing the leaderelection stuff.
 	_ "knative.dev/pkg/leaderelection/chaosduck"
-
-	_ "k8s.io/api/autoscaling/v2beta2"
 )

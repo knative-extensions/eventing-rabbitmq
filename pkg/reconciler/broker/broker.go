@@ -18,6 +18,8 @@ package broker
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"go.uber.org/zap"
 	v1 "k8s.io/api/apps/v1"
@@ -38,7 +40,7 @@ import (
 	brokerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1beta1/broker"
 	eventinglisters "knative.dev/eventing/pkg/client/listers/eventing/v1beta1"
 
-	kedav1alpha1 "github.com/kedacore/keda/pkg/apis/keda/v1alpha1"
+	kedav1alpha1 "github.com/kedacore/keda/api/v1alpha1"
 	kedaclientset "github.com/kedacore/keda/pkg/generated/clientset/versioned"
 	kedalisters "github.com/kedacore/keda/pkg/generated/listers/keda/v1alpha1"
 
@@ -190,7 +192,7 @@ func (r *Reconciler) reconcileSecret(ctx context.Context, s *corev1.Secret) erro
 func (r *Reconciler) reconcileDeployment(ctx context.Context, d *v1.Deployment) error {
 	current, err := r.deploymentLister.Deployments(d.Namespace).Get(d.Name)
 	if apierrs.IsNotFound(err) {
-		_, err = r.kubeClientSet.AppsV1().Deployments(d.Namespace).Create(d)
+		_, err = r.kubeClientSet.AppsV1().Deployments(d.Namespace).Create(ctx, d, metav1.CreateOptions{})
 		if err != nil {
 			return err
 		}
@@ -200,7 +202,7 @@ func (r *Reconciler) reconcileDeployment(ctx context.Context, d *v1.Deployment) 
 		// Don't modify the informers copy.
 		desired := current.DeepCopy()
 		desired.Spec = d.Spec
-		_, err = r.kubeClientSet.AppsV1().Deployments(desired.Namespace).Update(desired)
+		_, err = r.kubeClientSet.AppsV1().Deployments(desired.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
 		if err != nil {
 			return err
 		}
@@ -212,7 +214,7 @@ func (r *Reconciler) reconcileDeployment(ctx context.Context, d *v1.Deployment) 
 func (r *Reconciler) reconcileService(ctx context.Context, svc *corev1.Service) (*corev1.Endpoints, error) {
 	current, err := r.serviceLister.Services(svc.Namespace).Get(svc.Name)
 	if apierrs.IsNotFound(err) {
-		current, err = r.kubeClientSet.CoreV1().Services(svc.Namespace).Create(svc)
+		current, err = r.kubeClientSet.CoreV1().Services(svc.Namespace).Create(ctx, svc, metav1.CreateOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -227,7 +229,7 @@ func (r *Reconciler) reconcileService(ctx context.Context, svc *corev1.Service) 
 		// Don't modify the informers copy.
 		desired := current.DeepCopy()
 		desired.Spec = svc.Spec
-		if _, err := r.kubeClientSet.CoreV1().Services(current.Namespace).Update(desired); err != nil {
+		if _, err = r.kubeClientSet.CoreV1().Services(current.Namespace).Update(ctx, desired, metav1.UpdateOptions{}); err != nil {
 			return nil, err
 		}
 	}
@@ -262,7 +264,7 @@ func (r *Reconciler) reconcileScaleTriggerAuthentication(ctx context.Context, b 
 
 	current, err := r.triggerAuthenticationLister.TriggerAuthentications(namespace).Get(triggerAuthentication.Name)
 	if apierrs.IsNotFound(err) {
-		_, err = r.kedaClientset.KedaV1alpha1().TriggerAuthentications(namespace).Create(triggerAuthentication)
+		_, err = r.kedaClientset.KedaV1alpha1().TriggerAuthentications(namespace).Create(ctx, triggerAuthentication, metav1.CreateOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -275,11 +277,42 @@ func (r *Reconciler) reconcileScaleTriggerAuthentication(ctx context.Context, b 
 		// Don't modify the informers copy.
 		desired := current.DeepCopy()
 		desired.Spec = triggerAuthentication.Spec
-		_, err = r.kedaClientset.KedaV1alpha1().TriggerAuthentications(namespace).Update(desired)
+		_, err = r.kedaClientset.KedaV1alpha1().TriggerAuthentications(namespace).Update(ctx, desired, metav1.UpdateOptions{})
 		if err != nil {
 			return nil, err
 		}
 		return desired, nil
 	}
 	return current, nil
+}
+
+func (r *Reconciler) getRabbitmqSecret(ctx context.Context, b *v1beta1.Broker) (*corev1.Secret, error) {
+	if b.Spec.Config != nil {
+		if b.Spec.Config.Kind == "Secret" && b.Spec.Config.APIVersion == "v1" {
+			if b.Spec.Config.Namespace == "" || b.Spec.Config.Name == "" {
+				logging.FromContext(ctx).Error("Broker.Spec.Config name and namespace are required",
+					zap.String("namespace", b.Namespace), zap.String("name", b.Name))
+				return nil, errors.New("Broker.Spec.Config name and namespace are required")
+			}
+			s, err := r.kubeClientSet.CoreV1().Secrets(b.Spec.Config.Namespace).Get(ctx, b.Spec.Config.Name, metav1.GetOptions{})
+			if err != nil {
+				return nil, err
+			}
+			return s, nil
+		}
+		return nil, errors.New("Broker.Spec.Config configuration not supported, only [kind: Secret, apiVersion: v1]")
+	}
+	return nil, errors.New("Broker.Spec.Config is required")
+}
+
+func (r *Reconciler) rabbitmqURL(ctx context.Context, b *v1beta1.Broker) (string, error) {
+	s, err := r.getRabbitmqSecret(ctx, b)
+	if err != nil {
+		return "", err
+	}
+	val := s.Data[BrokerUrlSecretKey]
+	if val == nil {
+		return "", fmt.Errorf("Secret missing key %s", BrokerUrlSecretKey)
+	}
+	return string(val), nil
 }

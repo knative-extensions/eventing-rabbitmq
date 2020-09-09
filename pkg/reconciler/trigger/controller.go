@@ -32,7 +32,7 @@ import (
 
 	"knative.dev/eventing/pkg/apis/eventing/v1beta1"
 
-	scaledobjectinformer "github.com/kedacore/keda/pkg/generated/informers/externalversions/keda/v1alpha1"
+	scaledobjectinformer "knative.dev/eventing-autoscaler-keda/pkg/client/injection/keda/informers/keda/v1alpha1/scaledobject"
 	brokerinformer "knative.dev/eventing/pkg/client/injection/informers/eventing/v1beta1/broker"
 	triggerinformer "knative.dev/eventing/pkg/client/injection/informers/eventing/v1beta1/trigger"
 	brokerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1beta1/broker"

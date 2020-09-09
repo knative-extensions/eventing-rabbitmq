@@ -17,8 +17,8 @@ limitations under the License.
 package metrics
 
 import (
-	"fmt"
 	"os"
+	"strings"
 	texttemplate "text/template"
 
 	corev1 "k8s.io/api/core/v1"
@@ -28,8 +28,6 @@ import (
 const (
 	// The following is used to set the default log url template
 	DefaultLogURLTemplate = "http://localhost:8001/api/v1/namespaces/knative-monitoring/services/kibana-logging/proxy/app/kibana#/discover?_a=(query:(match:(kubernetes.labels.knative-dev%2FrevisionUID:(query:'${REVISION_UID}',type:phrase))))"
-	// DefaultRequestLogTemplate is the default format for emitting request logs.
-	DefaultRequestLogTemplate = `{"httpRequest": {"requestMethod": "{{.Request.Method}}", "requestUrl": "{{js .Request.RequestURI}}", "requestSize": "{{.Request.ContentLength}}", "status": {{.Response.Code}}, "responseSize": "{{.Response.Size}}", "userAgent": "{{js .Request.UserAgent}}", "remoteIp": "{{js .Request.RemoteAddr}}", "serverIp": "{{.Revision.PodIP}}", "referer": "{{js .Request.Referer}}", "latency": "{{.Response.Latency}}s", "protocol": "{{.Request.Proto}}"}, "traceId": "{{index .Request.Header "X-B3-Traceid"}}"}`
 
 	// The following is used to set the default metrics backend
 	defaultRequestMetricsBackend = "prometheus"
@@ -80,7 +78,6 @@ type ObservabilityConfig struct {
 func defaultConfig() *ObservabilityConfig {
 	return &ObservabilityConfig{
 		LoggingURLTemplate:    DefaultLogURLTemplate,
-		RequestLogTemplate:    DefaultRequestLogTemplate,
 		RequestMetricsBackend: defaultRequestMetricsBackend,
 	}
 }
@@ -102,8 +99,15 @@ func NewObservabilityConfigFromConfigMap(configMap *corev1.ConfigMap) (*Observab
 		return nil, err
 	}
 
-	if oc.RequestLogTemplate == "" && oc.EnableRequestLog {
-		return nil, fmt.Errorf("%q was set to true, but no %q was specified", EnableReqLogKey, ReqLogTemplateKey)
+	if raw, ok := configMap.Data["logging.enable-request-log"]; ok {
+		if strings.EqualFold(raw, "true") && oc.RequestLogTemplate != "" {
+			oc.EnableRequestLog = true
+		}
+	} else if oc.RequestLogTemplate != "" {
+		// TODO: remove this after 0.17 cuts, this is meant only for smooth transition to the new flag.
+		// Once 0.17 cuts we should set a proper default value and users will need to set the flag explicitly
+		// to enable request logging.
+		oc.EnableRequestLog = true
 	}
 
 	if oc.RequestLogTemplate != "" {
@@ -118,8 +122,9 @@ func NewObservabilityConfigFromConfigMap(configMap *corev1.ConfigMap) (*Observab
 
 // ConfigMapName gets the name of the metrics ConfigMap
 func ConfigMapName() string {
-	if cm := os.Getenv(configMapNameEnv); cm != "" {
-		return cm
+	cm := os.Getenv(configMapNameEnv)
+	if cm == "" {
+		return "config-observability"
 	}
-	return "config-observability"
+	return cm
 }
