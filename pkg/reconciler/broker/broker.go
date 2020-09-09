@@ -49,11 +49,6 @@ import (
 	"knative.dev/pkg/resolver"
 )
 
-const (
-	// Name of the corev1.Events emitted from the Broker reconciliation process.
-	brokerReconciled = "BrokerReconciled"
-)
-
 type Reconciler struct {
 	kedaClientset     kedaclientset.Interface
 	eventingClientSet clientset.Interface
@@ -90,10 +85,6 @@ var _ brokerreconciler.Finalizer = (*Reconciler)(nil)
 type ReconcilerArgs struct {
 	IngressImage              string
 	IngressServiceAccountName string
-}
-
-func newReconciledNormal(namespace, name string) pkgreconciler.Event {
-	return pkgreconciler.NewEvent(corev1.EventTypeNormal, brokerReconciled, "Broker reconciled: \"%s/%s\"", namespace, name)
 }
 
 func (r *Reconciler) ReconcileKind(ctx context.Context, b *v1beta1.Broker) pkgreconciler.Event {
@@ -236,8 +227,7 @@ func (r *Reconciler) reconcileService(ctx context.Context, svc *corev1.Service) 
 		// Don't modify the informers copy.
 		desired := current.DeepCopy()
 		desired.Spec = svc.Spec
-		current, err = r.kubeClientSet.CoreV1().Services(current.Namespace).Update(desired)
-		if err != nil {
+		if _, err := r.kubeClientSet.CoreV1().Services(current.Namespace).Update(desired); err != nil {
 			return nil, err
 		}
 	}

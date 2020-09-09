@@ -21,14 +21,11 @@ import (
 	"fmt"
 
 	"go.uber.org/zap"
-	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	"knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
@@ -47,17 +44,10 @@ import (
 
 const (
 	raImageEnvVar                   = "RABBITMQ_RA_IMAGE"
-	rabbitmqReadinessChanged        = "RabbitmqSourceReadinessChanged"
-	rabbitmqUpdateStatusFailed      = "RabbitmqSourceUpdateStatusFailed"
 	rabbitmqSourceDeploymentCreated = "RabbitmqSourceDeploymentCreated"
 	rabbitmqSourceDeploymentUpdated = "RabbitmqSourceDeploymentUpdated"
 	rabbitmqSourceDeploymentFailed  = "RabbitmqSourceDeploymentUpdated"
-	rabbitmqSourceReconciled        = "RabbitmqSourceReconciled"
 	component                       = "rabbitmqsource"
-)
-
-var (
-	deploymentGVK = appsv1.SchemeGroupVersion.WithKind("Deployment")
 )
 
 func newDeploymentCreated(namespace, name string) pkgreconciler.Event {
@@ -182,27 +172,6 @@ func podSpecChanged(oldPodSpec corev1.PodSpec, newPodSpec corev1.PodSpec) bool {
 		}
 	}
 	return false
-}
-
-func (r *Reconciler) getReceiveAdapter(ctx context.Context, src *v1alpha1.RabbitmqSource) (*v1.Deployment, error) {
-	ra, err := r.KubeClientSet.AppsV1().Deployments(src.Namespace).List(metav1.ListOptions{
-		LabelSelector: r.getLabelSelector(src).String(),
-	})
-
-	if err != nil {
-		logging.FromContext(ctx).Desugar().Error("Unable to list deployments: %v", zap.Error(err))
-		return nil, err
-	}
-	for _, dep := range ra.Items {
-		if metav1.IsControlledBy(&dep, src) {
-			return &dep, nil
-		}
-	}
-	return nil, apierrors.NewNotFound(schema.GroupResource{}, "")
-}
-
-func (r *Reconciler) getLabelSelector(src *v1alpha1.RabbitmqSource) labels.Selector {
-	return labels.SelectorFromSet(resources.GetLabels(src.Name))
 }
 
 func (r *Reconciler) UpdateFromLoggingConfigMap(cfg *corev1.ConfigMap) {

@@ -95,7 +95,7 @@ func NewController(
 	r.uriResolver = resolver.NewURIResolver(ctx, impl.EnqueueKey)
 
 	deploymentInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterGroupKind(v1beta1.Kind("Trigger")),
+		FilterFunc: controller.FilterControllerGK(v1beta1.Kind("Trigger")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 

@@ -17,8 +17,6 @@ limitations under the License.
 package resources
 
 import (
-	"fmt"
-
 	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kedav1alpha1 "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/v1alpha1"
@@ -43,7 +41,7 @@ func MakeDispatcherScaledObject(args *DispatcherScaledObjectArgs) *kedav1alpha1.
 	deployment := args.DispatcherDeployment
 	return &kedav1alpha1.ScaledObject{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s", deployment.Name),
+			Name:      deployment.Name,
 			Namespace: deployment.Namespace,
 			Labels:    deployment.Labels,
 			OwnerReferences: []metav1.OwnerReference{
