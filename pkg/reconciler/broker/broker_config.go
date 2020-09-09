@@ -125,14 +125,14 @@ func (r *Reconciler) rabbitmqURLFromRabbit(ctx context.Context, ref *duckv1.KRef
 		return nil, err
 	}
 
-	password, ok := s.StringData["password"]
+	password, ok := s.Data[rab.Status.Admin.SecretReference.Keys["password"]]
 	if !ok {
-		return nil, fmt.Errorf("Secret missing key %s", "password")
+		return nil, fmt.Errorf("rabbit Secret missing key %s", rab.Status.Admin.SecretReference.Keys["password"])
 	}
 
-	username, ok := s.StringData["username"]
+	username, ok := s.Data[rab.Status.Admin.SecretReference.Keys["username"]]
 	if !ok {
-		return nil, fmt.Errorf("Secret missing key %s", "username")
+		return nil, fmt.Errorf("rabbit Secret missing key %s", rab.Status.Admin.SecretReference.Keys["username"])
 	}
 
 	host := resolver.ServiceHostName(rab.Status.Admin.ServiceReference.Name, rab.Status.Admin.ServiceReference.Namespace)

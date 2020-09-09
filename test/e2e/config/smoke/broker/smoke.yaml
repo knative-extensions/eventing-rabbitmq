@@ -20,7 +20,7 @@ metadata:
   annotations:
     eventing.knative.dev/broker.class: RabbitMQBroker
 spec:
-  config:
-    apiVersion: v1
-    kind: Secret
-    name: rabbitmqc-rabbitmq-admin
+    config:
+      apiVersion: rabbitmq.com/v1beta1
+      kind: RabbitmqCluster
+      name: rabbitmqc
