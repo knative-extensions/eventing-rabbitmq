@@ -18,6 +18,7 @@ package broker
 
 import (
 	"context"
+	"knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
 	"log"
 
 	"github.com/kelseyhightower/envconfig"
@@ -74,6 +75,7 @@ func NewController(
 	serviceInformer := serviceinformer.Get(ctx)
 	endpointsInformer := endpointsinformer.Get(ctx)
 	triggerAuthenticationInformer := triggerauthenticationinformer.Get(ctx)
+	rabbitInformer := rabbit.Get(ctx)
 
 	r := &Reconciler{
 		kedaClientset:               kedaclient.Get(ctx),
@@ -85,6 +87,7 @@ func NewController(
 		serviceLister:               serviceInformer.Lister(),
 		endpointsLister:             endpointsInformer.Lister(),
 		deploymentLister:            deploymentInformer.Lister(),
+		rabbitLister:                rabbitInformer,
 		triggerAuthenticationLister: triggerAuthenticationInformer.Lister(),
 		ingressImage:                env.IngressImage,
 		ingressServiceAccountName:   env.IngressServiceAccount,
