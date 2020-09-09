@@ -1124,7 +1124,6 @@ knative.dev/eventing/test/test_images/print
 knative.dev/eventing/test/test_images/recordevents
 knative.dev/eventing/test/test_images/sequencestepper
 knative.dev/eventing/test/test_images/transformevents
-# knative.dev/pkg v0.0.0-20200902221531-b0307fc6d285
 # knative.dev/eventing-autoscaler-keda v0.0.0-20200909130950-f1b6899ad87b
 ## explicit
 knative.dev/eventing-autoscaler-keda/pkg/client/injection/keda/client

@@ -34,12 +34,6 @@ const (
 
 	// The env var name for config-observability
 	configMapNameEnv = "CONFIG_OBSERVABILITY_NAME"
-
-	// ReqLogTemplateKey is the CM key for the request log template.
-	ReqLogTemplateKey = "logging.request-log-template"
-
-	// EnableReqLogKey is the CM key to enable request log.
-	EnableReqLogKey = "logging.enable-request-log"
 )
 
 // ObservabilityConfig contains the configuration defined in the observability ConfigMap.
@@ -89,8 +83,7 @@ func NewObservabilityConfigFromConfigMap(configMap *corev1.ConfigMap) (*Observab
 	if err := cm.Parse(configMap.Data,
 		cm.AsBool("logging.enable-var-log-collection", &oc.EnableVarLogCollection),
 		cm.AsString("logging.revision-url-template", &oc.LoggingURLTemplate),
-		cm.AsString(ReqLogTemplateKey, &oc.RequestLogTemplate),
-		cm.AsBool(EnableReqLogKey, &oc.EnableRequestLog),
+		cm.AsString("logging.request-log-template", &oc.RequestLogTemplate),
 		cm.AsBool("logging.enable-probe-request-log", &oc.EnableProbeRequestLog),
 		cm.AsString("metrics.request-metrics-backend-destination", &oc.RequestMetricsBackend),
 		cm.AsBool("profiling.enable", &oc.EnableProfiling),

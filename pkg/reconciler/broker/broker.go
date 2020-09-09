@@ -18,11 +18,11 @@ package broker
 
 import (
 	"context"
-	"errors"
-	"fmt"
 
 	"go.uber.org/zap"
 	v1 "k8s.io/api/apps/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -170,7 +170,7 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, b *v1beta1.Broker) pkgrec
 func (r *Reconciler) reconcileSecret(ctx context.Context, s *corev1.Secret) error {
 	current, err := r.secretLister.Secrets(s.Namespace).Get(s.Name)
 	if apierrs.IsNotFound(err) {
-		_, err = r.kubeClientSet.CoreV1().Secrets(s.Namespace).Create(s)
+		_, err = r.kubeClientSet.CoreV1().Secrets(s.Namespace).Create(ctx, s, metav1.CreateOptions{})
 		if err != nil {
 			return err
 		}
@@ -180,7 +180,7 @@ func (r *Reconciler) reconcileSecret(ctx context.Context, s *corev1.Secret) erro
 		// Don't modify the informers copy.
 		desired := current.DeepCopy()
 		desired.StringData = s.StringData
-		_, err = r.kubeClientSet.CoreV1().Secrets(desired.Namespace).Update(desired)
+		_, err = r.kubeClientSet.CoreV1().Secrets(desired.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
 		if err != nil {
 			return err
 		}
@@ -284,35 +284,4 @@ func (r *Reconciler) reconcileScaleTriggerAuthentication(ctx context.Context, b 
 		return desired, nil
 	}
 	return current, nil
-}
-
-func (r *Reconciler) getRabbitmqSecret(ctx context.Context, b *v1beta1.Broker) (*corev1.Secret, error) {
-	if b.Spec.Config != nil {
-		if b.Spec.Config.Kind == "Secret" && b.Spec.Config.APIVersion == "v1" {
-			if b.Spec.Config.Namespace == "" || b.Spec.Config.Name == "" {
-				logging.FromContext(ctx).Error("Broker.Spec.Config name and namespace are required",
-					zap.String("namespace", b.Namespace), zap.String("name", b.Name))
-				return nil, errors.New("Broker.Spec.Config name and namespace are required")
-			}
-			s, err := r.kubeClientSet.CoreV1().Secrets(b.Spec.Config.Namespace).Get(ctx, b.Spec.Config.Name, metav1.GetOptions{})
-			if err != nil {
-				return nil, err
-			}
-			return s, nil
-		}
-		return nil, errors.New("Broker.Spec.Config configuration not supported, only [kind: Secret, apiVersion: v1]")
-	}
-	return nil, errors.New("Broker.Spec.Config is required")
-}
-
-func (r *Reconciler) rabbitmqURL(ctx context.Context, b *v1beta1.Broker) (string, error) {
-	s, err := r.getRabbitmqSecret(ctx, b)
-	if err != nil {
-		return "", err
-	}
-	val := s.Data[BrokerUrlSecretKey]
-	if val == nil {
-		return "", fmt.Errorf("Secret missing key %s", BrokerUrlSecretKey)
-	}
-	return string(val), nil
 }
