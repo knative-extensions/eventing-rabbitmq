@@ -12,7 +12,7 @@ require (
 	github.com/kedacore/keda v1.5.1-0.20200909143349-82a4f899f7f1
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/michaelklishin/rabbit-hole v1.5.0
-	github.com/n3wscott/rigging v0.0.1
+	github.com/n3wscott/rigging v0.0.2-0.20200909204211-040bdb39a369
 	github.com/sbcd90/wabbit v0.0.0-20190419210920-43bc2261e0e0
 	github.com/streadway/amqp v1.0.0
 	github.com/testcontainers/testcontainers-go v0.7.0
@@ -33,9 +33,9 @@ require (
 replace (
 	github.com/docker/docker => github.com/docker/engine v0.0.0-20190717161051-705d9623b7c1
 
-	// Staging until #2 goes in.
+	// Somehow mattmoor/bindings causes grief...
 	github.com/google/go-github/v32 => github.com/google/go-github/v32 v32.0.1-0.20200624231906-3d244d3d496e
-	github.com/n3wscott/rigging => github.com/vaikas/rigging v0.0.2-0.20200909200248-747ea94fb8a4
+
 	// WORKAROUND until KEDA v2 is not released
 	//	github.com/kedacore/keda => github.com/kedacore/keda v1.5.1-0.20200824075503-b6c60a088a7a
 	github.com/operator-framework/operator-sdk => github.com/operator-framework/operator-sdk v0.11.0

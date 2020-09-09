@@ -295,7 +295,7 @@ github.com/michaelklishin/rabbit-hole
 github.com/modern-go/concurrent
 # github.com/modern-go/reflect2 v1.0.1
 github.com/modern-go/reflect2
-# github.com/n3wscott/rigging v0.0.1 => github.com/vaikas/rigging v0.0.2-0.20200909200248-747ea94fb8a4
+# github.com/n3wscott/rigging v0.0.2-0.20200909204211-040bdb39a369
 ## explicit
 github.com/n3wscott/rigging
 github.com/n3wscott/rigging/pkg/images
@@ -1221,7 +1221,6 @@ sigs.k8s.io/structured-merge-diff/v3/value
 sigs.k8s.io/yaml
 # github.com/docker/docker => github.com/docker/engine v0.0.0-20190717161051-705d9623b7c1
 # github.com/google/go-github/v32 => github.com/google/go-github/v32 v32.0.1-0.20200624231906-3d244d3d496e
-# github.com/n3wscott/rigging => github.com/vaikas/rigging v0.0.2-0.20200909200248-747ea94fb8a4
 # github.com/operator-framework/operator-sdk => github.com/operator-framework/operator-sdk v0.11.0
 # k8s.io/api => k8s.io/api v0.18.8
 # k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.18.8
