@@ -29,7 +29,6 @@ import (
 var (
 	brokerURL    = os.Getenv("BROKER_URL")
 	exchangeName = os.Getenv("EXCHANGE_NAME")
-	channel      *amqp.Channel
 )
 
 func main() {

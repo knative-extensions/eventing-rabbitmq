@@ -101,7 +101,7 @@ func TestPostMessage_ServeHttp(t *testing.T) {
 			m := &amqp.Delivery{}
 			m.Delivery = &origamqp.Delivery{
 				MessageId: "id",
-				Body:      []byte(data),
+				Body:      data,
 			}
 			err = a.postMessage(m)
 

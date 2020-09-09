@@ -34,10 +34,6 @@ import (
 	"knative.dev/pkg/resolver"
 )
 
-const (
-	controllerAgentName = "rabbitmq-source-controller"
-)
-
 func NewController(
 	ctx context.Context,
 	cmw configmap.Watcher) *controller.Impl {
@@ -68,7 +64,7 @@ func NewController(
 	rabbitmqInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
 	deploymentInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterGroupKind(v1alpha1.Kind("RabbitmqSource")),
+		FilterFunc: controller.FilterControllerGK(v1alpha1.Kind("RabbitmqSource")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 

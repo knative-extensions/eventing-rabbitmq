@@ -39,10 +39,6 @@ var (
 			},
 		},
 	}
-	condReady = apis.Condition{
-		Type:   RabbitmqConditionReady,
-		Status: corev1.ConditionTrue,
-	}
 )
 
 var _ = duck.VerifyType(&RabbitmqSource{}, &duckv1.Conditions{})

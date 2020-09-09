@@ -83,8 +83,6 @@ type Reconciler struct {
 var _ triggerreconciler.Interface = (*Reconciler)(nil)
 var _ triggerreconciler.Finalizer = (*Reconciler)(nil)
 
-var triggerGVK = v1beta1.SchemeGroupVersion.WithKind("Trigger")
-
 // ReconcilerArgs are the arguments needed to create a broker.Reconciler.
 type ReconcilerArgs struct {
 	DispatcherImage              string
