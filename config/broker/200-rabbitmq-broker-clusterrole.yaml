@@ -52,6 +52,19 @@ rules:
     - "patch"
     - "watch"
   - apiGroups:
+    - keda.sh
+    resources:
+    - scaledobjects
+    - triggerauthentications
+    verbs:
+    - "get"
+    - "list"
+    - "create"
+    - "update"
+    - "delete"
+    - "patch"
+    - "watch"
+  - apiGroups:
       - rabbitmq.com
     resources:
       - rabbitmqclusters
