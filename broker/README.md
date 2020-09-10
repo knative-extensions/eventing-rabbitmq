@@ -42,7 +42,7 @@ install KEDA as documented [here](https://keda.sh/docs/latest/deploy/).
 install the broker-controller from this repository:
 
 ```
-ko apply -f config/
+ko apply -f config/broker/
 ```
 
 ## Demo
