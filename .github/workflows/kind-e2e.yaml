@@ -157,7 +157,7 @@ jobs:
         kubectl get events --all-namespaces=true -oyaml
 
         echo "===================== Pod Logs ============================="
-        local namespace=knative-eventing
+        namespace=knative-eventing
         for pod in $(kubectl get pod -n $namespace | grep Running | awk '{print $1}'); do
           for container in $(kubectl get pod "${pod}" -n $namespace -ojsonpath='{.spec.containers[*].name}'); do
             echo "Namespace, Pod, Container: ${namespace}, ${pod}, ${container}"
