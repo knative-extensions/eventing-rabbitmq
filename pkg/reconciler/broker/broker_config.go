@@ -20,11 +20,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
+
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	duckv1beta1 "knative.dev/eventing-rabbitmq/pkg/apis/duck/v1beta1"
 	"knative.dev/pkg/resolver"
-	"net/url"
 
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

@@ -18,8 +18,9 @@ package broker
 
 import (
 	"context"
-	"knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
 	"log"
+
+	"knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
 
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
