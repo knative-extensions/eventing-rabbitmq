@@ -132,3 +132,35 @@ jobs:
 
         # Run the tests tagged as e2e on the KinD cluster.
         go test -v -race -count=1 -timeout=15m -tags=e2e ./test/e2e/...
+
+    - name: Gather Failure Data
+      if: ${{ failure() }}
+      run: |
+        set -x
+
+        echo "===================== Brokers =============================="
+        kubectl get broker --all-namespaces=true -oyaml
+
+        echo "===================== Triggers ============================="
+        kubectl get trigger --all-namespaces=true -oyaml
+
+        echo "===================== RabbitMQClusters ====================="
+        kubectl get RabbitMQCluster --all-namespaces=true -oyaml
+
+        echo "===================== K8s Events ==========================="
+        kubectl get events --all-namespaces=true -oyaml
+
+        echo "===================== Pod Logs ============================="
+        local namespace=knative-eventing
+        for pod in $(kubectl get pod -n $namespace | grep Running | awk '{print $1}'); do
+          for container in $(kubectl get pod "${pod}" -n $namespace -ojsonpath='{.spec.containers[*].name}'); do
+            echo "Namespace, Pod, Container: ${namespace}, ${pod}, ${container}"
+            kubectl logs -n $namespace "${pod}" -c "${container}" || true
+            echo "----------------------------------------------------------"
+            echo "Namespace, Pod, Container (Previous instance): ${namespace}, ${pod}, ${container}"
+            kubectl logs -p -n $namespace "${pod}" -c "${container}" || true
+            echo "============================================================"
+          done
+        done
+
+
