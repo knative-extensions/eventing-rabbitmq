@@ -102,23 +102,13 @@ jobs:
         sleep 2 # Wait for the CRDs to be reconciled.
         kubectl apply --filename https://github.com/knative/eventing/releases/download/v0.17.0/eventing-core.yaml
 
-    - name: Install Eventing RabbitMQ
-      working-directory: ./src/knative.dev/${{github.event.pull_request.head.repo.name}}
-      run: |
-        set -x
-
-        # Build and Publish our test images to the docker daemon.
-        # ./test/upload-test-images.sh # <-- Skip for now.
-
-        # TODO: need to use the release yaml, not this.
-
-  - name: Release the Quacken
-      working-directory: ./src/knative.dev/${{github.event.pull_request.head.repo.name}}
-      run: |
-        set -x
-
-        # todo: skip the quacken at the moment.
-        # ko apply -Pf test/config/ -f config
+# todo: skip the quacken at the moment.
+#  - name: Release the Quacken
+#      working-directory: ./src/knative.dev/${{github.event.pull_request.head.repo.name}}
+#      run: |
+#        set -x
+#
+#        # ko apply -Pf test/config/ -f config
 
     - name: Wait for Ready
       working-directory: ./src/knative.dev/${{github.event.pull_request.head.repo.name}}
