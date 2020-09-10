@@ -51,3 +51,11 @@ rules:
     - "delete"
     - "patch"
     - "watch"
+  - apiGroups:
+      - rabbitmq.com
+    resources:
+      - rabbitmqclusters
+    verbs:
+      - "get"
+      - "list"
+      - "watch"

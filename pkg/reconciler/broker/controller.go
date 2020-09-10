@@ -20,6 +20,7 @@ import (
 	"context"
 	"log"
 
+	"knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
 	eventingclient "knative.dev/eventing/pkg/client/injection/client"
 
 	"github.com/kelseyhightower/envconfig"
@@ -76,6 +77,7 @@ func NewController(
 	serviceInformer := serviceinformer.Get(ctx)
 	endpointsInformer := endpointsinformer.Get(ctx)
 	triggerAuthenticationInformer := triggerauthenticationinformer.Get(ctx)
+	rabbitInformer := rabbit.Get(ctx)
 
 	r := &Reconciler{
 		kedaClientset:               kedaclient.Get(ctx),
@@ -87,6 +89,7 @@ func NewController(
 		serviceLister:               serviceInformer.Lister(),
 		endpointsLister:             endpointsInformer.Lister(),
 		deploymentLister:            deploymentInformer.Lister(),
+		rabbitLister:                rabbitInformer,
 		triggerAuthenticationLister: triggerAuthenticationInformer.Lister(),
 		ingressImage:                env.IngressImage,
 		ingressServiceAccountName:   env.IngressServiceAccount,

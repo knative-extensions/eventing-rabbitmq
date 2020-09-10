@@ -18,12 +18,11 @@ package trigger
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/streadway/amqp"
-
 	"go.uber.org/zap"
+
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -301,27 +300,7 @@ func (r *Reconciler) propagateDependencyReadiness(ctx context.Context, t *v1beta
 }
 
 func (r *Reconciler) getRabbitmqSecret(ctx context.Context, t *v1beta1.Trigger) (*corev1.Secret, error) {
-	b, err := r.brokerLister.Brokers(t.Namespace).Get(t.Spec.Broker)
-	if err != nil {
-		return nil, err
-	}
-
-	if b.Spec.Config != nil {
-		if b.Spec.Config.Kind == "Secret" && b.Spec.Config.APIVersion == "v1" {
-			if b.Spec.Config.Namespace == "" || b.Spec.Config.Name == "" {
-				logging.FromContext(ctx).Error("Broker.Spec.Config name and namespace are required",
-					zap.String("namespace", b.Namespace), zap.String("name", b.Name))
-				return nil, errors.New("Broker.Spec.Config name and namespace are required")
-			}
-			s, err := r.kubeClientSet.CoreV1().Secrets(b.Spec.Config.Namespace).Get(ctx, b.Spec.Config.Name, metav1.GetOptions{})
-			if err != nil {
-				return nil, err
-			}
-			return s, nil
-		}
-		return nil, errors.New("Broker.Spec.Config configuration not supported, only [kind: Secret, apiVersion: v1]")
-	}
-	return nil, errors.New("Broker.Spec.Config is required")
+	return r.kubeClientSet.CoreV1().Secrets(t.Namespace).Get(brokerresources.SecretName(t.Spec.Broker), metav1.GetOptions{})
 }
 
 func (r *Reconciler) rabbitmqURL(ctx context.Context, t *v1beta1.Trigger) (string, error) {

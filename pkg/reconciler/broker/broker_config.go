@@ -22,6 +22,11 @@ import (
 	"fmt"
 	"net/url"
 
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	duckv1beta1 "knative.dev/eventing-rabbitmq/pkg/apis/duck/v1beta1"
+	"knative.dev/pkg/resolver"
+
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -88,6 +93,50 @@ func (r *Reconciler) rabbitmqURLFromSecret(ctx context.Context, ref *duckv1.KRef
 }
 
 func (r *Reconciler) rabbitmqURLFromRabbit(ctx context.Context, ref *duckv1.KReference) (*url.URL, error) {
-	// TODO:
-	return nil, errors.New("TODO: implement rabbitmqURLFromRabbit")
+	// TODO: make this better.
+
+	gv, err := schema.ParseGroupVersion(ref.APIVersion)
+	if err != nil {
+		return nil, err
+	}
+	gvk := gv.WithKind(ref.Kind)
+
+	gvr, _ := meta.UnsafeGuessKindToResource(gvk)
+
+	_, lister, err := r.rabbitLister.Get(gvr)
+	if err != nil {
+		return nil, err
+	}
+
+	o, err := lister.ByNamespace(ref.Namespace).Get(ref.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	rab := o.(*duckv1beta1.Rabbit)
+
+	if rab.Status.Admin == nil || rab.Status.Admin.SecretReference == nil || rab.Status.Admin.ServiceReference == nil {
+		return nil, fmt.Errorf("rabbit \"%s/%s\" not ready", ref.Namespace, ref.Name)
+	}
+
+	_ = rab.Status.Admin.SecretReference
+
+	s, err := r.kubeClientSet.CoreV1().Secrets(rab.Status.Admin.SecretReference.Namespace).Get(rab.Status.Admin.SecretReference.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	password, ok := s.Data[rab.Status.Admin.SecretReference.Keys["password"]]
+	if !ok {
+		return nil, fmt.Errorf("rabbit Secret missing key %s", rab.Status.Admin.SecretReference.Keys["password"])
+	}
+
+	username, ok := s.Data[rab.Status.Admin.SecretReference.Keys["username"]]
+	if !ok {
+		return nil, fmt.Errorf("rabbit Secret missing key %s", rab.Status.Admin.SecretReference.Keys["username"])
+	}
+
+	host := resolver.ServiceHostName(rab.Status.Admin.ServiceReference.Name, rab.Status.Admin.ServiceReference.Namespace)
+
+	return url.Parse(fmt.Sprintf("amqp://%s:%s@%s:%d", username, password, host, 5672))
 }

@@ -43,6 +43,7 @@ import (
 	kedav1alpha1 "github.com/kedacore/keda/api/v1alpha1"
 	kedaclientset "github.com/kedacore/keda/pkg/generated/clientset/versioned"
 	kedalisters "github.com/kedacore/keda/pkg/generated/listers/keda/v1alpha1"
+	apisduck "knative.dev/pkg/apis/duck"
 
 	"knative.dev/eventing/pkg/duck"
 	"knative.dev/eventing/pkg/reconciler/names"
@@ -64,6 +65,7 @@ type Reconciler struct {
 	secretLister                corev1listers.SecretLister
 	deploymentLister            appsv1listers.DeploymentLister
 	triggerAuthenticationLister kedalisters.TriggerAuthenticationLister
+	rabbitLister                apisduck.InformerFactory
 
 	ingressImage              string
 	ingressServiceAccountName string

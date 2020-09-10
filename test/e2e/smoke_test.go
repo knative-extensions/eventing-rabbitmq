@@ -17,6 +17,7 @@ limitations under the License.
 package rabbit_test
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -42,7 +43,12 @@ func SmokeTestBrokerImpl(t *testing.T) {
 
 	refs := rig.Objects()
 	for _, r := range refs {
-		_, err := rig.WaitForReadyOrDone(r, 45*time.Second)
+		if !strings.Contains(r.APIVersion, "knative.dev") {
+			// Let's not care so much about checking the status of non-knative
+			// resources.
+			continue
+		}
+		_, err := rig.WaitForReadyOrDone(r, 5*time.Minute)
 		if err != nil {
 			t.Fatalf("failed to wait for ready or done, %s", err)
 		}
