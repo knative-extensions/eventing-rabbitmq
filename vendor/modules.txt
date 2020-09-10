@@ -1023,7 +1023,7 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/eventing v0.17.1-0.20200908151032-5fdaa0605d87 => github.com/zroubalik/eventing v0.15.1-0.20200910120552-38c9fe3cb718
+# knative.dev/eventing v0.17.1-0.20200908151032-5fdaa0605d87 => github.com/zroubalik/eventing v0.15.1-0.20200824120738-2b97ca8b85d0
 ## explicit
 knative.dev/eventing/pkg/adapter/v2
 knative.dev/eventing/pkg/adapter/v2/util/crstatusevent
@@ -1096,6 +1096,7 @@ knative.dev/eventing/pkg/configmap
 knative.dev/eventing/pkg/duck
 knative.dev/eventing/pkg/kncloudevents
 knative.dev/eventing/pkg/leaderelection
+knative.dev/eventing/pkg/logging
 knative.dev/eventing/pkg/reconciler/names
 knative.dev/eventing/pkg/tracing
 knative.dev/eventing/pkg/utils
@@ -1227,5 +1228,5 @@ sigs.k8s.io/yaml
 # k8s.io/apiserver => k8s.io/apiserver v0.18.8
 # k8s.io/client-go => k8s.io/client-go v0.18.8
 # k8s.io/cloud-provider => k8s.io/cloud-provider v0.18.8
-# knative.dev/eventing => github.com/zroubalik/eventing v0.15.1-0.20200910120552-38c9fe3cb718
+# knative.dev/eventing => github.com/zroubalik/eventing v0.15.1-0.20200824120738-2b97ca8b85d0
 # knative.dev/pkg => github.com/zroubalik/pkg v0.0.0-20200824111853-cf31d44b1119

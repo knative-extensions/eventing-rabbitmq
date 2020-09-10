@@ -52,8 +52,6 @@ type ComponentsTestRunner struct {
 	ComponentFeatureMap map[metav1.TypeMeta][]Feature
 	ComponentsToTest    []metav1.TypeMeta
 	componentOptions    map[metav1.TypeMeta][]SetupClientOption
-	ComponentName       string
-	ComponentNamespace  string
 }
 
 // RunTests will use all components that support the given feature, to run

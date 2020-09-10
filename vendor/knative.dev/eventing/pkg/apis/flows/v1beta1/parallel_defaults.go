@@ -25,12 +25,8 @@ import (
 )
 
 func (p *Parallel) SetDefaults(ctx context.Context) {
-	if p == nil {
-		return
-	}
-
 	withNS := apis.WithinParent(ctx, p.ObjectMeta)
-	if p.Spec.ChannelTemplate == nil {
+	if p != nil && p.Spec.ChannelTemplate == nil {
 		cfg := config.FromContextOrDefaults(ctx)
 		c, err := cfg.ChannelDefaults.GetChannelConfig(apis.ParentMeta(ctx).Namespace)
 

@@ -17,7 +17,6 @@ limitations under the License.
 package infra
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -160,5 +159,5 @@ func waitForPods(namespace string) error {
 		return err
 	}
 
-	return pkgtest.WaitForAllPodsRunning(context.Background(), c, namespace)
+	return pkgtest.WaitForAllPodsRunning(c, namespace)
 }
