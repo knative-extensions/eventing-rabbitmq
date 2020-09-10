@@ -29,10 +29,10 @@ jobs:
     - name: Check out code onto GOPATH
       uses: actions/checkout@v2
       with:
-        path: ./src/knative.dev/${{github.event.pull_request.head.repo.name}}
+        path: ./src/knative.dev/${{ github.event.repository.name }}
 
     - name: Install KinD
-      working-directory: ./src/knative.dev/${{github.event.pull_request.head.repo.name}}
+      working-directory: ./src/knative.dev/${{ github.event.repository.name }}
       env:
         KIND_VERSION: v0.8.1
       run: |
@@ -43,7 +43,9 @@ jobs:
         sudo mv kind /usr/local/bin
 
     - name: Create KinD Cluster
-      working-directory: ./src/knative.dev/${{github.event.pull_request.head.repo.name}}
+      working-directory: ./src/knative.dev/${{ github.event.repository.name }}
+      env:
+        NODE_IMAGE: 'kindest/node:v1.16.9@sha256:7175872357bc85847ec4b1aba46ed1d12fa054c83ac7a8a11f5c268957fd5765'
       run: |
         set -x
 
@@ -53,7 +55,9 @@ jobs:
         kind: Cluster
         nodes:
         - role: control-plane
+          image: ${NODE_IMAGE}
         - role: worker
+          image: ${NODE_IMAGE}
         EOF
 
         # Create a cluster!
@@ -81,17 +85,16 @@ jobs:
       with:
         repository: kedacore/keda
         path: ./src/github.com/kedacore/keda
-        ref: v1.5.0
+        ref: v2
 
     - name: Install kedacore/keda
       working-directory: ./src/github.com/kedacore/keda
       run: |
         set -x
 
-        kubectl apply -f deploy/crds/keda.k8s.io_scaledobjects_crd.yaml
-        kubectl apply -f deploy/crds/keda.k8s.io_triggerauthentications_crd.yaml
-        sleep 2 # Wait for the CRDs to be reconciled.
-        kubectl apply -f deploy/
+        # HACK HACK HACK we are just gonna install keda CRDs to get the test off the floor.
+        kubectl apply -f ./config/crd/bases
+        
 
     - name: Install Knative Eventing
       working-directory: ./src/github.com/rabbitmq/cluster-operator
@@ -103,23 +106,24 @@ jobs:
         kubectl apply --filename https://github.com/knative/eventing/releases/download/v0.17.0/eventing-core.yaml
 
     - name: Install
-      working-directory: ./src/knative.dev/${{github.event.pull_request.head.repo.name}}
+      working-directory: ./src/knative.dev/${{ github.event.repository.name }}
       run: |
         set -x
         # TODO: this should use the release script and then apply the newly created release yaml in the future.
 
-        ko apply -Rf ./config
+        # Install Broker.
+        ko apply -f ./config/broker/
 
 # todo: skip the quacken at the moment.
 #  - name: Release the Quacken
-#      working-directory: ./src/knative.dev/${{github.event.pull_request.head.repo.name}}
+#      working-directory: ./src/knative.dev/${{ github.event.repository.name }}
 #      run: |
 #        set -x
 #
 #        # ko apply -Pf test/config/ -f config
 
     - name: Wait for Ready
-      working-directory: ./src/knative.dev/${{github.event.pull_request.head.repo.name}}
+      working-directory: ./src/knative.dev/${{ github.event.repository.name }}
       run: |
         set -x
 
@@ -131,12 +135,9 @@ jobs:
         kubectl get pods --all-namespaces
 
     - name: Run e2e Tests
-      working-directory: ./src/knative.dev/${{github.event.pull_request.head.repo.name}}
+      working-directory: ./src/knative.dev/${{ github.event.repository.name }}
       run: |
         set -x
-
-        # For logstream to work.
-        export SYSTEM_NAMESPACE=knative-eventing # TODO: fix this when we move the namespace.
 
         # Run the tests tagged as e2e on the KinD cluster.
         go test -v -race -count=1 -timeout=15m -tags=e2e ./test/e2e/...
@@ -159,7 +160,7 @@ jobs:
         kubectl get events --all-namespaces=true -oyaml
 
         echo "===================== Pod Logs ============================="
-        local namespace=knative-eventing
+        namespace=knative-eventing
         for pod in $(kubectl get pod -n $namespace | grep Running | awk '{print $1}'); do
           for container in $(kubectl get pod "${pod}" -n $namespace -ojsonpath='{.spec.containers[*].name}'); do
             echo "Namespace, Pod, Container: ${namespace}, ${pod}, ${container}"

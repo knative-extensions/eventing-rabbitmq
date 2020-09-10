@@ -25,21 +25,25 @@ import (
 )
 
 // SmokeTestBrokerImpl makes sure an RabbitMQ Broker goes ready.
-func SmokeTestBrokerImpl(t *testing.T) {
+func SmokeTestBrokerImpl(t *testing.T, brokerName string) {
+
 	opts := []rigging.Option{}
 
-	rig, err := rigging.NewInstall(opts, []string{"rabbitmq", "smoke/broker"}, map[string]string{})
+	rig, err := rigging.NewInstall(opts, []string{"rabbitmq", "smoke/broker"}, map[string]string{
+		"brokerName": brokerName,
+	})
 	if err != nil {
 		t.Fatalf("failed to create rig, %s", err)
 	}
 	t.Logf("Created a new testing rig at namespace %s.", rig.Namespace())
 
 	// Uninstall deferred.
-	defer func() {
-		if err := rig.Uninstall(); err != nil {
-			t.Errorf("failed to uninstall, %s", err)
-		}
-	}()
+	// TODO: bring back uninstall when we finished debugging.
+	//defer func() {
+	//	if err := rig.Uninstall(); err != nil {
+	//		t.Errorf("failed to uninstall, %s", err)
+	//	}
+	//}()
 
 	refs := rig.Objects()
 	for _, r := range refs {
