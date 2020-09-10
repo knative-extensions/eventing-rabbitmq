@@ -50,7 +50,7 @@ type DispatcherArgs struct {
 
 // MakeDispatcherDeployment creates the in-memory representation of the Broker's Dispatcher Deployment.
 func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
-	zero := int32(0)
+	one := int32(1)
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: args.Trigger.Namespace,
@@ -61,7 +61,7 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 			Labels: DispatcherLabels(args.Trigger.Spec.Broker),
 		},
 		Spec: appsv1.DeploymentSpec{
-			Replicas: &zero,
+			Replicas: &one,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: DispatcherLabels(args.Trigger.Spec.Broker),
 			},
