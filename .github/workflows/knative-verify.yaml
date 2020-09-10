@@ -69,7 +69,7 @@ jobs:
         if [[ -z "$(git status --porcelain)" ]]; then
             echo "${{ github.repository }} up to date."
         else
-            repoDiff=$(git diff-index --name-only HEAD --)
+            repoDiff=$(git diff-index HEAD --)
             echo "Found diffs in: $repoDiff"
             echo "${{ github.repository }} is out of date. Please run hack/update-codegen.sh"
             exit 1
