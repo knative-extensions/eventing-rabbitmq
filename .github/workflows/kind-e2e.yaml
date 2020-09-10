@@ -102,6 +102,14 @@ jobs:
         sleep 2 # Wait for the CRDs to be reconciled.
         kubectl apply --filename https://github.com/knative/eventing/releases/download/v0.17.0/eventing-core.yaml
 
+    - name: Install
+      working-directory: ./src/knative.dev/${{github.event.pull_request.head.repo.name}}
+      run: |
+        set -x
+        # TODO: this should use the release script and then apply the newly created release yaml in the future.
+
+        ko apply -Rf ./config
+
 # todo: skip the quacken at the moment.
 #  - name: Release the Quacken
 #      working-directory: ./src/knative.dev/${{github.event.pull_request.head.repo.name}}
