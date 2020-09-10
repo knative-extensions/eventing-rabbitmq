@@ -317,7 +317,7 @@ func (r *Reconciler) propagateDependencyReadiness(ctx context.Context, t *v1beta
 }
 
 func (r *Reconciler) getRabbitmqSecret(ctx context.Context, t *v1beta1.Trigger) (*corev1.Secret, error) {
-	return r.kubeClientSet.CoreV1().Secrets(t.Namespace).Get(brokerresources.SecretName(t.Spec.Broker), metav1.GetOptions{})
+	return r.kubeClientSet.CoreV1().Secrets(t.Namespace).Get(ctx, brokerresources.SecretName(t.Spec.Broker), metav1.GetOptions{})
 }
 
 func (r *Reconciler) rabbitmqURL(ctx context.Context, t *v1beta1.Trigger) (string, error) {
