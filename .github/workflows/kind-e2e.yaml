@@ -112,10 +112,13 @@ jobs:
 
         # TODO: need to use the release yaml, not this.
 
-        # Build and Publish our containers to the docker daemon (including test assets)
-        export GO111MODULE=on
-        export GOFLAGS=-mod=vendor
-        ko apply -Pf test/config/ -f config
+  - name: Release the Quacken
+      working-directory: ./src/knative.dev/${{github.event.pull_request.head.repo.name}}
+      run: |
+        set -x
+
+        # todo: skip the quacken at the moment.
+        # ko apply -Pf test/config/ -f config
 
     - name: Wait for Ready
       working-directory: ./src/knative.dev/${{github.event.pull_request.head.repo.name}}
