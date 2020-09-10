@@ -17,9 +17,9 @@ limitations under the License.
 package resources
 
 import (
+	kedav1alpha1 "github.com/kedacore/keda/api/v1alpha1"
 	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kedav1alpha1 "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/v1alpha1"
 	"knative.dev/eventing/pkg/apis/eventing/v1beta1"
 	"knative.dev/pkg/kmeta"
 )
@@ -49,8 +49,10 @@ func MakeDispatcherScaledObject(args *DispatcherScaledObjectArgs) *kedav1alpha1.
 			},
 		},
 		Spec: kedav1alpha1.ScaledObjectSpec{
-			ScaleTargetRef: &kedav1alpha1.ObjectReference{
-				DeploymentName: deployment.Name,
+			ScaleTargetRef: &kedav1alpha1.ScaleTarget{
+				Name:       deployment.Name,
+				ApiVersion: "apps/v1",
+				Kind:       "Deployment",
 			},
 			PollingInterval: &five,   // seconds
 			CooldownPeriod:  &thirty, // seconds

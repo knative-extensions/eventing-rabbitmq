@@ -76,7 +76,7 @@ func GetJobPod(ctx context.Context, kubeClientset kubernetes.Interface, namespac
 	labelSelector := &metav1.LabelSelector{
 		MatchLabels: matchLabels,
 	}
-	pods, err := kubeClientset.CoreV1().Pods(namespace).List(metav1.ListOptions{LabelSelector: labels.Set(labelSelector.MatchLabels).String()})
+	pods, err := kubeClientset.CoreV1().Pods(namespace).List(context.Background(), metav1.ListOptions{LabelSelector: labels.Set(labelSelector.MatchLabels).String()})
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func GetJobPodByJobName(ctx context.Context, kubeClientset kubernetes.Interface,
 	labelSelector := &metav1.LabelSelector{
 		MatchLabels: matchLabels,
 	}
-	pods, err := kubeClientset.CoreV1().Pods(namespace).List(metav1.ListOptions{LabelSelector: labels.Set(labelSelector.MatchLabels).String()})
+	pods, err := kubeClientset.CoreV1().Pods(namespace).List(context.Background(), metav1.ListOptions{LabelSelector: labels.Set(labelSelector.MatchLabels).String()})
 	if err != nil {
 		return nil, err
 	}

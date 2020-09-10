@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package manifestival
+package manifest
 
 import (
 	"io"
@@ -55,7 +55,7 @@ func Parse(pathname string, recursive bool) ([]unstructured.Unstructured, error)
 	return aggregated, nil
 }
 
-// read cotains a logic to distinguish the type of record in pathname
+// read contains logic to distinguish the type of record in pathname
 // (file, directory or url) and calls the appropriate function
 func read(pathname string, recursive bool) ([]unstructured.Unstructured, error) {
 	if isURL(pathname) {

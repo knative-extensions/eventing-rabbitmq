@@ -21,6 +21,8 @@ import (
 
 	"go.uber.org/zap"
 	v1 "k8s.io/api/apps/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -38,9 +40,9 @@ import (
 	brokerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1beta1/broker"
 	eventinglisters "knative.dev/eventing/pkg/client/listers/eventing/v1beta1"
 
-	kedaclientset "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/clientset/versioned"
-	kedalisters "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/listers/keda/v1alpha1"
-	kedav1alpha1 "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/v1alpha1"
+	kedav1alpha1 "github.com/kedacore/keda/api/v1alpha1"
+	kedaclientset "github.com/kedacore/keda/pkg/generated/clientset/versioned"
+	kedalisters "github.com/kedacore/keda/pkg/generated/listers/keda/v1alpha1"
 
 	"knative.dev/eventing/pkg/duck"
 	"knative.dev/eventing/pkg/reconciler/names"
@@ -168,7 +170,7 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, b *v1beta1.Broker) pkgrec
 func (r *Reconciler) reconcileSecret(ctx context.Context, s *corev1.Secret) error {
 	current, err := r.secretLister.Secrets(s.Namespace).Get(s.Name)
 	if apierrs.IsNotFound(err) {
-		_, err = r.kubeClientSet.CoreV1().Secrets(s.Namespace).Create(s)
+		_, err = r.kubeClientSet.CoreV1().Secrets(s.Namespace).Create(ctx, s, metav1.CreateOptions{})
 		if err != nil {
 			return err
 		}
@@ -178,7 +180,7 @@ func (r *Reconciler) reconcileSecret(ctx context.Context, s *corev1.Secret) erro
 		// Don't modify the informers copy.
 		desired := current.DeepCopy()
 		desired.StringData = s.StringData
-		_, err = r.kubeClientSet.CoreV1().Secrets(desired.Namespace).Update(desired)
+		_, err = r.kubeClientSet.CoreV1().Secrets(desired.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
 		if err != nil {
 			return err
 		}
@@ -190,7 +192,7 @@ func (r *Reconciler) reconcileSecret(ctx context.Context, s *corev1.Secret) erro
 func (r *Reconciler) reconcileDeployment(ctx context.Context, d *v1.Deployment) error {
 	current, err := r.deploymentLister.Deployments(d.Namespace).Get(d.Name)
 	if apierrs.IsNotFound(err) {
-		_, err = r.kubeClientSet.AppsV1().Deployments(d.Namespace).Create(d)
+		_, err = r.kubeClientSet.AppsV1().Deployments(d.Namespace).Create(ctx, d, metav1.CreateOptions{})
 		if err != nil {
 			return err
 		}
@@ -200,7 +202,7 @@ func (r *Reconciler) reconcileDeployment(ctx context.Context, d *v1.Deployment) 
 		// Don't modify the informers copy.
 		desired := current.DeepCopy()
 		desired.Spec = d.Spec
-		_, err = r.kubeClientSet.AppsV1().Deployments(desired.Namespace).Update(desired)
+		_, err = r.kubeClientSet.AppsV1().Deployments(desired.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
 		if err != nil {
 			return err
 		}
@@ -212,7 +214,7 @@ func (r *Reconciler) reconcileDeployment(ctx context.Context, d *v1.Deployment) 
 func (r *Reconciler) reconcileService(ctx context.Context, svc *corev1.Service) (*corev1.Endpoints, error) {
 	current, err := r.serviceLister.Services(svc.Namespace).Get(svc.Name)
 	if apierrs.IsNotFound(err) {
-		current, err = r.kubeClientSet.CoreV1().Services(svc.Namespace).Create(svc)
+		current, err = r.kubeClientSet.CoreV1().Services(svc.Namespace).Create(ctx, svc, metav1.CreateOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -227,7 +229,7 @@ func (r *Reconciler) reconcileService(ctx context.Context, svc *corev1.Service) 
 		// Don't modify the informers copy.
 		desired := current.DeepCopy()
 		desired.Spec = svc.Spec
-		if _, err := r.kubeClientSet.CoreV1().Services(current.Namespace).Update(desired); err != nil {
+		if _, err = r.kubeClientSet.CoreV1().Services(current.Namespace).Update(ctx, desired, metav1.UpdateOptions{}); err != nil {
 			return nil, err
 		}
 	}
@@ -262,7 +264,7 @@ func (r *Reconciler) reconcileScaleTriggerAuthentication(ctx context.Context, b 
 
 	current, err := r.triggerAuthenticationLister.TriggerAuthentications(namespace).Get(triggerAuthentication.Name)
 	if apierrs.IsNotFound(err) {
-		_, err = r.kedaClientset.KedaV1alpha1().TriggerAuthentications(namespace).Create(triggerAuthentication)
+		_, err = r.kedaClientset.KedaV1alpha1().TriggerAuthentications(namespace).Create(ctx, triggerAuthentication, metav1.CreateOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -275,7 +277,7 @@ func (r *Reconciler) reconcileScaleTriggerAuthentication(ctx context.Context, b 
 		// Don't modify the informers copy.
 		desired := current.DeepCopy()
 		desired.Spec = triggerAuthentication.Spec
-		_, err = r.kedaClientset.KedaV1alpha1().TriggerAuthentications(namespace).Update(desired)
+		_, err = r.kedaClientset.KedaV1alpha1().TriggerAuthentications(namespace).Update(ctx, desired, metav1.UpdateOptions{})
 		if err != nil {
 			return nil, err
 		}

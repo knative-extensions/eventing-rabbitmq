@@ -3,6 +3,7 @@ package rigging
 import (
 	"errors"
 	"fmt"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"log"
 	"path/filepath"
 	"runtime"
@@ -25,6 +26,9 @@ type Rigging interface {
 	WaitForReadyOrDone(ref v1.ObjectReference, timeout time.Duration) (string, error)
 	LogsFor(ref v1.ObjectReference) (string, error)
 	Namespace() string
+
+	ResourceOriginal(ref v1.ObjectReference) (*unstructured.Unstructured, error)
+	ResourceNow(ref v1.ObjectReference) (*unstructured.Unstructured, error)
 }
 
 // RegisterPackage registers an interest in producing an image based on the
@@ -284,4 +288,25 @@ func (r *riggingImpl) LogsFor(ref v1.ObjectReference) (string, error) {
 	gvk, _ := meta.UnsafeGuessKindToResource(k)
 
 	return r.client.LogsFor(ref.Namespace, ref.Name, gvk)
+}
+
+func (r *riggingImpl) ResourceOriginal(ref v1.ObjectReference) (*unstructured.Unstructured, error) {
+	found := r.manifest.Find(ref.APIVersion, ref.Kind, ref.Name)
+	if found != nil {
+		return found, nil
+	}
+	return nil, fmt.Errorf("not found: %s", ref.String())
+}
+
+func (r *riggingImpl) ResourceNow(ref v1.ObjectReference) (*unstructured.Unstructured, error) {
+	find := &unstructured.Unstructured{Object: map[string]interface{}{
+		"apiVersion": ref.APIVersion,
+		"kind":       ref.Kind,
+		"metadata": map[string]interface{}{
+			"name":      ref.Name,
+			"namespace": ref.Namespace,
+		},
+	}}
+
+	return r.manifest.Get(find)
 }

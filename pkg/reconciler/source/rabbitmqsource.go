@@ -26,6 +26,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	"knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
@@ -135,9 +137,9 @@ func (r *Reconciler) createReceiveAdapter(ctx context.Context, src *v1alpha1.Rab
 	}
 	expected := resources.MakeReceiveAdapter(&raArgs)
 
-	ra, err := r.KubeClientSet.AppsV1().Deployments(src.Namespace).Get(expected.Name, metav1.GetOptions{})
+	ra, err := r.KubeClientSet.AppsV1().Deployments(src.Namespace).Get(ctx, expected.Name, metav1.GetOptions{})
 	if apierrors.IsNotFound(err) {
-		ra, err = r.KubeClientSet.AppsV1().Deployments(src.Namespace).Create(expected)
+		ra, err = r.KubeClientSet.AppsV1().Deployments(src.Namespace).Create(ctx, expected, metav1.CreateOptions{})
 		if err != nil {
 			return nil, newDeploymentFailed(ra.Namespace, ra.Name, err)
 		}
@@ -149,7 +151,7 @@ func (r *Reconciler) createReceiveAdapter(ctx context.Context, src *v1alpha1.Rab
 		return nil, fmt.Errorf("deployment %q is not owned by RabbitmqSource %q", ra.Name, src.Name)
 	} else if podSpecChanged(ra.Spec.Template.Spec, expected.Spec.Template.Spec) {
 		ra.Spec.Template.Spec = expected.Spec.Template.Spec
-		if ra, err = r.KubeClientSet.AppsV1().Deployments(src.Namespace).Update(ra); err != nil {
+		if ra, err = r.KubeClientSet.AppsV1().Deployments(src.Namespace).Update(ctx, ra, metav1.UpdateOptions{}); err != nil {
 			return ra, err
 		}
 		return ra, deploymentUpdated(ra.Namespace, ra.Name)
@@ -172,6 +174,27 @@ func podSpecChanged(oldPodSpec corev1.PodSpec, newPodSpec corev1.PodSpec) bool {
 		}
 	}
 	return false
+}
+
+func (r *Reconciler) getReceiveAdapter(ctx context.Context, src *v1alpha1.RabbitmqSource) (*v1.Deployment, error) {
+	ra, err := r.KubeClientSet.AppsV1().Deployments(src.Namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: r.getLabelSelector(src).String(),
+	})
+
+	if err != nil {
+		logging.FromContext(ctx).Desugar().Error("Unable to list deployments: %v", zap.Error(err))
+		return nil, err
+	}
+	for _, dep := range ra.Items {
+		if metav1.IsControlledBy(&dep, src) {
+			return &dep, nil
+		}
+	}
+	return nil, apierrors.NewNotFound(schema.GroupResource{}, "")
+}
+
+func (r *Reconciler) getLabelSelector(src *v1alpha1.RabbitmqSource) labels.Selector {
+	return labels.SelectorFromSet(resources.GetLabels(src.Name))
 }
 
 func (r *Reconciler) UpdateFromLoggingConfigMap(cfg *corev1.ConfigMap) {

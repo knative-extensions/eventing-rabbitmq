@@ -18,6 +18,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"context"
 	"time"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,15 +37,15 @@ type RabbitmqSourcesGetter interface {
 
 // RabbitmqSourceInterface has methods to work with RabbitmqSource resources.
 type RabbitmqSourceInterface interface {
-	Create(*v1alpha1.RabbitmqSource) (*v1alpha1.RabbitmqSource, error)
-	Update(*v1alpha1.RabbitmqSource) (*v1alpha1.RabbitmqSource, error)
-	UpdateStatus(*v1alpha1.RabbitmqSource) (*v1alpha1.RabbitmqSource, error)
-	Delete(name string, options *v1.DeleteOptions) error
-	DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error
-	Get(name string, options v1.GetOptions) (*v1alpha1.RabbitmqSource, error)
-	List(opts v1.ListOptions) (*v1alpha1.RabbitmqSourceList, error)
-	Watch(opts v1.ListOptions) (watch.Interface, error)
-	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.RabbitmqSource, err error)
+	Create(ctx context.Context, rabbitmqSource *v1alpha1.RabbitmqSource, opts v1.CreateOptions) (*v1alpha1.RabbitmqSource, error)
+	Update(ctx context.Context, rabbitmqSource *v1alpha1.RabbitmqSource, opts v1.UpdateOptions) (*v1alpha1.RabbitmqSource, error)
+	UpdateStatus(ctx context.Context, rabbitmqSource *v1alpha1.RabbitmqSource, opts v1.UpdateOptions) (*v1alpha1.RabbitmqSource, error)
+	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
+	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha1.RabbitmqSource, error)
+	List(ctx context.Context, opts v1.ListOptions) (*v1alpha1.RabbitmqSourceList, error)
+	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.RabbitmqSource, err error)
 	RabbitmqSourceExpansion
 }
 
@@ -63,20 +64,20 @@ func newRabbitmqSources(c *SourcesV1alpha1Client, namespace string) *rabbitmqSou
 }
 
 // Get takes name of the rabbitmqSource, and returns the corresponding rabbitmqSource object, and an error if there is any.
-func (c *rabbitmqSources) Get(name string, options v1.GetOptions) (result *v1alpha1.RabbitmqSource, err error) {
+func (c *rabbitmqSources) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.RabbitmqSource, err error) {
 	result = &v1alpha1.RabbitmqSource{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("rabbitmqsources").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // List takes label and field selectors, and returns the list of RabbitmqSources that match those selectors.
-func (c *rabbitmqSources) List(opts v1.ListOptions) (result *v1alpha1.RabbitmqSourceList, err error) {
+func (c *rabbitmqSources) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.RabbitmqSourceList, err error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -87,13 +88,13 @@ func (c *rabbitmqSources) List(opts v1.ListOptions) (result *v1alpha1.RabbitmqSo
 		Resource("rabbitmqsources").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Watch returns a watch.Interface that watches the requested rabbitmqSources.
-func (c *rabbitmqSources) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *rabbitmqSources) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -104,87 +105,90 @@ func (c *rabbitmqSources) Watch(opts v1.ListOptions) (watch.Interface, error) {
 		Resource("rabbitmqsources").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Watch()
+		Watch(ctx)
 }
 
 // Create takes the representation of a rabbitmqSource and creates it.  Returns the server's representation of the rabbitmqSource, and an error, if there is any.
-func (c *rabbitmqSources) Create(rabbitmqSource *v1alpha1.RabbitmqSource) (result *v1alpha1.RabbitmqSource, err error) {
+func (c *rabbitmqSources) Create(ctx context.Context, rabbitmqSource *v1alpha1.RabbitmqSource, opts v1.CreateOptions) (result *v1alpha1.RabbitmqSource, err error) {
 	result = &v1alpha1.RabbitmqSource{}
 	err = c.client.Post().
 		Namespace(c.ns).
 		Resource("rabbitmqsources").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(rabbitmqSource).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Update takes the representation of a rabbitmqSource and updates it. Returns the server's representation of the rabbitmqSource, and an error, if there is any.
-func (c *rabbitmqSources) Update(rabbitmqSource *v1alpha1.RabbitmqSource) (result *v1alpha1.RabbitmqSource, err error) {
+func (c *rabbitmqSources) Update(ctx context.Context, rabbitmqSource *v1alpha1.RabbitmqSource, opts v1.UpdateOptions) (result *v1alpha1.RabbitmqSource, err error) {
 	result = &v1alpha1.RabbitmqSource{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("rabbitmqsources").
 		Name(rabbitmqSource.Name).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(rabbitmqSource).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-
-func (c *rabbitmqSources) UpdateStatus(rabbitmqSource *v1alpha1.RabbitmqSource) (result *v1alpha1.RabbitmqSource, err error) {
+func (c *rabbitmqSources) UpdateStatus(ctx context.Context, rabbitmqSource *v1alpha1.RabbitmqSource, opts v1.UpdateOptions) (result *v1alpha1.RabbitmqSource, err error) {
 	result = &v1alpha1.RabbitmqSource{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("rabbitmqsources").
 		Name(rabbitmqSource.Name).
 		SubResource("status").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(rabbitmqSource).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Delete takes name of the rabbitmqSource and deletes it. Returns an error if one occurs.
-func (c *rabbitmqSources) Delete(name string, options *v1.DeleteOptions) error {
+func (c *rabbitmqSources) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("rabbitmqsources").
 		Name(name).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *rabbitmqSources) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
+func (c *rabbitmqSources) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
 	var timeout time.Duration
-	if listOptions.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOptions.TimeoutSeconds) * time.Second
+	if listOpts.TimeoutSeconds != nil {
+		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("rabbitmqsources").
-		VersionedParams(&listOptions, scheme.ParameterCodec).
+		VersionedParams(&listOpts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // Patch applies the patch and returns the patched rabbitmqSource.
-func (c *rabbitmqSources) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.RabbitmqSource, err error) {
+func (c *rabbitmqSources) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.RabbitmqSource, err error) {
 	result = &v1alpha1.RabbitmqSource{}
 	err = c.client.Patch(pt).
 		Namespace(c.ns).
 		Resource("rabbitmqsources").
-		SubResource(subresources...).
 		Name(name).
+		SubResource(subresources...).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(data).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
