@@ -121,7 +121,7 @@ func (r *Reconciler) rabbitmqURLFromRabbit(ctx context.Context, ref *duckv1.KRef
 
 	_ = rab.Status.Admin.SecretReference
 
-	s, err := r.kubeClientSet.CoreV1().Secrets(rab.Status.Admin.SecretReference.Namespace).Get(rab.Status.Admin.SecretReference.Name, metav1.GetOptions{})
+	s, err := r.kubeClientSet.CoreV1().Secrets(rab.Status.Admin.SecretReference.Namespace).Get(ctx, rab.Status.Admin.SecretReference.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
