@@ -16,8 +16,6 @@
 package duck
 
 import (
-	"context"
-
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"knative.dev/eventing/test/lib/resources"
@@ -31,7 +29,7 @@ func WaitForKServiceReady(client resources.ServingClient, name, namespace string
 }
 
 // WaitForKServiceScales will wait until ksvc scale is satisfied
-func WaitForKServiceScales(ctx context.Context, client resources.ServingClient, name, namespace string, satisfyScale func(int) bool) error {
+func WaitForKServiceScales(client resources.ServingClient, name, namespace string, satisfyScale func(int) bool) error {
 	err := WaitForKServiceReady(client, name, namespace)
 	if err != nil {
 		return err
@@ -44,7 +42,7 @@ func WaitForKServiceScales(ctx context.Context, client resources.ServingClient, 
 		return satisfyScale(int(dep.Status.ReadyReplicas)), nil
 	}
 	return test.WaitForDeploymentState(
-		ctx, client.Kube, deploymentName, inState, "scales", namespace, timeout,
+		client.Kube, deploymentName, inState, "scales", namespace, timeout,
 	)
 }
 

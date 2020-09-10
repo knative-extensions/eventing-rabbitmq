@@ -30,7 +30,8 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	duckv1 "knative.dev/pkg/apis/duck/v1"
-	"knative.dev/pkg/logging"
+
+	"knative.dev/eventing/pkg/logging"
 )
 
 const (
@@ -122,7 +123,7 @@ func (p *persistedStore) Run(ctx context.Context) {
 		case <-p.syncCh:
 			atomic.StoreInt32(&p.syncing, 1)
 			if err := p.doSync(ctx.Done()); err != nil {
-				logger.Warnw("failed to persist resources", zap.Error(err))
+				logger.Warn("failed to persist resources", zap.Error(err))
 
 				// Retry
 				p.sync()

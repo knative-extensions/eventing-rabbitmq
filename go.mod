@@ -47,7 +47,7 @@ replace (
 	k8s.io/cloud-provider => k8s.io/cloud-provider v0.18.8
 
 	// WORKAROUND until k8s v1.18+ gets to knative/pkg and knative/eventing
-	knative.dev/eventing => github.com/zroubalik/eventing v0.15.1-0.20200910120552-38c9fe3cb718
+	knative.dev/eventing => github.com/zroubalik/eventing v0.15.1-0.20200824120738-2b97ca8b85d0
 	knative.dev/pkg => github.com/zroubalik/pkg v0.0.0-20200824111853-cf31d44b1119
 
 //	k8s.io/code-generator => k8s.io/code-generator v0.17.6
