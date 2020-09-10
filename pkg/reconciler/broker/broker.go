@@ -18,9 +18,6 @@ package broker
 
 import (
 	"context"
-	"fmt"
-	"knative.dev/pkg/logging/logkey"
-
 	"go.uber.org/zap"
 	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -93,20 +90,7 @@ type ReconcilerArgs struct {
 	IngressServiceAccountName string
 }
 
-func brokerKey(b *v1beta1.Broker) string {
-	return fmt.Sprintf("%s/%s", b.GetNamespace(), b.GetName())
-}
-
-// withLogKey sets the Knative logging key for the reconciled resource.
-func withLogKey(ctx context.Context, b *v1beta1.Broker) context.Context {
-	brokerKey := brokerKey(b)
-	logger := logging.FromContext(ctx).With(zap.String(logkey.Key, brokerKey))
-	return logging.WithLogger(ctx, logger)
-}
-
 func (r *Reconciler) ReconcileKind(ctx context.Context, b *v1beta1.Broker) pkgreconciler.Event {
-	ctx = withLogKey(ctx, b)
-
 	logging.FromContext(ctx).Debugw("Reconciling", zap.Any("Broker", b))
 
 	// TODO: broker coupled to channels
