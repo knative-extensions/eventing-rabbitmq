@@ -18,6 +18,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -38,7 +40,7 @@ var rabbitmqsourcesResource = schema.GroupVersionResource{Group: "sources.knativ
 var rabbitmqsourcesKind = schema.GroupVersionKind{Group: "sources.knative.dev", Version: "v1alpha1", Kind: "RabbitmqSource"}
 
 // Get takes name of the rabbitmqSource, and returns the corresponding rabbitmqSource object, and an error if there is any.
-func (c *FakeRabbitmqSources) Get(name string, options v1.GetOptions) (result *v1alpha1.RabbitmqSource, err error) {
+func (c *FakeRabbitmqSources) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.RabbitmqSource, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(rabbitmqsourcesResource, c.ns, name), &v1alpha1.RabbitmqSource{})
 
@@ -49,7 +51,7 @@ func (c *FakeRabbitmqSources) Get(name string, options v1.GetOptions) (result *v
 }
 
 // List takes label and field selectors, and returns the list of RabbitmqSources that match those selectors.
-func (c *FakeRabbitmqSources) List(opts v1.ListOptions) (result *v1alpha1.RabbitmqSourceList, err error) {
+func (c *FakeRabbitmqSources) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.RabbitmqSourceList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(rabbitmqsourcesResource, rabbitmqsourcesKind, c.ns, opts), &v1alpha1.RabbitmqSourceList{})
 
@@ -71,14 +73,14 @@ func (c *FakeRabbitmqSources) List(opts v1.ListOptions) (result *v1alpha1.Rabbit
 }
 
 // Watch returns a watch.Interface that watches the requested rabbitmqSources.
-func (c *FakeRabbitmqSources) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeRabbitmqSources) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(rabbitmqsourcesResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a rabbitmqSource and creates it.  Returns the server's representation of the rabbitmqSource, and an error, if there is any.
-func (c *FakeRabbitmqSources) Create(rabbitmqSource *v1alpha1.RabbitmqSource) (result *v1alpha1.RabbitmqSource, err error) {
+func (c *FakeRabbitmqSources) Create(ctx context.Context, rabbitmqSource *v1alpha1.RabbitmqSource, opts v1.CreateOptions) (result *v1alpha1.RabbitmqSource, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(rabbitmqsourcesResource, c.ns, rabbitmqSource), &v1alpha1.RabbitmqSource{})
 
@@ -89,7 +91,7 @@ func (c *FakeRabbitmqSources) Create(rabbitmqSource *v1alpha1.RabbitmqSource) (r
 }
 
 // Update takes the representation of a rabbitmqSource and updates it. Returns the server's representation of the rabbitmqSource, and an error, if there is any.
-func (c *FakeRabbitmqSources) Update(rabbitmqSource *v1alpha1.RabbitmqSource) (result *v1alpha1.RabbitmqSource, err error) {
+func (c *FakeRabbitmqSources) Update(ctx context.Context, rabbitmqSource *v1alpha1.RabbitmqSource, opts v1.UpdateOptions) (result *v1alpha1.RabbitmqSource, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(rabbitmqsourcesResource, c.ns, rabbitmqSource), &v1alpha1.RabbitmqSource{})
 
@@ -101,7 +103,7 @@ func (c *FakeRabbitmqSources) Update(rabbitmqSource *v1alpha1.RabbitmqSource) (r
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeRabbitmqSources) UpdateStatus(rabbitmqSource *v1alpha1.RabbitmqSource) (*v1alpha1.RabbitmqSource, error) {
+func (c *FakeRabbitmqSources) UpdateStatus(ctx context.Context, rabbitmqSource *v1alpha1.RabbitmqSource, opts v1.UpdateOptions) (*v1alpha1.RabbitmqSource, error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateSubresourceAction(rabbitmqsourcesResource, "status", c.ns, rabbitmqSource), &v1alpha1.RabbitmqSource{})
 
@@ -112,7 +114,7 @@ func (c *FakeRabbitmqSources) UpdateStatus(rabbitmqSource *v1alpha1.RabbitmqSour
 }
 
 // Delete takes name of the rabbitmqSource and deletes it. Returns an error if one occurs.
-func (c *FakeRabbitmqSources) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeRabbitmqSources) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(rabbitmqsourcesResource, c.ns, name), &v1alpha1.RabbitmqSource{})
 
@@ -120,15 +122,15 @@ func (c *FakeRabbitmqSources) Delete(name string, options *v1.DeleteOptions) err
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeRabbitmqSources) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(rabbitmqsourcesResource, c.ns, listOptions)
+func (c *FakeRabbitmqSources) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(rabbitmqsourcesResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1alpha1.RabbitmqSourceList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched rabbitmqSource.
-func (c *FakeRabbitmqSources) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.RabbitmqSource, err error) {
+func (c *FakeRabbitmqSources) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.RabbitmqSource, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(rabbitmqsourcesResource, c.ns, name, pt, data, subresources...), &v1alpha1.RabbitmqSource{})
 

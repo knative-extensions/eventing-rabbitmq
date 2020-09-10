@@ -45,8 +45,8 @@ import (
 	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/resolver"
 
-	kedaclientset "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/clientset/versioned"
-	kedalisters "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/listers/keda/v1alpha1"
+	kedaclientset "github.com/kedacore/keda/pkg/generated/clientset/versioned"
+	kedalisters "github.com/kedacore/keda/pkg/generated/listers/keda/v1alpha1"
 	brokerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
 )
 
@@ -168,7 +168,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *v1beta1.Trigger) pkgr
 		return err
 	}
 
-	return r.reconcileScaledObject(queue, deployment, t)
+	return r.reconcileScaledObject(ctx, queue, deployment, t)
 }
 
 func (r *Reconciler) FinalizeKind(ctx context.Context, t *v1beta1.Trigger) pkgreconciler.Event {
@@ -191,7 +191,7 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, t *v1beta1.Trigger) pkgre
 func (r *Reconciler) reconcileDeployment(ctx context.Context, d *v1.Deployment) (*v1.Deployment, error) {
 	current, err := r.deploymentLister.Deployments(d.Namespace).Get(d.Name)
 	if apierrs.IsNotFound(err) {
-		_, err = r.kubeClientSet.AppsV1().Deployments(d.Namespace).Create(d)
+		_, err = r.kubeClientSet.AppsV1().Deployments(d.Namespace).Create(ctx, d, metav1.CreateOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -202,7 +202,7 @@ func (r *Reconciler) reconcileDeployment(ctx context.Context, d *v1.Deployment) 
 		// Don't modify the informers copy.
 		desired := current.DeepCopy()
 		desired.Spec = d.Spec
-		_, err = r.kubeClientSet.AppsV1().Deployments(desired.Namespace).Update(desired)
+		_, err = r.kubeClientSet.AppsV1().Deployments(desired.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -315,7 +315,7 @@ func (r *Reconciler) rabbitmqURL(ctx context.Context, t *v1beta1.Trigger) (strin
 	return string(val), nil
 }
 
-func (r *Reconciler) reconcileScaledObject(queue *amqp.Queue, deployment *v1.Deployment, trigger *v1beta1.Trigger) error {
+func (r *Reconciler) reconcileScaledObject(ctx context.Context, queue *amqp.Queue, deployment *v1.Deployment, trigger *v1beta1.Trigger) error {
 	so := resources.MakeDispatcherScaledObject(&resources.DispatcherScaledObjectArgs{
 		DispatcherDeployment:      deployment,
 		QueueName:                 queue.Name,
@@ -326,7 +326,7 @@ func (r *Reconciler) reconcileScaledObject(queue *amqp.Queue, deployment *v1.Dep
 
 	current, err := r.scaledObjectLister.ScaledObjects(so.Namespace).Get(so.Name)
 	if apierrs.IsNotFound(err) {
-		_, err = r.kedaClientset.KedaV1alpha1().ScaledObjects(so.Namespace).Create(so)
+		_, err = r.kedaClientset.KedaV1alpha1().ScaledObjects(so.Namespace).Create(ctx, so, metav1.CreateOptions{})
 		return err
 	}
 	if err != nil {
@@ -336,7 +336,7 @@ func (r *Reconciler) reconcileScaledObject(queue *amqp.Queue, deployment *v1.Dep
 		// Don't modify the informers copy.
 		desired := current.DeepCopy()
 		desired.Spec = so.Spec
-		_, err = r.kedaClientset.KedaV1alpha1().ScaledObjects(desired.Namespace).Update(desired)
+		_, err = r.kedaClientset.KedaV1alpha1().ScaledObjects(desired.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
 		return err
 	}
 	return nil

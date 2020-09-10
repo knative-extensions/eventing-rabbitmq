@@ -21,6 +21,7 @@ import (
 	"log"
 
 	"knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
+	eventingclient "knative.dev/eventing/pkg/client/injection/client"
 
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
@@ -28,7 +29,7 @@ import (
 
 	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
-	eventingclient "knative.dev/eventing/pkg/client/injection/client"
+
 	brokerinformer "knative.dev/eventing/pkg/client/injection/informers/eventing/v1beta1/broker"
 	brokerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1beta1/broker"
 	"knative.dev/eventing/pkg/duck"
@@ -46,8 +47,8 @@ import (
 	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/resolver"
 
-	kedaclient "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/injection/client"
-	triggerauthenticationinformer "knative.dev/eventing-rabbitmq/pkg/internal/thirdparty/keda/client/injection/informers/keda/v1alpha1/triggerauthentication"
+	kedaclient "knative.dev/eventing-autoscaler-keda/pkg/client/injection/keda/client"
+	triggerauthenticationinformer "knative.dev/eventing-autoscaler-keda/pkg/client/injection/keda/informers/keda/v1alpha1/triggerauthentication"
 )
 
 type envConfig struct {

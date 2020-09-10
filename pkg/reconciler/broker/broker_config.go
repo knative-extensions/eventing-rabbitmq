@@ -79,7 +79,7 @@ func (r *Reconciler) rabbitmqURL(ctx context.Context, b *v1beta1.Broker) (*url.U
 }
 
 func (r *Reconciler) rabbitmqURLFromSecret(ctx context.Context, ref *duckv1.KReference) (*url.URL, error) {
-	s, err := r.kubeClientSet.CoreV1().Secrets(ref.Namespace).Get(ref.Name, metav1.GetOptions{})
+	s, err := r.kubeClientSet.CoreV1().Secrets(ref.Namespace).Get(ctx, ref.Name, metav1.GetOptions{})
 
 	if err != nil {
 		return nil, err
