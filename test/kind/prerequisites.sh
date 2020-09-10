@@ -30,7 +30,7 @@ echo "Installing RabbitMQ Cluster Operator"
 
 # TODO: The RabbitMQ team is working on releasing the yaml, https://github.com/rabbitmq/cluster-operator/issues/228
 
-tmp_dir=$(mktemp -d -t ci-kind)
+tmp_dir=$(mktemp -d -t ci-kind-XXX)
 echo ${tmp_dir}
 
 cd ${tmp_dir}
@@ -46,7 +46,7 @@ kubectl -n rabbitmq-system apply --kustomize config/manager/
 
 echo "Installing KEDA"
 
-tmp_dir=$(mktemp -d -t ci-kind)
+tmp_dir=$(mktemp -d -t ci-kind-XXX)
 echo ${tmp_dir}
 
 cd ${tmp_dir}
