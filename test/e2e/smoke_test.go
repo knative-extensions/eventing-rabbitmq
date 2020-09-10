@@ -25,10 +25,13 @@ import (
 )
 
 // SmokeTestBrokerImpl makes sure an RabbitMQ Broker goes ready.
-func SmokeTestBrokerImpl(t *testing.T) {
+func SmokeTestBrokerImpl(t *testing.T, brokerName string) {
+
 	opts := []rigging.Option{}
 
-	rig, err := rigging.NewInstall(opts, []string{"rabbitmq", "smoke/broker"}, map[string]string{})
+	rig, err := rigging.NewInstall(opts, []string{"rabbitmq", "smoke/broker"}, map[string]string{
+		"brokerName": brokerName,
+	})
 	if err != nil {
 		t.Fatalf("failed to create rig, %s", err)
 	}

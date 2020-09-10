@@ -39,6 +39,13 @@ replace (
 	// WORKAROUND until KEDA v2 is not released
 	//	github.com/kedacore/keda => github.com/kedacore/keda v1.5.1-0.20200824075503-b6c60a088a7a
 	github.com/operator-framework/operator-sdk => github.com/operator-framework/operator-sdk v0.11.0
+
+	//	k8s.io/code-generator => k8s.io/code-generator v0.17.6
+	//	k8s.io/metrics => k8s.io/metrics v0.17.6
+
+	// lock prom import to avoid a bad goautoneg import.
+	github.com/prometheus/client_golang => github.com/prometheus/client_golang v0.9.2
+
 	k8s.io/api => k8s.io/api v0.18.8
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.18.8
 	k8s.io/apimachinery => k8s.io/apimachinery v0.18.8
@@ -50,6 +57,4 @@ replace (
 	knative.dev/eventing => github.com/zroubalik/eventing v0.15.1-0.20200824120738-2b97ca8b85d0
 	knative.dev/pkg => github.com/zroubalik/pkg v0.0.0-20200824111853-cf31d44b1119
 
-//	k8s.io/code-generator => k8s.io/code-generator v0.17.6
-//	k8s.io/metrics => k8s.io/metrics v0.17.6
 )

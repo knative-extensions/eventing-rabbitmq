@@ -1,5 +1,3 @@
-// +build e2e
-
 /*
 Copyright 2020 The Knative Authors
 
@@ -16,23 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package rabbit_test
+package defaultsystem
 
 import (
-	"testing"
+	"os"
 
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	// For our e2e testing, we want this linked first so that our
-	// system namespace environment variable is defaulted prior to
-	// logstream initialization.
-	_ "knative.dev/eventing-rabbitmq/test/defaultsystem"
-
-	"knative.dev/pkg/test/helpers"
-	"knative.dev/pkg/test/logstream"
+	"knative.dev/pkg/system"
 )
 
-// TestSmokeBroker makes sure a Broker goes ready as a RabbitMQ Broker Class.
-func TestSmokeBroker(t *testing.T) {
-	t.Cleanup(logstream.Start(t))
-	SmokeTestBrokerImpl(t, helpers.ObjectNameForTest(t))
+func init() {
+	if ns := os.Getenv(system.NamespaceEnvKey); ns != "" {
+		return
+	}
+	os.Setenv(system.NamespaceEnvKey, "knative-eventing")
 }
