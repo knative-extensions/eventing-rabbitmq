@@ -44,6 +44,8 @@ jobs:
 
     - name: Create KinD Cluster
       working-directory: ./src/knative.dev/${{ github.event.repository.name }}
+      env:
+        NODE_IMAGE: 'kindest/node:v1.16.9@sha256:7175872357bc85847ec4b1aba46ed1d12fa054c83ac7a8a11f5c268957fd5765'
       run: |
         set -x
 
@@ -53,7 +55,9 @@ jobs:
         kind: Cluster
         nodes:
         - role: control-plane
+          image: ${NODE_IMAGE}
         - role: worker
+          image: ${NODE_IMAGE}
         EOF
 
         # Create a cluster!
