@@ -37,6 +37,7 @@ import (
 	"knative.dev/pkg/logging"
 
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
+	"knative.dev/eventing/pkg/apis/eventing"
 	"knative.dev/eventing/pkg/apis/eventing/v1beta1"
 	clientset "knative.dev/eventing/pkg/client/clientset/versioned"
 	triggerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1beta1/trigger"
@@ -71,6 +72,8 @@ type Reconciler struct {
 	dispatcherImage              string
 	dispatcherServiceAccountName string
 
+	brokerClass string
+
 	// Dynamic tracker to track KResources. In particular, it tracks the dependency between Triggers and Sources.
 	kresourceTracker duck.ListableTracker
 
@@ -97,10 +100,24 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *v1beta1.Trigger) pkgr
 	logging.FromContext(ctx).Debug("Reconciling", zap.Any("Trigger", t))
 	t.Status.InitializeConditions()
 
-	err := r.propagateBrokerStatus(ctx, t)
+	broker, err := r.brokerLister.Brokers(t.Namespace).Get(t.Spec.Broker)
 	if err != nil {
-		return err
+		if apierrs.IsNotFound(err) {
+			t.Status.MarkBrokerFailed("BrokerDoesNotExist", "Broker %q does not exist", t.Spec.Broker)
+			// Ok to return nil here. Once the Broker comes available, or Trigger changes, we get requeued.
+			return nil
+		}
+		t.Status.MarkBrokerFailed("FailedToGetBroker", "Failed to get broker %q : %s", t.Spec.Broker, err)
+		return fmt.Errorf("retrieving broker: %v", err)
 	}
+
+	// If it's not my brokerclass, ignore
+	if broker.Annotations[eventing.BrokerClassKey] != r.brokerClass {
+		logging.FromContext(ctx).Infof("Ignoring trigger %s/%s", t.Namespace, t.Name)
+		return nil
+	}
+
+	t.Status.PropagateBrokerCondition(broker.Status.GetTopLevelCondition())
 
 	if err = r.checkDependencyAnnotation(ctx, t); err != nil {
 		return err

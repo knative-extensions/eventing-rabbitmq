@@ -84,6 +84,7 @@ func NewController(
 		scaledObjectLister:           scaledObjectInformer.Lister(),
 		dispatcherImage:              env.DispatcherImage,
 		dispatcherServiceAccountName: env.DispatcherServiceAccount,
+		brokerClass:                  env.BrokerClass,
 	}
 
 	impl := triggerreconciler.NewImpl(ctx, r)

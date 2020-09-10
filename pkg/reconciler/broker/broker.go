@@ -143,12 +143,15 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *v1beta1.Broker) pkgre
 		Host:   names.ServiceHostName(ingressEndpoints.GetName(), ingressEndpoints.GetNamespace()),
 	})
 
-	_, err = r.reconcileScaleTriggerAuthentication(ctx, b)
-	if err != nil {
-		logging.FromContext(ctx).Errorw("Problem creating TriggerAuthentication", zap.Error(err))
-		b.Status.MarkIngressFailed("TriggerAuthenticationFailure", "%v", err)
-		return err
-	}
+	// Do this after we sort out Keda 2.0 versioning.
+	/*
+		_, err = r.reconcileScaleTriggerAuthentication(ctx, b)
+		if err != nil {
+			logging.FromContext(ctx).Errorw("Problem creating TriggerAuthentication", zap.Error(err))
+			b.Status.MarkIngressFailed("TriggerAuthenticationFailure", "%v", err)
+			return err
+		}
+	*/
 
 	// So, at this point the Broker is ready and everything should be solid
 	// for the triggers to act upon.
