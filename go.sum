@@ -341,6 +341,7 @@ github.com/cloudevents/sdk-go v1.0.0/go.mod h1:3TkmM0cFqkhCHOq5JzzRU/RxRkwzoS8TZ
 github.com/cloudevents/sdk-go/protocol/kafka_sarama/v2 v2.1.0/go.mod h1:1p3V+0isTvzNkzkOnqGjeE+UMc1O+txDRZ5lmlGwLqQ=
 github.com/cloudevents/sdk-go/protocol/stan/v2 v2.1.0/go.mod h1:n1rHc4GzKxCNxAx2qwP6vso1B9nyLPKioHoVgnGbNJQ=
 github.com/cloudevents/sdk-go/v2 v2.0.0/go.mod h1:3CTrpB4+u7Iaj6fd7E2Xvm5IxMdRoaAhqaRVnOr2rCU=
+github.com/cloudevents/sdk-go/v2 v2.0.1-0.20200630063327-b91da81265fe/go.mod h1:3CTrpB4+u7Iaj6fd7E2Xvm5IxMdRoaAhqaRVnOr2rCU=
 github.com/cloudevents/sdk-go/v2 v2.1.0/go.mod h1:3CTrpB4+u7Iaj6fd7E2Xvm5IxMdRoaAhqaRVnOr2rCU=
 github.com/cloudevents/sdk-go/v2 v2.2.0 h1:FlBJg7W0QywbOjuZGmRXUyFk8qkCHx2euETp+tuopSU=
 github.com/cloudevents/sdk-go/v2 v2.2.0/go.mod h1:3CTrpB4+u7Iaj6fd7E2Xvm5IxMdRoaAhqaRVnOr2rCU=
@@ -1297,6 +1298,7 @@ github.com/rogpeppe/go-charset v0.0.0-20180617210344-2471d30d28b4/go.mod h1:qgYe
 github.com/rogpeppe/go-internal v1.1.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/rogpeppe/go-internal v1.3.2/go.mod h1:xXDCJY+GAPziupqXw64V24skbSoqbTEfhy4qGm1nDQc=
+github.com/rogpeppe/go-internal v1.5.0/go.mod h1:xXDCJY+GAPziupqXw64V24skbSoqbTEfhy4qGm1nDQc=
 github.com/rogpeppe/go-internal v1.5.2 h1:qLvObTrvO/XRCqmkKxUlOBc48bI3efyDuAZe25QiF0w=
 github.com/rogpeppe/go-internal v1.5.2/go.mod h1:xXDCJY+GAPziupqXw64V24skbSoqbTEfhy4qGm1nDQc=
 github.com/rubenv/sql-migrate v0.0.0-20190618074426-f4d34eae5a5c/go.mod h1:WS0rl9eEliYI8DPnr3TOwz4439pay+qNgzJoVya/DmY=
@@ -1485,8 +1487,6 @@ github.com/yvasiyarov/go-metrics v0.0.0-20140926110328-57bccd1ccd43/go.mod h1:aX
 github.com/yvasiyarov/gorelic v0.0.0-20141212073537-a9bba5b9ab50/go.mod h1:NUSPSUX/bi6SeDMUh6brw0nXpxHnc96TguQh0+r/ssA=
 github.com/yvasiyarov/newrelic_platform_go v0.0.0-20140908184405-b21fdbd4370f/go.mod h1:GlGEuHIJweS1mbCqG+7vt2nvWLzLLnRHbXz5JKd/Qbg=
 github.com/ziutek/mymysql v1.5.4/go.mod h1:LMSpPZ6DbqWFxNCHW77HeMg9I646SAhApZ/wKdgO/C0=
-github.com/zroubalik/eventing v0.15.1-0.20200911165720-9bc269d6b965 h1:a+c5u3EGMfudf9PwnH4Fi5rxSdi8VFbH/ACrQaUoGuU=
-github.com/zroubalik/eventing v0.15.1-0.20200911165720-9bc269d6b965/go.mod h1:pxbDBeBHhF2o5UINkB45nL0ECx29h5RklkKlHCWeel8=
 gitlab.com/flimzy/testy v0.0.0-20190816103046-aca1ef5ffe7e/go.mod h1:MQwjgAyueIbBZv+qSYAMs6LaZwsJysPs0BK/niv9JiI=
 gitlab.com/flimzy/testy v0.0.2/go.mod h1:YObF4cq711ubd/3U0ydRQQVz7Cnq/ChgJpVwNr/AJac=
 gitlab.com/flimzy/testy v0.0.3/go.mod h1:YObF4cq711ubd/3U0ydRQQVz7Cnq/ChgJpVwNr/AJac=
@@ -2244,6 +2244,10 @@ k8s.io/utils v0.0.0-20200603063816-c1c6865ac451/go.mod h1:jPW/WVKK9YHAvNhRxK0md/
 knative.dev/caching v0.0.0-20190719140829-2032732871ff/go.mod h1:dHXFU6CGlLlbzaWc32g80cR92iuBSpsslDNBWI8C7eg=
 knative.dev/caching v0.0.0-20200116200605-67bca2c83dfa/go.mod h1:dHXFU6CGlLlbzaWc32g80cR92iuBSpsslDNBWI8C7eg=
 knative.dev/caching v0.0.0-20200630172829-a78409990d76/go.mod h1:iyrTBBqVs1H+bmj+mqyGEgNiLBzuGsY1LslIayGy0OE=
+knative.dev/eventing v0.15.1-0.20200707170044-e018fe794753/go.mod h1:jU8gg/VL4ZBDkAlqTPaBMnoC1Vrw/2ue1n4vc19EN5k=
+knative.dev/eventing v0.16.1/go.mod h1:jU8gg/VL4ZBDkAlqTPaBMnoC1Vrw/2ue1n4vc19EN5k=
+knative.dev/eventing v0.17.1-0.20200911213100-a44dbdbbcec5 h1:QkaNqiVUBTWe+EveiMT5VrLizUO/x9JDQaZzFHVrPJY=
+knative.dev/eventing v0.17.1-0.20200911213100-a44dbdbbcec5/go.mod h1:aa/wrnpX6Xa+sdVUso9K//0j8rvrAjURSkMzvvt4Vuo=
 knative.dev/eventing-autoscaler-keda v0.0.0-20200909130950-f1b6899ad87b h1:2BnxDJY6PDpOXVRqSSZiGlZlahSad1ZnsYQdP5YnrZ0=
 knative.dev/eventing-autoscaler-keda v0.0.0-20200909130950-f1b6899ad87b/go.mod h1:Fl8fBNYQS3meeMB3sdN/aUS2r9j0MVP2x6fYId9P+Rw=
 knative.dev/eventing-contrib v0.6.1-0.20190723221543-5ce18048c08b/go.mod h1:SnXZgSGgMSMLNFTwTnpaOH7hXDzTFtw0J8OmHflNx3g=
@@ -2287,6 +2291,8 @@ knative.dev/test-infra v0.0.0-20200820231346-543fe3e80c03/go.mod h1:Pmg2c7Z7q7BG
 knative.dev/test-infra v0.0.0-20200828211307-9d4372c9b1c7/go.mod h1:Pmg2c7Z7q7BGFUV/GOpU5BlrD3ePJft4MPqx8AYBplc=
 knative.dev/test-infra v0.0.0-20200909211651-72eb6ae3c773 h1:R/kYdvSoein2a6BwY1FSZH8wk0aHQ9gN3GQf94AGqcs=
 knative.dev/test-infra v0.0.0-20200909211651-72eb6ae3c773/go.mod h1:Pmg2c7Z7q7BGFUV/GOpU5BlrD3ePJft4MPqx8AYBplc=
+knative.dev/test-infra v0.0.0-20200910231400-cfba2288403d h1:0rvMkMqr6RYsIn4iL/G71FC7B6srbUj59dyuPecuzsI=
+knative.dev/test-infra v0.0.0-20200910231400-cfba2288403d/go.mod h1:Pmg2c7Z7q7BGFUV/GOpU5BlrD3ePJft4MPqx8AYBplc=
 modernc.org/cc v1.0.0/go.mod h1:1Sk4//wdnYJiUIxnW8ddKpaOJCF37yAdqYnkxUpaYxw=
 modernc.org/golex v1.0.0/go.mod h1:b/QX9oBD/LhixY6NDh+IdGv17hgB+51fET1i2kPSmvk=
 modernc.org/mathutil v1.0.0/go.mod h1:wU0vUrJsVWBZ4P6e7xtFJEhFSNsfRLJ8H458uRjg03k=

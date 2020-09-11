@@ -24,10 +24,10 @@ require (
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/code-generator v0.18.8
 	k8s.io/kube-openapi v0.0.0-20200410145947-bcb3869e6f29
-	knative.dev/eventing v0.17.1-0.20200908151032-5fdaa0605d87
+	knative.dev/eventing v0.17.1-0.20200911213100-a44dbdbbcec5
 	knative.dev/eventing-autoscaler-keda v0.0.0-20200909130950-f1b6899ad87b
 	knative.dev/pkg v0.0.0-20200911145400-2d4efecc6bc1
-	knative.dev/test-infra v0.0.0-20200909211651-72eb6ae3c773
+	knative.dev/test-infra v0.0.0-20200910231400-cfba2288403d
 )
 
 replace (
@@ -48,7 +48,4 @@ replace (
 	k8s.io/apiserver => k8s.io/apiserver v0.18.8
 	k8s.io/client-go => k8s.io/client-go v0.18.8
 	k8s.io/cloud-provider => k8s.io/cloud-provider v0.18.8
-
-	// WORKAROUND until k8s v1.18+ gets to knative/pkg and knative/eventing
-	knative.dev/eventing => github.com/zroubalik/eventing v0.15.1-0.20200911165720-9bc269d6b965
 )
