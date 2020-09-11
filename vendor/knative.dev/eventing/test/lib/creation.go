@@ -158,6 +158,22 @@ func (c *Client) CreateSubscriptionOrFail(
 	if err != nil && !errors.IsAlreadyExists(err) {
 		c.T.Fatalf("Failed to create subscription %q: %v", name, err)
 	}
+	// Note that if the Create above failed with 'already created', then retSubscription won't be valid, so we have to grab it again.
+	if err != nil && errors.IsAlreadyExists(err) {
+		err = c.RetryWebhookErrors(func(attempts int) (err error) {
+			c.T.Logf("Getting v1beta1 subscription %s for channel %+v-%s", name, channelTypeMeta, channelName)
+			// update subscription with the new reference
+			var e error
+			retSubscription, e = subscriptions.Get(context.Background(), name, metav1.GetOptions{})
+			if e != nil {
+				c.T.Logf("Failed to get subscription %q: %v", name, e)
+			}
+			return e
+		})
+		if err != nil {
+			c.T.Fatalf("Failed to get a created subscription %q: %v", name, err)
+		}
+	}
 	c.Tracker.AddObj(retSubscription)
 	return retSubscription
 }
@@ -184,6 +200,21 @@ func (c *Client) CreateSubscriptionV1OrFail(
 	})
 	if err != nil && !errors.IsAlreadyExists(err) {
 		c.T.Fatalf("Failed to create subscription %q: %v", name, err)
+	}
+	if err != nil && errors.IsAlreadyExists(err) {
+		err = c.RetryWebhookErrors(func(attempts int) (err error) {
+			c.T.Logf("Getting v1 subscription %s for channel %+v-%s", name, channelTypeMeta, channelName)
+			// update subscription with the new reference
+			var e error
+			retSubscription, e = subscriptions.Get(context.Background(), name, metav1.GetOptions{})
+			if e != nil {
+				c.T.Logf("Failed to create subscription %q: %v", name, e)
+			}
+			return e
+		})
+		if err != nil {
+			c.T.Fatalf("Failed to get a created subscription %q: %v", name, err)
+		}
 	}
 	c.Tracker.AddObj(retSubscription)
 	return retSubscription
@@ -270,6 +301,18 @@ func (c *Client) CreateBrokerV1Beta1OrFail(name string, options ...resources.Bro
 	if err != nil && !errors.IsAlreadyExists(err) {
 		c.T.Fatalf("Failed to create v1beta1 broker %q: %v", name, err)
 	}
+	if err != nil && errors.IsAlreadyExists(err) {
+		c.RetryWebhookErrors(func(attempts int) (err error) {
+			c.T.Logf("Getting v1beta1 broker %s", name)
+			// update broker with the new reference
+			var e error
+			retBroker, e = brokers.Get(context.Background(), name, metav1.GetOptions{})
+			if e != nil {
+				c.T.Fatalf("Failed to get created v1beta1 broker %q: %v", name, e)
+			}
+			return e
+		})
+	}
 	c.Tracker.AddObj(retBroker)
 	return retBroker
 }
@@ -294,6 +337,23 @@ func (c *Client) CreateTriggerOrFailV1Beta1(name string, options ...resources.Tr
 	if err != nil && !errors.IsAlreadyExists(err) {
 		c.T.Fatalf("Failed to create v1beta1 trigger %q: %v", name, err)
 	}
+
+	if err != nil && errors.IsAlreadyExists(err) {
+		err = c.RetryWebhookErrors(func(attempts int) (err error) {
+			c.T.Logf("Getting v1beta1 trigger %s", name)
+			// update trigger with the new reference
+			var e error
+			retTrigger, e = triggers.Get(context.Background(), name, metav1.GetOptions{})
+			if e != nil {
+				c.T.Logf("Failed to get created v1beta1 trigger %q: %v", name, e)
+			}
+			return e
+		})
+		if err != nil {
+			c.T.Fatalf("Failed to get created v1beta1 trigger %q: %v", name, err)
+		}
+	}
+
 	c.Tracker.AddObj(retTrigger)
 	return retTrigger
 }
@@ -317,6 +377,22 @@ func (c *Client) CreateBrokerV1OrFail(name string, options ...resources.BrokerV1
 	if err != nil && !errors.IsAlreadyExists(err) {
 		c.T.Fatalf("Failed to create v1 broker %q: %v", name, err)
 	}
+
+	if err != nil && errors.IsAlreadyExists(err) {
+		err := c.RetryWebhookErrors(func(attempts int) (err error) {
+			c.T.Logf("Getting v1 broker %s", name)
+			// update broker with the new reference
+			var e error
+			retBroker, e = brokers.Get(context.Background(), name, metav1.GetOptions{})
+			if e != nil {
+				c.T.Logf("Failed to get created v1 broker %q: %v", name, e)
+			}
+			return e
+		})
+		if err != nil {
+			c.T.Fatalf("Failed to get created v1 broker %q: %v", name, err)
+		}
+	}
 	c.Tracker.AddObj(retBroker)
 	return retBroker
 }
@@ -339,6 +415,21 @@ func (c *Client) CreateTriggerV1OrFail(name string, options ...resources.Trigger
 	})
 	if err != nil && !errors.IsAlreadyExists(err) {
 		c.T.Fatalf("Failed to create v1 trigger %q: %v", name, err)
+	}
+	if err != nil && !errors.IsAlreadyExists(err) {
+		err = c.RetryWebhookErrors(func(attempts int) (err error) {
+			c.T.Logf("Getting v1 trigger %s", name)
+			// update trigger with the new reference
+			var e error
+			retTrigger, e = triggers.Get(context.Background(), name, metav1.GetOptions{})
+			if e != nil {
+				c.T.Logf("Failed to get created v1 trigger %q: %v", name, e)
+			}
+			return e
+		})
+	}
+	if err != nil {
+		c.T.Fatalf("Failed to get created v1 trigger %q: %v", name, err)
 	}
 	c.Tracker.AddObj(retTrigger)
 	return retTrigger
@@ -612,7 +703,7 @@ func (c *Client) CreatePodOrFail(pod *corev1.Pod, options ...func(*corev1.Pod, *
 
 	err := reconciler.RetryUpdateConflicts(func(attempts int) (err error) {
 		c.T.Logf("Creating pod %+v", pod)
-		_, e := c.Kube.CreatePod(pod)
+		_, e := c.Kube.CreatePod(context.Background(), pod)
 		return e
 	})
 	if err != nil {
@@ -747,10 +838,9 @@ const (
 	saIngressName = "eventing-broker-ingress"
 	saFilterName  = "eventing-broker-filter"
 
-	// the three ClusterRoles are preinstalled in Knative Eventing setup
-	crIngressName      = "eventing-broker-ingress"
-	crFilterName       = "eventing-broker-filter"
-	crConfigReaderName = "eventing-config-reader"
+	// the ClusterRoles are preinstalled in Knative Eventing setup
+	crIngressName = "eventing-broker-ingress"
+	crFilterName  = "eventing-broker-filter"
 )
 
 // CreateRBACResourcesForBrokers creates required RBAC resources for creating Brokers,

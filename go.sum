@@ -1485,8 +1485,8 @@ github.com/yvasiyarov/go-metrics v0.0.0-20140926110328-57bccd1ccd43/go.mod h1:aX
 github.com/yvasiyarov/gorelic v0.0.0-20141212073537-a9bba5b9ab50/go.mod h1:NUSPSUX/bi6SeDMUh6brw0nXpxHnc96TguQh0+r/ssA=
 github.com/yvasiyarov/newrelic_platform_go v0.0.0-20140908184405-b21fdbd4370f/go.mod h1:GlGEuHIJweS1mbCqG+7vt2nvWLzLLnRHbXz5JKd/Qbg=
 github.com/ziutek/mymysql v1.5.4/go.mod h1:LMSpPZ6DbqWFxNCHW77HeMg9I646SAhApZ/wKdgO/C0=
-github.com/zroubalik/eventing v0.15.1-0.20200824120738-2b97ca8b85d0 h1:Xk47WLxV+IDX2XjRX9JU/d24StEzOd1QtjRxT739mFE=
-github.com/zroubalik/eventing v0.15.1-0.20200824120738-2b97ca8b85d0/go.mod h1:rkB/DZnXRdAK/teSwEs6VKwmbQFijVk2oTMXGDaJa9k=
+github.com/zroubalik/eventing v0.15.1-0.20200911165720-9bc269d6b965 h1:a+c5u3EGMfudf9PwnH4Fi5rxSdi8VFbH/ACrQaUoGuU=
+github.com/zroubalik/eventing v0.15.1-0.20200911165720-9bc269d6b965/go.mod h1:pxbDBeBHhF2o5UINkB45nL0ECx29h5RklkKlHCWeel8=
 gitlab.com/flimzy/testy v0.0.0-20190816103046-aca1ef5ffe7e/go.mod h1:MQwjgAyueIbBZv+qSYAMs6LaZwsJysPs0BK/niv9JiI=
 gitlab.com/flimzy/testy v0.0.2/go.mod h1:YObF4cq711ubd/3U0ydRQQVz7Cnq/ChgJpVwNr/AJac=
 gitlab.com/flimzy/testy v0.0.3/go.mod h1:YObF4cq711ubd/3U0ydRQQVz7Cnq/ChgJpVwNr/AJac=

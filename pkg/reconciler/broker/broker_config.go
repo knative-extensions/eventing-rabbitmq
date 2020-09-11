@@ -103,7 +103,7 @@ func (r *Reconciler) rabbitmqURLFromRabbit(ctx context.Context, ref *duckv1.KRef
 
 	gvr, _ := meta.UnsafeGuessKindToResource(gvk)
 
-	_, lister, err := r.rabbitLister.Get(gvr)
+	_, lister, err := r.rabbitLister.Get(ctx, gvr)
 	if err != nil {
 		return nil, err
 	}
