@@ -1021,7 +1021,7 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/eventing v0.17.1-0.20200908151032-5fdaa0605d87 => github.com/zroubalik/eventing v0.15.1-0.20200911165720-9bc269d6b965
+# knative.dev/eventing v0.17.1-0.20200911213100-a44dbdbbcec5
 ## explicit
 knative.dev/eventing/pkg/adapter/v2
 knative.dev/eventing/pkg/adapter/v2/util/crstatusevent
@@ -1207,7 +1207,7 @@ knative.dev/pkg/webhook/configmaps
 knative.dev/pkg/webhook/resourcesemantics
 knative.dev/pkg/webhook/resourcesemantics/defaulting
 knative.dev/pkg/webhook/resourcesemantics/validation
-# knative.dev/test-infra v0.0.0-20200909211651-72eb6ae3c773
+# knative.dev/test-infra v0.0.0-20200910231400-cfba2288403d
 ## explicit
 knative.dev/test-infra/scripts
 # sigs.k8s.io/controller-runtime v0.6.2
@@ -1226,4 +1226,3 @@ sigs.k8s.io/yaml
 # k8s.io/apiserver => k8s.io/apiserver v0.18.8
 # k8s.io/client-go => k8s.io/client-go v0.18.8
 # k8s.io/cloud-provider => k8s.io/cloud-provider v0.18.8
-# knative.dev/eventing => github.com/zroubalik/eventing v0.15.1-0.20200911165720-9bc269d6b965
