@@ -97,7 +97,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, src *v1alpha1.RabbitmqSo
 			dest.Ref.Namespace = src.GetNamespace()
 		}
 	}
-	sinkURI, err := r.sinkResolver.URIFromDestinationV1(*dest, src)
+	sinkURI, err := r.sinkResolver.URIFromDestinationV1(ctx, *dest, src)
 	if err != nil {
 		src.Status.MarkNoSink("NotFound", "")
 		return fmt.Errorf("getting sink URI: %v", err)

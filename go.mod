@@ -26,8 +26,8 @@ require (
 	k8s.io/kube-openapi v0.0.0-20200410145947-bcb3869e6f29
 	knative.dev/eventing v0.17.1-0.20200908151032-5fdaa0605d87
 	knative.dev/eventing-autoscaler-keda v0.0.0-20200909130950-f1b6899ad87b
-	knative.dev/pkg v0.0.0-20200909174550-69fcf75ee47d
-	knative.dev/test-infra v0.0.0-20200908182932-5a8105609141
+	knative.dev/pkg v0.0.0-20200911145400-2d4efecc6bc1
+	knative.dev/test-infra v0.0.0-20200909211651-72eb6ae3c773
 )
 
 replace (
@@ -37,11 +37,7 @@ replace (
 	github.com/google/go-github/v32 => github.com/google/go-github/v32 v32.0.1-0.20200624231906-3d244d3d496e
 
 	// WORKAROUND until KEDA v2 is not released
-	//	github.com/kedacore/keda => github.com/kedacore/keda v1.5.1-0.20200824075503-b6c60a088a7a
 	github.com/operator-framework/operator-sdk => github.com/operator-framework/operator-sdk v0.11.0
-
-	//	k8s.io/code-generator => k8s.io/code-generator v0.17.6
-	//	k8s.io/metrics => k8s.io/metrics v0.17.6
 
 	// lock prom import to avoid a bad goautoneg import.
 	github.com/prometheus/client_golang => github.com/prometheus/client_golang v0.9.2
@@ -54,7 +50,5 @@ replace (
 	k8s.io/cloud-provider => k8s.io/cloud-provider v0.18.8
 
 	// WORKAROUND until k8s v1.18+ gets to knative/pkg and knative/eventing
-	knative.dev/eventing => github.com/zroubalik/eventing v0.15.1-0.20200824120738-2b97ca8b85d0
-	knative.dev/pkg => github.com/zroubalik/pkg v0.0.0-20200824111853-cf31d44b1119
-
+	knative.dev/eventing => github.com/zroubalik/eventing v0.15.1-0.20200911165720-9bc269d6b965
 )
