@@ -18,16 +18,18 @@ require (
 	github.com/testcontainers/testcontainers-go v0.7.0
 	github.com/tiago4orion/conjure v0.0.0-20150908101743-93cb30b9d218 // indirect
 	go.uber.org/zap v1.15.0
+	golang.org/x/tools v0.0.0-20200910222312-571a207697e7 // indirect
 	gotest.tools v2.2.0+incompatible
+	honnef.co/go/tools v0.0.1-2020.1.5 // indirect
 	k8s.io/api v0.18.8
 	k8s.io/apimachinery v0.18.8
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/code-generator v0.18.8
 	k8s.io/kube-openapi v0.0.0-20200410145947-bcb3869e6f29
-	knative.dev/eventing v0.17.1-0.20200911213100-a44dbdbbcec5
+	knative.dev/eventing v0.17.1-0.20200915153142-c65fea2ac01d
 	knative.dev/eventing-autoscaler-keda v0.0.0-20200909130950-f1b6899ad87b
-	knative.dev/pkg v0.0.0-20200911145400-2d4efecc6bc1
-	knative.dev/test-infra v0.0.0-20200910231400-cfba2288403d
+	knative.dev/pkg v0.0.0-20200915092441-a5e2edc217c0
+	knative.dev/test-infra v0.0.0-20200914203402-489e9e80675b
 )
 
 replace (
