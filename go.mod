@@ -26,10 +26,10 @@ require (
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/code-generator v0.18.8
 	k8s.io/kube-openapi v0.0.0-20200410145947-bcb3869e6f29
-	knative.dev/eventing v0.17.1-0.20200915153142-c65fea2ac01d
+	knative.dev/eventing v0.17.1-0.20200915215041-aa296384e4a2
 	knative.dev/eventing-autoscaler-keda v0.0.0-20200909130950-f1b6899ad87b
-	knative.dev/pkg v0.0.0-20200915092441-a5e2edc217c0
-	knative.dev/test-infra v0.0.0-20200914203402-489e9e80675b
+	knative.dev/pkg v0.0.0-20200915170341-1d4e654a38f0
+	knative.dev/test-infra v0.0.0-20200916050341-8088f305e08c
 )
 
 replace (
