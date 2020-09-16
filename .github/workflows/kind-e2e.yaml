@@ -80,22 +80,6 @@ jobs:
         kubectl -n rabbitmq-system apply --kustomize config/rbac/
         kubectl -n rabbitmq-system apply --kustomize config/manager/
 
-    - name: Fetch kedacore/keda
-      uses: actions/checkout@v2
-      with:
-        repository: kedacore/keda
-        path: ./src/github.com/kedacore/keda
-        ref: v2
-
-    - name: Install kedacore/keda
-      working-directory: ./src/github.com/kedacore/keda
-      run: |
-        set -x
-
-        # HACK HACK HACK we are just gonna install keda CRDs to get the test off the floor.
-        kubectl apply -f ./config/crd/bases
-        
-
     - name: Install Knative Eventing
       working-directory: ./src/github.com/rabbitmq/cluster-operator
       run: |

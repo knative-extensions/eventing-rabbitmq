@@ -46,9 +46,6 @@ import (
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/resolver"
-
-	kedaclient "knative.dev/eventing-autoscaler-keda/pkg/client/injection/keda/client"
-	triggerauthenticationinformer "knative.dev/eventing-autoscaler-keda/pkg/client/injection/keda/informers/keda/v1alpha1/triggerauthentication"
 )
 
 type envConfig struct {
@@ -76,24 +73,21 @@ func NewController(
 	brokerInformer := brokerinformer.Get(ctx)
 	serviceInformer := serviceinformer.Get(ctx)
 	endpointsInformer := endpointsinformer.Get(ctx)
-	triggerAuthenticationInformer := triggerauthenticationinformer.Get(ctx)
 	rabbitInformer := rabbit.Get(ctx)
 
 	r := &Reconciler{
-		kedaClientset:               kedaclient.Get(ctx),
-		eventingClientSet:           eventingclient.Get(ctx),
-		dynamicClientSet:            dynamicclient.Get(ctx),
-		kubeClientSet:               kubeclient.Get(ctx),
-		brokerLister:                brokerInformer.Lister(),
-		secretLister:                secretInformer.Lister(),
-		serviceLister:               serviceInformer.Lister(),
-		endpointsLister:             endpointsInformer.Lister(),
-		deploymentLister:            deploymentInformer.Lister(),
-		rabbitLister:                rabbitInformer,
-		triggerAuthenticationLister: triggerAuthenticationInformer.Lister(),
-		ingressImage:                env.IngressImage,
-		ingressServiceAccountName:   env.IngressServiceAccount,
-		brokerClass:                 env.BrokerClass,
+		eventingClientSet:         eventingclient.Get(ctx),
+		dynamicClientSet:          dynamicclient.Get(ctx),
+		kubeClientSet:             kubeclient.Get(ctx),
+		brokerLister:              brokerInformer.Lister(),
+		secretLister:              secretInformer.Lister(),
+		serviceLister:             serviceInformer.Lister(),
+		endpointsLister:           endpointsInformer.Lister(),
+		deploymentLister:          deploymentInformer.Lister(),
+		rabbitLister:              rabbitInformer,
+		ingressImage:              env.IngressImage,
+		ingressServiceAccountName: env.IngressServiceAccount,
+		brokerClass:               env.BrokerClass,
 	}
 
 	impl := brokerreconciler.NewImpl(ctx, r, env.BrokerClass)

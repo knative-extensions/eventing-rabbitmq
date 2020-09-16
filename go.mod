@@ -4,30 +4,38 @@ go 1.14
 
 require (
 	github.com/NeowayLabs/wabbit v0.0.0-20200409220312-12e68ab5b0c6 // indirect
+	github.com/aws/aws-sdk-go v1.34.11 // indirect
 	github.com/cloudevents/sdk-go/v2 v2.2.0
 	github.com/docker/go-connections v0.4.0
 	github.com/fsouza/go-dockerclient v1.6.5 // indirect
+	github.com/go-openapi/spec v0.19.7 // indirect
+	github.com/go-redis/redis v6.15.9+incompatible // indirect
 	github.com/google/go-cmp v0.5.2
 	github.com/google/licenseclassifier v0.0.0-20200708223521-3d09a0ea2f39
-	github.com/kedacore/keda v1.5.1-0.20200909143349-82a4f899f7f1
+	github.com/imdario/mergo v0.3.11 // indirect
+	github.com/influxdata/tdigest v0.0.1 // indirect
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/michaelklishin/rabbit-hole v1.5.0
 	github.com/n3wscott/rigging v0.0.2-0.20200909204211-040bdb39a369
+	github.com/onsi/ginkgo v1.14.0 // indirect
+	github.com/prometheus/client_golang v1.7.1 // indirect
 	github.com/sbcd90/wabbit v0.0.0-20190419210920-43bc2261e0e0
 	github.com/streadway/amqp v1.0.0
 	github.com/testcontainers/testcontainers-go v0.7.0
 	github.com/tiago4orion/conjure v0.0.0-20150908101743-93cb30b9d218 // indirect
 	go.uber.org/zap v1.15.0
+	golang.org/x/sys v0.0.0-20200905004654-be1d3432aa8f // indirect
 	golang.org/x/tools v0.0.0-20200910222312-571a207697e7 // indirect
+	gopkg.in/yaml.v3 v3.0.0-20200601152816-913338de1bd2 // indirect
 	gotest.tools v2.2.0+incompatible
 	honnef.co/go/tools v0.0.1-2020.1.5 // indirect
 	k8s.io/api v0.18.8
+	k8s.io/apiextensions-apiserver v0.18.8 // indirect
 	k8s.io/apimachinery v0.18.8
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/code-generator v0.18.8
 	k8s.io/kube-openapi v0.0.0-20200410145947-bcb3869e6f29
 	knative.dev/eventing v0.17.1-0.20200915215041-aa296384e4a2
-	knative.dev/eventing-autoscaler-keda v0.0.0-20200909130950-f1b6899ad87b
 	knative.dev/pkg v0.0.0-20200915170341-1d4e654a38f0
 	knative.dev/test-infra v0.0.0-20200916050341-8088f305e08c
 )

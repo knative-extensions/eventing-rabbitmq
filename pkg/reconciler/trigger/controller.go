@@ -20,7 +20,6 @@ import (
 	"context"
 	"log"
 
-	kedaclient "knative.dev/eventing-autoscaler-keda/pkg/client/injection/keda/client"
 	eventingclient "knative.dev/eventing/pkg/client/injection/client"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/injection/clients/dynamicclient"
@@ -32,7 +31,6 @@ import (
 
 	"knative.dev/eventing/pkg/apis/eventing/v1beta1"
 
-	scaledobjectinformer "knative.dev/eventing-autoscaler-keda/pkg/client/injection/keda/informers/keda/v1alpha1/scaledobject"
 	brokerinformer "knative.dev/eventing/pkg/client/injection/informers/eventing/v1beta1/broker"
 	triggerinformer "knative.dev/eventing/pkg/client/injection/informers/eventing/v1beta1/trigger"
 	brokerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1beta1/broker"
@@ -71,17 +69,14 @@ func NewController(
 	brokerInformer := brokerinformer.Get(ctx)
 	deploymentInformer := deploymentinformer.Get(ctx)
 	triggerInformer := triggerinformer.Get(ctx)
-	scaledObjectInformer := scaledobjectinformer.Get(ctx)
 
 	r := &Reconciler{
-		kedaClientset:                kedaclient.Get(ctx),
 		eventingClientSet:            eventingclient.Get(ctx),
 		dynamicClientSet:             dynamicclient.Get(ctx),
 		kubeClientSet:                kubeclient.Get(ctx),
 		deploymentLister:             deploymentInformer.Lister(),
 		brokerLister:                 brokerInformer.Lister(),
 		triggerLister:                triggerInformer.Lister(),
-		scaledObjectLister:           scaledObjectInformer.Lister(),
 		dispatcherImage:              env.DispatcherImage,
 		dispatcherServiceAccountName: env.DispatcherServiceAccount,
 		brokerClass:                  env.BrokerClass,
