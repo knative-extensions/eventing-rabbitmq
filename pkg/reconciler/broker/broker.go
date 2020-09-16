@@ -40,9 +40,6 @@ import (
 	brokerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1beta1/broker"
 	eventinglisters "knative.dev/eventing/pkg/client/listers/eventing/v1beta1"
 
-	kedav1alpha1 "github.com/kedacore/keda/api/v1alpha1"
-	kedaclientset "github.com/kedacore/keda/pkg/generated/clientset/versioned"
-	kedalisters "github.com/kedacore/keda/pkg/generated/listers/keda/v1alpha1"
 	apisduck "knative.dev/pkg/apis/duck"
 
 	"knative.dev/eventing/pkg/duck"
@@ -53,19 +50,17 @@ import (
 )
 
 type Reconciler struct {
-	kedaClientset     kedaclientset.Interface
 	eventingClientSet clientset.Interface
 	dynamicClientSet  dynamic.Interface
 	kubeClientSet     kubernetes.Interface
 
 	// listers index properties about resources
-	brokerLister                eventinglisters.BrokerLister
-	serviceLister               corev1listers.ServiceLister
-	endpointsLister             corev1listers.EndpointsLister
-	secretLister                corev1listers.SecretLister
-	deploymentLister            appsv1listers.DeploymentLister
-	triggerAuthenticationLister kedalisters.TriggerAuthenticationLister
-	rabbitLister                apisduck.InformerFactory
+	brokerLister     eventinglisters.BrokerLister
+	serviceLister    corev1listers.ServiceLister
+	endpointsLister  corev1listers.EndpointsLister
+	secretLister     corev1listers.SecretLister
+	deploymentLister appsv1listers.DeploymentLister
+	rabbitLister     apisduck.InformerFactory
 
 	ingressImage              string
 	ingressServiceAccountName string
@@ -104,8 +99,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *v1beta1.Broker) pkgre
 	// 1. RabbitMQ Exchange
 	// 2. Ingress Deployment
 	// 3. K8s Service that points to the Ingress Deployment
-	// 4. KEDA TriggerAuthentication to be used by ScaledObjects
-
 	args, err := r.getExchangeArgs(ctx, b)
 	if err != nil {
 		return err
@@ -144,16 +137,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *v1beta1.Broker) pkgre
 		Scheme: "http",
 		Host:   names.ServiceHostName(ingressEndpoints.GetName(), ingressEndpoints.GetNamespace()),
 	})
-
-	// Do this after we sort out Keda 2.0 versioning.
-	/*
-		_, err = r.reconcileScaleTriggerAuthentication(ctx, b)
-		if err != nil {
-			logging.FromContext(ctx).Errorw("Problem creating TriggerAuthentication", zap.Error(err))
-			b.Status.MarkIngressFailed("TriggerAuthenticationFailure", "%v", err)
-			return err
-		}
-	*/
 
 	// So, at this point the Broker is ready and everything should be solid
 	// for the triggers to act upon.
@@ -257,36 +240,4 @@ func (r *Reconciler) reconcileIngressDeployment(ctx context.Context, b *v1beta1.
 func (r *Reconciler) reconcileIngressService(ctx context.Context, b *v1beta1.Broker) (*corev1.Endpoints, error) {
 	expected := resources.MakeIngressService(b)
 	return r.reconcileService(ctx, expected)
-}
-
-func (r *Reconciler) reconcileScaleTriggerAuthentication(ctx context.Context, b *v1beta1.Broker) (*kedav1alpha1.TriggerAuthentication, error) {
-	namespace := b.Namespace
-	triggerAuthentication := resources.MakeTriggerAuthentication(&resources.TriggerAuthenticationArgs{
-		Broker:     b,
-		SecretName: resources.SecretName(b.Name),
-		SecretKey:  resources.BrokerURLSecretKey,
-	})
-
-	current, err := r.triggerAuthenticationLister.TriggerAuthentications(namespace).Get(triggerAuthentication.Name)
-	if apierrs.IsNotFound(err) {
-		_, err = r.kedaClientset.KedaV1alpha1().TriggerAuthentications(namespace).Create(ctx, triggerAuthentication, metav1.CreateOptions{})
-		if err != nil {
-			return nil, err
-		}
-		return triggerAuthentication, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-	if !equality.Semantic.DeepDerivative(triggerAuthentication.Spec, triggerAuthentication.Spec) {
-		// Don't modify the informers copy.
-		desired := current.DeepCopy()
-		desired.Spec = triggerAuthentication.Spec
-		_, err = r.kedaClientset.KedaV1alpha1().TriggerAuthentications(namespace).Update(ctx, desired, metav1.UpdateOptions{})
-		if err != nil {
-			return nil, err
-		}
-		return desired, nil
-	}
-	return current, nil
 }
