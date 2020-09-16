@@ -1023,7 +1023,7 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/eventing v0.17.1-0.20200915153142-c65fea2ac01d
+# knative.dev/eventing v0.17.1-0.20200915215041-aa296384e4a2
 ## explicit
 knative.dev/eventing/pkg/adapter/v2
 knative.dev/eventing/pkg/adapter/v2/util/crstatusevent
@@ -1129,7 +1129,7 @@ knative.dev/eventing-autoscaler-keda/pkg/client/injection/keda/client
 knative.dev/eventing-autoscaler-keda/pkg/client/injection/keda/informers/factory
 knative.dev/eventing-autoscaler-keda/pkg/client/injection/keda/informers/keda/v1alpha1/scaledobject
 knative.dev/eventing-autoscaler-keda/pkg/client/injection/keda/informers/keda/v1alpha1/triggerauthentication
-# knative.dev/pkg v0.0.0-20200915092441-a5e2edc217c0
+# knative.dev/pkg v0.0.0-20200915170341-1d4e654a38f0
 ## explicit
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
@@ -1209,7 +1209,7 @@ knative.dev/pkg/webhook/configmaps
 knative.dev/pkg/webhook/resourcesemantics
 knative.dev/pkg/webhook/resourcesemantics/defaulting
 knative.dev/pkg/webhook/resourcesemantics/validation
-# knative.dev/test-infra v0.0.0-20200914203402-489e9e80675b
+# knative.dev/test-infra v0.0.0-20200916050341-8088f305e08c
 ## explicit
 knative.dev/test-infra/scripts
 # sigs.k8s.io/controller-runtime v0.6.2
