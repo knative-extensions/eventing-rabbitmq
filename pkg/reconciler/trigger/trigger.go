@@ -247,20 +247,6 @@ func (r *Reconciler) reconcileDispatcherDeployment(ctx context.Context, t *event
 	return r.reconcileDeployment(ctx, expected)
 }
 
-func (r *Reconciler) propagateBrokerStatus(ctx context.Context, t *eventingv1.Trigger) error {
-	broker, err := r.brokerLister.Brokers(t.Namespace).Get(t.Spec.Broker)
-	if err != nil {
-		if apierrs.IsNotFound(err) {
-			t.Status.MarkBrokerFailed("BrokerDoesNotExist", "Broker %q does not exist", t.Spec.Broker)
-		} else {
-			return fmt.Errorf("retrieving broker: %v", err)
-		}
-	} else {
-		t.Status.PropagateBrokerCondition(broker.Status.GetTopLevelCondition())
-	}
-	return nil
-}
-
 func (r *Reconciler) checkDependencyAnnotation(ctx context.Context, t *eventingv1.Trigger) error {
 	if dependencyAnnotation, ok := t.GetAnnotations()[eventingv1.DependencyAnnotation]; ok {
 		dependencyObjRef, err := eventingv1.GetObjRefFromDependencyAnnotation(dependencyAnnotation)
