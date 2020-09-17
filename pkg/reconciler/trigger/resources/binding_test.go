@@ -25,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/internal/testrabbit"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
-	eventingv1beta1 "knative.dev/eventing/pkg/apis/eventing/v1beta1"
+	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 )
 
 func TestBindingDeclaration(t *testing.T) {
@@ -33,7 +33,7 @@ func TestBindingDeclaration(t *testing.T) {
 	rabbitContainer := testrabbit.AutoStartRabbit(t, ctx)
 	defer testrabbit.TerminateContainer(t, ctx, rabbitContainer)
 	queueName := "queue-and-a"
-	qualifiedQueueName := namespace + "/" + queueName
+	qualifiedQueueName := namespace + "-" + queueName
 	testrabbit.CreateDurableQueue(t, ctx, rabbitContainer, qualifiedQueueName)
 	brokerName := "some-broker"
 	exchangeName := namespace + "/" + "knative-" + brokerName
@@ -43,14 +43,14 @@ func TestBindingDeclaration(t *testing.T) {
 		RoutingKey:             "some-key",
 		BrokerURL:              testrabbit.BrokerUrl(t, ctx, rabbitContainer).String(),
 		RabbitmqManagementPort: testrabbit.ManagementPort(t, ctx, rabbitContainer),
-		Trigger: &eventingv1beta1.Trigger{
+		Trigger: &eventingv1.Trigger{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      queueName,
 				Namespace: namespace,
 			},
-			Spec: eventingv1beta1.TriggerSpec{
+			Spec: eventingv1.TriggerSpec{
 				Broker: brokerName,
-				Filter: &eventingv1beta1.TriggerFilter{
+				Filter: &eventingv1.TriggerFilter{
 					Attributes: map[string]string{},
 				},
 			},
@@ -84,14 +84,14 @@ func TestMissingExchangeBindingDeclarationFailure(t *testing.T) {
 		RoutingKey:             "some-key",
 		BrokerURL:              brokerURL,
 		RabbitmqManagementPort: testrabbit.ManagementPort(t, ctx, rabbitContainer),
-		Trigger: &eventingv1beta1.Trigger{
+		Trigger: &eventingv1.Trigger{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      queueName,
 				Namespace: namespace,
 			},
-			Spec: eventingv1beta1.TriggerSpec{
+			Spec: eventingv1.TriggerSpec{
 				Broker: brokerName,
-				Filter: &eventingv1beta1.TriggerFilter{
+				Filter: &eventingv1.TriggerFilter{
 					Attributes: map[string]string{},
 				},
 			},

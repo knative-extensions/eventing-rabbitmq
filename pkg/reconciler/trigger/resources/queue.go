@@ -23,13 +23,19 @@ import (
 
 	"github.com/streadway/amqp"
 
-	eventingv1beta1 "knative.dev/eventing/pkg/apis/eventing/v1beta1"
+	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 )
 
 // QueueArgs are the arguments to create a Trigger's RabbitMQ Queue.
 type QueueArgs struct {
-	Trigger     *eventingv1beta1.Trigger
+	Trigger     *eventingv1.Trigger
 	RabbitmqURL string
+}
+
+func createQueueName(t *eventingv1.Trigger) string {
+	// TODO(vaikas): https://github.com/knative-sandbox/eventing-rabbitmq/issues/61
+	// return fmt.Sprintf("%s/%s", t.Namespace, t.Name)
+	return fmt.Sprintf("%s-%s", t.Namespace, t.Name)
 }
 
 // DeclareQueue declares the Trigger's Queue.
@@ -46,9 +52,8 @@ func DeclareQueue(args *QueueArgs) (*amqp.Queue, error) {
 	}
 	defer io.CloseAmqpResourceAndExitOnError(channel)
 
-	queueName := fmt.Sprintf("%s/%s", args.Trigger.Namespace, args.Trigger.Name)
 	queue, err := channel.QueueDeclare(
-		queueName,
+		createQueueName(args.Trigger),
 		true,  // durable
 		false, // auto-delete
 		false, // exclusive
@@ -75,9 +80,8 @@ func DeleteQueue(args *QueueArgs) error {
 	}
 	defer io.CloseAmqpResourceAndExitOnError(channel)
 
-	queueName := fmt.Sprintf("%s/%s", args.Trigger.Namespace, args.Trigger.Name)
 	_, err = channel.QueueDelete(
-		queueName,
+		createQueueName(args.Trigger),
 		false, // if-unused
 		false, // if-empty
 		false, // nowait

@@ -24,7 +24,7 @@ import (
 	"reflect"
 
 	rabbithole "github.com/michaelklishin/rabbit-hole"
-	eventingv1beta1 "knative.dev/eventing/pkg/apis/eventing/v1beta1"
+	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 )
 
 const (
@@ -34,7 +34,7 @@ const (
 
 // BindingArgs are the arguments to create a Trigger's Binding to a RabbitMQ Exchange.
 type BindingArgs struct {
-	Trigger                *eventingv1beta1.Trigger
+	Trigger                *eventingv1.Trigger
 	RoutingKey             string
 	BrokerURL              string
 	RabbitmqManagementPort int
@@ -58,7 +58,7 @@ func MakeBinding(args *BindingArgs) error {
 	}
 
 	exchangeName := fmt.Sprintf("%s/%s", args.Trigger.Namespace, ExchangeName(args.Trigger.Spec.Broker))
-	queueName := fmt.Sprintf("%s/%s", args.Trigger.Namespace, args.Trigger.Name)
+	queueName := createQueueName(args.Trigger)
 	arguments := map[string]interface{}{
 		"x-match":  interface{}("all"),
 		BindingKey: interface{}(args.Trigger.Name),

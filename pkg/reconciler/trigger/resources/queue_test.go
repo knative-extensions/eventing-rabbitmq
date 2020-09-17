@@ -25,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/internal/testrabbit"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
-	eventingv1beta1 "knative.dev/eventing/pkg/apis/eventing/v1beta1"
+	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 )
 
 const namespace = "foobar"
@@ -37,7 +37,7 @@ func TestQueueDeclaration(t *testing.T) {
 	defer testrabbit.TerminateContainer(t, ctx, rabbitContainer)
 
 	queue, err := resources.DeclareQueue(&resources.QueueArgs{
-		Trigger: &eventingv1beta1.Trigger{
+		Trigger: &eventingv1.Trigger{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      triggerName,
 				Namespace: namespace,
@@ -47,18 +47,18 @@ func TestQueueDeclaration(t *testing.T) {
 	})
 
 	assert.NilError(t, err)
-	assert.Equal(t, queue.Name, fmt.Sprintf("%s/%s", namespace, triggerName))
+	assert.Equal(t, queue.Name, fmt.Sprintf("%s-%s", namespace, triggerName))
 }
 
 func TestIncompatibleQueueDeclarationFailure(t *testing.T) {
 	ctx := context.Background()
 	rabbitContainer := testrabbit.AutoStartRabbit(t, ctx)
 	defer testrabbit.TerminateContainer(t, ctx, rabbitContainer)
-	queueName := fmt.Sprintf("%s/%s", namespace, triggerName)
+	queueName := fmt.Sprintf("%s-%s", namespace, triggerName)
 	testrabbit.CreateNonDurableQueue(t, ctx, rabbitContainer, queueName)
 
 	_, err := resources.DeclareQueue(&resources.QueueArgs{
-		Trigger: &eventingv1beta1.Trigger{
+		Trigger: &eventingv1.Trigger{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      triggerName,
 				Namespace: namespace,
@@ -74,11 +74,11 @@ func TestQueueDeletion(t *testing.T) {
 	ctx := context.Background()
 	rabbitContainer := testrabbit.AutoStartRabbit(t, ctx)
 	defer testrabbit.TerminateContainer(t, ctx, rabbitContainer)
-	queueName := fmt.Sprintf("%s/%s", namespace, triggerName)
+	queueName := fmt.Sprintf("%s-%s", namespace, triggerName)
 	testrabbit.CreateDurableQueue(t, ctx, rabbitContainer, queueName)
 
 	err := resources.DeleteQueue(&resources.QueueArgs{
-		Trigger: &eventingv1beta1.Trigger{
+		Trigger: &eventingv1.Trigger{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      triggerName,
 				Namespace: namespace,

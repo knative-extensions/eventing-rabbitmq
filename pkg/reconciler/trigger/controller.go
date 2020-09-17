@@ -29,12 +29,12 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
 
-	"knative.dev/eventing/pkg/apis/eventing/v1beta1"
+	v1 "knative.dev/eventing/pkg/apis/eventing/v1"
 
-	brokerinformer "knative.dev/eventing/pkg/client/injection/informers/eventing/v1beta1/broker"
-	triggerinformer "knative.dev/eventing/pkg/client/injection/informers/eventing/v1beta1/trigger"
-	brokerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1beta1/broker"
-	triggerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1beta1/trigger"
+	brokerinformer "knative.dev/eventing/pkg/client/injection/informers/eventing/v1/broker"
+	triggerinformer "knative.dev/eventing/pkg/client/injection/informers/eventing/v1/trigger"
+	brokerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1/broker"
+	triggerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1/trigger"
 	"knative.dev/eventing/pkg/duck"
 	"knative.dev/pkg/client/injection/ducks/duck/v1/addressable"
 	"knative.dev/pkg/client/injection/ducks/duck/v1/conditions"
@@ -91,13 +91,13 @@ func NewController(
 	r.uriResolver = resolver.NewURIResolver(ctx, impl.EnqueueKey)
 
 	deploymentInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterControllerGK(v1beta1.Kind("Trigger")),
+		FilterFunc: controller.FilterControllerGK(v1.Kind("Trigger")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
 	brokerInformer.Informer().AddEventHandler(controller.HandleAll(
 		func(obj interface{}) {
-			if broker, ok := obj.(*v1beta1.Broker); ok {
+			if broker, ok := obj.(*v1.Broker); ok {
 				triggers, err := triggerInformer.Lister().Triggers(broker.Namespace).List(labels.Everything())
 				if err != nil {
 					log.Print("Failed to lookup Triggers for Broker", zap.Error(err))
@@ -114,7 +114,7 @@ func NewController(
 
 	triggerInformer.Informer().AddEventHandler(controller.HandleAll(
 		func(obj interface{}) {
-			if trigger, ok := obj.(*v1beta1.Trigger); ok {
+			if trigger, ok := obj.(*v1.Trigger); ok {
 				broker, err := brokerInformer.Lister().Brokers(trigger.Namespace).Get(trigger.Spec.Broker)
 				if err != nil {
 					log.Print("Failed to lookup Broker for Trigger", zap.Error(err))

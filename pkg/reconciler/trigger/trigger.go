@@ -36,10 +36,10 @@ import (
 
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
 	"knative.dev/eventing/pkg/apis/eventing"
-	"knative.dev/eventing/pkg/apis/eventing/v1beta1"
+	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	clientset "knative.dev/eventing/pkg/client/clientset/versioned"
-	triggerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1beta1/trigger"
-	eventinglisters "knative.dev/eventing/pkg/client/listers/eventing/v1beta1"
+	triggerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1/trigger"
+	eventinglisters "knative.dev/eventing/pkg/client/listers/eventing/v1"
 
 	"knative.dev/eventing/pkg/duck"
 	pkgreconciler "knative.dev/pkg/reconciler"
@@ -90,7 +90,7 @@ func newReconciledNormal(namespace, name string) pkgreconciler.Event {
 	return pkgreconciler.NewEvent(corev1.EventTypeNormal, triggerReconciled, "Trigger reconciled: \"%s/%s\"", namespace, name)
 }
 
-func (r *Reconciler) ReconcileKind(ctx context.Context, t *v1beta1.Trigger) pkgreconciler.Event {
+func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) pkgreconciler.Event {
 	logging.FromContext(ctx).Debug("Reconciling", zap.Any("Trigger", t))
 	t.Status.InitializeConditions()
 
@@ -184,7 +184,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *v1beta1.Trigger) pkgr
 	return nil
 }
 
-func (r *Reconciler) FinalizeKind(ctx context.Context, t *v1beta1.Trigger) pkgreconciler.Event {
+func (r *Reconciler) FinalizeKind(ctx context.Context, t *eventingv1.Trigger) pkgreconciler.Event {
 	rabbitmqURL, err := r.rabbitmqURL(ctx, t)
 	if err != nil {
 		return err
@@ -225,7 +225,7 @@ func (r *Reconciler) reconcileDeployment(ctx context.Context, d *v1.Deployment) 
 }
 
 //reconcileDispatcherDeployment reconciles Trigger's dispatcher deployment.
-func (r *Reconciler) reconcileDispatcherDeployment(ctx context.Context, t *v1beta1.Trigger, sub *apis.URL) (*v1.Deployment, error) {
+func (r *Reconciler) reconcileDispatcherDeployment(ctx context.Context, t *eventingv1.Trigger, sub *apis.URL) (*v1.Deployment, error) {
 	rabbitmqSecret, err := r.getRabbitmqSecret(ctx, t)
 	if err != nil {
 		return nil, err
@@ -247,7 +247,7 @@ func (r *Reconciler) reconcileDispatcherDeployment(ctx context.Context, t *v1bet
 	return r.reconcileDeployment(ctx, expected)
 }
 
-func (r *Reconciler) propagateBrokerStatus(ctx context.Context, t *v1beta1.Trigger) error {
+func (r *Reconciler) propagateBrokerStatus(ctx context.Context, t *eventingv1.Trigger) error {
 	broker, err := r.brokerLister.Brokers(t.Namespace).Get(t.Spec.Broker)
 	if err != nil {
 		if apierrs.IsNotFound(err) {
@@ -261,9 +261,9 @@ func (r *Reconciler) propagateBrokerStatus(ctx context.Context, t *v1beta1.Trigg
 	return nil
 }
 
-func (r *Reconciler) checkDependencyAnnotation(ctx context.Context, t *v1beta1.Trigger) error {
-	if dependencyAnnotation, ok := t.GetAnnotations()[v1beta1.DependencyAnnotation]; ok {
-		dependencyObjRef, err := v1beta1.GetObjRefFromDependencyAnnotation(dependencyAnnotation)
+func (r *Reconciler) checkDependencyAnnotation(ctx context.Context, t *eventingv1.Trigger) error {
+	if dependencyAnnotation, ok := t.GetAnnotations()[eventingv1.DependencyAnnotation]; ok {
+		dependencyObjRef, err := eventingv1.GetObjRefFromDependencyAnnotation(dependencyAnnotation)
 		if err != nil {
 			t.Status.MarkDependencyFailed("ReferenceError", "Unable to unmarshal objectReference from dependency annotation of trigger: %v", err)
 			return fmt.Errorf("getting object ref from dependency annotation %q: %v", dependencyAnnotation, err)
@@ -282,7 +282,7 @@ func (r *Reconciler) checkDependencyAnnotation(ctx context.Context, t *v1beta1.T
 	return nil
 }
 
-func (r *Reconciler) propagateDependencyReadiness(ctx context.Context, t *v1beta1.Trigger, dependencyObjRef corev1.ObjectReference) error {
+func (r *Reconciler) propagateDependencyReadiness(ctx context.Context, t *eventingv1.Trigger, dependencyObjRef corev1.ObjectReference) error {
 	lister, err := r.kresourceTracker.ListerFor(dependencyObjRef)
 	if err != nil {
 		t.Status.MarkDependencyUnknown("ListerDoesNotExist", "Failed to retrieve lister: %v", err)
@@ -312,11 +312,11 @@ func (r *Reconciler) propagateDependencyReadiness(ctx context.Context, t *v1beta
 	return nil
 }
 
-func (r *Reconciler) getRabbitmqSecret(ctx context.Context, t *v1beta1.Trigger) (*corev1.Secret, error) {
+func (r *Reconciler) getRabbitmqSecret(ctx context.Context, t *eventingv1.Trigger) (*corev1.Secret, error) {
 	return r.kubeClientSet.CoreV1().Secrets(t.Namespace).Get(ctx, brokerresources.SecretName(t.Spec.Broker), metav1.GetOptions{})
 }
 
-func (r *Reconciler) rabbitmqURL(ctx context.Context, t *v1beta1.Trigger) (string, error) {
+func (r *Reconciler) rabbitmqURL(ctx context.Context, t *eventingv1.Trigger) (string, error) {
 	s, err := r.getRabbitmqSecret(ctx, t)
 	if err != nil {
 		return "", err

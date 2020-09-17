@@ -24,7 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"knative.dev/eventing/pkg/apis/eventing"
-	eventingv1beta1 "knative.dev/eventing/pkg/apis/eventing/v1beta1"
+	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/kmeta"
@@ -37,7 +37,7 @@ const (
 
 // DispatcherArgs are the arguments to create a Broker's Dispatcher Deployment.
 type DispatcherArgs struct {
-	Trigger *eventingv1beta1.Trigger
+	Trigger *eventingv1.Trigger
 	Image   string
 	//ServiceAccountName string
 	RabbitMQHost       string
@@ -89,7 +89,7 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 							},
 						}, {
 							Name:  "QUEUE_NAME",
-							Value: fmt.Sprintf("%s/%s", args.Trigger.Namespace, args.QueueName),
+							Value: createQueueName(args.Trigger),
 						}, {
 							Name:  "SUBSCRIBER",
 							Value: args.Subscriber.String(),
