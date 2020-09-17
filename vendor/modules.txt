@@ -111,8 +111,12 @@ github.com/cloudevents/sdk-go/v2/test
 github.com/cloudevents/sdk-go/v2/types
 # github.com/containerd/continuity v0.0.0-20200228182428-0f16d7a0959c
 ## explicit
+github.com/containerd/continuity
+github.com/containerd/continuity/devices
+github.com/containerd/continuity/driver
 github.com/containerd/continuity/fs
 github.com/containerd/continuity/pathdriver
+github.com/containerd/continuity/proto
 github.com/containerd/continuity/syscallx
 github.com/containerd/continuity/sysx
 # github.com/davecgh/go-spew v1.1.1

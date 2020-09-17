@@ -18,6 +18,7 @@ import (
 	"gotest.tools/assert"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
 
+	_ "github.com/containerd/continuity"
 	_ "github.com/containerd/continuity/pathdriver"
 )
 
