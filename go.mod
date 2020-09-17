@@ -6,6 +6,7 @@ require (
 	github.com/NeowayLabs/wabbit v0.0.0-20200409220312-12e68ab5b0c6 // indirect
 	github.com/aws/aws-sdk-go v1.34.11 // indirect
 	github.com/cloudevents/sdk-go/v2 v2.2.0
+	github.com/containerd/continuity v0.0.0-20200228182428-0f16d7a0959c
 	github.com/docker/go-connections v0.4.0
 	github.com/fsouza/go-dockerclient v1.6.5 // indirect
 	github.com/go-openapi/spec v0.19.7 // indirect
