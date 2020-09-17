@@ -8,7 +8,7 @@ import (
 	"gotest.tools/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
-	"knative.dev/eventing-rabbitmq/pkg/reconciler/internal/testrabbit"
+	"knative.dev/eventing-rabbitmq/pkg/reconciler/testrabbit"
 	eventingv1beta1 "knative.dev/eventing/pkg/apis/eventing/v1beta1"
 )
 
