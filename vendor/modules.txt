@@ -1024,7 +1024,7 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/eventing v0.17.1-0.20200915215041-aa296384e4a2
+# knative.dev/eventing v0.17.1-0.20200917130042-886594db5d01
 ## explicit
 knative.dev/eventing/pkg/adapter/v2
 knative.dev/eventing/pkg/adapter/v2/util/crstatusevent
@@ -1124,7 +1124,7 @@ knative.dev/eventing/test/test_images/print
 knative.dev/eventing/test/test_images/recordevents
 knative.dev/eventing/test/test_images/sequencestepper
 knative.dev/eventing/test/test_images/transformevents
-# knative.dev/pkg v0.0.0-20200915170341-1d4e654a38f0
+# knative.dev/pkg v0.0.0-20200916171541-6e0430fd94db
 ## explicit
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
@@ -1204,7 +1204,7 @@ knative.dev/pkg/webhook/configmaps
 knative.dev/pkg/webhook/resourcesemantics
 knative.dev/pkg/webhook/resourcesemantics/defaulting
 knative.dev/pkg/webhook/resourcesemantics/validation
-# knative.dev/test-infra v0.0.0-20200916050341-8088f305e08c
+# knative.dev/test-infra v0.0.0-20200916223841-d362984af929
 ## explicit
 knative.dev/test-infra/scripts
 # sigs.k8s.io/structured-merge-diff/v3 v3.0.1-0.20200706213357-43c19bbb7fba
