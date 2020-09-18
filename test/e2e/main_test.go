@@ -19,7 +19,10 @@ limitations under the License.
 package rabbit_test
 
 import (
+	"fmt"
+	"os"
 	"testing"
+	"text/template"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	// For our e2e testing, we want this linked first so that our
@@ -27,6 +30,7 @@ import (
 	// logstream initialization.
 	_ "knative.dev/eventing-rabbitmq/test/defaultsystem"
 
+	"github.com/n3wscott/rigging/pkg/installer"
 	"knative.dev/pkg/test/helpers"
 	"knative.dev/pkg/test/logstream"
 )
@@ -71,5 +75,5 @@ func TestSmokeBrokerTrigger(t *testing.T) {
 // TestBrokerDirect makes sure a Broker can delivery events to a consumer.
 func TestBrokerDirect(t *testing.T) {
 	t.Cleanup(logstream.Start(t))
-	DirectTestBrokerImpl(t, helpers.ObjectNameForTest(t))
+	DirectTestBrokerImpl(t, helpers.ObjectNameForTest(t), helpers.ObjectNameForTest(t))
 }
