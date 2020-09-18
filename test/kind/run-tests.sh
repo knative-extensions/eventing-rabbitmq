@@ -21,6 +21,7 @@ readonly ROOT_DIR=$(dirname $0)/../..
 readonly REPO_ROOT_DIR
 
 export KO_DOCKER_REPO=kind.local
+export KIND_CLUSTER_NAME=knik
 
 echo "Starting End-to-End tests for Knative Eventing RabbitMQ API"
 
