@@ -36,6 +36,7 @@ spec:
       - name: eventing-controller
         terminationMessagePolicy: FallbackToLogsOnError
         image: ko://knative.dev/eventing-rabbitmq/cmd/controller/broker
+        imagePullPolicy: IfNotPresent
         resources:
           requests:
             cpu: 100m
