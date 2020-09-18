@@ -34,7 +34,7 @@ func DirectTestBrokerImpl(t *testing.T, brokerName, triggerName string) {
 
 	opts := []rigging.Option{}
 
-	rig, err := rigging.NewInstall(opts, []string{"rabbitmq", "direct"}, map[string]string{
+	rig, err := rigging.NewInstall(opts, []string{"rabbitmq", "direct", "recorder"}, map[string]string{
 		"brokerName":  brokerName,
 		"triggerName": triggerName,
 	})
