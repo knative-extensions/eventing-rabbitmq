@@ -29,7 +29,7 @@ import (
 
 func main() {
 	flag.Parse()
-	ctx := sharedmain.EnableInjectionOrDie(nil, nil)
+	ctx := sharedmain.EnableInjectionOrDie(nil, nil) //nolint
 
 	obs := observer.New(
 		writer_vent.NewEventLog(ctx, os.Stdout),
