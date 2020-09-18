@@ -26,6 +26,7 @@ spec:
     metadata:
       labels: *labels
     spec:
+      serviceAccount: recorder
       containers:
         - name: recorder
           image: {{ .images.recorder }}
