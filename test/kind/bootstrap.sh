@@ -21,15 +21,21 @@ set -o errexit
 #   --name "alternate-cluster-name"
 # Verify the installation:
 #   --check
-# Set registry port, defaults to 5000
-#   --reg-port 1337
 #
 
 # create registry container unless it already exists
 cluster_name=knik
-reg_name='kind-registry'
-reg_port='5000'
-node_image='kindest/node:v1.16.9@sha256:7175872357bc85847ec4b1aba46ed1d12fa054c83ac7a8a11f5c268957fd5765'
+node_image='kindest/node:v1.18.8@sha256:f4bcc97a0ad6e7abaf3f643d890add7efe6ee4ab90baeb374b4f41a4c95567eb' # from the 0.9.0 release of kind.
+
+kindVersion=`kind version`;
+
+if [[ $kindVersion =~ "v0.9.0" ]]
+then
+   echo "KinD is v0.9.0"
+else
+  echo "Please make sure you are using KinD v0.9.0 or update the node_image"
+  exit 0
+fi
 
 # Parse flags to determine any we should pass to dep.
 check=0
@@ -44,7 +50,6 @@ while [[ $# -ne 0 ]]; do
       shift
       case ${parameter} in
         --name) cluster_name=$1 ;;
-        --reg-port) reg_port=$1 ;;
         *) abort "unknown option ${parameter}" ;;
       esac
   esac
@@ -53,10 +58,7 @@ done
 readonly check
 readonly shutdown
 readonly cluster_name
-readonly reg_name
-readonly reg_port
 
-reg_running="$(docker inspect -f '{{.State.Running}}' "${reg_name}" 2>/dev/null || true)"
 kind_running="$(kind get clusters -q | grep ${cluster_name} || true)"
 
 if (( check )); then
@@ -64,11 +66,6 @@ if (( check )); then
     echo "KinD cluster ${cluster_name} is running"
   else
     echo "KinD cluster ${cluster_name} is NOT running"
-  fi
-  if [ "${reg_running}" == 'true' ]; then
-    echo "Docker hosted registry ${reg_name} is running"
-  else
-    echo "Docker hosted registry ${reg_name} is NOT running"
   fi
   kind --version
   docker --version
@@ -80,22 +77,11 @@ if (( shutdown )); then
     echo "Deleting KinD cluster ${cluster_name}"
     kind delete cluster -q --name ${cluster_name}
   fi
-  if [ "${reg_running}" == 'true' ]; then
-    echo "Stopping docker hosted registry ${reg_name}"
-    docker stop "${reg_name}"
-    docker rm "${reg_name}"
-  fi
   echo "Shutdown."
   exit 0
 fi
 
-if [ "${reg_running}" != 'true' ]; then
-  docker run \
-    -d --restart=always -p "${reg_port}:5000" --name "${reg_name}" \
-    registry:2
-fi
-
-# create a cluster with the local registry enabled in containerd
+# create a cluster
 cat <<EOF | kind create cluster --name ${cluster_name} --config=-
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
@@ -104,22 +90,18 @@ nodes:
   image: ${node_image}
 - role: worker
   image: ${node_image}
-containerdConfigPatches:
-- |-
-  [plugins."io.containerd.grpc.v1.cri".registry.mirrors."localhost:${reg_port}"]
-    endpoint = ["http://${reg_name}:${reg_port}"]
+kubeadmConfigPatches:
+  - |
+    apiVersion: kubeadm.k8s.io/v1beta2
+    kind: ClusterConfiguration
+    metadata:
+      name: config
+    apiServer:
+      extraArgs:
+        "service-account-issuer": "kubernetes.default.svc"
+        "service-account-signing-key-file": "/etc/kubernetes/pki/sa.key"
 EOF
 
-# connect the registry to the cluster network
-if [ "${running}" != 'true' ]; then
-  docker network connect "kind" "${reg_name}"
-fi
-
-# tell https://tilt.dev to use the registry
-# https://docs.tilt.dev/choosing_clusters.html#discovering-the-registry
-for node in $(kind get nodes); do
-  kubectl annotate node "${node}" "kind.x-k8s.io/registry=localhost:${reg_port}";
-done
-
-echo "To use local registry:"
-echo "export KO_DOCKER_REPO=localhost:${reg_port}"
+echo "To use ko with kind:"
+echo "export KIND_CLUSTER_NAME=${cluster_name}"
+echo "export KO_DOCKER_REPO=kind.local"

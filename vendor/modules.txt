@@ -1029,7 +1029,7 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/eventing v0.17.1-0.20200918121244-5508e48a03a8
+# knative.dev/eventing v0.17.1-0.20200918175944-2e9637965169
 ## explicit
 knative.dev/eventing/pkg/adapter/v2
 knative.dev/eventing/pkg/adapter/v2/util/crstatusevent
@@ -1105,6 +1105,9 @@ knative.dev/eventing/pkg/duck
 knative.dev/eventing/pkg/kncloudevents
 knative.dev/eventing/pkg/leaderelection
 knative.dev/eventing/pkg/reconciler/names
+knative.dev/eventing/pkg/test/observer
+knative.dev/eventing/pkg/test/observer/recorder-vent
+knative.dev/eventing/pkg/test/observer/writer-vent
 knative.dev/eventing/pkg/tracing
 knative.dev/eventing/pkg/utils
 knative.dev/eventing/pkg/utils/cache
@@ -1181,6 +1184,7 @@ knative.dev/pkg/resolver
 knative.dev/pkg/signals
 knative.dev/pkg/source
 knative.dev/pkg/system
+knative.dev/pkg/system/testing
 knative.dev/pkg/test
 knative.dev/pkg/test/gcs
 knative.dev/pkg/test/ghutil

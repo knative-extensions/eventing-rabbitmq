@@ -24,3 +24,15 @@ spec:
     apiVersion: rabbitmq.com/v1beta1
     kind: RabbitmqCluster
     name: rabbitmqc
+
+---
+
+apiVersion: eventing.knative.dev/v1
+kind: Trigger
+metadata:
+  name: {{ .triggerName }}
+  namespace: {{ .namespace }}
+spec:
+  broker: {{ .brokerName }}
+  subscriber:
+    uri: http://example.com

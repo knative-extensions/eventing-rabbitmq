@@ -12,15 +12,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: eventing.knative.dev/v1
-kind: Broker
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: {{ .brokerName }}
+  name: recorder
   namespace: {{ .namespace }}
-  annotations:
-    eventing.knative.dev/broker.class: RabbitMQBroker
 spec:
-  config:
-    apiVersion: rabbitmq.com/v1beta1
-    kind: RabbitmqCluster
-    name: rabbitmqc
+  replicas: 1
+  selector:
+    matchLabels: &labels
+      app: recorder
+  template:
+    metadata:
+      labels: *labels
+    spec:
+      containers:
+        - name: recorder
+          image: {{ .images.recorder }}
+
+---
+
+kind: Service
+apiVersion: v1
+metadata:
+  name: recorder
+  namespace: {{ .namespace }}
+spec:
+  selector:
+    app: recorder
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080

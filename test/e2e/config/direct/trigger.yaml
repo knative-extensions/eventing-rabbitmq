@@ -13,14 +13,14 @@
 # limitations under the License.
 
 apiVersion: eventing.knative.dev/v1
-kind: Broker
+kind: Trigger
 metadata:
-  name: {{ .brokerName }}
+  name: {{ .triggerName }}
   namespace: {{ .namespace }}
-  annotations:
-    eventing.knative.dev/broker.class: RabbitMQBroker
 spec:
-  config:
-    apiVersion: rabbitmq.com/v1beta1
-    kind: RabbitmqCluster
-    name: rabbitmqc
+  broker: {{ .brokerName }}
+  subscriber:
+    ref:
+      apiVersion: v1
+      kind: Service
+      name: recorder

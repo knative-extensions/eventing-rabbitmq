@@ -20,9 +20,8 @@ readonly ROOT_DIR=$(dirname $0)/../..
 [[ ! -v REPO_ROOT_DIR ]] && REPO_ROOT_DIR="$(git rev-parse --show-toplevel)"
 readonly REPO_ROOT_DIR
 
-readonly reg_port='5000'
-
-export KO_DOCKER_REPO=localhost:${reg_port}
+export KO_DOCKER_REPO=kind.local
+export KIND_CLUSTER_NAME=knik
 
 echo "Starting End-to-End tests for Knative Eventing RabbitMQ API"
 
