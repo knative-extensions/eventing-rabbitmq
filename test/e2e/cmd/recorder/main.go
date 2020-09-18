@@ -19,6 +19,8 @@ import (
 	"flag"
 	"os"
 
+	_ "knative.dev/pkg/system/testing"
+
 	"knative.dev/eventing/pkg/test/observer"
 	"knative.dev/eventing/pkg/test/observer/recorder-vent"
 	"knative.dev/eventing/pkg/test/observer/writer-vent"
