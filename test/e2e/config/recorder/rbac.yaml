@@ -26,12 +26,12 @@ metadata:
   name: event-watcher-{{ .namespace }}
 rules:
   - apiGroups: [ "" ]
-      resources:
-        - "namespaces"
-      verbs:
-        - "get"
-        - "list"
-        - "watch"
+    resources:
+      - "namespaces"
+    verbs:
+      - "get"
+      - "list"
+      - "watch"
   - apiGroups: [ "" ]
     resources:
       - "events"
