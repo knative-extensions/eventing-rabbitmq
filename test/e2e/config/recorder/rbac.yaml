@@ -25,14 +25,24 @@ kind: ClusterRole
 metadata:
   name: event-watcher-{{ .namespace }}
 rules:
-  - apiGroups:
-      - ""
+  - apiGroups: [ "" ]
+      resources:
+        - "namespaces"
+      verbs:
+        - "get"
+        - "list"
+        - "watch"
+  - apiGroups: [ "" ]
     resources:
-      - events
+      - "events"
     verbs:
-      - get
-      - list
-      - watch
+      - "get"
+      - "list"
+      - "create"
+      - "update"
+      - "delete"
+      - "patch"
+      - "watch"
 
 ---
 
