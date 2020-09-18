@@ -90,6 +90,16 @@ nodes:
   image: ${node_image}
 - role: worker
   image: ${node_image}
+kubeadmConfigPatches:
+  - |
+    apiVersion: kubeadm.k8s.io/v1beta2
+    kind: ClusterConfiguration
+    metadata:
+      name: config
+    apiServer:
+      extraArgs:
+        "service-account-issuer": "kubernetes.default.svc"
+        "service-account-signing-key-file": "/etc/kubernetes/pki/sa.key"
 EOF
 
 echo "To use ko with kind:"
