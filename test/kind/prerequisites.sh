@@ -20,9 +20,7 @@ readonly ROOT_DIR=$(dirname $0)/../..
 [[ ! -v REPO_ROOT_DIR ]] && REPO_ROOT_DIR="$(git rev-parse --show-toplevel)"
 readonly REPO_ROOT_DIR
 
-readonly reg_port='5000'
-
-export KO_DOCKER_REPO=localhost:${reg_port}
+export KO_DOCKER_REPO=kind.local
 
 pwd
 
@@ -43,21 +41,6 @@ kubectl apply -f config/crd/bases/rabbitmq.com_rabbitmqclusters.yaml
 sleep 2 # Wait for the CRDs to be reconciled.
 kubectl -n rabbitmq-system apply --kustomize config/rbac/
 kubectl -n rabbitmq-system apply --kustomize config/manager/
-
-echo "Installing KEDA"
-
-tmp_dir=$(mktemp -d -t ci-kind-XXX)
-echo ${tmp_dir}
-
-cd ${tmp_dir}
-
-git clone https://github.com/kedacore/keda && cd keda
-git checkout v1.5.0
-
-kubectl apply -f deploy/crds/keda.k8s.io_scaledobjects_crd.yaml
-kubectl apply -f deploy/crds/keda.k8s.io_triggerauthentications_crd.yaml
-sleep 2 # Wait for the CRDs to be reconciled.
-kubectl apply -f deploy/
 
 echo "Installing Knative Eventing"
 
