@@ -36,6 +36,7 @@ apiVersion: sources.knative.dev/v1beta1
 kind: SinkBinding
 metadata:
   name: bind-producer
+  namespace: {{ .namespace }}
 spec:
   subject:
     apiVersion: apps/v1
