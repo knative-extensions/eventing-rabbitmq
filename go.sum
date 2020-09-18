@@ -1917,13 +1917,8 @@ k8s.io/utils v0.0.0-20200603063816-c1c6865ac451 h1:v8ud2Up6QK1lNOKFgiIVrZdMg7Mpm
 k8s.io/utils v0.0.0-20200603063816-c1c6865ac451/go.mod h1:jPW/WVKK9YHAvNhRxK0md/EJ228hCsBRufyofKtW8HA=
 knative.dev/caching v0.0.0-20190719140829-2032732871ff/go.mod h1:dHXFU6CGlLlbzaWc32g80cR92iuBSpsslDNBWI8C7eg=
 knative.dev/caching v0.0.0-20200116200605-67bca2c83dfa/go.mod h1:dHXFU6CGlLlbzaWc32g80cR92iuBSpsslDNBWI8C7eg=
-<<<<<<< HEAD
-knative.dev/eventing v0.17.1-0.20200918121244-5508e48a03a8 h1:qdPPX4gav0xC59LzAx3ojrgRXfYQJ3AeDAvZDxo9xC8=
-knative.dev/eventing v0.17.1-0.20200918121244-5508e48a03a8/go.mod h1:UqxDDcdyuwCC7Odp6owsu021lDUGpfc9yZlJzPNqWVg=
-=======
 knative.dev/eventing v0.17.1-0.20200918175944-2e9637965169 h1:n9L7VEE4NyfWcSi3Asy5f4BNs8sfi/U0JEixLGAq+sg=
 knative.dev/eventing v0.17.1-0.20200918175944-2e9637965169/go.mod h1:UqxDDcdyuwCC7Odp6owsu021lDUGpfc9yZlJzPNqWVg=
->>>>>>> add smoke test for broker and trigger, setting up to validate event delivery
 knative.dev/eventing-contrib v0.6.1-0.20190723221543-5ce18048c08b/go.mod h1:SnXZgSGgMSMLNFTwTnpaOH7hXDzTFtw0J8OmHflNx3g=
 knative.dev/eventing-contrib v0.11.2/go.mod h1:SnXZgSGgMSMLNFTwTnpaOH7hXDzTFtw0J8OmHflNx3g=
 knative.dev/pkg v0.0.0-20191101194912-56c2594e4f11/go.mod h1:pgODObA1dTyhNoFxPZTTjNWfx6F0aKsKzn+vaT9XO/Q=
@@ -1940,7 +1935,6 @@ knative.dev/pkg v0.0.0-20200623024526-fb0320d9287e/go.mod h1:DquzK0hsLDcg2q63Sn+
 knative.dev/pkg v0.0.0-20200623204627-e0a0d63a9e86/go.mod h1:DquzK0hsLDcg2q63Sn+CngAyRwv4cKMpt5F19YzBfb0=
 knative.dev/pkg v0.0.0-20200711004937-22502028e31a/go.mod h1:AqAJV6rYi8IGikDjJ/9ZQd9qKdkXVlesVnVjwx62YB8=
 knative.dev/pkg v0.0.0-20200909174550-69fcf75ee47d/go.mod h1:q+4+Cm768P6vsAvsD9J+cZ1hoy4aHyHSfRTvaFyPd3g=
-knative.dev/pkg v0.0.0-20200916171541-6e0430fd94db h1:nPpQpJ1BBcVBcKG+t5XCJ6CKOfzhLDTg6pl2pdL4aXM=
 knative.dev/pkg v0.0.0-20200916171541-6e0430fd94db/go.mod h1:ZV1kWD8UMvELVVDld0PDRdjwdCsGwEwf1YUvGGDUl2c=
 knative.dev/pkg v0.0.0-20200917214745-ec3e2dd4bd19 h1:UsjHsDxpdM9+7DhuQKTwAgCBXYZH5ilj8knw5Se+J0I=
 knative.dev/pkg v0.0.0-20200917214745-ec3e2dd4bd19/go.mod h1:82NviL1gVjbeptEgiAu4f+4XEq/1sXhj64TdMC55g4g=
@@ -1955,7 +1949,6 @@ knative.dev/test-infra v0.0.0-20200623231727-6d5d6aeb457c/go.mod h1:qKM6vO6hD6aa
 knative.dev/test-infra v0.0.0-20200707183444-aed09e56ddc7/go.mod h1:RjYAhXnZqeHw9+B0zsbqSPlae0lCvjekO/nw5ZMpLCs=
 knative.dev/test-infra v0.0.0-20200828211307-9d4372c9b1c7/go.mod h1:Pmg2c7Z7q7BGFUV/GOpU5BlrD3ePJft4MPqx8AYBplc=
 knative.dev/test-infra v0.0.0-20200911201000-3f90e7c8f2fa/go.mod h1:Pmg2c7Z7q7BGFUV/GOpU5BlrD3ePJft4MPqx8AYBplc=
-knative.dev/test-infra v0.0.0-20200916223841-d362984af929 h1:jCHClMehwRQJ1BU4YPWX5eHjnJNFhYHJNsYIbJtHGZA=
 knative.dev/test-infra v0.0.0-20200916223841-d362984af929/go.mod h1:Pmg2c7Z7q7BGFUV/GOpU5BlrD3ePJft4MPqx8AYBplc=
 knative.dev/test-infra v0.0.0-20200918021244-22269d552166 h1:7Ls02/98BkpQbCItaIjkpNDKGy5oOam1SsGS6U0zl54=
 knative.dev/test-infra v0.0.0-20200918021244-22269d552166/go.mod h1:Pmg2c7Z7q7BGFUV/GOpU5BlrD3ePJft4MPqx8AYBplc=
@@ -1983,7 +1976,6 @@ sigs.k8s.io/boskos v0.0.0-20200729174948-794df80db9c9/go.mod h1:ZO5RV+VxJS9mb6Dv
 sigs.k8s.io/controller-runtime v0.3.0/go.mod h1:Cw6PkEg0Sa7dAYovGT4R0tRkGhHXpYijwNxYhAnAZZk=
 sigs.k8s.io/controller-runtime v0.5.0/go.mod h1:REiJzC7Y00U+2YkMbT8wxgrsX5USpXKGhb2sCtAXiT8=
 sigs.k8s.io/controller-runtime v0.5.4/go.mod h1:JZUwSMVbxDupo0lTJSSFP5pimEyxGynROImSsqIOx1A=
-sigs.k8s.io/controller-runtime v0.6.1 h1:LcK2+nk0kmaOnKGN+vBcWHqY5WDJNJNB/c5pW+sU8fc=
 sigs.k8s.io/controller-runtime v0.6.1/go.mod h1:XRYBPdbf5XJu9kpS84VJiZ7h/u1hF3gEORz0efEja7A=
 sigs.k8s.io/kustomize v2.0.3+incompatible/go.mod h1:MkjgH3RdOWrievjo6c9T245dYlB5QeXV4WCbnt/PEpU=
 sigs.k8s.io/structured-merge-diff v0.0.0-20190525122527-15d366b2352e h1:4Z09Hglb792X0kfOBBJUPFEyvVfQWrYT/l8h5EKA6JQ=
