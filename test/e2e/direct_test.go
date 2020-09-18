@@ -26,7 +26,7 @@ import (
 
 // Create the container images required for the test.
 func init() {
-	rigging.RegisterPackage("knative.dev/eventing-rabbitmq/cmd/recorder")
+	rigging.RegisterPackage("knative.dev/eventing-rabbitmq/test/e2e/cmd/recorder")
 }
 
 // DirectTestBrokerImpl makes sure an RabbitMQ Broker delivers events to a single consumer.
@@ -63,4 +63,8 @@ func DirectTestBrokerImpl(t *testing.T, brokerName, triggerName string) {
 		}
 		// Pass!
 	}
+
+	// TODO: need to send events.
+
+	// TODO: need to validate set events.
 }
