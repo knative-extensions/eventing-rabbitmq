@@ -24,16 +24,16 @@ export GO111MODULE=on
 # Yaml files to generate, and the source config dir for them.
 declare -A COMPONENTS
 COMPONENTS=(
-  ["rabbitmq-source.yaml"]="source/config"
-  ["rabbitmq-broker.yaml"]="broker/config"
+  ["rabbitmq-source.yaml"]="config/source"
+  ["rabbitmq-broker.yaml"]="config/broker"
 )
 readonly COMPONENTS
 
 function build_release() {
    # Update release labels if this is a tagged release
   if [[ -n "${TAG}" ]]; then
-    echo "Tagged release, updating release labels to contrib.eventing.knative.dev/release: \"${TAG}\""
-    LABEL_YAML_CMD=(sed -e "s|contrib.eventing.knative.dev/release: devel|contrib.eventing.knative.dev/release: \"${TAG}\"|")
+    echo "Tagged release, updating release labels to rabbitmq.eventing.knative.dev/release: \"${TAG}\""
+    LABEL_YAML_CMD=(sed -e "s|rabbitmq.eventing.knative.dev/release: devel|rabbitmq.eventing.knative.dev/release: \"${TAG}\"|")
   else
     echo "Untagged release, will NOT update release labels"
     LABEL_YAML_CMD=(cat)

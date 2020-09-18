@@ -18,7 +18,7 @@ metadata:
   name: rabbitmq-webhook
   namespace: knative-sources
   labels:
-    eventing.knative.dev/release: devel
+    rabbitmq.eventing.knative.dev/release: devel
 spec:
   replicas: 1
   selector:
@@ -104,7 +104,7 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
-    eventing.knative.dev/release: devel
+    rabbitmq.eventing.knative.dev/release: devel
     role: rabbitmq-webhook
   name: rabbitmq-webhook
   namespace: knative-sources

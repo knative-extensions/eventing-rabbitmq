@@ -18,7 +18,7 @@ metadata:
   name: rabbitmq-controller-manager
   namespace: knative-sources
   labels:
-    contrib.eventing.knative.dev/release: devel
+    rabbitmq.eventing.knative.dev/release: devel
     control-plane: rabbitmq-controller-manager
 spec:
   replicas: 1

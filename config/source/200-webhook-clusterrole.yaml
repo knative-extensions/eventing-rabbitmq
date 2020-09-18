@@ -17,7 +17,7 @@ kind: ClusterRole
 metadata:
   name: rabbitmq-webhook
   labels:
-    eventing.knative.dev/release: devel
+    rabbitmq.eventing.knative.dev/release: devel
 rules:
   # For watching logging configuration and getting certs.
   - apiGroups:
