@@ -1029,7 +1029,11 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
+<<<<<<< HEAD
 # knative.dev/eventing v0.17.1-0.20200918121244-5508e48a03a8
+=======
+# knative.dev/eventing v0.17.1-0.20200918175944-2e9637965169
+>>>>>>> add smoke test for broker and trigger, setting up to validate event delivery
 ## explicit
 knative.dev/eventing/pkg/adapter/v2
 knative.dev/eventing/pkg/adapter/v2/util/crstatusevent
@@ -1105,6 +1109,9 @@ knative.dev/eventing/pkg/duck
 knative.dev/eventing/pkg/kncloudevents
 knative.dev/eventing/pkg/leaderelection
 knative.dev/eventing/pkg/reconciler/names
+knative.dev/eventing/pkg/test/observer
+knative.dev/eventing/pkg/test/observer/recorder-vent
+knative.dev/eventing/pkg/test/observer/writer-vent
 knative.dev/eventing/pkg/tracing
 knative.dev/eventing/pkg/utils
 knative.dev/eventing/pkg/utils/cache

@@ -24,47 +24,17 @@ import (
 	"github.com/n3wscott/rigging"
 )
 
-// SmokeTestBrokerImpl makes sure an RabbitMQ Broker goes ready.
-func SmokeTestBrokerImpl(t *testing.T, brokerName string) {
-
-	opts := []rigging.Option{}
-
-	rig, err := rigging.NewInstall(opts, []string{"rabbitmq", "smoke/broker"}, map[string]string{
-		"brokerName": brokerName,
-	})
-	if err != nil {
-		t.Fatalf("failed to create rig, %s", err)
-	}
-	t.Logf("Created a new testing rig at namespace %s.", rig.Namespace())
-
-	// Uninstall deferred.
-	defer func() {
-		if err := rig.Uninstall(); err != nil {
-			t.Errorf("failed to uninstall, %s", err)
-		}
-	}()
-
-	refs := rig.Objects()
-	for _, r := range refs {
-		if !strings.Contains(r.APIVersion, "knative.dev") {
-			// Let's not care so much about checking the status of non-knative
-			// resources.
-			continue
-		}
-		_, err := rig.WaitForReadyOrDone(r, 5*time.Minute)
-		if err != nil {
-			t.Fatalf("failed to wait for ready or done, %s", err)
-		}
-		// Pass!
-	}
+// Create the container images required for the test.
+func init() {
+	rigging.RegisterPackage("knative.dev/eventing-rabbitmq/cmd/recorder")
 }
 
-// SmokeTestBrokerTriggerImpl makes sure an RabbitMQ Broker goes ready.
-func SmokeTestBrokerTriggerImpl(t *testing.T, brokerName, triggerName string) {
+// DirectTestBrokerImpl makes sure an RabbitMQ Broker delivers events to a single consumer.
+func DirectTestBrokerImpl(t *testing.T, brokerName, triggerName string) {
 
 	opts := []rigging.Option{}
 
-	rig, err := rigging.NewInstall(opts, []string{"rabbitmq", "smoke/brokertrigger"}, map[string]string{
+	rig, err := rigging.NewInstall(opts, []string{"rabbitmq", "direct"}, map[string]string{
 		"brokerName":  brokerName,
 		"triggerName": triggerName,
 	})

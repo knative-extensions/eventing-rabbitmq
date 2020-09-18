@@ -103,4 +103,5 @@ kubeadmConfigPatches:
 EOF
 
 echo "To use ko with kind:"
+echo "export KIND_CLUSTER_NAME=${cluster_name}"
 echo "export KO_DOCKER_REPO=kind.local"

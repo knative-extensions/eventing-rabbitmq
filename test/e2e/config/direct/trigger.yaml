@@ -13,14 +13,49 @@
 # limitations under the License.
 
 apiVersion: eventing.knative.dev/v1
-kind: Broker
+kind: Trigger
 metadata:
-  name: {{ .brokerName }}
+  name: {{ .triggerName }}
   namespace: {{ .namespace }}
-  annotations:
-    eventing.knative.dev/broker.class: RabbitMQBroker
 spec:
-  config:
-    apiVersion: rabbitmq.com/v1beta1
-    kind: RabbitmqCluster
-    name: rabbitmqc
+  broker: {{ .brokerName }}
+  subscriber:
+    ref:
+      apiVersion: v1
+      kind: Service
+      name: direct
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: direct
+  namespace: {{ .namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: &labels
+      app: direct
+  template:
+    metadata:
+      labels: *labels
+    spec:
+      containers:
+        - name: recorder
+          image: {{ .images.recorder }}
+
+---
+
+kind: Service
+apiVersion: v1
+metadata:
+  name: direct
+  namespace: {{ .namespace }}
+spec:
+  selector:
+    app: direct
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
