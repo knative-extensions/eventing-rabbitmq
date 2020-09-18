@@ -22,8 +22,8 @@ import (
 	_ "knative.dev/pkg/system/testing"
 
 	"knative.dev/eventing/pkg/test/observer"
-	"knative.dev/eventing/pkg/test/observer/recorder-vent"
-	"knative.dev/eventing/pkg/test/observer/writer-vent"
+	recorder_vent "knative.dev/eventing/pkg/test/observer/recorder-vent"
+	writer_vent "knative.dev/eventing/pkg/test/observer/writer-vent"
 	"knative.dev/pkg/injection/sharedmain"
 )
 
