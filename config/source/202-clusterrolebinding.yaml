@@ -17,7 +17,7 @@ kind: ClusterRoleBinding
 metadata:
   name: eventing-sources-rabbitmq-controller
   labels:
-    contrib.eventing.knative.dev/release: devel
+    rabbitmq.eventing.knative.dev/release: devel
 subjects:
   - kind: ServiceAccount
     name: rabbitmq-controller-manager
@@ -34,7 +34,7 @@ kind: ClusterRoleBinding
 metadata:
   name: eventing-sources-rabbitmq-controller-addressable-resolver
   labels:
-    contrib.eventing.knative.dev/release: devel
+    rabbitmq.eventing.knative.dev/release: devel
 subjects:
   - kind: ServiceAccount
     name: rabbitmq-controller-manager

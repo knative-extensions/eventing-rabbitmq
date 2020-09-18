@@ -17,7 +17,7 @@ kind: ClusterRole
 metadata:
   name: knative-eventing-rabbitmq-broker-controller
   labels:
-    eventing.knative.dev/release: devel
+    rabbitmq.eventing.knative.dev/release: devel
 rules:
   # Configs resources and status we care about.
   - apiGroups:

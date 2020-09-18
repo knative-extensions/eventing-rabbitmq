@@ -17,7 +17,7 @@ kind: ClusterRoleBinding
 metadata:
   name: eventing-rabbitmq-broker-controller
   labels:
-    eventing.knative.dev/release: devel
+    rabbitmq.eventing.knative.dev/release: devel
 subjects:
   - kind: ServiceAccount
     name: eventing-controller

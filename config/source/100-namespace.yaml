@@ -17,4 +17,4 @@ kind: Namespace
 metadata:
   name: knative-sources
   labels:
-    contrib.eventing.knative.dev/release: devel
+    rabbitmq.eventing.knative.dev/release: devel
