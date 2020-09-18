@@ -29,6 +29,13 @@ spec:
       containers:
         - name: recorder
           image: {{ .images.recorder }}
+          env:
+            - name: SYSTEM_NAMESPACE
+              value: {{ .namespace }}
+            - name: OBSERVER
+              value: recorder-{{ .namespace }}
+            - name: K8S_EVENT_SINK
+              value: '{"apiVersion": "v1", "kind": "Namespace", "name": "{{ .namespace }}"}'
 
 ---
 

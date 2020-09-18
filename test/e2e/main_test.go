@@ -44,7 +44,8 @@ func TestKoPublish(t *testing.T) {
 
 	templateString := `
 	rigging.WithImages(map[string]string{
-		{{ range $key, $value := . }}"{{ $key }}": "{{ $value }}",
+{{ range $key, $value := . }}
+		"{{ $key }}": "{{ $value }}",
 {{ end }}
 	}),`
 
