@@ -17,11 +17,20 @@ limitations under the License.
 package rabbit_test
 
 import (
+	"fmt"
+	"knative.dev/eventing/pkg/test/observer"
+	"knative.dev/pkg/injection/sharedmain"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/n3wscott/rigging"
+	"knative.dev/eventing/pkg/test/observer/recorder-collector"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
+
+	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	_ "knative.dev/pkg/system/testing"
 )
 
 // Create the container images required for the test.
@@ -64,12 +73,32 @@ func DirectTestBrokerImpl(t *testing.T, brokerName, triggerName string) {
 		if err != nil {
 			t.Fatalf("failed to wait for ready or done, %s", err)
 		}
-		// Pass!
 	}
 
 	time.Sleep(time.Minute)
 
-	// TODO: need to send events.
-
 	// TODO: need to validate set events.
+
+	ctx := sharedmain.EnableInjectionOrDie(nil, nil) //nolint
+	c := recorder_collector.New(ctx)
+
+	from := duckv1.KReference{
+		Kind:       "Namespace",
+		Name:       "default",
+		APIVersion: "v1",
+	}
+
+	obsName := fmt.Sprintf("recorder-%s", rig.Namespace())
+	events, err := c.List(ctx, from, func(ob observer.Observed) bool {
+		return ob.Observer == obsName
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	for i, e := range events {
+		fmt.Printf("[%d]: seen by %q\n%s\n", i, e.Observer, e.Event)
+	}
+
+	// Pass!
 }
