@@ -51,10 +51,13 @@ func main() {
 	}
 
 	send(cloudevents.ContextWithRetriesExponentialBackoff(ctx, 10*time.Millisecond, 10), c, env.Count)
+
+	// Wait.
+	<-ctx.Done()
 }
 
 func send(ctx context.Context, c cloudevents.Client, count int) {
-	for i := 0; i < 100; i++ {
+	for i := 0; i < count; i++ {
 		e := cloudevents.NewEvent()
 		e.SetType("knative.producer.e2etest")
 		e.SetSource("https://knative.dev/eventing/e2e")
