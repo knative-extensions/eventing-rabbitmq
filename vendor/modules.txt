@@ -1169,6 +1169,7 @@ knative.dev/eventing/pkg/reconciler/names
 knative.dev/eventing/pkg/reconciler/testing
 knative.dev/eventing/pkg/reconciler/testing/v1
 knative.dev/eventing/pkg/test/observer
+knative.dev/eventing/pkg/test/observer/recorder-collector
 knative.dev/eventing/pkg/test/observer/recorder-vent
 knative.dev/eventing/pkg/test/observer/writer-vent
 knative.dev/eventing/pkg/tracing
