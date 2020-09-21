@@ -17,6 +17,7 @@ limitations under the License.
 package broker
 
 import (
+	"os"
 	"testing"
 
 	"knative.dev/pkg/configmap"
@@ -25,9 +26,12 @@ import (
 	// Fake injection informers
 	_ "knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit/fake"
 	_ "knative.dev/eventing/pkg/client/injection/informers/eventing/v1/broker/fake"
+	_ "knative.dev/pkg/client/injection/ducks/duck/v1/addressable/fake"
+	_ "knative.dev/pkg/client/injection/ducks/duck/v1/conditions/fake"
 	_ "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment/fake"
 	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/configmap/fake"
 	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/endpoints/fake"
+	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/secret/fake"
 	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/service/fake"
 	_ "knative.dev/pkg/injection/clients/dynamicclient/fake"
 )
@@ -35,6 +39,8 @@ import (
 func TestNew(t *testing.T) {
 	ctx, _ := SetupFakeContext(t)
 
+	os.Setenv("BROKER_INGRESS_IMAGE", "ingressimage")
+	os.Setenv("BROKER_INGRESS_SERVICE_ACCOUNT", "ingresssa")
 	c := NewController(ctx, configmap.NewStaticWatcher())
 
 	if c == nil {

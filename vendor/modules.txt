@@ -1210,6 +1210,7 @@ knative.dev/pkg/changeset
 knative.dev/pkg/client/injection/ducks/duck/v1/addressable
 knative.dev/pkg/client/injection/ducks/duck/v1/addressable/fake
 knative.dev/pkg/client/injection/ducks/duck/v1/conditions
+knative.dev/pkg/client/injection/ducks/duck/v1/conditions/fake
 knative.dev/pkg/client/injection/ducks/duck/v1alpha1/addressable
 knative.dev/pkg/client/injection/ducks/duck/v1beta1/addressable
 knative.dev/pkg/client/injection/kube/client
@@ -1223,6 +1224,7 @@ knative.dev/pkg/client/injection/kube/informers/core/v1/configmap/fake
 knative.dev/pkg/client/injection/kube/informers/core/v1/endpoints
 knative.dev/pkg/client/injection/kube/informers/core/v1/endpoints/fake
 knative.dev/pkg/client/injection/kube/informers/core/v1/secret
+knative.dev/pkg/client/injection/kube/informers/core/v1/secret/fake
 knative.dev/pkg/client/injection/kube/informers/core/v1/service
 knative.dev/pkg/client/injection/kube/informers/core/v1/service/fake
 knative.dev/pkg/client/injection/kube/informers/factory
