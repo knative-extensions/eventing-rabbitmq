@@ -34,17 +34,15 @@ import (
 	"knative.dev/pkg/logging"
 
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
-	duckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
-	"knative.dev/eventing/pkg/apis/eventing/v1beta1"
+	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	clientset "knative.dev/eventing/pkg/client/clientset/versioned"
-	brokerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1beta1/broker"
-	eventinglisters "knative.dev/eventing/pkg/client/listers/eventing/v1beta1"
+	brokerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1/broker"
+	eventinglisters "knative.dev/eventing/pkg/client/listers/eventing/v1"
 
 	apisduck "knative.dev/pkg/apis/duck"
 
 	"knative.dev/eventing/pkg/duck"
 	"knative.dev/eventing/pkg/reconciler/names"
-	pkgduckv1 "knative.dev/pkg/apis/duck/v1"
 	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/resolver"
 )
@@ -86,54 +84,62 @@ type ReconcilerArgs struct {
 	IngressServiceAccountName string
 }
 
-func (r *Reconciler) ReconcileKind(ctx context.Context, b *v1beta1.Broker) pkgreconciler.Event {
-	logging.FromContext(ctx).Debugw("Reconciling", zap.Any("Broker", b))
+const (
+	BrokerConditionExchange    apis.ConditionType = "ExchangeReady"
+	BrokerConditionSecret      apis.ConditionType = "SecretReady"
+	BrokerConditionIngress     apis.ConditionType = "IngressReady"
+	BrokerConditionAddressable apis.ConditionType = "Addressable"
+)
 
-	// TODO: broker coupled to channels
-	b.Status.PropagateTriggerChannelReadiness(&duckv1beta1.ChannelableStatus{
-		AddressStatus: pkgduckv1.AddressStatus{
-			Address: &pkgduckv1.Addressable{},
-		},
-	})
+var rabbitBrokerCondSet = apis.NewLivingConditionSet(
+	BrokerConditionExchange,
+	BrokerConditionSecret,
+	BrokerConditionIngress,
+	BrokerConditionAddressable,
+)
+
+func (r *Reconciler) ReconcileKind(ctx context.Context, b *eventingv1.Broker) pkgreconciler.Event {
+	logging.FromContext(ctx).Infow("Reconciling", zap.Any("Broker", b))
 
 	// 1. RabbitMQ Exchange
 	// 2. Ingress Deployment
 	// 3. K8s Service that points to the Ingress Deployment
 	args, err := r.getExchangeArgs(ctx, b)
 	if err != nil {
+		MarkExchangeFailed(&b.Status, "ExchangeCredentialsUnavailable", "Failed to get arguments for creating exchange: %s", err)
 		return err
 	}
 
 	s, err := resources.DeclareExchange(args)
 	if err != nil {
 		logging.FromContext(ctx).Errorw("Problem creating RabbitMQ Exchange", zap.Error(err))
-		b.Status.MarkIngressFailed("ExchangeFailure", "%v", err)
+		MarkExchangeFailed(&b.Status, "ExchangeFailure", "Failed to create exchange: %s", err)
 		return err
 	}
 
+	MarkExchangeReady(&b.Status)
 	if err := r.reconcileSecret(ctx, s); err != nil {
 		logging.FromContext(ctx).Errorw("Problem reconciling Secret", zap.Error(err))
-		b.Status.MarkIngressFailed("SecretFailure", "%v", err)
+		MarkSecretFailed(&b.Status, "SecretFailure", "Failed to reconcile secret: %s", err)
 		return err
 	}
+	MarkSecretReady(&b.Status)
 
 	if err := r.reconcileIngressDeployment(ctx, b); err != nil {
 		logging.FromContext(ctx).Errorw("Problem reconciling ingress Deployment", zap.Error(err))
-		b.Status.MarkIngressFailed("DeploymentFailure", "%v", err)
+		MarkIngressFailed(&b.Status, "DeploymentFailure", "%v", err)
 		return err
 	}
 
 	ingressEndpoints, err := r.reconcileIngressService(ctx, b)
 	if err != nil {
 		logging.FromContext(ctx).Errorw("Problem reconciling ingress Service", zap.Error(err))
-		b.Status.MarkIngressFailed("ServiceFailure", "%v", err)
+		MarkIngressFailed(&b.Status, "ServiceFailure", "%v", err)
 		return err
 	}
-	b.Status.PropagateIngressAvailability(ingressEndpoints)
-	// TODO something else, faking this for the broker status
-	b.Status.PropagateFilterAvailability(ingressEndpoints)
+	PropagateIngressAvailability(&b.Status, ingressEndpoints)
 
-	b.Status.SetAddress(&apis.URL{
+	SetAddress(&b.Status, &apis.URL{
 		Scheme: "http",
 		Host:   names.ServiceHostName(ingressEndpoints.GetName(), ingressEndpoints.GetNamespace()),
 	})
@@ -143,7 +149,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *v1beta1.Broker) pkgre
 	return nil
 }
 
-func (r *Reconciler) FinalizeKind(ctx context.Context, b *v1beta1.Broker) pkgreconciler.Event {
+func (r *Reconciler) FinalizeKind(ctx context.Context, b *eventingv1.Broker) pkgreconciler.Event {
 	args, err := r.getExchangeArgs(ctx, b)
 	if err != nil {
 		return err
@@ -226,7 +232,7 @@ func (r *Reconciler) reconcileService(ctx context.Context, svc *corev1.Service) 
 }
 
 // reconcileIngressDeploymentCRD reconciles the Ingress Deployment.
-func (r *Reconciler) reconcileIngressDeployment(ctx context.Context, b *v1beta1.Broker) error {
+func (r *Reconciler) reconcileIngressDeployment(ctx context.Context, b *eventingv1.Broker) error {
 	expected := resources.MakeIngressDeployment(&resources.IngressArgs{
 		Broker:             b,
 		Image:              r.ingressImage,
@@ -237,7 +243,7 @@ func (r *Reconciler) reconcileIngressDeployment(ctx context.Context, b *v1beta1.
 }
 
 // reconcileIngressService reconciles the Ingress Service.
-func (r *Reconciler) reconcileIngressService(ctx context.Context, b *v1beta1.Broker) (*corev1.Endpoints, error) {
+func (r *Reconciler) reconcileIngressService(ctx context.Context, b *eventingv1.Broker) (*corev1.Endpoints, error) {
 	expected := resources.MakeIngressService(b)
 	return r.reconcileService(ctx, expected)
 }

@@ -9,7 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/testrabbit"
-	eventingv1beta1 "knative.dev/eventing/pkg/apis/eventing/v1beta1"
+	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 )
 
 const namespace = "foobar"
@@ -21,7 +21,7 @@ func TestExchangeDeclaration(t *testing.T) {
 	brokerName := "x-change"
 
 	_, err := resources.DeclareExchange(&resources.ExchangeArgs{
-		Broker: &eventingv1beta1.Broker{
+		Broker: &eventingv1.Broker{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      brokerName,
 				Namespace: namespace,
@@ -50,7 +50,7 @@ func TestIncompatibleExchangeDeclarationFailure(t *testing.T) {
 	testrabbit.CreateExchange(t, ctx, rabbitContainer, exchangeName, "direct")
 
 	_, err := resources.DeclareExchange(&resources.ExchangeArgs{
-		Broker: &eventingv1beta1.Broker{
+		Broker: &eventingv1.Broker{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      brokerName,
 				Namespace: namespace,
@@ -71,7 +71,7 @@ func TestExchangeDeletion(t *testing.T) {
 	testrabbit.CreateExchange(t, ctx, rabbitContainer, exchangeName, "headers")
 
 	err := resources.DeleteExchange(&resources.ExchangeArgs{
-		Broker: &eventingv1beta1.Broker{
+		Broker: &eventingv1.Broker{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      brokerName,
 				Namespace: namespace,

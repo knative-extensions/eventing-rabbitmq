@@ -30,7 +30,7 @@ import (
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"knative.dev/eventing/pkg/apis/eventing/v1beta1"
+	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/logging"
 
@@ -39,7 +39,7 @@ import (
 
 // This file contains the logic dealing with how to handle Broker.Spec.Config.
 
-func (r *Reconciler) getExchangeArgs(ctx context.Context, b *v1beta1.Broker) (*resources.ExchangeArgs, error) {
+func (r *Reconciler) getExchangeArgs(ctx context.Context, b *eventingv1.Broker) (*resources.ExchangeArgs, error) {
 	rabbitmqURL, err := r.rabbitmqURL(ctx, b)
 	if err != nil {
 		return nil, err
@@ -50,7 +50,7 @@ func (r *Reconciler) getExchangeArgs(ctx context.Context, b *v1beta1.Broker) (*r
 	}, nil
 }
 
-func (r *Reconciler) rabbitmqURL(ctx context.Context, b *v1beta1.Broker) (*url.URL, error) {
+func (r *Reconciler) rabbitmqURL(ctx context.Context, b *eventingv1.Broker) (*url.URL, error) {
 	if b.Spec.Config != nil {
 		if b.Spec.Config.Namespace == "" || b.Spec.Config.Name == "" {
 			return nil, errors.New("broker.spec.config.[name, namespace] are required") // TODO: throwing an error here is wrong. This should set a custom condition.

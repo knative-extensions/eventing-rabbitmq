@@ -30,8 +30,8 @@ import (
 	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 
-	brokerinformer "knative.dev/eventing/pkg/client/injection/informers/eventing/v1beta1/broker"
-	brokerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1beta1/broker"
+	brokerinformer "knative.dev/eventing/pkg/client/injection/informers/eventing/v1/broker"
+	brokerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1/broker"
 	"knative.dev/eventing/pkg/duck"
 	"knative.dev/pkg/client/injection/ducks/duck/v1/addressable"
 	"knative.dev/pkg/client/injection/ducks/duck/v1/conditions"
@@ -62,6 +62,8 @@ func NewController(
 	ctx context.Context,
 	cmw configmap.Watcher,
 ) *controller.Impl {
+
+	eventingv1.RegisterAlternateBrokerConditionSet(rabbitBrokerCondSet)
 
 	var env envConfig
 	if err := envconfig.Process("", &env); err != nil {

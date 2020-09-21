@@ -25,7 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"knative.dev/eventing/pkg/apis/eventing"
-	eventingv1beta1 "knative.dev/eventing/pkg/apis/eventing/v1beta1"
+	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/system"
 )
@@ -36,7 +36,7 @@ const (
 
 // IngressArgs are the arguments to create a Broker's ingress Deployment.
 type IngressArgs struct {
-	Broker *eventingv1beta1.Broker
+	Broker *eventingv1.Broker
 	Image  string
 	//ServiceAccountName string
 	RabbitMQSecretName string
@@ -106,13 +106,12 @@ func MakeIngressDeployment(args *IngressArgs) *appsv1.Deployment {
 }
 
 // MakeIngressService creates the in-memory representation of the Broker's ingress Service.
-func MakeIngressService(b *eventingv1beta1.Broker) *corev1.Service {
+func MakeIngressService(b *eventingv1.Broker) *corev1.Service {
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: b.Namespace,
-			// TODO add -ingress to the name to be consistent with the dispatcher service naming.
-			Name:   fmt.Sprintf("%s-broker", b.Name),
-			Labels: IngressLabels(b.Name),
+			Name:      fmt.Sprintf("%s-broker-ingress", b.Name),
+			Labels:    IngressLabels(b.Name),
 			OwnerReferences: []metav1.OwnerReference{
 				*kmeta.NewControllerRef(b),
 			},
