@@ -29,8 +29,7 @@ import (
 )
 
 const (
-	testRabbitURL        = "amqp://localhost.example.com"
-	testRabbitURLEscaped = "amqp:%2F%2Flocalhost.example.com"
+	testRabbitURL = "amqp://localhost.example.com"
 )
 
 func TestMakeSecret(t *testing.T) {

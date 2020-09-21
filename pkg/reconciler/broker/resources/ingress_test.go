@@ -92,7 +92,7 @@ func TestMakeIngressDeployment(t *testing.T) {
 							ValueFrom: &corev1.EnvVarSource{
 								SecretKeyRef: &corev1.SecretKeySelector{
 									LocalObjectReference: corev1.LocalObjectReference{
-										secretName,
+										Name: secretName,
 									},
 									Key: brokerURLKey,
 								},

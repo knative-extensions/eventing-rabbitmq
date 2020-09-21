@@ -23,7 +23,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -33,8 +32,6 @@ import (
 	fakeeventingclient "knative.dev/eventing/pkg/client/injection/client/fake"
 	"knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1/broker"
 	"knative.dev/eventing/pkg/duck"
-	"knative.dev/eventing/pkg/utils"
-	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	v1addr "knative.dev/pkg/client/injection/ducks/duck/v1/addressable"
 	"knative.dev/pkg/client/injection/ducks/duck/v1/conditions"
@@ -56,37 +53,25 @@ import (
 const (
 	finalizerName = "brokers.eventing.knative.dev"
 	brokerClass   = "RabbitMQBroker"
-	systemNS      = "knative-testing"
-	testNS        = "test-namespace"
-	brokerName    = "test-broker"
+	//	systemNS      = "knative-testing"
+	testNS     = "test-namespace"
+	brokerName = "test-broker"
 
 	rabbitSecretName = "test-secret"
 	rabbitSecretData = "amqp://testrabbit"
-
-	triggerChannelAPIVersion = "messaging.knative.dev/v1"
-	triggerChannelKind       = "InMemoryChannel"
-	triggerChannelName       = "test-broker-kne-trigger"
-
-	imcSpec = `
-apiVersion: "messaging.knative.dev/v1"
-kind: "InMemoryChannel"
-`
 )
 
 var (
 	testKey = fmt.Sprintf("%s/%s", testNS, brokerName)
 
-	triggerChannelHostname = fmt.Sprintf("foo.bar.svc.%s", utils.GetClusterDomainName())
-	triggerChannelURL      = fmt.Sprintf("http://%s", triggerChannelHostname)
-
-	filterServiceName  = "broker-filter"
+	/* TODO: Use once we can fake the rabbit stuff
 	ingressServiceName = "broker-ingress"
-
 	brokerAddress = &apis.URL{
 		Scheme: "http",
 		Host:   fmt.Sprintf("%s.%s.svc.%s", ingressServiceName, systemNS, utils.GetClusterDomainName()),
 		Path:   fmt.Sprintf("/%s/%s", testNS, brokerName),
 	}
+	*/
 )
 
 func init() {
@@ -117,7 +102,6 @@ func TestReconcile(t *testing.T) {
 					WithBrokerConfig(config()),
 					WithInitBrokerConditions,
 					WithBrokerDeletionTimestamp),
-				imcConfigMap(),
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeWarning, "InternalError", `secrets "test-secret" not found`),
@@ -245,202 +229,6 @@ func TestReconcile(t *testing.T) {
 				Eventf(corev1.EventTypeWarning, "InternalError", `dial tcp: lookup testrabbit: no such host`),
 			},
 			WantErr: true,
-			/*
-				}, {
-					Name: "Trigger Channel.Create error",
-					Key:  testKey,
-					Objects: []runtime.Object{
-						NewBroker(brokerName, testNS,
-							WithBrokerClass(brokerClass),
-							WithBrokerConfig(config()),
-							WithInitBrokerConditions),
-						imcConfigMap(),
-					},
-					WantCreates: []runtime.Object{
-						createSecret(testNS, brokerName),
-					},
-					WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-						Object: NewBroker(brokerName, testNS,
-							WithBrokerClass(brokerClass),
-							WithInitBrokerConditions,
-							WithBrokerConfig(config()),
-							WithTriggerChannelFailed("ChannelFailure", "inducing failure for create inmemorychannels")),
-					}},
-					WithReactors: []clientgotesting.ReactionFunc{
-						InduceFailure("create", "inmemorychannels"),
-					},
-					WantEvents: []string{
-						Eventf(corev1.EventTypeWarning, "InternalError", "Failed to reconcile trigger channel: %v", "inducing failure for create inmemorychannels"),
-					},
-					WantErr: true,
-				}, {
-					Name: "Trigger Channel.Create no address",
-					Key:  testKey,
-					Objects: []runtime.Object{
-						NewBroker(brokerName, testNS,
-							WithBrokerClass(brokerClass),
-							WithBrokerConfig(config()),
-							WithInitBrokerConditions),
-						imcConfigMap(),
-					},
-					WantCreates: []runtime.Object{
-						createSecret(testNS, brokerName),
-					},
-					WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-						Object: NewBroker(brokerName, testNS,
-							WithBrokerClass(brokerClass),
-							WithInitBrokerConditions,
-							WithBrokerConfig(config()),
-							WithTriggerChannelFailed("NoAddress", "Channel does not have an address.")),
-					}},
-				}, {
-					Name: "Trigger Channel.Create no host in the url",
-					Key:  testKey,
-					Objects: []runtime.Object{
-						NewBroker(brokerName, testNS,
-							WithBrokerClass(brokerClass),
-							WithBrokerConfig(config()),
-							WithInitBrokerConditions),
-						createSecret(testNS, brokerName),
-						imcConfigMap(),
-					},
-					WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-						Object: NewBroker(brokerName, testNS,
-							WithBrokerClass(brokerClass),
-							WithBrokerConfig(config()),
-							WithInitBrokerConditions,
-							WithTriggerChannelFailed("NoAddress", "Channel does not have an address.")),
-					}},
-				}, {
-					Name: "nil config, not a configmap",
-					Key:  testKey,
-					Objects: []runtime.Object{
-						NewBroker(brokerName, testNS,
-							WithBrokerClass(brokerClass),
-							WithBrokerConfig(&duckv1.KReference{Kind: "Deployment", APIVersion: "v1", Name: "dummy"}),
-							WithInitBrokerConditions),
-					},
-					WantEvents: []string{
-						Eventf(corev1.EventTypeWarning, "InternalError", `Broker.Spec.Config configuration not supported, only [kind: ConfigMap, apiVersion: v1]`),
-					},
-					WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-						Object: NewBroker(brokerName, testNS,
-							WithBrokerClass(brokerClass),
-							WithBrokerConfig(&duckv1.KReference{Kind: "Deployment", APIVersion: "v1", Name: "dummy"}),
-							WithInitBrokerConditions,
-							WithTriggerChannelFailed("ChannelTemplateFailed", "Error on setting up the ChannelTemplate: Broker.Spec.Config configuration not supported, only [kind: ConfigMap, apiVersion: v1]")),
-					}},
-					// This returns an internal error, so it emits an Error
-					WantErr: true,
-				}, {
-					Name: "Trigger Channel is not yet Addressable",
-					Key:  testKey,
-					Objects: []runtime.Object{
-						NewBroker(brokerName, testNS,
-							WithBrokerClass(brokerClass),
-							WithBrokerConfig(config()),
-							WithInitBrokerConditions),
-						imcConfigMap(),
-						createSecret(testNS, brokerName),
-					},
-					WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-						Object: NewBroker(brokerName, testNS,
-							WithBrokerClass(brokerClass),
-							WithBrokerConfig(config()),
-							WithInitBrokerConditions,
-							WithTriggerChannelFailed("NoAddress", "Channel does not have an address.")),
-					}},
-				}, {
-					Name: "Trigger Channel endpoints fails",
-					Key:  testKey,
-					Objects: []runtime.Object{
-						NewBroker(brokerName, testNS,
-							WithBrokerClass(brokerClass),
-							WithBrokerConfig(config()),
-							WithInitBrokerConditions),
-						imcConfigMap(),
-						createSecret(testNS, brokerName),
-					},
-					WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-						Object: NewBroker(brokerName, testNS,
-							WithBrokerClass(brokerClass),
-							WithBrokerConfig(config()),
-							WithInitBrokerConditions,
-							WithTriggerChannelReady(),
-							WithChannelAddressAnnotation(triggerChannelURL),
-							WithChannelAPIVersionAnnotation(triggerChannelAPIVersion),
-							WithChannelKindAnnotation(triggerChannelKind),
-							WithChannelNameAnnotation(triggerChannelName),
-							WithFilterFailed("ServiceFailure", `endpoints "broker-filter" not found`)),
-					}},
-					WantEvents: []string{
-						Eventf(corev1.EventTypeWarning, "InternalError", `endpoints "broker-filter" not found`),
-					},
-					WantErr: true,
-				}, {
-					Name: "Successful Reconciliation",
-					Key:  testKey,
-					Objects: []runtime.Object{
-						NewBroker(brokerName, testNS,
-							WithBrokerClass(brokerClass),
-							WithBrokerConfig(config()),
-							WithInitBrokerConditions),
-						createSecret(testNS, brokerName),
-						imcConfigMap(),
-						NewEndpoints(filterServiceName, systemNS,
-							WithEndpointsLabels(FilterLabels()),
-							WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
-						NewEndpoints(ingressServiceName, systemNS,
-							WithEndpointsLabels(IngressLabels()),
-							WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
-					},
-					WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-						Object: NewBroker(brokerName, testNS,
-							WithBrokerClass(brokerClass),
-							WithBrokerConfig(config()),
-							WithBrokerReady,
-							WithBrokerAddressURI(brokerAddress),
-							WithChannelAddressAnnotation(triggerChannelURL),
-							WithChannelAPIVersionAnnotation(triggerChannelAPIVersion),
-							WithChannelKindAnnotation(triggerChannelKind),
-							WithChannelNameAnnotation(triggerChannelName)),
-					}},
-				}, {
-					Name: "Successful Reconciliation, status update fails",
-					Key:  testKey,
-					Objects: []runtime.Object{
-						NewBroker(brokerName, testNS,
-							WithBrokerClass(brokerClass),
-							WithBrokerConfig(config()),
-							WithInitBrokerConditions),
-						createSecret(testNS, brokerName),
-						imcConfigMap(),
-						NewEndpoints(filterServiceName, systemNS,
-							WithEndpointsLabels(FilterLabels()),
-							WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
-						NewEndpoints(ingressServiceName, systemNS,
-							WithEndpointsLabels(IngressLabels()),
-							WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
-					},
-					WithReactors: []clientgotesting.ReactionFunc{
-						InduceFailure("update", "brokers"),
-					},
-					WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-						Object: NewBroker(brokerName, testNS,
-							WithBrokerClass(brokerClass),
-							WithBrokerConfig(config()),
-							WithBrokerReady,
-							WithBrokerAddressURI(brokerAddress),
-							WithChannelAddressAnnotation(triggerChannelURL),
-							WithChannelAPIVersionAnnotation(triggerChannelAPIVersion),
-							WithChannelKindAnnotation(triggerChannelKind),
-							WithChannelNameAnnotation(triggerChannelName)),
-					}},
-					WantEvents: []string{
-						Eventf(corev1.EventTypeWarning, "UpdateFailed", `Failed to update status for "test-broker": inducing failure for update brokers`),
-					},
-					WantErr: true,
-			*/
 		},
 	}
 
@@ -484,33 +272,6 @@ func createSecret(data string) *corev1.Secret {
 	}
 }
 
-func createSecret2(namespace, brokerName string) *unstructured.Unstructured {
-	name := fmt.Sprintf("%s-broker-rabbit", brokerName)
-	/*
-		labels := map[string]interface{}{
-			"eventing.knative.dev/brokerEverything": "true",
-		}
-		annotations := map[string]interface{}{
-			"eventing.knative.dev/scope": "cluster",
-		}
-	*/
-
-	return &unstructured.Unstructured{
-		Object: map[string]interface{}{
-			"apiVersion": "v1",
-			"kind":       "Secret",
-			"metadata": map[string]interface{}{
-				"creationTimestamp": nil,
-				"namespace":         namespace,
-				"name":              name,
-			},
-			"data": map[string][]byte{
-				"host": []byte("foobar"),
-			},
-		},
-	}
-}
-
 func config() *duckv1.KReference {
 	return &duckv1.KReference{
 		Name:       rabbitSecretName,
@@ -520,24 +281,15 @@ func config() *duckv1.KReference {
 	}
 }
 
-func imcConfigMap() *corev1.ConfigMap {
-	return rt.NewConfigMap(rabbitSecretName, testNS,
-		rt.WithConfigMapData(map[string]string{"channelTemplateSpec": imcSpec}))
-}
-
 // FilterLabels generates the labels present on all resources representing the filter of the given
 // Broker.
-func FilterLabels() map[string]string {
-	return map[string]string{
-		"eventing.knative.dev/brokerRole": "filter",
-	}
-}
-
+/* TODO: Enable
 func IngressLabels() map[string]string {
 	return map[string]string{
 		"eventing.knative.dev/brokerRole": "ingress",
 	}
 }
+*/
 
 func patchFinalizers(namespace, name string) clientgotesting.PatchActionImpl {
 	action := clientgotesting.PatchActionImpl{}
@@ -548,6 +300,8 @@ func patchFinalizers(namespace, name string) clientgotesting.PatchActionImpl {
 	return action
 }
 
+/*
+// TODO Enable these tests
 func patchRemoveFinalizers(namespace, name string) clientgotesting.PatchActionImpl {
 	action := clientgotesting.PatchActionImpl{}
 	action.Name = name
@@ -556,3 +310,4 @@ func patchRemoveFinalizers(namespace, name string) clientgotesting.PatchActionIm
 	action.Patch = []byte(patch)
 	return action
 }
+*/

@@ -34,8 +34,6 @@ import (
 const (
 	brokerName       = "testbroker"
 	triggerName      = "testtrigger"
-	deploymentName   = "testbroker-broker-ingress"
-	serviceName      = "testbroker-broker-ingress"
 	ns               = "testnamespace"
 	image            = "dispatcherimage"
 	secretName       = "testbroker-broker-rabbit"
