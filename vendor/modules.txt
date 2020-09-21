@@ -1167,10 +1167,10 @@ knative.dev/eventing/pkg/duck
 knative.dev/eventing/pkg/kncloudevents
 knative.dev/eventing/pkg/leaderelection
 knative.dev/eventing/pkg/reconciler/names
+knative.dev/eventing/pkg/reconciler/testing/v1
 knative.dev/eventing/pkg/test/observer
 knative.dev/eventing/pkg/test/observer/recorder-vent
 knative.dev/eventing/pkg/test/observer/writer-vent
-knative.dev/eventing/pkg/reconciler/testing/v1
 knative.dev/eventing/pkg/tracing
 knative.dev/eventing/pkg/utils
 knative.dev/eventing/pkg/utils/cache
