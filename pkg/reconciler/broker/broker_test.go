@@ -59,6 +59,15 @@ const (
 
 	rabbitSecretName = "test-secret"
 	rabbitSecretData = "amqp://testrabbit"
+	// Note that this seems to fail differently on CI vs. locally.
+	// on Github actions we see this:
+	dnsFailureMsg = `Failed to create exchange: dial tcp: lookup testrabbit: Temporary failure in name resolution`
+	// on macbook I see this:
+	//dnsFailureMsg = `Failed to create exchange: dial tcp: lookup testrabbit: no such host`
+
+	// Ditto here...
+	dnsFailureEvent = `dial tcp: lookup testrabbit: Temporary failure in name resolution`
+	//dnsFailureEvent = `dial tcp: lookup testrabbit: no such host`
 )
 
 var (
@@ -219,14 +228,14 @@ func TestReconcile(t *testing.T) {
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
-					WithExchangeFailed("ExchangeFailure", `Failed to create exchange: dial tcp: lookup testrabbit: no such host`)),
+					WithExchangeFailed("ExchangeFailure", dnsFailureMsg)),
 			}},
 			WantPatches: []clientgotesting.PatchActionImpl{
 				patchFinalizers(testNS, brokerName),
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
-				Eventf(corev1.EventTypeWarning, "InternalError", `dial tcp: lookup testrabbit: no such host`),
+				Eventf(corev1.EventTypeWarning, "InternalError", dnsFailureEvent),
 			},
 			WantErr: true,
 		},
