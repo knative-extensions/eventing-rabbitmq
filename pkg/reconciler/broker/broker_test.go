@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"testing"
 
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -28,10 +29,13 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 
 	clientgotesting "k8s.io/client-go/testing"
+	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	fakeeventingclient "knative.dev/eventing/pkg/client/injection/client/fake"
 	"knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1/broker"
 	"knative.dev/eventing/pkg/duck"
+	"knative.dev/eventing/pkg/utils"
+	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	v1addr "knative.dev/pkg/client/injection/ducks/duck/v1/addressable"
 	"knative.dev/pkg/client/injection/ducks/duck/v1/conditions"
@@ -48,39 +52,33 @@ import (
 	rt "knative.dev/eventing/pkg/reconciler/testing/v1"
 	_ "knative.dev/pkg/client/injection/ducks/duck/v1/addressable/fake"
 	. "knative.dev/pkg/reconciler/testing"
+
+	"github.com/NeowayLabs/wabbit/amqptest/server"
+	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
 )
 
 const (
 	finalizerName = "brokers.eventing.knative.dev"
 	brokerClass   = "RabbitMQBroker"
-	//	systemNS      = "knative-testing"
-	testNS     = "test-namespace"
-	brokerName = "test-broker"
+	testNS        = "test-namespace"
+	brokerName    = "test-broker"
 
-	rabbitSecretName = "test-secret"
-	rabbitSecretData = "amqp://testrabbit"
-	// Note that this seems to fail differently on CI vs. locally.
-	// on Github actions we see this:
-	dnsFailureMsg = `Failed to create exchange: dial tcp: lookup testrabbit: Temporary failure in name resolution`
-	// on macbook I see this:
-	//dnsFailureMsg = `Failed to create exchange: dial tcp: lookup testrabbit: no such host`
-
-	// Ditto here...
-	dnsFailureEvent = `dial tcp: lookup testrabbit: Temporary failure in name resolution`
-	//dnsFailureEvent = `dial tcp: lookup testrabbit: no such host`
+	rabbitSecretName       = "test-secret"
+	rabbitBrokerSecretName = "test-broker-broker-rabbit"
+	rabbitURL              = "amqp://localhost:5672/%2f"
+	ingressImage           = "ingressimage"
 )
 
 var (
+	TrueValue = true
+
 	testKey = fmt.Sprintf("%s/%s", testNS, brokerName)
 
-	/* TODO: Use once we can fake the rabbit stuff
-	ingressServiceName = "broker-ingress"
-	brokerAddress = &apis.URL{
+	ingressServiceName = "test-broker-broker-ingress"
+	brokerAddress      = &apis.URL{
 		Scheme: "http",
-		Host:   fmt.Sprintf("%s.%s.svc.%s", ingressServiceName, systemNS, utils.GetClusterDomainName()),
-		Path:   fmt.Sprintf("/%s/%s", testNS, brokerName),
+		Host:   fmt.Sprintf("%s.%s.svc.%s", ingressServiceName, testNS, utils.GetClusterDomainName()),
 	}
-	*/
 )
 
 func init() {
@@ -203,41 +201,83 @@ func TestReconcile(t *testing.T) {
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
-					WithExchangeFailed("ExchangeFailure", `Failed to create exchange: AMQP scheme must be either 'amqp://' or 'amqps://'`)),
+					WithExchangeFailed("ExchangeFailure", `Failed to create exchange: Network unreachable`)),
 			}},
 			WantPatches: []clientgotesting.PatchActionImpl{
 				patchFinalizers(testNS, brokerName),
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
-				Eventf(corev1.EventTypeWarning, "InternalError", `AMQP scheme must be either 'amqp://' or 'amqps://'`),
+				Eventf(corev1.EventTypeWarning, "InternalError", `Network unreachable`),
 			},
 			WantErr: true,
 		}, {
-			Name: "Exchange create fails - can not talk to rabbit",
+			Name: "Exchange created - endpoints not ready",
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
-				createSecret(rabbitSecretData),
+				createSecret(rabbitURL),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
-					WithExchangeFailed("ExchangeFailure", dnsFailureMsg)),
+					WithIngressFailed("ServiceFailure", `endpoints "test-broker-broker-ingress" not found`),
+					WithSecretReady(),
+					WithExchangeReady()),
 			}},
+			WantCreates: []runtime.Object{
+				createExchangeSecret(),
+				createIngressDeployment(),
+				createIngressService(),
+			},
 			WantPatches: []clientgotesting.PatchActionImpl{
 				patchFinalizers(testNS, brokerName),
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
-				Eventf(corev1.EventTypeWarning, "InternalError", dnsFailureEvent),
+				Eventf(corev1.EventTypeWarning, "InternalError", `endpoints "test-broker-broker-ingress" not found`),
 			},
 			WantErr: true,
+		}, {
+			Name: "Exchange created - endpoints ready",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerClass),
+					WithBrokerConfig(config()),
+					WithInitBrokerConditions),
+				createSecret(rabbitURL),
+				rt.NewEndpoints(ingressServiceName, testNS,
+					rt.WithEndpointsLabels(IngressLabels()),
+					rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerClass),
+					WithInitBrokerConditions,
+					WithBrokerConfig(config()),
+					WithIngressAvailable(),
+					WithSecretReady(),
+					WithBrokerAddressURI(brokerAddress),
+					WithExchangeReady()),
+			}},
+			WantCreates: []runtime.Object{
+				createExchangeSecret(),
+				createIngressDeployment(),
+				createIngressService(),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, brokerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
+			},
+			WantErr: false,
 		},
 	}
 
@@ -248,15 +288,22 @@ func TestReconcile(t *testing.T) {
 		ctx = v1addr.WithDuck(ctx)
 		ctx = conditions.WithDuck(ctx)
 		eventingv1.RegisterAlternateBrokerConditionSet(rabbitBrokerCondSet)
+		fakeServer := server.NewServer(rabbitURL)
+		fakeServer.Start()
 		r := &Reconciler{
 			eventingClientSet:  fakeeventingclient.Get(ctx),
 			dynamicClientSet:   fakedynamicclient.Get(ctx),
 			kubeClientSet:      fakekubeclient.Get(ctx),
 			endpointsLister:    listers.GetEndpointsLister(),
+			serviceLister:      listers.GetServiceLister(),
+			secretLister:       listers.GetSecretLister(),
+			deploymentLister:   listers.GetDeploymentLister(),
 			kresourceTracker:   duck.NewListableTracker(ctx, conditions.Get, func(types.NamespacedName) {}, 0),
 			addressableTracker: duck.NewListableTracker(ctx, v1a1addr.Get, func(types.NamespacedName) {}, 0),
 			uriResolver:        resolver.NewURIResolver(ctx, func(types.NamespacedName) {}),
 			brokerClass:        "RabbitMQBroker",
+			dialerFunc:         dialer.TestDialer,
+			ingressImage:       ingressImage,
 		}
 		return broker.NewReconciler(ctx, logger,
 			fakeeventingclient.Get(ctx), listers.GetBrokerLister(),
@@ -281,6 +328,41 @@ func createSecret(data string) *corev1.Secret {
 	}
 }
 
+// This is the secret that Broker creates for each broker.
+func createExchangeSecret() *corev1.Secret {
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: testNS,
+			Name:      rabbitBrokerSecretName,
+			Labels:    map[string]string{"eventing.knative.dev/broker": "test-broker"},
+			OwnerReferences: []metav1.OwnerReference{{
+				APIVersion:         "eventing.knative.dev/v1",
+				Kind:               "Broker",
+				Name:               brokerName,
+				Controller:         &TrueValue,
+				BlockOwnerDeletion: &TrueValue,
+			}},
+		},
+		StringData: map[string]string{
+			"brokerURL": rabbitURL,
+		},
+	}
+}
+
+func createIngressDeployment() *appsv1.Deployment {
+	args := &resources.IngressArgs{
+		Broker:             &eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: testNS}},
+		Image:              ingressImage,
+		RabbitMQSecretName: rabbitBrokerSecretName,
+		BrokerUrlSecretKey: resources.BrokerURLSecretKey,
+	}
+	return resources.MakeIngressDeployment(args)
+}
+
+func createIngressService() *corev1.Service {
+	return resources.MakeIngressService(&eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: testNS}})
+}
+
 func config() *duckv1.KReference {
 	return &duckv1.KReference{
 		Name:       rabbitSecretName,
@@ -292,13 +374,11 @@ func config() *duckv1.KReference {
 
 // FilterLabels generates the labels present on all resources representing the filter of the given
 // Broker.
-/* TODO: Enable
 func IngressLabels() map[string]string {
 	return map[string]string{
 		"eventing.knative.dev/brokerRole": "ingress",
 	}
 }
-*/
 
 func patchFinalizers(namespace, name string) clientgotesting.PatchActionImpl {
 	action := clientgotesting.PatchActionImpl{}

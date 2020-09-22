@@ -3,8 +3,8 @@ package amqp
 import (
 	"errors"
 
-	"github.com/sbcd90/wabbit"
-	"github.com/sbcd90/wabbit/utils"
+	"github.com/NeowayLabs/wabbit"
+	"github.com/NeowayLabs/wabbit/utils"
 	"github.com/streadway/amqp"
 )
 
@@ -172,6 +172,11 @@ func (ch *Channel) exchangeDeclare(name, kind string, passive bool, opt wabbit.O
 		return ch.Channel.ExchangeDeclarePassive(name, kind, durable, autoDelete, internal, noWait, args)
 	}
 	return ch.Channel.ExchangeDeclare(name, kind, durable, autoDelete, internal, noWait, args)
+}
+
+func (ch *Channel) QueueInspect(name string) (wabbit.Queue, error) {
+	q, err := ch.Channel.QueueInspect(name)
+	return &Queue{&q}, err
 }
 
 func (ch *Channel) QueueUnbind(name, route, exchange string, _ wabbit.Option) error {

@@ -3,7 +3,7 @@ package utils
 import (
 	"sync"
 
-	"github.com/sbcd90/wabbit"
+	"github.com/NeowayLabs/wabbit"
 )
 
 const listenerSlots = 128

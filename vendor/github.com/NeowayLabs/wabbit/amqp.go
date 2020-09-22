@@ -28,6 +28,7 @@ type (
 		Cancel(consumer string, noWait bool) error
 		ExchangeDeclare(name, kind string, opt Option) error
 		ExchangeDeclarePassive(name, kind string, opt Option) error
+		QueueInspect(name string) (Queue, error)
 		QueueDeclare(name string, args Option) (Queue, error)
 		QueueDeclarePassive(name string, args Option) (Queue, error)
 		QueueDelete(name string, args Option) (int, error)
@@ -55,7 +56,7 @@ type (
 	// Delivery is an interface to delivered messages
 	Delivery interface {
 		Ack(multiple bool) error
-		Nack(multiple, request bool) error
+		Nack(multiple, requeue bool) error
 		Reject(requeue bool) error
 
 		Body() []byte

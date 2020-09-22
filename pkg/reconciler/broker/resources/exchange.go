@@ -22,8 +22,10 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
+	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/io"
 
+	"github.com/NeowayLabs/wabbit"
 	"github.com/streadway/amqp"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 )
@@ -35,8 +37,9 @@ type ExchangeArgs struct {
 }
 
 // DeclareExchange declares the Exchange for a Broker.
-func DeclareExchange(args *ExchangeArgs) (*corev1.Secret, error) {
-	conn, err := amqp.Dial(args.RabbitMQURL.String())
+func DeclareExchange(dialerFunc dialer.DialerFunc, args *ExchangeArgs) (*corev1.Secret, error) {
+	//	conn, err := amqp.Dial(args.RabbitMQURL.String())
+	conn, err := dialerFunc(args.RabbitMQURL.String())
 	if err != nil {
 		return nil, err
 	}
@@ -52,11 +55,12 @@ func DeclareExchange(args *ExchangeArgs) (*corev1.Secret, error) {
 	return MakeSecret(args), channel.ExchangeDeclare(
 		exchangeName,
 		"headers", // kind
-		true,      // durable
-		false,     // auto-delete
-		false,     // internal
-		false,     // nowait
-		nil,       // args
+		wabbit.Option{
+			"durable":  true,
+			"delete":   false,
+			"internal": false,
+			"noWait":   false,
+		},
 	)
 }
 

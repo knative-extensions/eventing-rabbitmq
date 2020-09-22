@@ -3,7 +3,7 @@ module knative.dev/eventing-rabbitmq
 go 1.14
 
 require (
-	github.com/NeowayLabs/wabbit v0.0.0-20200409220312-12e68ab5b0c6 // indirect
+	github.com/NeowayLabs/wabbit v0.0.0-20200409220312-12e68ab5b0c6
 	github.com/aws/aws-sdk-go v1.34.11 // indirect
 	github.com/cloudevents/sdk-go/v2 v2.2.0
 	github.com/containerd/continuity v0.0.0-20200228182428-0f16d7a0959c
@@ -20,12 +20,10 @@ require (
 	github.com/n3wscott/rigging v0.0.2-0.20200909204211-040bdb39a369
 	github.com/onsi/ginkgo v1.14.0 // indirect
 	github.com/prometheus/client_golang v1.7.1 // indirect
-	github.com/sbcd90/wabbit v0.0.0-20190419210920-43bc2261e0e0
 	github.com/streadway/amqp v1.0.0
 	github.com/testcontainers/testcontainers-go v0.7.0
 	github.com/tiago4orion/conjure v0.0.0-20150908101743-93cb30b9d218 // indirect
 	go.uber.org/zap v1.15.0
-	golang.org/x/sys v0.0.0-20200905004654-be1d3432aa8f // indirect
 	golang.org/x/tools v0.0.0-20200916195026-c9a70fc28ce3 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200601152816-913338de1bd2 // indirect
 	gotest.tools v2.2.0+incompatible
@@ -36,14 +34,15 @@ require (
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/code-generator v0.18.8
 	k8s.io/kube-openapi v0.0.0-20200410145947-bcb3869e6f29
-	knative.dev/eventing v0.17.1-0.20200918175944-2e9637965169
-	knative.dev/pkg v0.0.0-20200917214745-ec3e2dd4bd19
-	knative.dev/test-infra v0.0.0-20200918021244-22269d552166
+	knative.dev/eventing v0.17.1-0.20200922174040-4da0acc18dcc
+	knative.dev/pkg v0.0.0-20200921223636-6a12c7596267
+	knative.dev/test-infra v0.0.0-20200921012245-37f1a12adbd3
 )
 
 replace (
+	// This branch allows creation of headers exchange.
+	github.com/NeowayLabs/wabbit => github.com/vaikas/wabbit v0.0.0-20200922174928-163d3236bee1
 	github.com/docker/docker => github.com/docker/engine v0.0.0-20190717161051-705d9623b7c1
-
 	// Somehow mattmoor/bindings causes grief...
 	github.com/google/go-github/v32 => github.com/google/go-github/v32 v32.0.1-0.20200624231906-3d244d3d496e
 

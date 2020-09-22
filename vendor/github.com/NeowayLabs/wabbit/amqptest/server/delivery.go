@@ -1,8 +1,9 @@
 package server
 
 import (
-	"github.com/sbcd90/wabbit"
 	"time"
+
+	"github.com/NeowayLabs/wabbit"
 )
 
 type (

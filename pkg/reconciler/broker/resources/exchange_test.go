@@ -7,6 +7,7 @@ import (
 
 	"gotest.tools/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/testrabbit"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
@@ -20,7 +21,7 @@ func TestExchangeDeclaration(t *testing.T) {
 	defer testrabbit.TerminateContainer(t, ctx, rabbitContainer)
 	brokerName := "x-change"
 
-	_, err := resources.DeclareExchange(&resources.ExchangeArgs{
+	_, err := resources.DeclareExchange(dialer.RealDialer, &resources.ExchangeArgs{
 		Broker: &eventingv1.Broker{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      brokerName,
@@ -49,7 +50,7 @@ func TestIncompatibleExchangeDeclarationFailure(t *testing.T) {
 	exchangeName := fmt.Sprintf("%s/knative-%s", namespace, brokerName)
 	testrabbit.CreateExchange(t, ctx, rabbitContainer, exchangeName, "direct")
 
-	_, err := resources.DeclareExchange(&resources.ExchangeArgs{
+	_, err := resources.DeclareExchange(dialer.RealDialer, &resources.ExchangeArgs{
 		Broker: &eventingv1.Broker{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      brokerName,

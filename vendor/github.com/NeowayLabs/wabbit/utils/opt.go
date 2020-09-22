@@ -3,7 +3,7 @@ package utils
 import (
 	"fmt"
 
-	"github.com/sbcd90/wabbit"
+	"github.com/NeowayLabs/wabbit"
 	"github.com/streadway/amqp"
 )
 

@@ -33,6 +33,7 @@ import (
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/logging"
 
+	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	clientset "knative.dev/eventing/pkg/client/clientset/versioned"
@@ -72,6 +73,9 @@ type Reconciler struct {
 
 	// If specified, only reconcile brokers with these labels
 	brokerClass string
+
+	// Which dialer to use.
+	dialerFunc dialer.DialerFunc
 }
 
 // Check that our Reconciler implements Interface
@@ -110,7 +114,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *eventingv1.Broker) pk
 		return err
 	}
 
-	s, err := resources.DeclareExchange(args)
+	s, err := resources.DeclareExchange(r.dialerFunc, args)
 	if err != nil {
 		logging.FromContext(ctx).Errorw("Problem creating RabbitMQ Exchange", zap.Error(err))
 		MarkExchangeFailed(&b.Status, "ExchangeFailure", "Failed to create exchange: %s", err)

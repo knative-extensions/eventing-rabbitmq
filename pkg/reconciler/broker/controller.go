@@ -30,6 +30,7 @@ import (
 	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 
+	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
 	brokerinformer "knative.dev/eventing/pkg/client/injection/informers/eventing/v1/broker"
 	brokerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1/broker"
 	"knative.dev/eventing/pkg/duck"
@@ -90,6 +91,7 @@ func NewController(
 		ingressImage:              env.IngressImage,
 		ingressServiceAccountName: env.IngressServiceAccount,
 		brokerClass:               env.BrokerClass,
+		dialerFunc:                dialer.RealDialer,
 	}
 
 	impl := brokerreconciler.NewImpl(ctx, r, env.BrokerClass)
