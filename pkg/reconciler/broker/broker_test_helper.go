@@ -18,7 +18,6 @@ import (
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	v1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	"knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1/broker"
@@ -108,13 +107,6 @@ func WithBrokerReady(b *v1.Broker) {
 	b.Status = *v1.TestHelper.ReadyBrokerStatus()
 }
 
-// WithTriggerChannelFailed calls .Status.MarkTriggerChannelFailed on the Broker.
-func WithTriggerChannelFailed(reason, msg string) BrokerOption {
-	return func(b *v1.Broker) {
-		b.Status.MarkTriggerChannelFailed(reason, msg)
-	}
-}
-
 // WithExchangeFailed sets exchange condition to failed.
 func WithExchangeFailed(reason, msg string) BrokerOption {
 	return func(b *v1.Broker) {
@@ -122,10 +114,17 @@ func WithExchangeFailed(reason, msg string) BrokerOption {
 	}
 }
 
-// WithFilterFailed calls .Status.MarkFilterFailed on the Broker.
-func WithFilterFailed(reason, msg string) BrokerOption {
+// WithExchangeReady sets exchange condition to ready.
+func WithExchangeReady() BrokerOption {
 	return func(b *v1.Broker) {
-		b.Status.MarkFilterFailed(reason, msg)
+		MarkExchangeReady(&b.Status)
+	}
+}
+
+// WithSecretReady sets secret condition to ready.
+func WithSecretReady() BrokerOption {
+	return func(b *v1.Broker) {
+		MarkSecretReady(&b.Status)
 	}
 }
 
@@ -133,19 +132,6 @@ func WithFilterFailed(reason, msg string) BrokerOption {
 func WithIngressFailed(reason, msg string) BrokerOption {
 	return func(b *v1.Broker) {
 		b.Status.MarkIngressFailed(reason, msg)
-	}
-}
-
-// WithTriggerChannelReady calls .Status.PropagateTriggerChannelReadiness on the Broker.
-func WithTriggerChannelReady() BrokerOption {
-	return func(b *v1.Broker) {
-		b.Status.PropagateTriggerChannelReadiness(v1.TestHelper.ReadyChannelStatus())
-	}
-}
-
-func WithFilterAvailable() BrokerOption {
-	return func(b *v1.Broker) {
-		b.Status.PropagateFilterAvailability(v1.TestHelper.AvailableEndpoints())
 	}
 }
 
@@ -163,41 +149,5 @@ func WithBrokerClass(bc string) BrokerOption {
 		}
 		annotations[broker.ClassAnnotationKey] = bc
 		b.SetAnnotations(annotations)
-	}
-}
-
-func WithChannelAddressAnnotation(address string) BrokerOption {
-	return func(b *v1.Broker) {
-		if b.Status.Annotations == nil {
-			b.Status.Annotations = make(map[string]string, 1)
-		}
-		b.Status.Annotations[eventing.BrokerChannelAddressStatusAnnotationKey] = address
-	}
-}
-
-func WithChannelAPIVersionAnnotation(apiVersion string) BrokerOption {
-	return func(b *v1.Broker) {
-		if b.Status.Annotations == nil {
-			b.Status.Annotations = make(map[string]string, 1)
-		}
-		b.Status.Annotations[eventing.BrokerChannelAPIVersionStatusAnnotationKey] = apiVersion
-	}
-}
-
-func WithChannelKindAnnotation(kind string) BrokerOption {
-	return func(b *v1.Broker) {
-		if b.Status.Annotations == nil {
-			b.Status.Annotations = make(map[string]string, 1)
-		}
-		b.Status.Annotations[eventing.BrokerChannelKindStatusAnnotationKey] = kind
-	}
-}
-
-func WithChannelNameAnnotation(name string) BrokerOption {
-	return func(b *v1.Broker) {
-		if b.Status.Annotations == nil {
-			b.Status.Annotations = make(map[string]string, 1)
-		}
-		b.Status.Annotations[eventing.BrokerChannelNameStatusAnnotationKey] = name
 	}
 }

@@ -14,10 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package leaderelection
+package amqp
 
 import (
-	kle "knative.dev/pkg/leaderelection"
+	"github.com/NeowayLabs/wabbit"
+	"github.com/NeowayLabs/wabbit/amqp"
+	"github.com/NeowayLabs/wabbit/amqptest"
 )
 
-var ValidateConfig = kle.NewConfigFromConfigMap
+type DialerFunc func(rabbitURL string) (wabbit.Conn, error)
+
+func RealDialer(rabbitURL string) (wabbit.Conn, error) {
+	realCon, err := amqp.Dial(rabbitURL)
+	return wabbit.Conn(realCon), err
+}
+
+func TestDialer(rabbitURL string) (wabbit.Conn, error) {
+	fakeCon, err := amqptest.Dial(rabbitURL)
+	return wabbit.Conn(fakeCon), err
+}

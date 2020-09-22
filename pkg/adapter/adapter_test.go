@@ -24,9 +24,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/sbcd90/wabbit/amqp"
-	"github.com/sbcd90/wabbit/amqptest"
-	"github.com/sbcd90/wabbit/amqptest/server"
+	"github.com/NeowayLabs/wabbit/amqp"
+	"github.com/NeowayLabs/wabbit/amqptest"
+	"github.com/NeowayLabs/wabbit/amqptest/server"
 	origamqp "github.com/streadway/amqp"
 	"go.uber.org/zap"
 	"knative.dev/eventing/pkg/kncloudevents"
