@@ -35,11 +35,13 @@ kubectl create secret generic rokn-rabbitmq-broker-secret \
     --from-literal=brokerURL="amqp://$R_USERNAME:$R_PASSWORD@rokn-rabbitmq-client.default:5672"
 ```
 
-install KEDA as documented [here](https://keda.sh/docs/latest/deploy/).
+You can also optionally install [KEDA based
+autoscaler](https://github.com/knative-sandbox/eventing-autoscaler-keda).
 
 ## Installation
 
-install the broker-controller from this repository:
+You must have [`ko`](https://github.com/google/ko) installed.
+Then install the broker-controller from this repository:
 
 ```
 ko apply -f config/broker/
