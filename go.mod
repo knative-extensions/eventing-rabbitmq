@@ -25,7 +25,6 @@ require (
 	github.com/testcontainers/testcontainers-go v0.7.0
 	github.com/tiago4orion/conjure v0.0.0-20150908101743-93cb30b9d218 // indirect
 	go.uber.org/zap v1.15.0
-	golang.org/x/sys v0.0.0-20200905004654-be1d3432aa8f // indirect
 	golang.org/x/tools v0.0.0-20200916195026-c9a70fc28ce3 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200601152816-913338de1bd2 // indirect
 	gotest.tools v2.2.0+incompatible
@@ -36,9 +35,9 @@ require (
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/code-generator v0.18.8
 	k8s.io/kube-openapi v0.0.0-20200410145947-bcb3869e6f29
-	knative.dev/eventing v0.17.1-0.20200918175944-2e9637965169
-	knative.dev/pkg v0.0.0-20200917214745-ec3e2dd4bd19
-	knative.dev/test-infra v0.0.0-20200918021244-22269d552166
+	knative.dev/eventing v0.17.1-0.20200922073637-bfa066dc34b4
+	knative.dev/pkg v0.0.0-20200921223636-6a12c7596267
+	knative.dev/test-infra v0.0.0-20200921012245-37f1a12adbd3
 )
 
 replace (
