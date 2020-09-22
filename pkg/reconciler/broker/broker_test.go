@@ -67,16 +67,6 @@ const (
 	rabbitBrokerSecretName = "test-broker-broker-rabbit"
 	rabbitURL              = "amqp://localhost:5672/%2f"
 	ingressImage           = "ingressimage"
-
-	// Note that this seems to fail differently on CI vs. locally.
-	// on Github actions we see this:
-	dnsFailureMsg = `Failed to create exchange: dial tcp: lookup testrabbit: Temporary failure in name resolution`
-	// on macbook I see this:
-	//dnsFailureMsg = `Failed to create exchange: dial tcp: lookup testrabbit: no such host`
-
-	// Ditto here...
-	dnsFailureEvent = `dial tcp: lookup testrabbit: Temporary failure in name resolution`
-	//dnsFailureEvent = `dial tcp: lookup testrabbit: no such host`
 )
 
 var (
