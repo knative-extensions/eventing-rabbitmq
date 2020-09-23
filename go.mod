@@ -16,7 +16,7 @@ require (
 	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/influxdata/tdigest v0.0.1 // indirect
 	github.com/kelseyhightower/envconfig v1.4.0
-	github.com/michaelklishin/rabbit-hole v1.5.0
+	github.com/michaelklishin/rabbit-hole/v2 v2.4.0
 	github.com/n3wscott/rigging v0.0.2-0.20200909204211-040bdb39a369
 	github.com/onsi/ginkgo v1.14.0 // indirect
 	github.com/prometheus/client_golang v1.7.1 // indirect

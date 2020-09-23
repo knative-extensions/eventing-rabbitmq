@@ -38,7 +38,6 @@ type ExchangeArgs struct {
 
 // DeclareExchange declares the Exchange for a Broker.
 func DeclareExchange(dialerFunc dialer.DialerFunc, args *ExchangeArgs) (*corev1.Secret, error) {
-	//	conn, err := amqp.Dial(args.RabbitMQURL.String())
 	conn, err := dialerFunc(args.RabbitMQURL.String())
 	if err != nil {
 		return nil, err
@@ -56,10 +55,10 @@ func DeclareExchange(dialerFunc dialer.DialerFunc, args *ExchangeArgs) (*corev1.
 		exchangeName,
 		"headers", // kind
 		wabbit.Option{
-			"durable":  true,
-			"delete":   false,
-			"internal": false,
-			"noWait":   false,
+			"durable":    true,
+			"autoDelete": false,
+			"internal":   false,
+			"noWait":     false,
 		},
 	)
 }

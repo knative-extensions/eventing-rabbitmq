@@ -49,6 +49,8 @@ import (
 	"knative.dev/pkg/resolver"
 )
 
+const finalizerName = "rabbitmq.eventing.knative.dev"
+
 type envConfig struct {
 	IngressImage          string `envconfig:"BROKER_INGRESS_IMAGE" required:"true"`
 	IngressServiceAccount string `envconfig:"BROKER_INGRESS_SERVICE_ACCOUNT" required:"true"`
@@ -94,7 +96,9 @@ func NewController(
 		dialerFunc:                dialer.RealDialer,
 	}
 
-	impl := brokerreconciler.NewImpl(ctx, r, env.BrokerClass)
+	impl := brokerreconciler.NewImpl(ctx, r, env.BrokerClass, func(impl *controller.Impl) controller.Options {
+		return controller.Options{FinalizerName: finalizerName}
+	})
 
 	logging.FromContext(ctx).Info("Setting up event handlers")
 

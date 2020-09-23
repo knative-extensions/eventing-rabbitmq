@@ -31,6 +31,7 @@ import (
 
 	v1 "knative.dev/eventing/pkg/apis/eventing/v1"
 
+	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
 	brokerinformer "knative.dev/eventing/pkg/client/injection/informers/eventing/v1/broker"
 	triggerinformer "knative.dev/eventing/pkg/client/injection/informers/eventing/v1/trigger"
 	brokerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1/broker"
@@ -45,6 +46,8 @@ import (
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/resolver"
 )
+
+const finalizerName = "rabbitmq.eventing.knative.dev"
 
 type envConfig struct {
 	DispatcherImage          string `envconfig:"BROKER_DISPATCHER_IMAGE" required:"true"`
@@ -80,9 +83,12 @@ func NewController(
 		dispatcherImage:              env.DispatcherImage,
 		dispatcherServiceAccountName: env.DispatcherServiceAccount,
 		brokerClass:                  env.BrokerClass,
+		dialerFunc:                   dialer.RealDialer,
 	}
 
-	impl := triggerreconciler.NewImpl(ctx, r)
+	impl := triggerreconciler.NewImpl(ctx, r, func(impl *controller.Impl) controller.Options {
+		return controller.Options{FinalizerName: finalizerName}
+	})
 
 	logging.FromContext(ctx).Info("Setting up event handlers")
 

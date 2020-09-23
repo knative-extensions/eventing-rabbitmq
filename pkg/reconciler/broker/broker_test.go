@@ -58,10 +58,9 @@ import (
 )
 
 const (
-	finalizerName = "brokers.eventing.knative.dev"
-	brokerClass   = "RabbitMQBroker"
-	testNS        = "test-namespace"
-	brokerName    = "test-broker"
+	brokerClass = "RabbitMQBroker"
+	testNS      = "test-namespace"
+	brokerName  = "test-broker"
 
 	rabbitSecretName       = "test-secret"
 	rabbitBrokerSecretName = "test-broker-broker-rabbit"
@@ -308,7 +307,9 @@ func TestReconcile(t *testing.T) {
 		return broker.NewReconciler(ctx, logger,
 			fakeeventingclient.Get(ctx), listers.GetBrokerLister(),
 			controller.GetEventRecorder(ctx),
-			r, "RabbitMQBroker")
+			r, "RabbitMQBroker",
+			controller.Options{FinalizerName: finalizerName},
+		)
 
 	},
 		false,
