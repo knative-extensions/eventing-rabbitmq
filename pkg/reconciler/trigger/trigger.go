@@ -19,6 +19,7 @@ package trigger
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"go.uber.org/zap"
 
@@ -27,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	sets "k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
@@ -34,6 +36,7 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/logging"
 
+	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
 	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
@@ -74,17 +77,19 @@ type Reconciler struct {
 	// Dynamic tracker to track AddressableTypes. In particular, it tracks Trigger subscribers.
 	addressableTracker duck.ListableTracker
 	uriResolver        *resolver.URIResolver
+
+	// Which dialer to use.
+	dialerFunc dialer.DialerFunc
+
+	// Which HTTP transport to use
+	transport http.RoundTripper
+	// For testing...
+	adminURL string
 }
 
 // Check that our Reconciler implements Interface
 var _ triggerreconciler.Interface = (*Reconciler)(nil)
 var _ triggerreconciler.Finalizer = (*Reconciler)(nil)
-
-// ReconcilerArgs are the arguments needed to create a broker.Reconciler.
-type ReconcilerArgs struct {
-	DispatcherImage              string
-	DispatcherServiceAccountName string
-}
 
 func newReconciledNormal(namespace, name string) pkgreconciler.Event {
 	return pkgreconciler.NewEvent(corev1.EventTypeNormal, triggerReconciled, "Trigger reconciled: \"%s/%s\"", namespace, name)
@@ -92,6 +97,7 @@ func newReconciledNormal(namespace, name string) pkgreconciler.Event {
 
 func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) pkgreconciler.Event {
 	logging.FromContext(ctx).Debug("Reconciling", zap.Any("Trigger", t))
+
 	t.Status.InitializeConditions()
 
 	broker, err := r.brokerLister.Brokers(t.Namespace).Get(t.Spec.Broker)
@@ -106,12 +112,25 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 	}
 
 	// If it's not my brokerclass, ignore
+	// However, if for some reason it has my finalizer, remove it.
+	// This is a bug in genreconciler because it slaps the finalizer in before we
+	// know whether it is actually ours.
 	if broker.Annotations[eventing.BrokerClassKey] != r.brokerClass {
 		logging.FromContext(ctx).Infof("Ignoring trigger %s/%s", t.Namespace, t.Name)
+		finalizers := sets.NewString(t.Finalizers...)
+		if finalizers.Has(finalizerName) {
+			finalizers.Delete(finalizerName)
+			t.Finalizers = finalizers.List()
+		}
 		return nil
 	}
 
 	t.Status.PropagateBrokerCondition(broker.Status.GetTopLevelCondition())
+	// If Broker is not ready, we're done, but once it becomes ready, we'll get requeued.
+	if !broker.Status.IsReady() {
+		logging.FromContext(ctx).Errorw("Broker is not ready", zap.Any("Broker", broker))
+		return nil
+	}
 
 	if err = r.checkDependencyAnnotation(ctx, t); err != nil {
 		return err
@@ -122,13 +141,12 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 	// 1. RabbitMQ Queue
 	// 2. RabbitMQ Binding
 	// 3. Dispatcher Deployment for Subscriber
-	// 4. KEDA ScaledObject
 	rabbitmqURL, err := r.rabbitmqURL(ctx, t)
 	if err != nil {
 		return err
 	}
 
-	queue, err := resources.DeclareQueue(&resources.QueueArgs{
+	queue, err := resources.DeclareQueue(r.dialerFunc, &resources.QueueArgs{
 		Trigger:     t,
 		RabbitmqURL: rabbitmqURL,
 	})
@@ -139,10 +157,11 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		return err
 	}
 
-	err = resources.MakeBinding(&resources.BindingArgs{
+	err = resources.MakeBinding(r.transport, &resources.BindingArgs{
 		Trigger:    t,
 		RoutingKey: "",
 		BrokerURL:  rabbitmqURL,
+		AdminURL:   r.adminURL,
 	})
 	if err != nil {
 		logging.FromContext(ctx).Error("Problem declaring Trigger Queue Binding", zap.Error(err))

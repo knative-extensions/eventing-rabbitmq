@@ -23,6 +23,7 @@ import (
 
 	"gotest.tools/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/testrabbit"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
@@ -36,7 +37,7 @@ func TestQueueDeclaration(t *testing.T) {
 	rabbitContainer := testrabbit.AutoStartRabbit(t, ctx)
 	defer testrabbit.TerminateContainer(t, ctx, rabbitContainer)
 
-	queue, err := resources.DeclareQueue(&resources.QueueArgs{
+	queue, err := resources.DeclareQueue(dialer.RealDialer, &resources.QueueArgs{
 		Trigger: &eventingv1.Trigger{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      triggerName,
@@ -47,7 +48,7 @@ func TestQueueDeclaration(t *testing.T) {
 	})
 
 	assert.NilError(t, err)
-	assert.Equal(t, queue.Name, fmt.Sprintf("%s-%s", namespace, triggerName))
+	assert.Equal(t, queue.Name(), fmt.Sprintf("%s-%s", namespace, triggerName))
 }
 
 func TestIncompatibleQueueDeclarationFailure(t *testing.T) {
@@ -57,7 +58,7 @@ func TestIncompatibleQueueDeclarationFailure(t *testing.T) {
 	queueName := fmt.Sprintf("%s-%s", namespace, triggerName)
 	testrabbit.CreateNonDurableQueue(t, ctx, rabbitContainer, queueName)
 
-	_, err := resources.DeclareQueue(&resources.QueueArgs{
+	_, err := resources.DeclareQueue(dialer.RealDialer, &resources.QueueArgs{
 		Trigger: &eventingv1.Trigger{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      triggerName,

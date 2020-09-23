@@ -39,7 +39,7 @@ func TestBindingDeclaration(t *testing.T) {
 	exchangeName := namespace + "/" + "knative-" + brokerName
 	testrabbit.CreateExchange(t, ctx, rabbitContainer, exchangeName, "headers")
 
-	err := resources.MakeBinding(&resources.BindingArgs{
+	err := resources.MakeBinding(nil, &resources.BindingArgs{
 		RoutingKey:             "some-key",
 		BrokerURL:              testrabbit.BrokerUrl(t, ctx, rabbitContainer).String(),
 		RabbitmqManagementPort: testrabbit.ManagementPort(t, ctx, rabbitContainer),
@@ -80,7 +80,7 @@ func TestMissingExchangeBindingDeclarationFailure(t *testing.T) {
 
 	brokerURL := testrabbit.BrokerUrl(t, ctx, rabbitContainer).String()
 
-	err := resources.MakeBinding(&resources.BindingArgs{
+	err := resources.MakeBinding(nil, &resources.BindingArgs{
 		RoutingKey:             "some-key",
 		BrokerURL:              brokerURL,
 		RabbitmqManagementPort: testrabbit.ManagementPort(t, ctx, rabbitContainer),
@@ -98,7 +98,7 @@ func TestMissingExchangeBindingDeclarationFailure(t *testing.T) {
 		},
 	})
 
-	assert.ErrorContains(t, err, "Failed to declare Binding. Expected 201 response, but got: 404.")
+	assert.ErrorContains(t, err, `Failed to declare Binding: Error 404 (not_found): no exchange 'foobar/knative-some-broke-herr' in vhost '/'`)
 	assert.ErrorContains(t, err, fmt.Sprintf("no exchange '%s/knative-%s'", namespace, brokerName))
 }
 

@@ -19,8 +19,10 @@ package resources
 import (
 	"fmt"
 
+	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/io"
 
+	"github.com/NeowayLabs/wabbit"
 	"github.com/streadway/amqp"
 
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
@@ -39,8 +41,8 @@ func createQueueName(t *eventingv1.Trigger) string {
 }
 
 // DeclareQueue declares the Trigger's Queue.
-func DeclareQueue(args *QueueArgs) (*amqp.Queue, error) {
-	conn, err := amqp.Dial(args.RabbitmqURL)
+func DeclareQueue(dialerFunc dialer.DialerFunc, args *QueueArgs) (wabbit.Queue, error) {
+	conn, err := dialerFunc(args.RabbitmqURL)
 	if err != nil {
 		return nil, err
 	}
@@ -54,16 +56,17 @@ func DeclareQueue(args *QueueArgs) (*amqp.Queue, error) {
 
 	queue, err := channel.QueueDeclare(
 		createQueueName(args.Trigger),
-		true,  // durable
-		false, // auto-delete
-		false, // exclusive
-		false, // nowait
-		nil,   // args
+		wabbit.Option{
+			"durable":    true,
+			"autoDelete": false,
+			"exclusive":  false,
+			"noWait":     false,
+		},
 	)
 	if err != nil {
 		return nil, err
 	}
-	return &queue, nil
+	return queue, nil
 }
 
 // DeleteQueue deletes the Trigger's Queue.

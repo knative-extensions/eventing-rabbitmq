@@ -20,10 +20,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
+	"net/http"
 	"net/url"
 	"reflect"
 
-	rabbithole "github.com/michaelklishin/rabbit-hole"
+	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 )
 
@@ -38,10 +39,11 @@ type BindingArgs struct {
 	RoutingKey             string
 	BrokerURL              string
 	RabbitmqManagementPort int
+	AdminURL               string
 }
 
 // MakeBinding declares the Binding from the Broker's Exchange to the Trigger's Queue.
-func MakeBinding(args *BindingArgs) error {
+func MakeBinding(transport http.RoundTripper, args *BindingArgs) error {
 	uri, err := url.Parse(args.BrokerURL)
 	if err != nil {
 		return fmt.Errorf("failed to parse Broker URL: %v", err)
@@ -50,11 +52,19 @@ func MakeBinding(args *BindingArgs) error {
 	if err != nil {
 		return fmt.Errorf("failed to resolve host from Broker URL: %v", err)
 	}
-	adminURL := fmt.Sprintf("http://%s:%d", host, managementPort(args))
+	var adminURL string
+	if args.AdminURL != "" {
+		adminURL = args.AdminURL
+	} else {
+		adminURL = fmt.Sprintf("http://%s:%d", host, managementPort(args))
+	}
 	p, _ := uri.User.Password()
 	c, err := rabbithole.NewClient(adminURL, uri.User.Username(), p)
 	if err != nil {
 		return fmt.Errorf("Failed to create RabbitMQ Admin Client: %v", err)
+	}
+	if transport != nil {
+		c.SetTransport(transport)
 	}
 
 	exchangeName := fmt.Sprintf("%s/%s", args.Trigger.Namespace, ExchangeName(args.Trigger.Spec.Broker))
