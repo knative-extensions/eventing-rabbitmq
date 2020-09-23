@@ -125,6 +125,8 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		return nil
 	}
 
+	t.Status.ObservedGeneration = t.Generation
+
 	t.Status.PropagateBrokerCondition(broker.Status.GetTopLevelCondition())
 	// If Broker is not ready, we're done, but once it becomes ready, we'll get requeued.
 	if !broker.Status.IsReady() {
@@ -136,13 +138,12 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		return err
 	}
 
-	t.Status.ObservedGeneration = t.Generation
-
 	// 1. RabbitMQ Queue
 	// 2. RabbitMQ Binding
 	// 3. Dispatcher Deployment for Subscriber
 	rabbitmqURL, err := r.rabbitmqURL(ctx, t)
 	if err != nil {
+		t.Status.MarkDependencyFailed("SecretFailure", "%v", err)
 		return err
 	}
 
@@ -204,19 +205,46 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 }
 
 func (r *Reconciler) FinalizeKind(ctx context.Context, t *eventingv1.Trigger) pkgreconciler.Event {
-	rabbitmqURL, err := r.rabbitmqURL(ctx, t)
+	broker, err := r.brokerLister.Brokers(t.Namespace).Get(t.Spec.Broker)
 	if err != nil {
+		if apierrs.IsNotFound(err) {
+			// Ok to return nil here. There's nothing for us to do.
+			return nil
+		}
+		return fmt.Errorf("retrieving broker: %v", err)
+	}
+
+	// If it's not my brokerclass, ignore
+	// However, if for some reason it has my finalizer, remove it.
+	// This is a bug in genreconciler because it slaps the finalizer in before we
+	// know whether it is actually ours.
+	if broker.Annotations[eventing.BrokerClassKey] != r.brokerClass {
+		logging.FromContext(ctx).Infof("Ignoring trigger %s/%s", t.Namespace, t.Name)
+		finalizers := sets.NewString(t.Finalizers...)
+		if finalizers.Has(finalizerName) {
+			finalizers.Delete(finalizerName)
+			t.Finalizers = finalizers.List()
+		}
+		return nil
+	}
+
+	rabbitmqURL, err := r.rabbitmqURL(ctx, t)
+	// If there's no secret, we can't delete the queue. Deleting an object should not require creation
+	// of a secret, and for example if the namespace is being deleted, there's nothing we can do.
+	// For now, return an error, the user can always just manually remove a finalizer.
+	if err != nil {
+		logging.FromContext(ctx).Errorf("Failed to fetch rabbitmq secret while finalizing, leaking a queue %s/%s", t.Namespace, t.Name)
 		return err
 	}
 
-	err = resources.DeleteQueue(&resources.QueueArgs{
+	err = resources.DeleteQueue(r.dialerFunc, &resources.QueueArgs{
 		Trigger:     t,
 		RabbitmqURL: rabbitmqURL,
 	})
 	if err != nil {
 		return fmt.Errorf("Trigger finalize failed: %v", err)
 	}
-	return newReconciledNormal(t.Namespace, t.Name)
+	return nil
 }
 
 // reconcileDeployment reconciles the K8s Deployment 'd'.
