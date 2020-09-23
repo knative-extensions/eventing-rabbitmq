@@ -78,7 +78,7 @@ func TestQueueDeletion(t *testing.T) {
 	queueName := fmt.Sprintf("%s-%s", namespace, triggerName)
 	testrabbit.CreateDurableQueue(t, ctx, rabbitContainer, queueName)
 
-	err := resources.DeleteQueue(&resources.QueueArgs{
+	err := resources.DeleteQueue(dialer.RealDialer, &resources.QueueArgs{
 		Trigger: &eventingv1.Trigger{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      triggerName,

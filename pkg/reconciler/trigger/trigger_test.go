@@ -27,6 +27,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -86,6 +87,11 @@ const (
 	currentGeneration    = 1
 	outdatedGeneration   = 0
 
+	subscriberKind    = "Service"
+	subscriberName    = "subscriber-name"
+	subscriberGroup   = "serving.knative.dev"
+	subscriberVersion = "v1"
+
 	bindingList = `
 [
   {
@@ -107,6 +113,14 @@ const (
 
 var (
 	testKey = fmt.Sprintf("%s/%s", testNS, triggerName)
+
+	subscriberAPIVersion = fmt.Sprintf("%s/%s", subscriberGroup, subscriberVersion)
+
+	subscriberGVK = metav1.GroupVersionKind{
+		Group:   subscriberGroup,
+		Version: subscriberVersion,
+		Kind:    subscriberKind,
+	}
 
 	ingressServiceName = "broker-ingress"
 
@@ -154,11 +168,50 @@ func TestReconcile(t *testing.T) {
 			Name:    "Trigger is being deleted",
 			Key:     testKey,
 			Objects: []runtime.Object{NewTrigger(triggerName, testNS, brokerName, WithTriggerDeleted)},
+		}, {
+			Name: "Trigger being deleted, not my broker",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				broker.NewBroker(brokerName, testNS,
+					broker.WithBrokerClass("not-my-broker"),
+					broker.WithBrokerConfig(config()),
+					broker.WithInitBrokerConditions),
+				NewTrigger(triggerName, testNS, brokerName,
+					WithInitTriggerConditions,
+					WithTriggerDeleted,
+					WithTriggerSubscriberURI(subscriberURI)),
+			},
+		}, {
+			Name: "Trigger delete fails - with finalizer - no secret",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				broker.NewBroker(brokerName, testNS,
+					broker.WithBrokerClass(brokerClass),
+					broker.WithBrokerConfig(config()),
+					broker.WithInitBrokerConditions),
+				triggerWithFinalizerReady(),
+			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeWarning, "InternalError", `secrets "test-broker-broker-rabbit" not found`),
 			},
-			// No secret, will fail
 			WantErr: true,
+		}, {
+			Name: "Trigger deleted - with finalizer and secret",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				broker.NewBroker(brokerName, testNS,
+					broker.WithBrokerClass(brokerClass),
+					broker.WithBrokerConfig(config()),
+					broker.WithInitBrokerConditions),
+				createSecret(rabbitURL),
+				triggerWithFinalizerReady(),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchRemoveFinalizers(testNS, triggerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
+			},
 		}, {
 			Name: "Broker does not exist",
 			Key:  testKey,
@@ -256,6 +309,125 @@ func TestReconcile(t *testing.T) {
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: triggerWithFilterReady(),
+			}},
+		}, {
+			Name: "Creates everything with ref",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				ReadyBroker(),
+				makeSubscriberAddressableAsUnstructured(),
+				NewTrigger(triggerName, testNS, brokerName,
+					WithTriggerUID(triggerUID),
+					WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS)),
+				createSecret(rabbitURL),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, triggerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
+			},
+			WantCreates: []runtime.Object{
+				createDispatcherDeployment(),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewTrigger(triggerName, testNS, brokerName,
+					WithTriggerUID(triggerUID),
+					WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS),
+					WithTriggerBrokerReady(),
+					WithTriggerDependencyReady(),
+					WithTriggerSubscribed(),
+					WithTriggerSubscriberResolvedSucceeded(),
+					WithTriggerStatusSubscriberURI(subscriberURI)),
+			}},
+		}, {
+			Name: "Fails to resolve ref",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				ReadyBroker(),
+				makeSubscriberNotAddressableAsUnstructured(),
+				NewTrigger(triggerName, testNS, brokerName,
+					WithTriggerUID(triggerUID),
+					WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS)),
+				createSecret(rabbitURL),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, triggerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
+				Eventf(corev1.EventTypeWarning, "InternalError", `address not set for &ObjectReference{Kind:Service,Namespace:test-namespace,Name:subscriber-name,UID:,APIVersion:serving.knative.dev/v1,ResourceVersion:,FieldPath:,}`),
+			},
+			WantErr: true,
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewTrigger(triggerName, testNS, brokerName,
+					WithTriggerUID(triggerUID),
+					WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS),
+					WithInitTriggerConditions,
+					WithTriggerBrokerReady(),
+					WithTriggerDependencyReady(),
+					WithTriggerSubscriberResolvedFailed("Unable to get the Subscriber's URI", `address not set for &ObjectReference{Kind:Service,Namespace:test-namespace,Name:subscriber-name,UID:,APIVersion:serving.knative.dev/v1,ResourceVersion:,FieldPath:,}`)),
+			}},
+		}, {
+			Name: "Invalid secret - missing key",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				ReadyBroker(),
+				NewTrigger(triggerName, testNS, brokerName,
+					WithTriggerUID(triggerUID),
+					WithTriggerSubscriberURI(subscriberURI)),
+				createInvalidSecret(rabbitURL),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, triggerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
+				Eventf(corev1.EventTypeWarning, "InternalError", "Secret missing key brokerURL"),
+			},
+			WantErr: true,
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewTrigger(triggerName, testNS, brokerName,
+					WithTriggerUID(triggerUID),
+					WithTriggerSubscriberURI(subscriberURI),
+					WithInitTriggerConditions,
+					WithTriggerBrokerReady(),
+					WithTriggerDependencyFailed("SecretFailure", "Secret missing key brokerURL")),
+			}},
+		}, {
+			Name: "Deployment creation fails",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				ReadyBroker(),
+				NewTrigger(triggerName, testNS, brokerName,
+					WithTriggerUID(triggerUID),
+					WithTriggerSubscriberURI(subscriberURI)),
+				createSecret(rabbitURL),
+			},
+			WithReactors: []clientgotesting.ReactionFunc{
+				InduceFailure("create", "deployments"),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, triggerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
+				Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for create deployments"),
+			},
+			WantErr: true,
+			WantCreates: []runtime.Object{
+				createDispatcherDeployment(),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewTrigger(triggerName, testNS, brokerName,
+					WithTriggerUID(triggerUID),
+					WithTriggerSubscriberURI(subscriberURI),
+					WithInitTriggerConditions,
+					WithTriggerBrokerReady(),
+					WithTriggerSubscribed(),
+					WithTriggerSubscriberResolvedSucceeded(),
+					WithTriggerStatusSubscriberURI(subscriberURI),
+					WithTriggerDependencyFailed("DeploymentFailure", "inducing failure for create deployments")),
 			}},
 		}, {
 			Name: "Fail binding",
@@ -578,6 +750,15 @@ func patchFinalizers(namespace, name string) clientgotesting.PatchActionImpl {
 	return action
 }
 
+func patchRemoveFinalizers(namespace, name string) clientgotesting.PatchActionImpl {
+	action := clientgotesting.PatchActionImpl{}
+	action.Name = name
+	action.Namespace = namespace
+	patch := `{"metadata":{"finalizers":[],"resourceVersion":""}}`
+	action.Patch = []byte(patch)
+	return action
+}
+
 func triggerWithFilter() *eventingv1.Trigger {
 	t := NewTrigger(triggerName, testNS, brokerName,
 		WithTriggerUID(triggerUID),
@@ -592,7 +773,6 @@ func triggerWithFilterReady() *eventingv1.Trigger {
 	t := NewTrigger(triggerName, testNS, brokerName,
 		WithTriggerUID(triggerUID),
 		WithTriggerSubscriberURI(subscriberURI),
-		WithTriggerSubscriberURI(subscriberURI),
 		WithTriggerBrokerReady(),
 		WithTriggerDependencyReady(),
 		WithTriggerSubscribed(),
@@ -604,6 +784,23 @@ func triggerWithFilterReady() *eventingv1.Trigger {
 	return t
 }
 
+func triggerWithFinalizerReady() *eventingv1.Trigger {
+	t := NewTrigger(triggerName, testNS, brokerName,
+		WithTriggerUID(triggerUID),
+		WithTriggerSubscriberURI(subscriberURI),
+		WithTriggerBrokerReady(),
+		WithTriggerDeleted,
+		WithTriggerDependencyReady(),
+		WithTriggerSubscribed(),
+		WithTriggerSubscriberResolvedSucceeded(),
+		WithTriggerStatusSubscriberURI(subscriberURI))
+	t.Spec.Filter = &eventingv1.TriggerFilter{
+		Attributes: eventingv1.TriggerFilterAttributes(map[string]string{"type": "dev.knative.sources.ping"}),
+	}
+	t.Finalizers = []string{finalizerName}
+	return t
+}
+
 func createSecret(data string) *corev1.Secret {
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -612,6 +809,18 @@ func createSecret(data string) *corev1.Secret {
 		},
 		Data: map[string][]byte{
 			"brokerURL": []byte(data),
+		},
+	}
+}
+
+func createInvalidSecret(data string) *corev1.Secret {
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: testNS,
+			Name:      rabbitSecretName,
+		},
+		Data: map[string][]byte{
+			"randokey": []byte(data),
 		},
 	}
 }
@@ -636,4 +845,35 @@ func createDispatcherDeployment() *appsv1.Deployment {
 		Subscriber:         subscriberAddress,
 	}
 	return resources.MakeDispatcherDeployment(args)
+}
+
+func makeSubscriberAddressableAsUnstructured() *unstructured.Unstructured {
+	return &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": subscriberAPIVersion,
+			"kind":       subscriberKind,
+			"metadata": map[string]interface{}{
+				"namespace": testNS,
+				"name":      subscriberName,
+			},
+			"status": map[string]interface{}{
+				"address": map[string]interface{}{
+					"url": subscriberURI,
+				},
+			},
+		},
+	}
+}
+
+func makeSubscriberNotAddressableAsUnstructured() *unstructured.Unstructured {
+	return &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": subscriberAPIVersion,
+			"kind":       subscriberKind,
+			"metadata": map[string]interface{}{
+				"namespace": testNS,
+				"name":      subscriberName,
+			},
+		},
+	}
 }

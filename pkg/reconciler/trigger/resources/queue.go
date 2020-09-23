@@ -23,7 +23,6 @@ import (
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/io"
 
 	"github.com/NeowayLabs/wabbit"
-	"github.com/streadway/amqp"
 
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 )
@@ -70,8 +69,8 @@ func DeclareQueue(dialerFunc dialer.DialerFunc, args *QueueArgs) (wabbit.Queue, 
 }
 
 // DeleteQueue deletes the Trigger's Queue.
-func DeleteQueue(args *QueueArgs) error {
-	conn, err := amqp.Dial(args.RabbitmqURL)
+func DeleteQueue(dialerFunc dialer.DialerFunc, args *QueueArgs) error {
+	conn, err := dialerFunc(args.RabbitmqURL)
 	if err != nil {
 		return err
 	}
@@ -85,9 +84,11 @@ func DeleteQueue(args *QueueArgs) error {
 
 	_, err = channel.QueueDelete(
 		createQueueName(args.Trigger),
-		false, // if-unused
-		false, // if-empty
-		false, // nowait
+		wabbit.Option{
+			"ifUnused": false,
+			"ifEmpty":  false,
+			"noWait":   false,
+		},
 	)
 	return err
 }
