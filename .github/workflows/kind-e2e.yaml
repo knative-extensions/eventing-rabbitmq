@@ -81,7 +81,6 @@ jobs:
         kubectl apply -f https://github.com/rabbitmq/cluster-operator/releases/download/0.46.0/cluster-operator.yml
 
     - name: Install Knative Eventing
-      working-directory: ./src/github.com/rabbitmq/cluster-operator
       run: |
         set -x
 
