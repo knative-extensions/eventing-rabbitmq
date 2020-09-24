@@ -74,22 +74,11 @@ jobs:
         # Create a cluster!
         kind create cluster --config kind.yaml
 
-    - name: Fetch rabbitmq/cluster-operator
-      uses: actions/checkout@v2
-      with:
-        repository: rabbitmq/cluster-operator
-        path: ./src/github.com/rabbitmq/cluster-operator
-
     - name: Install rabbitmq/cluster-operator
-      working-directory: ./src/github.com/rabbitmq/cluster-operator
       run: |
         set -x
 
-        kubectl apply -f config/namespace/base/namespace.yaml
-        kubectl apply -f config/crd/bases/rabbitmq.com_rabbitmqclusters.yaml
-        sleep 2 # Wait for the CRDs to be reconciled.
-        kubectl -n rabbitmq-system apply --kustomize config/rbac/
-        kubectl -n rabbitmq-system apply --kustomize config/manager/
+        kubectl apply -f https://github.com/rabbitmq/cluster-operator/releases/download/0.46.0/cluster-operator.yml
 
     - name: Install Knative Eventing
       working-directory: ./src/github.com/rabbitmq/cluster-operator

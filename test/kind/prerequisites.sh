@@ -27,21 +27,7 @@ pwd
 
 echo "Installing RabbitMQ Cluster Operator"
 
-# TODO: The RabbitMQ team is working on releasing the yaml, https://github.com/rabbitmq/cluster-operator/issues/228
-
-tmp_dir=$(mktemp -d -t ci-kind-XXX)
-echo ${tmp_dir}
-
-cd ${tmp_dir}
-
-git clone https://github.com/rabbitmq/cluster-operator.git
-cd cluster-operator
-
-kubectl apply -f config/namespace/base/namespace.yaml
-kubectl apply -f config/crd/bases/rabbitmq.com_rabbitmqclusters.yaml
-sleep 2 # Wait for the CRDs to be reconciled.
-kubectl -n rabbitmq-system apply --kustomize config/rbac/
-kubectl -n rabbitmq-system apply --kustomize config/manager/
+kubectl apply -f https://github.com/rabbitmq/cluster-operator/releases/download/0.46.0/cluster-operator.yml
 
 echo "Installing Knative Eventing"
 
