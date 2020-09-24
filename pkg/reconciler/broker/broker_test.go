@@ -114,6 +114,19 @@ func TestReconcile(t *testing.T) {
 			},
 			WantErr: true,
 		}, {
+			Name: "Broker deleted",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				brokerWithFinalizer(),
+				createSecret(rabbitURL),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchRemoveFinalizers(testNS, brokerName),
+			},
+		}, {
 			Name: "nil config",
 			Key:  testKey,
 			Objects: []runtime.Object{
@@ -211,6 +224,211 @@ func TestReconcile(t *testing.T) {
 			},
 			WantErr: true,
 		}, {
+			Name: "Secret create fails",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerClass),
+					WithBrokerConfig(config()),
+					WithInitBrokerConditions),
+				createSecret(rabbitURL),
+			},
+			WithReactors: []clientgotesting.ReactionFunc{
+				InduceFailure("create", "secrets"),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerClass),
+					WithInitBrokerConditions,
+					WithBrokerConfig(config()),
+					WithExchangeReady(),
+					WithSecretFailed("SecretFailure", `Failed to reconcile secret: inducing failure for create secrets`)),
+			}},
+			WantCreates: []runtime.Object{
+				createExchangeSecret(),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, brokerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
+				Eventf(corev1.EventTypeWarning, "InternalError", `inducing failure for create secrets`),
+			},
+			WantErr: true,
+		}, {
+			Name: "Secret update fails",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerClass),
+					WithBrokerConfig(config()),
+					WithInitBrokerConditions),
+				createSecret(rabbitURL),
+				createDifferentExchangeSecret(),
+			},
+			WithReactors: []clientgotesting.ReactionFunc{
+				InduceFailure("update", "secrets"),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerClass),
+					WithInitBrokerConditions,
+					WithBrokerConfig(config()),
+					WithExchangeReady(),
+					WithSecretFailed("SecretFailure", `Failed to reconcile secret: inducing failure for update secrets`)),
+			}},
+			WantUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: createExchangeSecret(),
+			}},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, brokerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
+				Eventf(corev1.EventTypeWarning, "InternalError", `inducing failure for update secrets`),
+			},
+			WantErr: true,
+		}, {
+			Name: "Deployment create fails",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerClass),
+					WithBrokerConfig(config()),
+					WithInitBrokerConditions),
+				createSecret(rabbitURL),
+				createExchangeSecret(),
+			},
+			WithReactors: []clientgotesting.ReactionFunc{
+				InduceFailure("create", "deployments"),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerClass),
+					WithInitBrokerConditions,
+					WithBrokerConfig(config()),
+					WithExchangeReady(),
+					WithSecretReady(),
+					WithIngressFailed("DeploymentFailure", `Failed to reconcile deployment: inducing failure for create deployments`)),
+			}},
+			WantCreates: []runtime.Object{
+				createIngressDeployment(),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, brokerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
+				Eventf(corev1.EventTypeWarning, "InternalError", `inducing failure for create deployments`),
+			},
+			WantErr: true,
+		}, {
+			Name: "Deployment update fails",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerClass),
+					WithBrokerConfig(config()),
+					WithInitBrokerConditions),
+				createSecret(rabbitURL),
+				createExchangeSecret(),
+				createDifferentIngressDeployment(),
+			},
+			WithReactors: []clientgotesting.ReactionFunc{
+				InduceFailure("update", "deployments"),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerClass),
+					WithInitBrokerConditions,
+					WithBrokerConfig(config()),
+					WithExchangeReady(),
+					WithSecretReady(),
+					WithIngressFailed("DeploymentFailure", `Failed to reconcile deployment: inducing failure for update deployments`)),
+			}},
+			WantUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: createIngressDeployment(),
+			}},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, brokerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
+				Eventf(corev1.EventTypeWarning, "InternalError", `inducing failure for update deployments`),
+			},
+			WantErr: true,
+		}, {
+			Name: "Service create fails",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerClass),
+					WithBrokerConfig(config()),
+					WithInitBrokerConditions),
+				createSecret(rabbitURL),
+				createExchangeSecret(),
+				createIngressDeployment(),
+			},
+			WithReactors: []clientgotesting.ReactionFunc{
+				InduceFailure("create", "services"),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerClass),
+					WithInitBrokerConditions,
+					WithBrokerConfig(config()),
+					WithExchangeReady(),
+					WithSecretReady(),
+					WithIngressFailed("ServiceFailure", `Failed to reconcile service: inducing failure for create services`)),
+			}},
+			WantCreates: []runtime.Object{
+				createIngressService(),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, brokerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
+				Eventf(corev1.EventTypeWarning, "InternalError", `inducing failure for create services`),
+			},
+			WantErr: true,
+		}, {
+			Name: "Service update fails",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerClass),
+					WithBrokerConfig(config()),
+					WithInitBrokerConditions),
+				createSecret(rabbitURL),
+				createExchangeSecret(),
+				createIngressDeployment(),
+				createDifferentIngressService(),
+			},
+			WithReactors: []clientgotesting.ReactionFunc{
+				InduceFailure("update", "services"),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerClass),
+					WithInitBrokerConditions,
+					WithBrokerConfig(config()),
+					WithExchangeReady(),
+					WithSecretReady(),
+					WithIngressFailed("ServiceFailure", `Failed to reconcile service: inducing failure for update services`)),
+			}},
+			WantUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: createIngressService(),
+			}},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, brokerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
+				Eventf(corev1.EventTypeWarning, "InternalError", `inducing failure for update services`),
+			},
+			WantErr: true,
+		}, {
 			Name: "Exchange created - endpoints not ready",
 			Key:  testKey,
 			Objects: []runtime.Object{
@@ -225,7 +443,7 @@ func TestReconcile(t *testing.T) {
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
-					WithIngressFailed("ServiceFailure", `endpoints "test-broker-broker-ingress" not found`),
+					WithIngressFailed("ServiceFailure", `Failed to reconcile service: endpoints "test-broker-broker-ingress" not found`),
 					WithSecretReady(),
 					WithExchangeReady()),
 			}},
@@ -350,6 +568,26 @@ func createExchangeSecret() *corev1.Secret {
 	}
 }
 
+func createDifferentExchangeSecret() *corev1.Secret {
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: testNS,
+			Name:      rabbitBrokerSecretName,
+			Labels:    map[string]string{"eventing.knative.dev/broker": "test-broker"},
+			OwnerReferences: []metav1.OwnerReference{{
+				APIVersion:         "eventing.knative.dev/v1",
+				Kind:               "Broker",
+				Name:               brokerName,
+				Controller:         &TrueValue,
+				BlockOwnerDeletion: &TrueValue,
+			}},
+		},
+		StringData: map[string]string{
+			"brokerURL": "different stuff",
+		},
+	}
+}
+
 func createIngressDeployment() *appsv1.Deployment {
 	args := &resources.IngressArgs{
 		Broker:             &eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: testNS}},
@@ -360,8 +598,24 @@ func createIngressDeployment() *appsv1.Deployment {
 	return resources.MakeIngressDeployment(args)
 }
 
+func createDifferentIngressDeployment() *appsv1.Deployment {
+	args := &resources.IngressArgs{
+		Broker:             &eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: testNS}},
+		Image:              "differentImage",
+		RabbitMQSecretName: rabbitBrokerSecretName,
+		BrokerUrlSecretKey: resources.BrokerURLSecretKey,
+	}
+	return resources.MakeIngressDeployment(args)
+}
+
 func createIngressService() *corev1.Service {
 	return resources.MakeIngressService(&eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: testNS}})
+}
+
+func createDifferentIngressService() *corev1.Service {
+	svc := resources.MakeIngressService(&eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: testNS}})
+	svc.Spec.Ports = []corev1.ServicePort{{Name: "diff", Port: 9999}}
+	return svc
 }
 
 func config() *duckv1.KReference {
@@ -381,6 +635,16 @@ func IngressLabels() map[string]string {
 	}
 }
 
+func brokerWithFinalizer() *eventingv1.Broker {
+	b := NewBroker(brokerName, testNS,
+		WithBrokerClass(brokerClass),
+		WithBrokerConfig(config()),
+		WithInitBrokerConditions,
+		WithBrokerDeletionTimestamp)
+	b.Finalizers = []string{finalizerName}
+	return b
+}
+
 func patchFinalizers(namespace, name string) clientgotesting.PatchActionImpl {
 	action := clientgotesting.PatchActionImpl{}
 	action.Name = name
@@ -390,8 +654,6 @@ func patchFinalizers(namespace, name string) clientgotesting.PatchActionImpl {
 	return action
 }
 
-/*
-// TODO Enable these tests
 func patchRemoveFinalizers(namespace, name string) clientgotesting.PatchActionImpl {
 	action := clientgotesting.PatchActionImpl{}
 	action.Name = name
@@ -400,4 +662,3 @@ func patchRemoveFinalizers(namespace, name string) clientgotesting.PatchActionIm
 	action.Patch = []byte(patch)
 	return action
 }
-*/

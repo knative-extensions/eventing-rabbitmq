@@ -128,10 +128,17 @@ func WithSecretReady() BrokerOption {
 	}
 }
 
+// WithSecretFailed sets secret condition to ready.
+func WithSecretFailed(reason, msg string) BrokerOption {
+	return func(b *v1.Broker) {
+		MarkSecretFailed(&b.Status, reason, msg)
+	}
+}
+
 // WithIngressFailed calls .Status.MarkIngressFailed on the Broker.
 func WithIngressFailed(reason, msg string) BrokerOption {
 	return func(b *v1.Broker) {
-		b.Status.MarkIngressFailed(reason, msg)
+		MarkIngressFailed(&b.Status, reason, msg)
 	}
 }
 
