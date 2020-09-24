@@ -131,14 +131,14 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *eventingv1.Broker) pk
 
 	if err := r.reconcileIngressDeployment(ctx, b); err != nil {
 		logging.FromContext(ctx).Errorw("Problem reconciling ingress Deployment", zap.Error(err))
-		MarkIngressFailed(&b.Status, "DeploymentFailure", "%v", err)
+		MarkIngressFailed(&b.Status, "DeploymentFailure", "Failed to reconcile deployment: %s", err)
 		return err
 	}
 
 	ingressEndpoints, err := r.reconcileIngressService(ctx, b)
 	if err != nil {
 		logging.FromContext(ctx).Errorw("Problem reconciling ingress Service", zap.Error(err))
-		MarkIngressFailed(&b.Status, "ServiceFailure", "%v", err)
+		MarkIngressFailed(&b.Status, "ServiceFailure", "Failed to reconcile service: %s", err)
 		return err
 	}
 	PropagateIngressAvailability(&b.Status, ingressEndpoints)

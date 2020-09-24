@@ -430,6 +430,42 @@ func TestReconcile(t *testing.T) {
 					WithTriggerDependencyFailed("DeploymentFailure", "inducing failure for create deployments")),
 			}},
 		}, {
+			Name: "Deployment creation fails",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				ReadyBroker(),
+				NewTrigger(triggerName, testNS, brokerName,
+					WithTriggerUID(triggerUID),
+					WithTriggerSubscriberURI(subscriberURI)),
+				createSecret(rabbitURL),
+				createDifferentDispatcherDeployment(),
+			},
+			WithReactors: []clientgotesting.ReactionFunc{
+				InduceFailure("update", "deployments"),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, triggerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
+				Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for update deployments"),
+			},
+			WantErr: true,
+			WantUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: createDispatcherDeployment(),
+			}},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewTrigger(triggerName, testNS, brokerName,
+					WithTriggerUID(triggerUID),
+					WithTriggerSubscriberURI(subscriberURI),
+					WithInitTriggerConditions,
+					WithTriggerBrokerReady(),
+					WithTriggerSubscribed(),
+					WithTriggerSubscriberResolvedSucceeded(),
+					WithTriggerStatusSubscriberURI(subscriberURI),
+					WithTriggerDependencyFailed("DeploymentFailure", "inducing failure for update deployments")),
+			}},
+		}, {
 			Name: "Fail binding",
 			Key:  testKey,
 			Objects: []runtime.Object{
@@ -838,6 +874,28 @@ func createDispatcherDeployment() *appsv1.Deployment {
 			},
 		},
 		Image:              dispatcherImage,
+		RabbitMQSecretName: rabbitSecretName,
+		QueueName:          triggerName,
+		BrokerUrlSecretKey: "brokerURL",
+		BrokerIngressURL:   brokerAddress,
+		Subscriber:         subscriberAddress,
+	}
+	return resources.MakeDispatcherDeployment(args)
+}
+
+func createDifferentDispatcherDeployment() *appsv1.Deployment {
+	args := &resources.DispatcherArgs{
+		Trigger: &eventingv1.Trigger{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      triggerName,
+				Namespace: testNS,
+				UID:       triggerUID,
+			},
+			Spec: eventingv1.TriggerSpec{
+				Broker: brokerName,
+			},
+		},
+		Image:              "differentdispatcherimage",
 		RabbitMQSecretName: rabbitSecretName,
 		QueueName:          triggerName,
 		BrokerUrlSecretKey: "brokerURL",
