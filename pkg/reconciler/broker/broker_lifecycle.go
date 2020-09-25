@@ -52,6 +52,14 @@ func MarkExchangeReady(bs *eventingv1.BrokerStatus) {
 	bs.GetConditionSet().Manage(bs).MarkTrue(BrokerConditionExchange)
 }
 
+func MarkDLXFailed(bs *eventingv1.BrokerStatus, reason, format string, args ...interface{}) {
+	bs.GetConditionSet().Manage(bs).MarkFalse(BrokerConditionDLX, reason, format, args...)
+}
+
+func MarkDLXReady(bs *eventingv1.BrokerStatus) {
+	bs.GetConditionSet().Manage(bs).MarkTrue(BrokerConditionDLX)
+}
+
 // SetAddress makes this Broker addressable by setting the URI. It also
 // sets the BrokerConditionAddressable to true.
 func SetAddress(bs *eventingv1.BrokerStatus, url *apis.URL) {

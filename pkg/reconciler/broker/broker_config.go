@@ -72,7 +72,7 @@ func (r *Reconciler) rabbitmqURL(ctx context.Context, b *eventingv1.Broker) (*ur
 			}
 			return u, err // TODO: throwing an error here is wrong. This should set a custom condition.
 		default:
-			return nil, errors.New("Broker.Spec.Config configuration not supported, only [kind: Secret, apiVersion: v1]") // TODO: throwing an error here is wrong. This should set a custom condition.
+			return nil, errors.New("Broker.Spec.Config configuration not supported, only [kind: Secret, apiVersion: v1 or kind: RabbitmqCluster, apiVersion: rabbitmq.com/v1beta1]") // TODO: throwing an error here is wrong. This should set a custom condition.
 		}
 	}
 	return nil, errors.New("Broker.Spec.Config is required") // TODO: throwing an error here is wrong. This should set a custom condition.

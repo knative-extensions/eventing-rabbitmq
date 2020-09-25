@@ -14,25 +14,50 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package dispatcher
 
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
-	"os"
+	"time"
 
+	"github.com/NeowayLabs/wabbit"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
-	"github.com/streadway/amqp"
+	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
+	"knative.dev/pkg/logging"
 )
 
-func main() {
-	queueName := os.Getenv("QUEUE_NAME")
-	brokerURL := os.Getenv("BROKER_URL")
-	brokerIngressURL := os.Getenv("BROKER_INGRESS_URL")
-	subscriberURL := os.Getenv("SUBSCRIBER")
+type Dispatcher struct {
+	queueName        string
+	brokerURL        string
+	brokerIngressURL string
+	subscriberURL    string
+	delivery         *eventingduckv1.DeliverySpec
+	dialerFunc       dialer.DialerFunc
+}
 
-	conn, err := amqp.Dial(brokerURL)
+func NewDispatcher(queueName, brokerURL, brokerIngressURL, subscriberURL string, delivery *eventingduckv1.DeliverySpec) *Dispatcher {
+	return &Dispatcher{
+		queueName:        queueName,
+		brokerURL:        brokerURL,
+		brokerIngressURL: brokerIngressURL,
+		subscriberURL:    subscriberURL,
+		delivery:         delivery,
+		dialerFunc:       dialer.RealDialer,
+	}
+
+}
+
+func (d *Dispatcher) SetDialerFunc(dialerFunc dialer.DialerFunc) {
+	d.dialerFunc = dialerFunc
+}
+
+func (d *Dispatcher) Start(ctx context.Context) {
+	logging.FromContext(ctx).Infow("Starting dispatcher")
+	conn, err := d.dialerFunc(d.brokerURL)
 	if err != nil {
 		log.Fatalf("failed to connect to RabbitMQ: %s", err)
 	}
@@ -54,13 +79,14 @@ func main() {
 	}
 
 	msgs, err := channel.Consume(
-		queueName, // queue
-		"",        // consumer
-		false,     // auto-ack
-		false,     // exclusive
-		false,     // no-local
-		false,     // no-wait
-		nil,       // args
+		d.queueName, // queue
+		"",          // consumer
+		wabbit.Option{
+			"autoAck":   false,
+			"exclusive": false,
+			"noLocal":   false,
+			"noWait":    false,
+		},
 	)
 	if err != nil {
 		log.Fatalf("failed to create consumer: %s", err)
@@ -75,29 +101,32 @@ func main() {
 	}
 
 	go func() {
-		for d := range msgs {
+		for msg := range msgs {
 			event := cloudevents.NewEvent()
-			err := json.Unmarshal(d.Body, &event)
+			err := json.Unmarshal(msg.Body(), &event)
 			if err != nil {
 				log.Printf("failed to unmarshal event (nacking and not requeueing): %s", err)
-				d.Nack(false, false) // not multiple, do not requeue
+				msg.Nack(false, false) // not multiple, do not requeue
 				continue
 			}
 
-			ctx := cloudevents.ContextWithTarget(context.Background(), subscriberURL)
+			ctx := cloudevents.ContextWithTarget(context.Background(), d.subscriberURL)
+			fmt.Printf("retrying set to: %d", *d.delivery.Retry)
+			ctx = cloudevents.ContextWithRetriesExponentialBackoff(ctx, 50*time.Millisecond, int(*d.delivery.Retry))
+
 			response, result := ceClient.Request(ctx, event)
 			if !cloudevents.IsACK(result) {
 				log.Printf("failed downstream (nacking and requeueing): %s", result.Error())
-				d.Nack(false, true) // not multiple, do requeue
+				msg.Nack(false, true) // not multiple, do requeue
 				continue
 			}
 			if response != nil {
-				ctx = cloudevents.ContextWithTarget(context.Background(), brokerIngressURL)
+				ctx = cloudevents.ContextWithTarget(context.Background(), d.brokerIngressURL)
 				if result := ceClient.Send(ctx, *response); !cloudevents.IsACK(result) {
-					d.Nack(false, true) // not multiple, do requeue
+					msg.Nack(false, true) // not multiple, do requeue
 				}
 			}
-			d.Ack(false) // not multiple
+			msg.Ack(false) // not multiple
 		}
 	}()
 

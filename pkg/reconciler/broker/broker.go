@@ -90,6 +90,7 @@ type ReconcilerArgs struct {
 
 const (
 	BrokerConditionExchange    apis.ConditionType = "ExchangeReady"
+	BrokerConditionDLX         apis.ConditionType = "DLXReady"
 	BrokerConditionSecret      apis.ConditionType = "SecretReady"
 	BrokerConditionIngress     apis.ConditionType = "IngressReady"
 	BrokerConditionAddressable apis.ConditionType = "Addressable"
@@ -97,6 +98,7 @@ const (
 
 var rabbitBrokerCondSet = apis.NewLivingConditionSet(
 	BrokerConditionExchange,
+	BrokerConditionDLX,
 	BrokerConditionSecret,
 	BrokerConditionIngress,
 	BrokerConditionAddressable,
@@ -120,8 +122,20 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *eventingv1.Broker) pk
 		MarkExchangeFailed(&b.Status, "ExchangeFailure", "Failed to create exchange: %s", err)
 		return err
 	}
-
 	MarkExchangeReady(&b.Status)
+
+	// Always just create the DLX, if we want to only create if there's a delivery spec to save
+	// resources, revisit as in if it hogs up resources too much even if it's not being used for
+	// example.
+	args.DLX = true
+	_, err = resources.DeclareExchange(r.dialerFunc, args)
+	if err != nil {
+		logging.FromContext(ctx).Errorw("Problem creating RabbitMQ DLX", zap.Error(err))
+		MarkDLXFailed(&b.Status, "ExchangeFailure", "Failed to create DLX: %s", err)
+		return err
+	}
+	MarkDLXReady(&b.Status)
+
 	if err := r.reconcileSecret(ctx, s); err != nil {
 		logging.FromContext(ctx).Errorw("Problem reconciling Secret", zap.Error(err))
 		MarkSecretFailed(&b.Status, "SecretFailure", "Failed to reconcile secret: %s", err)

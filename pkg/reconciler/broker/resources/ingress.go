@@ -92,7 +92,7 @@ func MakeIngressDeployment(args *IngressArgs) *appsv1.Deployment {
 							},
 						}, {
 							Name:  "EXCHANGE_NAME",
-							Value: fmt.Sprintf("%s/%s", args.Broker.Namespace, ExchangeName(args.Broker.Name)),
+							Value: ExchangeName(args.Broker, false),
 						}},
 						Ports: []corev1.ContainerPort{{
 							ContainerPort: 8080,

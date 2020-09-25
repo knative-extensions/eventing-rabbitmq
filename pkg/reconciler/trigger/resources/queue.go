@@ -31,6 +31,8 @@ import (
 type QueueArgs struct {
 	Trigger     *eventingv1.Trigger
 	RabbitmqURL string
+	// If non-empty, wire the queue into this DLX.
+	DLX string
 }
 
 func createQueueName(t *eventingv1.Trigger) string {
@@ -53,14 +55,19 @@ func DeclareQueue(dialerFunc dialer.DialerFunc, args *QueueArgs) (wabbit.Queue, 
 	}
 	defer io.CloseAmqpResourceAndExitOnError(channel)
 
+	options := wabbit.Option{
+		"durable":    true,
+		"autoDelete": false,
+		"exclusive":  false,
+		"noWait":     false,
+	}
+	if args.DLX != "" {
+		options["args"] = map[string]interface{}{"x-dead-letter-exchange": args.DLX}
+	}
+
 	queue, err := channel.QueueDeclare(
 		createQueueName(args.Trigger),
-		wabbit.Option{
-			"durable":    true,
-			"autoDelete": false,
-			"exclusive":  false,
-			"noWait":     false,
-		},
+		options,
 	)
 	if err != nil {
 		return nil, err
