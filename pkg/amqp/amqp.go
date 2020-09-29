@@ -33,3 +33,15 @@ func TestDialer(rabbitURL string) (wabbit.Conn, error) {
 	fakeCon, err := amqptest.Dial(rabbitURL)
 	return wabbit.Conn(fakeCon), err
 }
+
+type FakeFixedConnection struct {
+	conn wabbit.Conn
+}
+
+func NewFakeFixedConnection(conn wabbit.Conn) FakeFixedConnection {
+	return FakeFixedConnection{conn: conn}
+}
+
+func (f *FakeFixedConnection) TestFixedConnection(rabbitURL string) (wabbit.Conn, error) {
+	return f.conn, nil
+}

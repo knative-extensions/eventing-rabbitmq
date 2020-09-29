@@ -23,7 +23,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 
@@ -36,41 +35,43 @@ const (
 	dispatcherContainerName = "dispatcher"
 )
 
-// DispatcherArgs are the arguments to create a dispatcher deployment. There's
-// one of these created for each trigger.
+// DispatcherArgs are the arguments to create a Broker's Dispatcher Deployment that handles
+// DeadLetterSink deliveries.
 type DispatcherArgs struct {
-	Delivery *eventingduckv1.DeliverySpec
-	Trigger  *eventingv1.Trigger
-	Image    string
+	Broker *eventingv1.Broker
+	Image  string
 	//ServiceAccountName string
 	RabbitMQHost       string
 	RabbitMQSecretName string
 	QueueName          string
 	BrokerUrlSecretKey string
-	BrokerIngressURL   *apis.URL
 	Subscriber         *apis.URL
+}
+
+func DispatcherName(brokerName string) string {
+	return fmt.Sprintf("%s-dlq-dispatcher", brokerName)
 }
 
 // MakeDispatcherDeployment creates the in-memory representation of the Broker's Dispatcher Deployment.
 func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 	one := int32(1)
-	d := &appsv1.Deployment{
+	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: args.Trigger.Namespace,
-			Name:      fmt.Sprintf("%s-dispatcher", args.Trigger.Name),
+			Namespace: args.Broker.Namespace,
+			Name:      DispatcherName(args.Broker.Name),
 			OwnerReferences: []metav1.OwnerReference{
-				*kmeta.NewControllerRef(args.Trigger),
+				*kmeta.NewControllerRef(args.Broker),
 			},
-			Labels: DispatcherLabels(args.Trigger.Spec.Broker),
+			Labels: DispatcherLabels(args.Broker.Name),
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &one,
 			Selector: &metav1.LabelSelector{
-				MatchLabels: DispatcherLabels(args.Trigger.Spec.Broker),
+				MatchLabels: DispatcherLabels(args.Broker.Name),
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels: DispatcherLabels(args.Trigger.Spec.Broker),
+					Labels: DispatcherLabels(args.Broker.Name),
 				},
 				Spec: corev1.PodSpec{
 					//ServiceAccountName: args.ServiceAccountName,
@@ -97,39 +98,14 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 							Name:  "SUBSCRIBER",
 							Value: args.Subscriber.String(),
 						}, {
-							Name:  "BROKER_INGRESS_URL",
-							Value: args.BrokerIngressURL.String(),
+							Name:  "DLQ_DISPATCHER",
+							Value: "true",
 						}},
 					}},
 				},
 			},
 		},
 	}
-	if args.Delivery != nil {
-		if args.Delivery.Retry != nil {
-			d.Spec.Template.Spec.Containers[0].Env = append(d.Spec.Template.Spec.Containers[0].Env,
-				corev1.EnvVar{
-					Name:  "RETRY",
-					Value: fmt.Sprintf("%d", *args.Delivery.Retry),
-				})
-
-		} else {
-			d.Spec.Template.Spec.Containers[0].Env = append(d.Spec.Template.Spec.Containers[0].Env,
-				corev1.EnvVar{
-					Name:  "RETRY",
-					Value: fmt.Sprintf("5"),
-				})
-		}
-		if args.Delivery.BackoffPolicy != nil {
-			d.Spec.Template.Spec.Containers[0].Env = append(d.Spec.Template.Spec.Containers[0].Env,
-				corev1.EnvVar{
-					Name:  "BACKOFF_POLICY",
-					Value: string(*args.Delivery.BackoffPolicy),
-				})
-
-		}
-	}
-	return d
 }
 
 // DispatcherLabels generates the labels present on all resources representing the dispatcher of the given
@@ -137,6 +113,6 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 func DispatcherLabels(brokerName string) map[string]string {
 	return map[string]string{
 		eventing.BrokerLabelKey:           brokerName,
-		"eventing.knative.dev/brokerRole": "dispatcher",
+		"eventing.knative.dev/brokerRole": "dispatcher-dlq",
 	}
 }

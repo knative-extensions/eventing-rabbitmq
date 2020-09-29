@@ -121,6 +121,20 @@ func WithExchangeReady() BrokerOption {
 	}
 }
 
+// WithDLXReady() sets DLX condition to ready.
+func WithDLXReady() BrokerOption {
+	return func(b *v1.Broker) {
+		MarkDLXReady(&b.Status)
+	}
+}
+
+// WithDeadLetterSinkReady() sets DeadLetterSink condition to ready.
+func WithDeadLetterSinkReady() BrokerOption {
+	return func(b *v1.Broker) {
+		MarkDeadLetterSinkReady(&b.Status)
+	}
+}
+
 // WithSecretReady sets secret condition to ready.
 func WithSecretReady() BrokerOption {
 	return func(b *v1.Broker) {

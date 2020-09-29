@@ -19,6 +19,8 @@ package broker
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -66,6 +68,24 @@ const (
 	rabbitBrokerSecretName = "test-broker-broker-rabbit"
 	rabbitURL              = "amqp://localhost:5672/%2f"
 	ingressImage           = "ingressimage"
+
+	bindingList = `
+[
+  {
+    "source": "knative-test-broker",
+    "vhost": "/",
+    "destination": "test-namespace-test-broker",
+    "destination_type": "queue",
+    "routing_key": "test-namespace-test-broker",
+    "arguments": {
+      "x-match":  "all",
+      "x-knative-trigger": "test-trigger",
+      "type": "dev.knative.sources.ping"
+    },
+    "properties_key": "test-namespace-test-broker"
+  }
+]
+`
 )
 
 var (
@@ -242,6 +262,8 @@ func TestReconcile(t *testing.T) {
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
 					WithExchangeReady(),
+					WithDLXReady(),
+					WithDeadLetterSinkReady(),
 					WithSecretFailed("SecretFailure", `Failed to reconcile secret: inducing failure for create secrets`)),
 			}},
 			WantCreates: []runtime.Object{
@@ -275,6 +297,8 @@ func TestReconcile(t *testing.T) {
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
 					WithExchangeReady(),
+					WithDLXReady(),
+					WithDeadLetterSinkReady(),
 					WithSecretFailed("SecretFailure", `Failed to reconcile secret: inducing failure for update secrets`)),
 			}},
 			WantUpdates: []clientgotesting.UpdateActionImpl{{
@@ -308,6 +332,8 @@ func TestReconcile(t *testing.T) {
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
 					WithExchangeReady(),
+					WithDLXReady(),
+					WithDeadLetterSinkReady(),
 					WithSecretReady(),
 					WithIngressFailed("DeploymentFailure", `Failed to reconcile deployment: inducing failure for create deployments`)),
 			}},
@@ -343,6 +369,8 @@ func TestReconcile(t *testing.T) {
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
 					WithExchangeReady(),
+					WithDLXReady(),
+					WithDeadLetterSinkReady(),
 					WithSecretReady(),
 					WithIngressFailed("DeploymentFailure", `Failed to reconcile deployment: inducing failure for update deployments`)),
 			}},
@@ -378,6 +406,8 @@ func TestReconcile(t *testing.T) {
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
 					WithExchangeReady(),
+					WithDLXReady(),
+					WithDeadLetterSinkReady(),
 					WithSecretReady(),
 					WithIngressFailed("ServiceFailure", `Failed to reconcile service: inducing failure for create services`)),
 			}},
@@ -414,6 +444,8 @@ func TestReconcile(t *testing.T) {
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
 					WithExchangeReady(),
+					WithDLXReady(),
+					WithDeadLetterSinkReady(),
 					WithSecretReady(),
 					WithIngressFailed("ServiceFailure", `Failed to reconcile service: inducing failure for update services`)),
 			}},
@@ -444,6 +476,8 @@ func TestReconcile(t *testing.T) {
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
 					WithIngressFailed("ServiceFailure", `Failed to reconcile service: endpoints "test-broker-broker-ingress" not found`),
+					WithDLXReady(),
+					WithDeadLetterSinkReady(),
 					WithSecretReady(),
 					WithExchangeReady()),
 			}},
@@ -479,6 +513,8 @@ func TestReconcile(t *testing.T) {
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
 					WithIngressAvailable(),
+					WithDLXReady(),
+					WithDeadLetterSinkReady(),
 					WithSecretReady(),
 					WithBrokerAddressURI(brokerAddress),
 					WithExchangeReady()),
@@ -507,6 +543,10 @@ func TestReconcile(t *testing.T) {
 		eventingv1.RegisterAlternateBrokerConditionSet(rabbitBrokerCondSet)
 		fakeServer := server.NewServer(rabbitURL)
 		fakeServer.Start()
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprintln(w, bindingList)
+		}))
 		r := &Reconciler{
 			eventingClientSet:  fakeeventingclient.Get(ctx),
 			dynamicClientSet:   fakedynamicclient.Get(ctx),
@@ -520,6 +560,7 @@ func TestReconcile(t *testing.T) {
 			uriResolver:        resolver.NewURIResolver(ctx, func(types.NamespacedName) {}),
 			brokerClass:        "RabbitMQBroker",
 			dialerFunc:         dialer.TestDialer,
+			adminURL:           ts.URL,
 			ingressImage:       ingressImage,
 		}
 		return broker.NewReconciler(ctx, logger,

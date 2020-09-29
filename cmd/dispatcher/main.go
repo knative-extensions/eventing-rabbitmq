@@ -30,10 +30,12 @@ import (
 type envConfig struct {
 	QueueName        string `envconfig:"QUEUE_NAME" required:"true"`
 	BrokerURL        string `envconfig:"BROKER_URL" required:"true"`
-	BrokerIngressURL string `envconfig:"BROKER_INGRESS_URL" required:"true"`
+	BrokerIngressURL string `envconfig:"BROKER_INGRESS_URL" required:"false"`
 	SubscriberURL    string `envconfig:"SUBSCRIBER" required:"true"`
+	DLQDispatcher    bool   `envconfig:"DLQ_DISPATCHER" default: false required:"true"`
 
-	Retry int32 `envconfig:"RETRY" default: 3, required:"false"`
+	Retry         int32  `envconfig:"RETRY" required:"false"`
+	BackoffPolicy string `envconfig:"BACKOFF_POLICY" required:"false"`
 }
 
 func main() {
@@ -42,13 +44,25 @@ func main() {
 		log.Fatal("Failed to process env var", zap.Error(err))
 	}
 
-	delivery := &eventingduckv1.DeliverySpec{
-		Retry: &env.Retry,
+	if !env.DLQDispatcher && env.BrokerIngressURL == "" {
+		log.Fatal("Must specify BROKER_INGRESS_URL if DLQ_DISPATCHER has not been specified")
+	}
+	if env.DLQDispatcher {
+		if env.Retry != 0 || env.BackoffPolicy != "" {
+			log.Fatal("Can not specify Retry or BackoffPolicy if DLQ_DISPATCHER is specified ")
+		}
+	}
+
+	var delivery *eventingduckv1.DeliverySpec
+	if env.Retry != 0 || env.BackoffPolicy != "" {
+		delivery = &eventingduckv1.DeliverySpec{
+			Retry: &env.Retry,
+		}
 	}
 
 	sctx := signals.NewContext()
 
-	d := dispatcher.NewDispatcher(env.QueueName, env.BrokerURL, env.BrokerIngressURL, env.SubscriberURL, delivery)
+	d := dispatcher.NewDispatcher(env.QueueName, env.BrokerURL, env.BrokerIngressURL, env.SubscriberURL, env.DLQDispatcher, delivery)
 	d.Start(sctx)
 
 }

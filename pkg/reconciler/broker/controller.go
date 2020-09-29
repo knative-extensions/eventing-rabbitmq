@@ -55,6 +55,9 @@ type envConfig struct {
 	IngressImage          string `envconfig:"BROKER_INGRESS_IMAGE" required:"true"`
 	IngressServiceAccount string `envconfig:"BROKER_INGRESS_SERVICE_ACCOUNT" required:"true"`
 
+	// Which image to use for the DeadLetter dispatcher
+	DispatcherImage string `envconfig:"BROKER_DLQ_DISPATCHER_IMAGE" required:"true"`
+
 	// The default value should match the cluster default in config/core/configmaps/default-broker.yaml
 	BrokerClass string `envconfig:"BROKER_CLASS" default:"RabbitMQBroker"`
 }
@@ -94,6 +97,7 @@ func NewController(
 		ingressServiceAccountName: env.IngressServiceAccount,
 		brokerClass:               env.BrokerClass,
 		dialerFunc:                dialer.RealDialer,
+		dispatcherImage:           env.DispatcherImage,
 	}
 
 	impl := brokerreconciler.NewImpl(ctx, r, env.BrokerClass, func(impl *controller.Impl) controller.Options {

@@ -38,13 +38,33 @@ func TestQueueDeclaration(t *testing.T) {
 	defer testrabbit.TerminateContainer(t, ctx, rabbitContainer)
 
 	queue, err := resources.DeclareQueue(dialer.RealDialer, &resources.QueueArgs{
-		Trigger: &eventingv1.Trigger{
+		QueueName: resources.CreateTriggerQueueName(&eventingv1.Trigger{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      triggerName,
 				Namespace: namespace,
 			},
-		},
+		}),
 		RabbitmqURL: testrabbit.BrokerUrl(t, ctx, rabbitContainer).String(),
+	})
+
+	assert.NilError(t, err)
+	assert.Equal(t, queue.Name(), fmt.Sprintf("%s-%s", namespace, triggerName))
+}
+
+func TestQueueDeclarationWithDLX(t *testing.T) {
+	ctx := context.Background()
+	rabbitContainer := testrabbit.AutoStartRabbit(t, ctx)
+	defer testrabbit.TerminateContainer(t, ctx, rabbitContainer)
+
+	queue, err := resources.DeclareQueue(dialer.RealDialer, &resources.QueueArgs{
+		QueueName: resources.CreateTriggerQueueName(&eventingv1.Trigger{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      triggerName,
+				Namespace: namespace,
+			},
+		}),
+		RabbitmqURL: testrabbit.BrokerUrl(t, ctx, rabbitContainer).String(),
+		DLX:         "dlq.example.com",
 	})
 
 	assert.NilError(t, err)
@@ -59,12 +79,12 @@ func TestIncompatibleQueueDeclarationFailure(t *testing.T) {
 	testrabbit.CreateNonDurableQueue(t, ctx, rabbitContainer, queueName)
 
 	_, err := resources.DeclareQueue(dialer.RealDialer, &resources.QueueArgs{
-		Trigger: &eventingv1.Trigger{
+		QueueName: resources.CreateTriggerQueueName(&eventingv1.Trigger{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      triggerName,
 				Namespace: namespace,
 			},
-		},
+		}),
 		RabbitmqURL: testrabbit.BrokerUrl(t, ctx, rabbitContainer).String(),
 	})
 
@@ -79,12 +99,12 @@ func TestQueueDeletion(t *testing.T) {
 	testrabbit.CreateDurableQueue(t, ctx, rabbitContainer, queueName)
 
 	err := resources.DeleteQueue(dialer.RealDialer, &resources.QueueArgs{
-		Trigger: &eventingv1.Trigger{
+		QueueName: resources.CreateTriggerQueueName(&eventingv1.Trigger{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      triggerName,
 				Namespace: namespace,
 			},
-		},
+		}),
 		RabbitmqURL: testrabbit.BrokerUrl(t, ctx, rabbitContainer).String(),
 	})
 

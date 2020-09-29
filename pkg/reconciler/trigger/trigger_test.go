@@ -74,6 +74,7 @@ const (
 	triggerUID  = "test-trigger-uid"
 
 	rabbitURL = "amqp://localhost:5672/%2f"
+	queueName = "test-namespace-test-trigger"
 
 	dispatcherImage = "dispatcherimage"
 
@@ -774,6 +775,8 @@ func ReadyBroker() *eventingv1.Broker {
 		broker.WithIngressAvailable(),
 		broker.WithSecretReady(),
 		broker.WithBrokerAddressURI(brokerAddress),
+		broker.WithDLXReady(),
+		broker.WithDeadLetterSinkReady(),
 		broker.WithExchangeReady())
 }
 
@@ -875,7 +878,7 @@ func createDispatcherDeployment() *appsv1.Deployment {
 		},
 		Image:              dispatcherImage,
 		RabbitMQSecretName: rabbitSecretName,
-		QueueName:          triggerName,
+		QueueName:          queueName,
 		BrokerUrlSecretKey: "brokerURL",
 		BrokerIngressURL:   brokerAddress,
 		Subscriber:         subscriberAddress,
@@ -897,7 +900,7 @@ func createDifferentDispatcherDeployment() *appsv1.Deployment {
 		},
 		Image:              "differentdispatcherimage",
 		RabbitMQSecretName: rabbitSecretName,
-		QueueName:          triggerName,
+		QueueName:          queueName,
 		BrokerUrlSecretKey: "brokerURL",
 		BrokerIngressURL:   brokerAddress,
 		Subscriber:         subscriberAddress,
