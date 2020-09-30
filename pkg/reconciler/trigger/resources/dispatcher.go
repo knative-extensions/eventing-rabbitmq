@@ -122,7 +122,7 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 			d.Spec.Template.Spec.Containers[0].Env = append(d.Spec.Template.Spec.Containers[0].Env,
 				corev1.EnvVar{
 					Name:  "RETRY",
-					Value: fmt.Sprintf("5"),
+					Value: "5",
 				})
 		}
 		if args.Delivery.BackoffPolicy != nil {

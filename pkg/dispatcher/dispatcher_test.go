@@ -80,10 +80,6 @@ func sinkAccepted(writer http.ResponseWriter, req *http.Request) {
 	writer.WriteHeader(http.StatusOK)
 }
 
-func sinkRejected(writer http.ResponseWriter, _ *http.Request) {
-	writer.WriteHeader(http.StatusRequestTimeout)
-}
-
 func TestEndToEnd(t *testing.T) {
 	backoffDelay, err := time.ParseDuration("1s")
 	if err != nil {
@@ -152,6 +148,9 @@ func TestEndToEnd(t *testing.T) {
 	event.SetSubject(fmt.Sprintf("%s-%s", event.Source(), event.Type()))
 	event.SetData(cloudevents.ApplicationJSON, `{"testdata":"testdata"}`)
 	bytes, err := json.Marshal(event)
+	if err != nil {
+		t.Errorf("Failed to marshal the event: %s", err)
+	}
 
 	err = ch.Publish(exchangeName, "process.data", bytes, nil)
 

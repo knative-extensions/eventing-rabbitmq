@@ -138,8 +138,7 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 
 func TestMakeDispatcherDeploymentWithDelivery(t *testing.T) {
 	var TrueValue = true
-	var ten int32
-	ten = 10
+	ten := int32(10)
 	backoffPolicy := eventingduckv1.BackoffPolicyExponential
 	ingressURL := apis.HTTP("broker.example.com")
 	sURL := apis.HTTP("function.example.com")

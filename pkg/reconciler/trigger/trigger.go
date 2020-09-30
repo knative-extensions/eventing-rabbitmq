@@ -52,11 +52,6 @@ import (
 	brokerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
 )
 
-const (
-	// Name of the corev1.Events emitted from the Trigger reconciliation process.
-	triggerReconciled = "TriggerReconciled"
-)
-
 type Reconciler struct {
 	eventingClientSet clientset.Interface
 	dynamicClientSet  dynamic.Interface
@@ -91,10 +86,6 @@ type Reconciler struct {
 // Check that our Reconciler implements Interface
 var _ triggerreconciler.Interface = (*Reconciler)(nil)
 var _ triggerreconciler.Finalizer = (*Reconciler)(nil)
-
-func newReconciledNormal(namespace, name string) pkgreconciler.Event {
-	return pkgreconciler.NewEvent(corev1.EventTypeNormal, triggerReconciled, "Trigger reconciled: \"%s/%s\"", namespace, name)
-}
 
 func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) pkgreconciler.Event {
 	logging.FromContext(ctx).Debug("Reconciling", zap.Any("Trigger", t))

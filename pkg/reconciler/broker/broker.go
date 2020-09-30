@@ -229,7 +229,7 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, b *eventingv1.Broker) pkg
 		logging.FromContext(ctx).Errorw("Problem deleting exchange", zap.Error(err))
 	}
 	args.DLX = true
-	_, err = resources.DeclareExchange(r.dialerFunc, args)
+	err = resources.DeleteExchange(args)
 	if err != nil {
 		logging.FromContext(ctx).Errorw("Problem deleting DLX exchange", zap.Error(err))
 	}
@@ -237,7 +237,10 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, b *eventingv1.Broker) pkg
 		QueueName:   triggerresources.CreateBrokerDeadLetterQueueName(b),
 		RabbitmqURL: args.RabbitMQURL.String(),
 	}
-	_, err = triggerresources.DeclareQueue(r.dialerFunc, queueArgs)
+	err = triggerresources.DeleteQueue(r.dialerFunc, queueArgs)
+	if err != nil {
+		logging.FromContext(ctx).Errorw("Problem deleting DLX queue", zap.Error(err))
+	}
 	return nil
 }
 
@@ -360,6 +363,9 @@ func (r *Reconciler) reconcileDLXDispatchercherDeployment(ctx context.Context, b
 
 func (r *Reconciler) reconcileDLQBinding(ctx context.Context, b *eventingv1.Broker) error {
 	args, err := r.getExchangeArgs(ctx, b)
+	if err != nil {
+		return err
+	}
 
 	err = triggerresources.MakeDLQBinding(r.transport, &triggerresources.BindingArgs{
 		Broker:     b,

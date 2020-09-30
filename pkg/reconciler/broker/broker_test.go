@@ -71,7 +71,7 @@ const (
 	ingressImage           = "ingressimage"
 
 	deadLetterSinkKind       = "Service"
-	deadLetterSinkName       = "deadLetterSink-name"
+	deadLetterSinkName       = "badsink"
 	deadLetterSinkAPIVersion = "serving.knative.dev/v1"
 
 	dispatcherImage = "dispatcherimage"
@@ -125,9 +125,9 @@ var (
 	deliveryUnresolvableDeadLetterSink = &eventingduckv1.DeliverySpec{
 		DeadLetterSink: &duckv1.Destination{
 			Ref: &duckv1.KReference{
-				Name:       "badsink",
-				Kind:       "Service",
-				APIVersion: "serving.knative.dev/v1",
+				Name:       deadLetterSinkName,
+				Kind:       deadLetterSinkKind,
+				APIVersion: deadLetterSinkAPIVersion,
 			},
 		},
 		Retry:         &five,
@@ -830,29 +830,6 @@ func createDispatcherDeployment() *appsv1.Deployment {
 		Spec: eventingv1.BrokerSpec{
 			Config:   config(),
 			Delivery: delivery,
-		},
-	}
-	args := &resources.DispatcherArgs{
-		Broker:             broker,
-		Image:              dispatcherImage,
-		RabbitMQSecretName: rabbitBrokerSecretName,
-		QueueName:          "test-namespace-test-broker-dlq",
-		BrokerUrlSecretKey: "brokerURL",
-		BrokerIngressURL:   brokerAddress,
-		Subscriber:         deadLetterSinkAddress,
-	}
-	return resources.MakeDispatcherDeployment(args)
-}
-
-func createDispatcherDeploymentBadRef() *appsv1.Deployment {
-	broker := &eventingv1.Broker{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      brokerName,
-			Namespace: testNS,
-		},
-		Spec: eventingv1.BrokerSpec{
-			Config:   config(),
-			Delivery: deliveryUnresolvableDeadLetterSink,
 		},
 	}
 	args := &resources.DispatcherArgs{
