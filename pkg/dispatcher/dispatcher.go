@@ -19,6 +19,7 @@ package dispatcher
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/NeowayLabs/wabbit"
@@ -119,7 +120,7 @@ func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel wabbit.Channe
 		}
 	}()
 
-	logging.FromContext(ctx).Infof("rabbitmq receiver started, exit with CTRL+C")
+	fmt.Println("rabbitmq receiver started, exit with CTRL+C")
 	<-forever
 }
 
