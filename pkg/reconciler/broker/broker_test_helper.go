@@ -18,6 +18,7 @@ import (
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	v1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	"knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1/broker"
@@ -70,6 +71,12 @@ func WithBrokerGeneration(gen int64) BrokerOption {
 func WithBrokerStatusObservedGeneration(gen int64) BrokerOption {
 	return func(s *v1.Broker) {
 		s.Status.ObservedGeneration = gen
+	}
+}
+
+func WithBrokerDelivery(d *eventingduckv1.DeliverySpec) BrokerOption {
+	return func(b *v1.Broker) {
+		b.Spec.Delivery = d
 	}
 }
 

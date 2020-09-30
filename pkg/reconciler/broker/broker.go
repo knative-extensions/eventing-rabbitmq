@@ -209,7 +209,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *eventingv1.Broker) pk
 
 	// Note that if we didn't actually resolve the URI above, as in it's left as nil it's ok to pass here
 	// it deals with it properly.
-	if err := r.reconcileDLXDispatchercherDeployment(ctx, b, s.Name, dlsURI); err != nil {
+	if err := r.reconcileDLXDispatchercherDeployment(ctx, b, dlsURI); err != nil {
 		logging.FromContext(ctx).Error("Problem reconciling DLX dispatcher Deployment", zap.Error(err))
 		MarkDeadLetterSinkFailed(&b.Status, "DeploymentFailure", "%v", err)
 		return err
@@ -330,14 +330,14 @@ func (r *Reconciler) reconcileIngressService(ctx context.Context, b *eventingv1.
 }
 
 //reconcileDispatcherDeployment reconciles Trigger's dispatcher deployment.
-func (r *Reconciler) reconcileDLXDispatchercherDeployment(ctx context.Context, b *eventingv1.Broker, secretName string, sub *apis.URL) error {
+func (r *Reconciler) reconcileDLXDispatchercherDeployment(ctx context.Context, b *eventingv1.Broker, sub *apis.URL) error {
 	// If there's a sub, then reconcile the deployment as usual.
 	if sub != nil {
 		expected := resources.MakeDispatcherDeployment(&resources.DispatcherArgs{
 			Broker: b,
 			Image:  r.dispatcherImage,
 			//ServiceAccountName string
-			RabbitMQSecretName: secretName,
+			RabbitMQSecretName: resources.SecretName(b.Name),
 			QueueName:          triggerresources.CreateBrokerDeadLetterQueueName(b),
 			BrokerUrlSecretKey: resources.BrokerURLSecretKey,
 			Subscriber:         sub,
