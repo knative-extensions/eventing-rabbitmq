@@ -35,7 +35,7 @@ type envConfig struct {
 	BrokerIngressURL string `envconfig:"BROKER_INGRESS_URL" required:"true"`
 	SubscriberURL    string `envconfig:"SUBSCRIBER" required:"true"`
 	// Should failed deliveries be requeued in the RabbitMQ?
-	Requeue bool `envconfig:"REQUEUE" default: false required:"true"`
+	Requeue bool `envconfig:"REQUEUE" default:"false" required:"true"`
 
 	Retry         int           `envconfig:"RETRY" required:"false"`
 	BackoffPolicy string        `envconfig:"BACKOFF_POLICY" required:"false"`
