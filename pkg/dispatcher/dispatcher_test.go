@@ -166,6 +166,6 @@ func TestEndToEnd(t *testing.T) {
 
 	<-subscriberDone
 	if diff := cmp.Diff(expectedBody, subscriberHandler.getBody()); diff != "" {
-		t.Errorf("unexpected diff (-want, +got) = ", diff)
+		t.Error("unexpected diff (-want, +got) = ", diff)
 	}
 }
