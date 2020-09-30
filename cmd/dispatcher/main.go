@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/kelseyhightower/envconfig"
-	"go.uber.org/zap"
 
 	"github.com/NeowayLabs/wabbit/amqp"
 	"knative.dev/eventing-rabbitmq/pkg/dispatcher"
@@ -46,7 +45,7 @@ type envConfig struct {
 func main() {
 	var env envConfig
 	if err := envconfig.Process("", &env); err != nil {
-		log.Fatal("Failed to process env var", zap.Error(err))
+		log.Fatal("Failed to process env var: ", err)
 	}
 
 	var backoffPolicy eventingduckv1.BackoffPolicyType
@@ -62,13 +61,13 @@ func main() {
 
 	conn, err := amqp.Dial(env.RabbitURL)
 	if err != nil {
-		logging.FromContext(ctx).Fatalf("failed to connect to RabbitMQ: %s", err)
+		logging.FromContext(ctx).Fatal("failed to connect to RabbitMQ: ", err)
 	}
 	defer conn.Close()
 
 	channel, err := conn.Channel()
 	if err != nil {
-		logging.FromContext(ctx).Fatalf("failed to open a channel: %s", err)
+		logging.FromContext(ctx).Fatal("failed to open a channel: ", err)
 	}
 	defer channel.Close()
 
@@ -78,7 +77,7 @@ func main() {
 		false, // global
 	)
 	if err != nil {
-		logging.FromContext(ctx).Fatalf("failed to create QoS: %s", err)
+		logging.FromContext(ctx).Fatal("failed to create QoS: %s", err)
 	}
 
 	d := dispatcher.NewDispatcher(env.BrokerIngressURL, env.SubscriberURL, env.Requeue, env.Retry, env.BackoffDelay, backoffPolicy)

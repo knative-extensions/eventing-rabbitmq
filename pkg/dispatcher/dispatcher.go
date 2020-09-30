@@ -68,7 +68,7 @@ func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel wabbit.Channe
 		},
 	)
 	if err != nil {
-		logging.FromContext(ctx).Fatalf("failed to create consumer: %s", err)
+		logging.FromContext(ctx).Fatal("failed to create consumer: ", err)
 	}
 
 	forever := make(chan bool)
@@ -80,11 +80,10 @@ func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel wabbit.Channe
 
 	go func() {
 		for msg := range msgs {
-			logging.FromContext(ctx).Infof("Got a message")
 			event := cloudevents.NewEvent()
 			err := json.Unmarshal(msg.Body(), &event)
 			if err != nil {
-				logging.FromContext(ctx).Infof("failed to unmarshal event (nacking and not requeueing): %s", err)
+				logging.FromContext(ctx).Info("failed to unmarshal event (nacking and not requeueing): ", err)
 				msg.Nack(false, false) // not multiple, do not requeue
 				continue
 			}

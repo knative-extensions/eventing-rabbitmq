@@ -84,7 +84,7 @@ func main() {
 
 	c, err := cloudevents.NewDefaultClient()
 	if err != nil {
-		log.Fatalf("failed to create client, %v", err)
+		log.Fatal("failed to create client, %v", err)
 	}
 
 	f := NewFailer(env.DefaultResponseCode)
