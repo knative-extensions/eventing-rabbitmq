@@ -20,6 +20,9 @@ import (
 	"context"
 	"fmt"
 
+	"knative.dev/eventing/pkg/utils"
+	"knative.dev/pkg/controller"
+
 	"go.uber.org/zap"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -46,6 +49,7 @@ const (
 	raImageEnvVar                   = "RABBITMQ_RA_IMAGE"
 	rabbitmqSourceDeploymentCreated = "RabbitmqSourceDeploymentCreated"
 	rabbitmqSourceDeploymentUpdated = "RabbitmqSourceDeploymentUpdated"
+	rabbitmqSourceDeploymentDeleted = "RabbitmqSourceDeploymentDeleted"
 	rabbitmqSourceDeploymentFailed  = "RabbitmqSourceDeploymentUpdated"
 	component                       = "rabbitmqsource"
 )
@@ -137,6 +141,14 @@ func (r *Reconciler) createReceiveAdapter(ctx context.Context, src *v1alpha1.Rab
 
 	ra, err := r.KubeClientSet.AppsV1().Deployments(src.Namespace).Get(ctx, expected.Name, metav1.GetOptions{})
 	if apierrors.IsNotFound(err) {
+		// Issue eventing#2842: Adater deployment name uses kmeta.ChildName. If a deployment by the previous name pattern is found, it should
+		// be deleted. This might cause temporary downtime.
+		if deprecatedName := utils.GenerateFixedName(raArgs.Source, fmt.Sprintf("rabbitmqsource-%s", raArgs.Source.Name)); deprecatedName != expected.Name {
+			if err := r.KubeClientSet.AppsV1().Deployments(src.Namespace).Delete(ctx, deprecatedName, metav1.DeleteOptions{}); err != nil && !apierrors.IsNotFound(err) {
+				return nil, fmt.Errorf("error deleting deprecated named deployment: %v", err)
+			}
+			controller.GetEventRecorder(ctx).Eventf(src, corev1.EventTypeNormal, rabbitmqSourceDeploymentDeleted, "Deprecated deployment removed: \"%s/%s\"", src.Namespace, deprecatedName)
+		}
 		ra, err = r.KubeClientSet.AppsV1().Deployments(src.Namespace).Create(ctx, expected, metav1.CreateOptions{})
 		if err != nil {
 			return nil, newDeploymentFailed(ra.Namespace, ra.Name, err)
