@@ -83,7 +83,7 @@ func sinkAccepted(writer http.ResponseWriter, req *http.Request) {
 func TestEndToEnd(t *testing.T) {
 	backoffDelay, err := time.ParseDuration("1s")
 	if err != nil {
-		t.Errorf("Failed to parse duration: %s", err)
+		t.Error("Failed to parse duration: ", err)
 	}
 
 	subscriberDone := make(chan bool, 1)
@@ -149,7 +149,7 @@ func TestEndToEnd(t *testing.T) {
 	event.SetData(cloudevents.ApplicationJSON, `{"testdata":"testdata"}`)
 	bytes, err := json.Marshal(event)
 	if err != nil {
-		t.Errorf("Failed to marshal the event: %s", err)
+		t.Error("Failed to marshal the event: ", err)
 	}
 
 	err = ch.Publish(exchangeName, "process.data", bytes, nil)
@@ -161,13 +161,11 @@ func TestEndToEnd(t *testing.T) {
 
 	d := NewDispatcher(broker.URL, subscriber.URL, false /*requeue*/, 0, backoffDelay, eventingduckv1.BackoffPolicyLinear)
 	go func() {
-		fmt.Printf("Starting...")
 		d.ConsumeFromQueue(context.TODO(), ch, queueName)
-		fmt.Printf("Ending...")
 	}()
 
 	<-subscriberDone
 	if diff := cmp.Diff(expectedBody, subscriberHandler.getBody()); diff != "" {
-		t.Errorf("unexpected diff (-want, +got) = %v", diff)
+		t.Errorf("unexpected diff (-want, +got) = ", diff)
 	}
 }
