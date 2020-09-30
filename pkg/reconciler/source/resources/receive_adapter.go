@@ -24,7 +24,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1alpha1 "knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
-	"knative.dev/eventing/pkg/utils"
 	"knative.dev/pkg/kmeta"
 )
 
@@ -145,7 +144,7 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 
 	return &v1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:         utils.GenerateFixedName(args.Source, fmt.Sprintf("rabbitmqsource-%s", args.Source.Name)),
+			Name:         kmeta.ChildName(string(args.Source.UID), fmt.Sprintf("rabbitmqsource-%s", args.Source.Name)),
 			Namespace:    args.Source.Namespace,
 			GenerateName: fmt.Sprintf("%s-", args.Source.Name),
 			Labels:       args.Labels,
