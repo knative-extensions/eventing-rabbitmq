@@ -19,6 +19,7 @@ package resources
 import (
 	"fmt"
 
+	"github.com/streadway/amqp"
 	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/io"
 
@@ -29,11 +30,19 @@ import (
 
 // QueueArgs are the arguments to create a Trigger's RabbitMQ Queue.
 type QueueArgs struct {
-	Trigger     *eventingv1.Trigger
+	QueueName   string
 	RabbitmqURL string
+	// If non-empty, wire the queue into this DLX.
+	DLX string
 }
 
-func createQueueName(t *eventingv1.Trigger) string {
+func CreateBrokerDeadLetterQueueName(b *eventingv1.Broker) string {
+	// TODO(vaikas): https://github.com/knative-sandbox/eventing-rabbitmq/issues/61
+	// return fmt.Sprintf("%s/%s/DLQ", b.Namespace, b.Name)
+	return fmt.Sprintf("%s-%s-dlq", b.Namespace, b.Name)
+}
+
+func CreateTriggerQueueName(t *eventingv1.Trigger) string {
 	// TODO(vaikas): https://github.com/knative-sandbox/eventing-rabbitmq/issues/61
 	// return fmt.Sprintf("%s/%s", t.Namespace, t.Name)
 	return fmt.Sprintf("%s-%s", t.Namespace, t.Name)
@@ -53,14 +62,21 @@ func DeclareQueue(dialerFunc dialer.DialerFunc, args *QueueArgs) (wabbit.Queue, 
 	}
 	defer io.CloseAmqpResourceAndExitOnError(channel)
 
+	options := wabbit.Option{
+		"durable":    true,
+		"autoDelete": false,
+		"exclusive":  false,
+		"noWait":     false,
+	}
+	if args.DLX != "" {
+		rabbitArgs := make(map[string]interface{}, 1)
+		rabbitArgs["x-dead-letter-exchange"] = interface{}(args.DLX)
+		options["args"] = amqp.Table(rabbitArgs)
+	}
+
 	queue, err := channel.QueueDeclare(
-		createQueueName(args.Trigger),
-		wabbit.Option{
-			"durable":    true,
-			"autoDelete": false,
-			"exclusive":  false,
-			"noWait":     false,
-		},
+		args.QueueName,
+		options,
 	)
 	if err != nil {
 		return nil, err
@@ -83,7 +99,7 @@ func DeleteQueue(dialerFunc dialer.DialerFunc, args *QueueArgs) error {
 	defer io.CloseAmqpResourceAndExitOnError(channel)
 
 	_, err = channel.QueueDelete(
-		createQueueName(args.Trigger),
+		args.QueueName,
 		wabbit.Option{
 			"ifUnused": false,
 			"ifEmpty":  false,

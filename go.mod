@@ -24,7 +24,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.7.0
 	github.com/tiago4orion/conjure v0.0.0-20150908101743-93cb30b9d218 // indirect
 	go.uber.org/zap v1.15.0
-	golang.org/x/tools v0.0.0-20200916195026-c9a70fc28ce3 // indirect
+	golang.org/x/tools v0.0.0-20200929223013-bf155c11ec6f // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200601152816-913338de1bd2 // indirect
 	gotest.tools v2.2.0+incompatible
 	honnef.co/go/tools v0.0.1-2020.1.5 // indirect

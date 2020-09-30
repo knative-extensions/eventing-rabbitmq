@@ -17,13 +17,13 @@ limitations under the License.
 package resources
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/system"
@@ -68,7 +68,7 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 	want := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: args.Trigger.Namespace,
-			Name:      fmt.Sprintf("%s-dispatcher", args.QueueName),
+			Name:      "testtrigger-dispatcher",
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         "eventing.knative.dev/v1",
 				Kind:               "Trigger",
@@ -104,7 +104,7 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 							Name:  system.NamespaceEnvKey,
 							Value: system.Namespace(),
 						}, {
-							Name: "BROKER_URL",
+							Name: "RABBIT_URL",
 							ValueFrom: &corev1.EnvVarSource{
 								SecretKeyRef: &corev1.SecretKeySelector{
 									LocalObjectReference: corev1.LocalObjectReference{
@@ -122,6 +122,9 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 						}, {
 							Name:  "BROKER_INGRESS_URL",
 							Value: brokerIngressURL,
+						}, {
+							Name:  "REQUEUE",
+							Value: "true",
 						}},
 					}},
 				},
@@ -129,6 +132,110 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 		},
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("unexpected diff (-want, +got) = %v", diff)
+		t.Error("unexpected diff (-want, +got) = ", diff)
+	}
+}
+
+func TestMakeDispatcherDeploymentWithDelivery(t *testing.T) {
+	var TrueValue = true
+	ten := int32(10)
+	backoffPolicy := eventingduckv1.BackoffPolicyExponential
+	ingressURL := apis.HTTP("broker.example.com")
+	sURL := apis.HTTP("function.example.com")
+	trigger := &eventingv1.Trigger{
+		ObjectMeta: metav1.ObjectMeta{Name: triggerName, Namespace: ns},
+		Spec:       eventingv1.TriggerSpec{Broker: brokerName},
+	}
+	args := &DispatcherArgs{
+		Trigger:            trigger,
+		Image:              image,
+		RabbitMQHost:       rabbitHost,
+		RabbitMQSecretName: secretName,
+		QueueName:          queueName,
+		BrokerUrlSecretKey: brokerURLKey,
+		BrokerIngressURL:   ingressURL,
+		Subscriber:         sURL,
+		Delivery: &eventingduckv1.DeliverySpec{
+			Retry:         &ten,
+			BackoffPolicy: &backoffPolicy,
+		},
+	}
+
+	got := MakeDispatcherDeployment(args)
+	one := int32(1)
+	want := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: args.Trigger.Namespace,
+			Name:      "testtrigger-dispatcher",
+			OwnerReferences: []metav1.OwnerReference{{
+				APIVersion:         "eventing.knative.dev/v1",
+				Kind:               "Trigger",
+				Name:               triggerName,
+				Controller:         &TrueValue,
+				BlockOwnerDeletion: &TrueValue,
+			}},
+			Labels: map[string]string{
+				"eventing.knative.dev/broker":     brokerName,
+				"eventing.knative.dev/brokerRole": "dispatcher",
+			},
+		},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: &one,
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"eventing.knative.dev/broker":     brokerName,
+					"eventing.knative.dev/brokerRole": "dispatcher",
+				},
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"eventing.knative.dev/broker":     brokerName,
+						"eventing.knative.dev/brokerRole": "dispatcher",
+					},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{
+						Name:  "dispatcher",
+						Image: image,
+						Env: []corev1.EnvVar{{
+							Name:  system.NamespaceEnvKey,
+							Value: system.Namespace(),
+						}, {
+							Name: "RABBIT_URL",
+							ValueFrom: &corev1.EnvVarSource{
+								SecretKeyRef: &corev1.SecretKeySelector{
+									LocalObjectReference: corev1.LocalObjectReference{
+										Name: secretName,
+									},
+									Key: brokerURLKey,
+								},
+							},
+						}, {
+							Name:  "QUEUE_NAME",
+							Value: queueName,
+						}, {
+							Name:  "SUBSCRIBER",
+							Value: subscriberURL,
+						}, {
+							Name:  "BROKER_INGRESS_URL",
+							Value: brokerIngressURL,
+						}, {
+							Name:  "REQUEUE",
+							Value: "false",
+						}, {
+							Name:  "RETRY",
+							Value: "10",
+						}, {
+							Name:  "BACKOFF_POLICY",
+							Value: "exponential",
+						}},
+					}},
+				},
+			},
+		},
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Error("unexpected diff (-want, +got) = ", diff)
 	}
 }

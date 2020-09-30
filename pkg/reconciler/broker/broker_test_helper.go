@@ -18,6 +18,7 @@ import (
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	v1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	"knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1/broker"
@@ -73,6 +74,12 @@ func WithBrokerStatusObservedGeneration(gen int64) BrokerOption {
 	}
 }
 
+func WithBrokerDelivery(d *eventingduckv1.DeliverySpec) BrokerOption {
+	return func(b *v1.Broker) {
+		b.Spec.Delivery = d
+	}
+}
+
 func WithBrokerDeletionTimestamp(b *v1.Broker) {
 	t := metav1.NewTime(time.Unix(1e9, 0))
 	b.ObjectMeta.SetDeletionTimestamp(&t)
@@ -118,6 +125,27 @@ func WithExchangeFailed(reason, msg string) BrokerOption {
 func WithExchangeReady() BrokerOption {
 	return func(b *v1.Broker) {
 		MarkExchangeReady(&b.Status)
+	}
+}
+
+// WithDLXReady() sets DLX condition to ready.
+func WithDLXReady() BrokerOption {
+	return func(b *v1.Broker) {
+		MarkDLXReady(&b.Status)
+	}
+}
+
+// WithDeadLetterSinkReady() sets DeadLetterSink condition to ready.
+func WithDeadLetterSinkReady() BrokerOption {
+	return func(b *v1.Broker) {
+		MarkDeadLetterSinkReady(&b.Status)
+	}
+}
+
+// WithDeadLetterSinkFailed sets secret condition to ready.
+func WithDeadLetterSinkFailed(reason, msg string) BrokerOption {
+	return func(b *v1.Broker) {
+		MarkDeadLetterSinkFailed(&b.Status, reason, msg)
 	}
 }
 

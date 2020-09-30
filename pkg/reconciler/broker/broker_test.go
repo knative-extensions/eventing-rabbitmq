@@ -19,6 +19,8 @@ package broker
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -30,6 +32,7 @@ import (
 
 	clientgotesting "k8s.io/client-go/testing"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	fakeeventingclient "knative.dev/eventing/pkg/client/injection/client/fake"
 	"knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1/broker"
@@ -66,6 +69,30 @@ const (
 	rabbitBrokerSecretName = "test-broker-broker-rabbit"
 	rabbitURL              = "amqp://localhost:5672/%2f"
 	ingressImage           = "ingressimage"
+
+	deadLetterSinkKind       = "Service"
+	deadLetterSinkName       = "badsink"
+	deadLetterSinkAPIVersion = "serving.knative.dev/v1"
+
+	dispatcherImage = "dispatcherimage"
+
+	bindingList = `
+[
+  {
+    "source": "knative-test-broker",
+    "vhost": "/",
+    "destination": "test-namespace-test-broker",
+    "destination_type": "queue",
+    "routing_key": "test-namespace-test-broker",
+    "arguments": {
+      "x-match":  "all",
+      "x-knative-trigger": "test-trigger",
+      "type": "dev.knative.sources.ping"
+    },
+    "properties_key": "test-namespace-test-broker"
+  }
+]
+`
 )
 
 var (
@@ -77,6 +104,35 @@ var (
 	brokerAddress      = &apis.URL{
 		Scheme: "http",
 		Host:   fmt.Sprintf("%s.%s.svc.%s", ingressServiceName, testNS, network.GetClusterDomainName()),
+	}
+	deadLetterSinkAddress = &apis.URL{
+		Scheme: "http",
+		Host:   "example.com",
+		Path:   "/subscriber/",
+	}
+
+	five         = int32(5)
+	policy       = eventingduckv1.BackoffPolicyExponential
+	backoffDelay = "PT30S"
+	delivery     = &eventingduckv1.DeliverySpec{
+		DeadLetterSink: &duckv1.Destination{
+			URI: deadLetterSinkAddress,
+		},
+		Retry:         &five,
+		BackoffPolicy: &policy,
+		BackoffDelay:  &backoffDelay,
+	}
+	deliveryUnresolvableDeadLetterSink = &eventingduckv1.DeliverySpec{
+		DeadLetterSink: &duckv1.Destination{
+			Ref: &duckv1.KReference{
+				Name:       deadLetterSinkName,
+				Kind:       deadLetterSinkKind,
+				APIVersion: deadLetterSinkAPIVersion,
+			},
+		},
+		Retry:         &five,
+		BackoffPolicy: &policy,
+		BackoffDelay:  &backoffDelay,
 	}
 )
 
@@ -242,6 +298,8 @@ func TestReconcile(t *testing.T) {
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
 					WithExchangeReady(),
+					WithDLXReady(),
+					WithDeadLetterSinkReady(),
 					WithSecretFailed("SecretFailure", `Failed to reconcile secret: inducing failure for create secrets`)),
 			}},
 			WantCreates: []runtime.Object{
@@ -275,6 +333,8 @@ func TestReconcile(t *testing.T) {
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
 					WithExchangeReady(),
+					WithDLXReady(),
+					WithDeadLetterSinkReady(),
 					WithSecretFailed("SecretFailure", `Failed to reconcile secret: inducing failure for update secrets`)),
 			}},
 			WantUpdates: []clientgotesting.UpdateActionImpl{{
@@ -308,6 +368,8 @@ func TestReconcile(t *testing.T) {
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
 					WithExchangeReady(),
+					WithDLXReady(),
+					WithDeadLetterSinkReady(),
 					WithSecretReady(),
 					WithIngressFailed("DeploymentFailure", `Failed to reconcile deployment: inducing failure for create deployments`)),
 			}},
@@ -343,6 +405,8 @@ func TestReconcile(t *testing.T) {
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
 					WithExchangeReady(),
+					WithDLXReady(),
+					WithDeadLetterSinkReady(),
 					WithSecretReady(),
 					WithIngressFailed("DeploymentFailure", `Failed to reconcile deployment: inducing failure for update deployments`)),
 			}},
@@ -378,6 +442,8 @@ func TestReconcile(t *testing.T) {
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
 					WithExchangeReady(),
+					WithDLXReady(),
+					WithDeadLetterSinkReady(),
 					WithSecretReady(),
 					WithIngressFailed("ServiceFailure", `Failed to reconcile service: inducing failure for create services`)),
 			}},
@@ -414,6 +480,8 @@ func TestReconcile(t *testing.T) {
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
 					WithExchangeReady(),
+					WithDLXReady(),
+					WithDeadLetterSinkReady(),
 					WithSecretReady(),
 					WithIngressFailed("ServiceFailure", `Failed to reconcile service: inducing failure for update services`)),
 			}},
@@ -444,6 +512,8 @@ func TestReconcile(t *testing.T) {
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
 					WithIngressFailed("ServiceFailure", `Failed to reconcile service: endpoints "test-broker-broker-ingress" not found`),
+					WithDLXReady(),
+					WithDeadLetterSinkReady(),
 					WithSecretReady(),
 					WithExchangeReady()),
 			}},
@@ -479,6 +549,8 @@ func TestReconcile(t *testing.T) {
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
 					WithIngressAvailable(),
+					WithDLXReady(),
+					WithDeadLetterSinkReady(),
 					WithSecretReady(),
 					WithBrokerAddressURI(brokerAddress),
 					WithExchangeReady()),
@@ -495,6 +567,86 @@ func TestReconcile(t *testing.T) {
 				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
 			},
 			WantErr: false,
+		}, {
+			Name: "Exchange created with DLQ dispatcher created",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerClass),
+					WithBrokerConfig(config()),
+					WithBrokerDelivery(delivery),
+					WithInitBrokerConditions),
+				createSecret(rabbitURL),
+				rt.NewEndpoints(ingressServiceName, testNS,
+					rt.WithEndpointsLabels(IngressLabels()),
+					rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerClass),
+					WithInitBrokerConditions,
+					WithBrokerConfig(config()),
+					WithBrokerDelivery(delivery),
+					WithIngressAvailable(),
+					WithDLXReady(),
+					WithDeadLetterSinkReady(),
+					WithSecretReady(),
+					WithBrokerAddressURI(brokerAddress),
+					WithExchangeReady()),
+			}},
+			WantCreates: []runtime.Object{
+				createExchangeSecret(),
+				createIngressDeployment(),
+				createIngressService(),
+				createDispatcherDeployment(),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, brokerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
+			},
+			WantErr: false,
+		}, {
+			Name: "Exchange created with unresolvable delivery, DLQ dispatcher fails",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerClass),
+					WithBrokerConfig(config()),
+					WithBrokerDelivery(deliveryUnresolvableDeadLetterSink),
+					WithInitBrokerConditions),
+				createSecret(rabbitURL),
+				rt.NewEndpoints(ingressServiceName, testNS,
+					rt.WithEndpointsLabels(IngressLabels()),
+					rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerClass),
+					WithInitBrokerConditions,
+					WithBrokerConfig(config()),
+					WithBrokerDelivery(deliveryUnresolvableDeadLetterSink),
+					WithIngressAvailable(),
+					WithDLXReady(),
+					WithDeadLetterSinkFailed("Unable to get the DeadLetterSink's URI", `services.serving.knative.dev "badsink" not found`),
+					WithSecretReady(),
+					WithBrokerAddressURI(brokerAddress),
+					WithExchangeReady()),
+			}},
+			WantCreates: []runtime.Object{
+				createExchangeSecret(),
+				createIngressDeployment(),
+				createIngressService(),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, brokerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
+				Eventf(corev1.EventTypeWarning, "InternalError", `services.serving.knative.dev "badsink" not found`),
+			},
+			WantErr: true,
 		},
 	}
 
@@ -507,6 +659,10 @@ func TestReconcile(t *testing.T) {
 		eventingv1.RegisterAlternateBrokerConditionSet(rabbitBrokerCondSet)
 		fakeServer := server.NewServer(rabbitURL)
 		fakeServer.Start()
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprintln(w, bindingList)
+		}))
 		r := &Reconciler{
 			eventingClientSet:  fakeeventingclient.Get(ctx),
 			dynamicClientSet:   fakedynamicclient.Get(ctx),
@@ -520,7 +676,9 @@ func TestReconcile(t *testing.T) {
 			uriResolver:        resolver.NewURIResolver(ctx, func(types.NamespacedName) {}),
 			brokerClass:        "RabbitMQBroker",
 			dialerFunc:         dialer.TestDialer,
+			adminURL:           ts.URL,
 			ingressImage:       ingressImage,
+			dispatcherImage:    dispatcherImage,
 		}
 		return broker.NewReconciler(ctx, logger,
 			fakeeventingclient.Get(ctx), listers.GetBrokerLister(),
@@ -661,4 +819,27 @@ func patchRemoveFinalizers(namespace, name string) clientgotesting.PatchActionIm
 	patch := `{"metadata":{"finalizers":[],"resourceVersion":""}}`
 	action.Patch = []byte(patch)
 	return action
+}
+
+func createDispatcherDeployment() *appsv1.Deployment {
+	broker := &eventingv1.Broker{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      brokerName,
+			Namespace: testNS,
+		},
+		Spec: eventingv1.BrokerSpec{
+			Config:   config(),
+			Delivery: delivery,
+		},
+	}
+	args := &resources.DispatcherArgs{
+		Broker:             broker,
+		Image:              dispatcherImage,
+		RabbitMQSecretName: rabbitBrokerSecretName,
+		QueueName:          "test-namespace-test-broker-dlq",
+		BrokerUrlSecretKey: "brokerURL",
+		BrokerIngressURL:   brokerAddress,
+		Subscriber:         deadLetterSinkAddress,
+	}
+	return resources.MakeDispatcherDeployment(args)
 }

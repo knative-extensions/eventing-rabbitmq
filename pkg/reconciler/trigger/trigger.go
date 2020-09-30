@@ -38,6 +38,7 @@ import (
 
 	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	clientset "knative.dev/eventing/pkg/client/clientset/versioned"
@@ -49,11 +50,6 @@ import (
 	"knative.dev/pkg/resolver"
 
 	brokerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
-)
-
-const (
-	// Name of the corev1.Events emitted from the Trigger reconciliation process.
-	triggerReconciled = "TriggerReconciled"
 )
 
 type Reconciler struct {
@@ -90,10 +86,6 @@ type Reconciler struct {
 // Check that our Reconciler implements Interface
 var _ triggerreconciler.Interface = (*Reconciler)(nil)
 var _ triggerreconciler.Finalizer = (*Reconciler)(nil)
-
-func newReconciledNormal(namespace, name string) pkgreconciler.Event {
-	return pkgreconciler.NewEvent(corev1.EventTypeNormal, triggerReconciled, "Trigger reconciled: \"%s/%s\"", namespace, name)
-}
 
 func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) pkgreconciler.Event {
 	logging.FromContext(ctx).Debug("Reconciling", zap.Any("Trigger", t))
@@ -147,10 +139,15 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		return err
 	}
 
-	queue, err := resources.DeclareQueue(r.dialerFunc, &resources.QueueArgs{
-		Trigger:     t,
+	// Note that we always create DLX with this queue because you can't
+	// change them later.
+	queueArgs := &resources.QueueArgs{
+		QueueName:   resources.CreateTriggerQueueName(t),
 		RabbitmqURL: rabbitmqURL,
-	})
+		DLX:         brokerresources.ExchangeName(broker, true),
+	}
+
+	queue, err := resources.DeclareQueue(r.dialerFunc, queueArgs)
 	logging.FromContext(ctx).Info("Created rabbitmq queue", zap.Any("queue", queue))
 	if err != nil {
 		logging.FromContext(ctx).Error("Problem declaring Trigger Queue", zap.Error(err))
@@ -194,7 +191,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		},
 	)
 
-	_, err = r.reconcileDispatcherDeployment(ctx, t, subscriberURI)
+	_, err = r.reconcileDispatcherDeployment(ctx, t, subscriberURI, broker.Spec.Delivery)
 	if err != nil {
 		logging.FromContext(ctx).Error("Problem reconciling dispatcher Deployment", zap.Error(err))
 		t.Status.MarkDependencyFailed("DeploymentFailure", "%v", err)
@@ -238,7 +235,7 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, t *eventingv1.Trigger) pk
 	}
 
 	err = resources.DeleteQueue(r.dialerFunc, &resources.QueueArgs{
-		Trigger:     t,
+		QueueName:   resources.CreateTriggerQueueName(t),
 		RabbitmqURL: rabbitmqURL,
 	})
 	if err != nil {
@@ -272,7 +269,7 @@ func (r *Reconciler) reconcileDeployment(ctx context.Context, d *v1.Deployment) 
 }
 
 //reconcileDispatcherDeployment reconciles Trigger's dispatcher deployment.
-func (r *Reconciler) reconcileDispatcherDeployment(ctx context.Context, t *eventingv1.Trigger, sub *apis.URL) (*v1.Deployment, error) {
+func (r *Reconciler) reconcileDispatcherDeployment(ctx context.Context, t *eventingv1.Trigger, sub *apis.URL, delivery *eventingduckv1.DeliverySpec) (*v1.Deployment, error) {
 	rabbitmqSecret, err := r.getRabbitmqSecret(ctx, t)
 	if err != nil {
 		return nil, err
@@ -286,10 +283,11 @@ func (r *Reconciler) reconcileDispatcherDeployment(ctx context.Context, t *event
 		Image:   r.dispatcherImage,
 		//ServiceAccountName string
 		RabbitMQSecretName: rabbitmqSecret.Name,
-		QueueName:          t.Name,
+		QueueName:          resources.CreateTriggerQueueName(t),
 		BrokerUrlSecretKey: brokerresources.BrokerURLSecretKey,
 		BrokerIngressURL:   b.Status.Address.URL,
 		Subscriber:         sub,
+		Delivery:           delivery,
 	})
 	return r.reconcileDeployment(ctx, expected)
 }

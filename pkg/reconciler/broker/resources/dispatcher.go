@@ -22,66 +22,68 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
+
+	"knative.dev/pkg/apis"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/system"
 )
 
 const (
-	ingressContainerName = "ingress"
+	dispatcherContainerName = "dispatcher"
 )
 
-// IngressArgs are the arguments to create a Broker's ingress Deployment.
-type IngressArgs struct {
+// DispatcherArgs are the arguments to create a Broker's Dispatcher Deployment that handles
+// DeadLetterSink deliveries.
+type DispatcherArgs struct {
 	Broker *eventingv1.Broker
 	Image  string
 	//ServiceAccountName string
+	RabbitMQHost       string
 	RabbitMQSecretName string
+	QueueName          string
 	BrokerUrlSecretKey string
+	BrokerIngressURL   *apis.URL
+	Subscriber         *apis.URL
 }
 
-// MakeIngress creates the in-memory representation of the Broker's ingress Deployment.
-func MakeIngressDeployment(args *IngressArgs) *appsv1.Deployment {
+func DispatcherName(brokerName string) string {
+	return fmt.Sprintf("%s-dlq-dispatcher", brokerName)
+}
+
+// MakeDispatcherDeployment creates the in-memory representation of the Broker's Dispatcher Deployment.
+func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
+	one := int32(1)
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: args.Broker.Namespace,
-			Name:      fmt.Sprintf("%s-broker-ingress", args.Broker.Name),
+			Name:      DispatcherName(args.Broker.Name),
 			OwnerReferences: []metav1.OwnerReference{
 				*kmeta.NewControllerRef(args.Broker),
 			},
-			Labels: IngressLabels(args.Broker.Name),
+			Labels: DispatcherLabels(args.Broker.Name),
 		},
 		Spec: appsv1.DeploymentSpec{
+			Replicas: &one,
 			Selector: &metav1.LabelSelector{
-				MatchLabels: IngressLabels(args.Broker.Name),
+				MatchLabels: DispatcherLabels(args.Broker.Name),
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels: IngressLabels(args.Broker.Name),
+					Labels: DispatcherLabels(args.Broker.Name),
 				},
 				Spec: corev1.PodSpec{
 					//ServiceAccountName: args.ServiceAccountName,
 					Containers: []corev1.Container{{
+						Name:  dispatcherContainerName,
 						Image: args.Image,
-						Name:  ingressContainerName,
-						// LivenessProbe: &corev1.Probe{
-						// 	Handler: corev1.Handler{
-						// 		HTTPGet: &corev1.HTTPGetAction{
-						// 			Path: "/healthz",
-						// 			Port: intstr.IntOrString{Type: intstr.Int, IntVal: 8080},
-						// 		},
-						// 	},
-						// 	InitialDelaySeconds: 5,
-						// 	PeriodSeconds:       2,
-						// },
 						Env: []corev1.EnvVar{{
 							Name:  system.NamespaceEnvKey,
 							Value: system.Namespace(),
 						}, {
-							Name: "BROKER_URL",
+							Name: "RABBIT_URL",
 							ValueFrom: &corev1.EnvVarSource{
 								SecretKeyRef: &corev1.SecretKeySelector{
 									LocalObjectReference: corev1.LocalObjectReference{
@@ -91,12 +93,18 @@ func MakeIngressDeployment(args *IngressArgs) *appsv1.Deployment {
 								},
 							},
 						}, {
-							Name:  "EXCHANGE_NAME",
-							Value: ExchangeName(args.Broker, false),
-						}},
-						Ports: []corev1.ContainerPort{{
-							ContainerPort: 8080,
-							Name:          "http",
+							Name:  "QUEUE_NAME",
+							Value: args.QueueName,
+						}, {
+							Name:  "SUBSCRIBER",
+							Value: args.Subscriber.String(),
+						}, {
+							// Do not requeue failed events
+							Name:  "REQUEUE",
+							Value: "false",
+						}, {
+							Name:  "BROKER_INGRESS_URL",
+							Value: args.BrokerIngressURL.String(),
 						}},
 					}},
 				},
@@ -105,36 +113,11 @@ func MakeIngressDeployment(args *IngressArgs) *appsv1.Deployment {
 	}
 }
 
-// MakeIngressService creates the in-memory representation of the Broker's ingress Service.
-func MakeIngressService(b *eventingv1.Broker) *corev1.Service {
-	return &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: b.Namespace,
-			Name:      fmt.Sprintf("%s-broker-ingress", b.Name),
-			Labels:    IngressLabels(b.Name),
-			OwnerReferences: []metav1.OwnerReference{
-				*kmeta.NewControllerRef(b),
-			},
-		},
-		Spec: corev1.ServiceSpec{
-			Selector: IngressLabels(b.Name),
-			Ports: []corev1.ServicePort{{
-				Name:       "http",
-				Port:       80,
-				TargetPort: intstr.FromInt(8080),
-			}, {
-				Name: "http-metrics",
-				Port: 9090,
-			}},
-		},
-	}
-}
-
-// IngressLabels generates the labels present on all resources representing the ingress of the given
+// DispatcherLabels generates the labels present on all resources representing the dispatcher of the given
 // Broker.
-func IngressLabels(brokerName string) map[string]string {
+func DispatcherLabels(brokerName string) map[string]string {
 	return map[string]string{
 		eventing.BrokerLabelKey:           brokerName,
-		"eventing.knative.dev/brokerRole": "ingress",
+		"eventing.knative.dev/brokerRole": "dispatcher-dlq",
 	}
 }

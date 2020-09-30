@@ -23,6 +23,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 
@@ -35,10 +36,12 @@ const (
 	dispatcherContainerName = "dispatcher"
 )
 
-// DispatcherArgs are the arguments to create a Broker's Dispatcher Deployment.
+// DispatcherArgs are the arguments to create a dispatcher deployment. There's
+// one of these created for each trigger.
 type DispatcherArgs struct {
-	Trigger *eventingv1.Trigger
-	Image   string
+	Delivery *eventingduckv1.DeliverySpec
+	Trigger  *eventingv1.Trigger
+	Image    string
 	//ServiceAccountName string
 	RabbitMQHost       string
 	RabbitMQSecretName string
@@ -51,10 +54,10 @@ type DispatcherArgs struct {
 // MakeDispatcherDeployment creates the in-memory representation of the Broker's Dispatcher Deployment.
 func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 	one := int32(1)
-	return &appsv1.Deployment{
+	d := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: args.Trigger.Namespace,
-			Name:      fmt.Sprintf("%s-dispatcher", args.QueueName),
+			Name:      fmt.Sprintf("%s-dispatcher", args.Trigger.Name),
 			OwnerReferences: []metav1.OwnerReference{
 				*kmeta.NewControllerRef(args.Trigger),
 			},
@@ -78,7 +81,7 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 							Name:  system.NamespaceEnvKey,
 							Value: system.Namespace(),
 						}, {
-							Name: "BROKER_URL",
+							Name: "RABBIT_URL",
 							ValueFrom: &corev1.EnvVarSource{
 								SecretKeyRef: &corev1.SecretKeySelector{
 									LocalObjectReference: corev1.LocalObjectReference{
@@ -89,7 +92,7 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 							},
 						}, {
 							Name:  "QUEUE_NAME",
-							Value: createQueueName(args.Trigger),
+							Value: args.QueueName,
 						}, {
 							Name:  "SUBSCRIBER",
 							Value: args.Subscriber.String(),
@@ -102,6 +105,42 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 			},
 		},
 	}
+	if args.Delivery != nil {
+		d.Spec.Template.Spec.Containers[0].Env = append(d.Spec.Template.Spec.Containers[0].Env,
+			corev1.EnvVar{
+				Name:  "REQUEUE",
+				Value: "false",
+			})
+		if args.Delivery.Retry != nil {
+			d.Spec.Template.Spec.Containers[0].Env = append(d.Spec.Template.Spec.Containers[0].Env,
+				corev1.EnvVar{
+					Name:  "RETRY",
+					Value: fmt.Sprintf("%d", *args.Delivery.Retry),
+				})
+
+		} else {
+			d.Spec.Template.Spec.Containers[0].Env = append(d.Spec.Template.Spec.Containers[0].Env,
+				corev1.EnvVar{
+					Name:  "RETRY",
+					Value: "5",
+				})
+		}
+		if args.Delivery.BackoffPolicy != nil {
+			d.Spec.Template.Spec.Containers[0].Env = append(d.Spec.Template.Spec.Containers[0].Env,
+				corev1.EnvVar{
+					Name:  "BACKOFF_POLICY",
+					Value: string(*args.Delivery.BackoffPolicy),
+				})
+
+		}
+	} else {
+		d.Spec.Template.Spec.Containers[0].Env = append(d.Spec.Template.Spec.Containers[0].Env,
+			corev1.EnvVar{
+				Name:  "REQUEUE",
+				Value: "true",
+			})
+	}
+	return d
 }
 
 // DispatcherLabels generates the labels present on all resources representing the dispatcher of the given

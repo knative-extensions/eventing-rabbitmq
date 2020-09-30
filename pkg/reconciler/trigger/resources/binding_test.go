@@ -71,6 +71,43 @@ func TestBindingDeclaration(t *testing.T) {
 	assert.Equal(t, asMap(t, explicitBinding["arguments"])[resources.BindingKey], queueName)
 }
 
+func TestBindingDLQDeclaration(t *testing.T) {
+	ctx := context.Background()
+	rabbitContainer := testrabbit.AutoStartRabbit(t, ctx)
+	defer testrabbit.TerminateContainer(t, ctx, rabbitContainer)
+	queueName := "queue-and-a"
+	testrabbit.CreateDurableQueue(t, ctx, rabbitContainer, queueName)
+	brokerName := "some-broker"
+	exchangeName := namespace + "/" + "knative-" + brokerName + "/DLX"
+	testrabbit.CreateExchange(t, ctx, rabbitContainer, exchangeName, "headers")
+
+	err := resources.MakeDLQBinding(nil, &resources.BindingArgs{
+		RoutingKey:             "some-key",
+		BrokerURL:              testrabbit.BrokerUrl(t, ctx, rabbitContainer).String(),
+		RabbitmqManagementPort: testrabbit.ManagementPort(t, ctx, rabbitContainer),
+		Broker: &eventingv1.Broker{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      brokerName,
+				Namespace: namespace,
+			},
+		},
+		QueueName: queueName,
+	})
+
+	assert.NilError(t, err)
+	createdBindings := testrabbit.FindBindings(t, ctx, rabbitContainer)
+	assert.Equal(t, len(createdBindings), 2, "Expected 2 bindings: default + requested one")
+	defaultBinding := createdBindings[0]
+	assert.Equal(t, defaultBinding["source"], "", "Expected binding to default exchange")
+	assert.Equal(t, defaultBinding["destination_type"], "queue")
+	assert.Equal(t, defaultBinding["destination"], queueName)
+	explicitBinding := createdBindings[1]
+	assert.Equal(t, explicitBinding["source"], exchangeName)
+	assert.Equal(t, explicitBinding["destination_type"], "queue")
+	assert.Equal(t, explicitBinding["destination"], queueName)
+	assert.Equal(t, asMap(t, explicitBinding["arguments"])[resources.BindingKey], brokerName)
+}
+
 func TestMissingExchangeBindingDeclarationFailure(t *testing.T) {
 	ctx := context.Background()
 	rabbitContainer := testrabbit.AutoStartRabbit(t, ctx)

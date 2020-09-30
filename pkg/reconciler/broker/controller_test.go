@@ -41,6 +41,7 @@ func TestNew(t *testing.T) {
 
 	os.Setenv("BROKER_INGRESS_IMAGE", "ingressimage")
 	os.Setenv("BROKER_INGRESS_SERVICE_ACCOUNT", "ingresssa")
+	os.Setenv("BROKER_DLQ_DISPATCHER_IMAGE", "dlqdispatcherimage")
 	c := NewController(ctx, configmap.NewStaticWatcher())
 
 	if c == nil {

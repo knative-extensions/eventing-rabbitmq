@@ -34,6 +34,9 @@ import (
 type ExchangeArgs struct {
 	Broker      *eventingv1.Broker
 	RabbitMQURL *url.URL
+	// Set to true to create a DLX, which basically just means we're going
+	// to create it with a /DLX as the prepended name.
+	DLX bool
 }
 
 // DeclareExchange declares the Exchange for a Broker.
@@ -50,9 +53,8 @@ func DeclareExchange(dialerFunc dialer.DialerFunc, args *ExchangeArgs) (*corev1.
 	}
 	defer io.CloseAmqpResourceAndExitOnError(channel)
 
-	exchangeName := fmt.Sprintf("%s/%s", args.Broker.Namespace, ExchangeName(args.Broker.Name))
 	return MakeSecret(args), channel.ExchangeDeclare(
-		exchangeName,
+		ExchangeName(args.Broker, args.DLX),
 		"headers", // kind
 		wabbit.Option{
 			"durable":    true,
@@ -77,15 +79,19 @@ func DeleteExchange(args *ExchangeArgs) error {
 	}
 	defer io.CloseAmqpResourceAndExitOnError(channel)
 
-	exchangeName := fmt.Sprintf("%s/%s", args.Broker.Namespace, ExchangeName(args.Broker.Name))
 	return channel.ExchangeDelete(
-		exchangeName,
+		ExchangeName(args.Broker, args.DLX),
 		false, // if-unused
 		false, // nowait
 	)
 }
 
-// ExchangeName derives the Exchange name from the Broker name
-func ExchangeName(brokerName string) string {
-	return fmt.Sprintf("knative-%s", brokerName)
+// ExchangeName constructs a name given a Broker and whether this is a DLX or not.
+// Format is broker.Namespace/broker.Name for normal exchanges and
+// broker.Namespace/broker.Name/DLX for DLX exchanges.
+func ExchangeName(b *eventingv1.Broker, DLX bool) string {
+	if DLX {
+		return fmt.Sprintf("%s/knative-%s/DLX", b.Namespace, b.Name)
+	}
+	return fmt.Sprintf("%s/knative-%s", b.Namespace, b.Name)
 }
