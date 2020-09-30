@@ -23,6 +23,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 
@@ -41,10 +42,24 @@ const (
 )
 
 type fakeHandler struct {
-	body   []byte
+	done   chan bool
+	mu     sync.Mutex
+	body   string
 	header http.Header
 
 	handler func(http.ResponseWriter, *http.Request)
+}
+
+func (h *fakeHandler) setBody(body string) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.body = body
+}
+
+func (h *fakeHandler) getBody() string {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return h.body
 }
 
 func (h *fakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -54,10 +69,11 @@ func (h *fakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "can not read body", http.StatusBadRequest)
 		return
 	}
-	h.body = body
+	h.setBody(string(body))
 
 	defer r.Body.Close()
 	h.handler(w, r)
+	h.done <- true
 }
 
 func sinkAccepted(writer http.ResponseWriter, req *http.Request) {
@@ -73,13 +89,11 @@ func TestEndToEnd(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to parse duration: %s", err)
 	}
-	testSleep, err := time.ParseDuration("2s")
-	if err != nil {
-		t.Errorf("Failed to parse duration: %s", err)
-	}
 
+	subscriberDone := make(chan bool, 1)
 	subscriberHandler := &fakeHandler{
 		handler: sinkAccepted,
+		done:    subscriberDone,
 	}
 	subscriber := httptest.NewServer(subscriberHandler)
 	defer subscriber.Close()
@@ -153,8 +167,8 @@ func TestEndToEnd(t *testing.T) {
 		fmt.Printf("Ending...")
 	}()
 
-	time.Sleep(testSleep)
-	if diff := cmp.Diff([]byte(expectedBody), subscriberHandler.body); diff != "" {
+	<-subscriberDone
+	if diff := cmp.Diff(expectedBody, subscriberHandler.getBody()); diff != "" {
 		t.Errorf("unexpected diff (-want, +got) = %v", diff)
 	}
 }
