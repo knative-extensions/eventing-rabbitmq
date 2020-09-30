@@ -81,7 +81,7 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 							Name:  system.NamespaceEnvKey,
 							Value: system.Namespace(),
 						}, {
-							Name: "BROKER_URL",
+							Name: "RABBIT_URL",
 							ValueFrom: &corev1.EnvVarSource{
 								SecretKeyRef: &corev1.SecretKeySelector{
 									LocalObjectReference: corev1.LocalObjectReference{
@@ -106,6 +106,11 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 		},
 	}
 	if args.Delivery != nil {
+		d.Spec.Template.Spec.Containers[0].Env = append(d.Spec.Template.Spec.Containers[0].Env,
+			corev1.EnvVar{
+				Name:  "REQUEUE",
+				Value: "false",
+			})
 		if args.Delivery.Retry != nil {
 			d.Spec.Template.Spec.Containers[0].Env = append(d.Spec.Template.Spec.Containers[0].Env,
 				corev1.EnvVar{
@@ -128,6 +133,12 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 				})
 
 		}
+	} else {
+		d.Spec.Template.Spec.Containers[0].Env = append(d.Spec.Template.Spec.Containers[0].Env,
+			corev1.EnvVar{
+				Name:  "REQUEUE",
+				Value: "true",
+			})
 	}
 	return d
 }

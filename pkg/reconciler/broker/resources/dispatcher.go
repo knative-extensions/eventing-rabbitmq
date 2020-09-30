@@ -45,6 +45,7 @@ type DispatcherArgs struct {
 	RabbitMQSecretName string
 	QueueName          string
 	BrokerUrlSecretKey string
+	BrokerIngressURL   *apis.URL
 	Subscriber         *apis.URL
 }
 
@@ -82,7 +83,7 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 							Name:  system.NamespaceEnvKey,
 							Value: system.Namespace(),
 						}, {
-							Name: "BROKER_URL",
+							Name: "RABBIT_URL",
 							ValueFrom: &corev1.EnvVarSource{
 								SecretKeyRef: &corev1.SecretKeySelector{
 									LocalObjectReference: corev1.LocalObjectReference{
@@ -98,8 +99,12 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 							Name:  "SUBSCRIBER",
 							Value: args.Subscriber.String(),
 						}, {
-							Name:  "DLQ_DISPATCHER",
-							Value: "true",
+							// Do not requeue failed events
+							Name:  "REQUEUE",
+							Value: "false",
+						}, {
+							Name:  "BROKER_INGRESS_URL",
+							Value: args.BrokerIngressURL.String(),
 						}},
 					}},
 				},

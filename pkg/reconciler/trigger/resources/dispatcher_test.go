@@ -17,7 +17,6 @@ limitations under the License.
 package resources
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -69,7 +68,7 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 	want := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: args.Trigger.Namespace,
-			Name:      fmt.Sprintf("%s-dispatcher", args.QueueName),
+			Name:      "testtrigger-dispatcher",
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         "eventing.knative.dev/v1",
 				Kind:               "Trigger",
@@ -105,7 +104,7 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 							Name:  system.NamespaceEnvKey,
 							Value: system.Namespace(),
 						}, {
-							Name: "BROKER_URL",
+							Name: "RABBIT_URL",
 							ValueFrom: &corev1.EnvVarSource{
 								SecretKeyRef: &corev1.SecretKeySelector{
 									LocalObjectReference: corev1.LocalObjectReference{
@@ -123,6 +122,9 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 						}, {
 							Name:  "BROKER_INGRESS_URL",
 							Value: brokerIngressURL,
+						}, {
+							Name:  "REQUEUE",
+							Value: "true",
 						}},
 					}},
 				},
@@ -165,7 +167,7 @@ func TestMakeDispatcherDeploymentWithDelivery(t *testing.T) {
 	want := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: args.Trigger.Namespace,
-			Name:      fmt.Sprintf("%s-dispatcher", args.QueueName),
+			Name:      "testtrigger-dispatcher",
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         "eventing.knative.dev/v1",
 				Kind:               "Trigger",
@@ -201,7 +203,7 @@ func TestMakeDispatcherDeploymentWithDelivery(t *testing.T) {
 							Name:  system.NamespaceEnvKey,
 							Value: system.Namespace(),
 						}, {
-							Name: "BROKER_URL",
+							Name: "RABBIT_URL",
 							ValueFrom: &corev1.EnvVarSource{
 								SecretKeyRef: &corev1.SecretKeySelector{
 									LocalObjectReference: corev1.LocalObjectReference{
@@ -219,6 +221,9 @@ func TestMakeDispatcherDeploymentWithDelivery(t *testing.T) {
 						}, {
 							Name:  "BROKER_INGRESS_URL",
 							Value: brokerIngressURL,
+						}, {
+							Name:  "REQUEUE",
+							Value: "false",
 						}, {
 							Name:  "RETRY",
 							Value: "10",

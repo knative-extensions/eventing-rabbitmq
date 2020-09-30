@@ -45,6 +45,7 @@ const (
 func TestMakeDispatcherDeployment(t *testing.T) {
 	var TrueValue = true
 	sURL := apis.HTTP("function.example.com")
+	bURL := apis.HTTP("broker.example.com")
 	broker := &eventingv1.Broker{
 		ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: ns},
 	}
@@ -56,6 +57,7 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 		QueueName:          queueName,
 		BrokerUrlSecretKey: brokerURLKey,
 		Subscriber:         sURL,
+		BrokerIngressURL:   bURL,
 	}
 
 	got := MakeDispatcherDeployment(args)
@@ -99,7 +101,7 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 							Name:  system.NamespaceEnvKey,
 							Value: system.Namespace(),
 						}, {
-							Name: "BROKER_URL",
+							Name: "RABBIT_URL",
 							ValueFrom: &corev1.EnvVarSource{
 								SecretKeyRef: &corev1.SecretKeySelector{
 									LocalObjectReference: corev1.LocalObjectReference{
@@ -115,8 +117,11 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 							Name:  "SUBSCRIBER",
 							Value: subscriberURL,
 						}, {
-							Name:  "DLQ_DISPATCHER",
-							Value: "true",
+							Name:  "REQUEUE",
+							Value: "false",
+						}, {
+							Name:  "BROKER_INGRESS_URL",
+							Value: brokerIngressURL,
 						}},
 					}},
 				},

@@ -18,24 +18,29 @@ package main
 
 import (
 	"log"
+	"time"
 
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 
+	"github.com/NeowayLabs/wabbit/amqp"
 	"knative.dev/eventing-rabbitmq/pkg/dispatcher"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
+	"knative.dev/pkg/logging"
 	"knative.dev/pkg/signals"
 )
 
 type envConfig struct {
 	QueueName        string `envconfig:"QUEUE_NAME" required:"true"`
-	BrokerURL        string `envconfig:"BROKER_URL" required:"true"`
-	BrokerIngressURL string `envconfig:"BROKER_INGRESS_URL" required:"false"`
+	RabbitURL        string `envconfig:"RABBIT_URL" required:"true"`
+	BrokerIngressURL string `envconfig:"BROKER_INGRESS_URL" required:"true"`
 	SubscriberURL    string `envconfig:"SUBSCRIBER" required:"true"`
-	DLQDispatcher    bool   `envconfig:"DLQ_DISPATCHER" default: false required:"true"`
+	// Should failed deliveries be requeued in the RabbitMQ?
+	Requeue bool `envconfig:"REQUEUE" default: false required:"true"`
 
-	Retry         int32  `envconfig:"RETRY" required:"false"`
-	BackoffPolicy string `envconfig:"BACKOFF_POLICY" required:"false"`
+	Retry         int           `envconfig:"RETRY" required:"false"`
+	BackoffPolicy string        `envconfig:"BACKOFF_POLICY" required:"false"`
+	BackoffDelay  time.Duration `envconfig:"BACKOFF_DELAY" required:"false"`
 }
 
 func main() {
@@ -44,25 +49,38 @@ func main() {
 		log.Fatal("Failed to process env var", zap.Error(err))
 	}
 
-	if !env.DLQDispatcher && env.BrokerIngressURL == "" {
-		log.Fatal("Must specify BROKER_INGRESS_URL if DLQ_DISPATCHER has not been specified")
-	}
-	if env.DLQDispatcher {
-		if env.Retry != 0 || env.BackoffPolicy != "" {
-			log.Fatal("Can not specify Retry or BackoffPolicy if DLQ_DISPATCHER is specified ")
-		}
-	}
-
-	var delivery *eventingduckv1.DeliverySpec
-	if env.Retry != 0 || env.BackoffPolicy != "" {
-		delivery = &eventingduckv1.DeliverySpec{
-			Retry: &env.Retry,
-		}
+	var backoffPolicy eventingduckv1.BackoffPolicyType
+	if env.BackoffPolicy == "" || env.BackoffPolicy == "exponential" {
+		backoffPolicy = eventingduckv1.BackoffPolicyExponential
+	} else if env.BackoffPolicy == "linear" {
+		backoffPolicy = eventingduckv1.BackoffPolicyLinear
+	} else {
+		log.Fatal("Invalid BACKOFF_POLICY specified, must be exponential or linear")
 	}
 
-	sctx := signals.NewContext()
+	ctx := signals.NewContext()
 
-	d := dispatcher.NewDispatcher(env.QueueName, env.BrokerURL, env.BrokerIngressURL, env.SubscriberURL, env.DLQDispatcher, delivery)
-	d.Start(sctx)
+	conn, err := amqp.Dial(env.RabbitURL)
+	if err != nil {
+		logging.FromContext(ctx).Fatalf("failed to connect to RabbitMQ: %s", err)
+	}
+	defer conn.Close()
 
+	channel, err := conn.Channel()
+	if err != nil {
+		logging.FromContext(ctx).Fatalf("failed to open a channel: %s", err)
+	}
+	defer channel.Close()
+
+	err = channel.Qos(
+		1,     // prefetch count
+		0,     // prefetch size
+		false, // global
+	)
+	if err != nil {
+		logging.FromContext(ctx).Fatalf("failed to create QoS: %s", err)
+	}
+
+	d := dispatcher.NewDispatcher(env.BrokerIngressURL, env.SubscriberURL, env.Requeue, env.Retry, env.BackoffDelay, backoffPolicy)
+	d.ConsumeFromQueue(ctx, channel, env.QueueName)
 }

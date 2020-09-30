@@ -174,13 +174,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *eventingv1.Broker) pk
 		// TODO(vaikas): Should this be a first level BrokerStatus field?
 	}
 
-	// Note that if we didn't actually resolve the URI above, as in it's left as nil it's ok to pass here
-	// it deals with it properly.
-	if err := r.reconcileDLXDispatchercherDeployment(ctx, b, s.Name, dlsURI); err != nil {
-		logging.FromContext(ctx).Error("Problem reconciling DLX dispatcher Deployment", zap.Error(err))
-		MarkDeadLetterSinkFailed(&b.Status, "DeploymentFailure", "%v", err)
-		return err
-	}
 	if err := r.reconcileDLQBinding(ctx, b); err != nil {
 		logging.FromContext(ctx).Error("Problem reconciling DLX dispatcher Deployment", zap.Error(err))
 		MarkDeadLetterSinkFailed(&b.Status, "DeploymentFailure", "%v", err)
@@ -213,6 +206,14 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *eventingv1.Broker) pk
 		Scheme: "http",
 		Host:   names.ServiceHostName(ingressEndpoints.GetName(), ingressEndpoints.GetNamespace()),
 	})
+
+	// Note that if we didn't actually resolve the URI above, as in it's left as nil it's ok to pass here
+	// it deals with it properly.
+	if err := r.reconcileDLXDispatchercherDeployment(ctx, b, s.Name, dlsURI); err != nil {
+		logging.FromContext(ctx).Error("Problem reconciling DLX dispatcher Deployment", zap.Error(err))
+		MarkDeadLetterSinkFailed(&b.Status, "DeploymentFailure", "%v", err)
+		return err
+	}
 
 	// So, at this point the Broker is ready and everything should be solid
 	// for the triggers to act upon.
@@ -340,6 +341,7 @@ func (r *Reconciler) reconcileDLXDispatchercherDeployment(ctx context.Context, b
 			QueueName:          triggerresources.CreateBrokerDeadLetterQueueName(b),
 			BrokerUrlSecretKey: resources.BrokerURLSecretKey,
 			Subscriber:         sub,
+			BrokerIngressURL:   b.Status.Address.URL,
 		})
 		return r.reconcileDeployment(ctx, expected)
 	}
