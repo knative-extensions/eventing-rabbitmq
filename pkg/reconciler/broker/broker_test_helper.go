@@ -142,6 +142,13 @@ func WithDeadLetterSinkReady() BrokerOption {
 	}
 }
 
+// WithDeadLetterSinkFailed sets secret condition to ready.
+func WithDeadLetterSinkFailed(reason, msg string) BrokerOption {
+	return func(b *v1.Broker) {
+		MarkDeadLetterSinkFailed(&b.Status, reason, msg)
+	}
+}
+
 // WithSecretReady sets secret condition to ready.
 func WithSecretReady() BrokerOption {
 	return func(b *v1.Broker) {

@@ -122,6 +122,18 @@ var (
 		BackoffPolicy: &policy,
 		BackoffDelay:  &backoffDelay,
 	}
+	deliveryUnresolvableDeadLetterSink = &eventingduckv1.DeliverySpec{
+		DeadLetterSink: &duckv1.Destination{
+			Ref: &duckv1.KReference{
+				Name:       "badsink",
+				Kind:       "Service",
+				APIVersion: "serving.knative.dev/v1",
+			},
+		},
+		Retry:         &five,
+		BackoffPolicy: &policy,
+		BackoffDelay:  &backoffDelay,
+	}
 )
 
 func init() {
@@ -595,6 +607,46 @@ func TestReconcile(t *testing.T) {
 				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
 			},
 			WantErr: false,
+		}, {
+			Name: "Exchange created with unresolvable delivery, DLQ dispatcher fails",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerClass),
+					WithBrokerConfig(config()),
+					WithBrokerDelivery(deliveryUnresolvableDeadLetterSink),
+					WithInitBrokerConditions),
+				createSecret(rabbitURL),
+				rt.NewEndpoints(ingressServiceName, testNS,
+					rt.WithEndpointsLabels(IngressLabels()),
+					rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerClass),
+					WithInitBrokerConditions,
+					WithBrokerConfig(config()),
+					WithBrokerDelivery(deliveryUnresolvableDeadLetterSink),
+					WithIngressAvailable(),
+					WithDLXReady(),
+					WithDeadLetterSinkFailed("Unable to get the DeadLetterSink's URI", `services.serving.knative.dev "badsink" not found`),
+					WithSecretReady(),
+					WithBrokerAddressURI(brokerAddress),
+					WithExchangeReady()),
+			}},
+			WantCreates: []runtime.Object{
+				createExchangeSecret(),
+				createIngressDeployment(),
+				createIngressService(),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, brokerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
+				Eventf(corev1.EventTypeWarning, "InternalError", `services.serving.knative.dev "badsink" not found`),
+			},
+			WantErr: true,
 		},
 	}
 
@@ -778,6 +830,29 @@ func createDispatcherDeployment() *appsv1.Deployment {
 		Spec: eventingv1.BrokerSpec{
 			Config:   config(),
 			Delivery: delivery,
+		},
+	}
+	args := &resources.DispatcherArgs{
+		Broker:             broker,
+		Image:              dispatcherImage,
+		RabbitMQSecretName: rabbitBrokerSecretName,
+		QueueName:          "test-namespace-test-broker-dlq",
+		BrokerUrlSecretKey: "brokerURL",
+		BrokerIngressURL:   brokerAddress,
+		Subscriber:         deadLetterSinkAddress,
+	}
+	return resources.MakeDispatcherDeployment(args)
+}
+
+func createDispatcherDeploymentBadRef() *appsv1.Deployment {
+	broker := &eventingv1.Broker{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      brokerName,
+			Namespace: testNS,
+		},
+		Spec: eventingv1.BrokerSpec{
+			Config:   config(),
+			Delivery: deliveryUnresolvableDeadLetterSink,
 		},
 	}
 	args := &resources.DispatcherArgs{

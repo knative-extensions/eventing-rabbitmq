@@ -159,21 +159,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *eventingv1.Broker) pk
 	}
 	MarkDLXReady(&b.Status)
 
-	// If there's a Dead Letter Sink, then create a dispatcher for it. Note that this is for
-	// the whole broker, unlike for the Trigger, where we create one dispatcher per Trigger.
-	var dlsURI *apis.URL
-	if b.Spec.Delivery != nil && b.Spec.Delivery.DeadLetterSink != nil {
-		dlsURI, err = r.uriResolver.URIFromDestinationV1(ctx, *b.Spec.Delivery.DeadLetterSink, b)
-		if err != nil {
-			logging.FromContext(ctx).Error("Unable to get the DeadLetterSink URI", zap.Error(err))
-			MarkDeadLetterSinkFailed(&b.Status, "Unable to get the DeadLetterSink's URI", "%v", err)
-			return err
-		}
-
-		// TODO(vaikas): Set the custom annotation for resolved URI?...
-		// TODO(vaikas): Should this be a first level BrokerStatus field?
-	}
-
 	if err := r.reconcileDLQBinding(ctx, b); err != nil {
 		logging.FromContext(ctx).Error("Problem reconciling DLX dispatcher Deployment", zap.Error(err))
 		MarkDeadLetterSinkFailed(&b.Status, "DeploymentFailure", "%v", err)
@@ -206,6 +191,21 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *eventingv1.Broker) pk
 		Scheme: "http",
 		Host:   names.ServiceHostName(ingressEndpoints.GetName(), ingressEndpoints.GetNamespace()),
 	})
+
+	// If there's a Dead Letter Sink, then create a dispatcher for it. Note that this is for
+	// the whole broker, unlike for the Trigger, where we create one dispatcher per Trigger.
+	var dlsURI *apis.URL
+	if b.Spec.Delivery != nil && b.Spec.Delivery.DeadLetterSink != nil {
+		dlsURI, err = r.uriResolver.URIFromDestinationV1(ctx, *b.Spec.Delivery.DeadLetterSink, b)
+		if err != nil {
+			logging.FromContext(ctx).Error("Unable to get the DeadLetterSink URI", zap.Error(err))
+			MarkDeadLetterSinkFailed(&b.Status, "Unable to get the DeadLetterSink's URI", "%v", err)
+			return err
+		}
+
+		// TODO(vaikas): Set the custom annotation for resolved URI?...
+		// TODO(vaikas): Should this be a first level BrokerStatus field?
+	}
 
 	// Note that if we didn't actually resolve the URI above, as in it's left as nil it's ok to pass here
 	// it deals with it properly.
