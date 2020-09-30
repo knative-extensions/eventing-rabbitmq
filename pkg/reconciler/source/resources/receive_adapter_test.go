@@ -84,7 +84,7 @@ func TestMakeReceiveAdapter(t *testing.T) {
 	one := int32(1)
 	want := &v1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:         "rabbitmqsource-source-name",
+			Name:         "rabbitmqsource-source-name-",
 			Namespace:    "source-namespace",
 			GenerateName: "source-name-",
 			Labels: map[string]string{

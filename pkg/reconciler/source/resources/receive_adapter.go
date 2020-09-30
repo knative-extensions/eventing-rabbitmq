@@ -144,7 +144,7 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 
 	return &v1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:         kmeta.ChildName(string(args.Source.UID), fmt.Sprintf("rabbitmqsource-%s", args.Source.Name)),
+			Name:         kmeta.ChildName(fmt.Sprintf("rabbitmqsource-%s-", args.Source.Name), string(args.Source.UID)),
 			Namespace:    args.Source.Namespace,
 			GenerateName: fmt.Sprintf("%s-", args.Source.Name),
 			Labels:       args.Labels,
