@@ -56,7 +56,7 @@ func NewDispatcher(brokerIngressURL, subscriberURL string, requeue bool, maxRetr
 
 }
 
-func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel wabbit.Channel, queueName string) {
+func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel wabbit.Channel, queueName string) error {
 	logging.FromContext(ctx).Infow("Starting to process message for: ", zap.String("Queue", queueName))
 	msgs, err := channel.Consume(
 		queueName, // queue
@@ -69,14 +69,16 @@ func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel wabbit.Channe
 		},
 	)
 	if err != nil {
-		logging.FromContext(ctx).Fatal("failed to create consumer: ", err)
+		logging.FromContext(ctx).Warn("failed to create consumer: ", err)
+		return err
 	}
 
 	forever := make(chan bool)
 
 	ceClient, err := cloudevents.NewDefaultClient()
 	if err != nil {
-		logging.FromContext(ctx).Fatal("failed to create http client")
+		logging.FromContext(ctx).Warn("failed to create http client")
+		return err
 	}
 
 	go func() {
@@ -88,6 +90,7 @@ func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel wabbit.Channe
 				msg.Nack(false, false) // not multiple, do not requeue
 				continue
 			}
+			logging.FromContext(ctx).Debugf("Got event as: %+v", event)
 
 			ctx = cloudevents.ContextWithTarget(ctx, d.subscriberURL)
 
@@ -104,7 +107,9 @@ func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel wabbit.Channe
 				continue
 			}
 
+			logging.FromContext(ctx).Debugf("Got Response: %+v", response)
 			if response != nil {
+				logging.FromContext(ctx).Infof("Sending an event: %+v", response)
 				ctx = cloudevents.ContextWithTarget(ctx, d.brokerIngressURL)
 				backoffDelay := 50 * time.Millisecond
 				// Use the retries so we can just parse out the results in a common way.
@@ -122,6 +127,7 @@ func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel wabbit.Channe
 
 	fmt.Println("rabbitmq receiver started, exit with CTRL+C")
 	<-forever
+	return nil
 }
 
 func isSuccess(ctx context.Context, result protocol.Result) bool {
