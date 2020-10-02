@@ -151,7 +151,7 @@ metadata:
   namespace: dlq-demo
 spec:
   schedule: "*/1 * * * *"
-  jsonData: '{"responsecode: 200}'
+  jsonData: '{"responsecode": 200}'
   sink:
     ref:
       apiVersion: eventing.knative.dev/v1beta1
@@ -170,7 +170,7 @@ metadata:
   namespace: dlq-demo
 spec:
   schedule: "*/1 * * * *"
-  jsonData: '{"responsecode: 500}'
+  jsonData: '{"responsecode": 500}'
   sink:
     ref:
       apiVersion: eventing.knative.dev/v1beta1
@@ -207,4 +207,40 @@ EOF
 
 ```sh
 ko apply -n dlq-demo -f ./config/failer
+```
+
+### Check the results
+
+Look at the failer pod logs, you see it's receiving both 200/500 responses.
+
+```sh
+vaikas-a01:wabbit vaikas$ kubectl -n dlq-demo -l='serving.knative.dev/service=failer' logs -c user-container
+2020/10/02 11:35:00 using response code: 500
+2020/10/02 11:35:00 using response code: 200
+2020/10/02 11:36:00 using response code: 200
+2020/10/02 11:36:00 using response code: 500
+2020/10/02 11:37:00 using response code: 200
+2020/10/02 11:37:00 using response code: 500
+2020/10/02 11:38:00 using response code: 200
+2020/10/02 11:38:00 using response code: 500
+2020/10/02 11:39:00 using response code: 500
+```
+
+You see there are both 200 / 500 events there.
+
+However the event-display (the Dead Letter Sink) only sees the failed events
+with the response code set to 500.
+
+```sh
+vaikas-a01:wabbit vaikas$ kubectl -n dlq-demo -l='serving.knative.dev/service=event-display' logs -c user-container
+  specversion: 1.0
+  type: dev.knative.sources.ping
+  source: /apis/v1/namespaces/dlq-demo/pingsources/ping-source-2
+  id: 11bb6bd0-c1df-4181-9139-b02126fde1a7
+  time: 2020-10-02T11:43:00.053647633Z
+  datacontenttype: application/json
+Data,
+  {
+    "responsecode": 500
+  }
 ```
