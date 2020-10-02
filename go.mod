@@ -41,7 +41,7 @@ require (
 
 replace (
 	// This branch allows creation of headers exchange.
-	github.com/NeowayLabs/wabbit => github.com/vaikas/wabbit v0.0.0-20200922174928-163d3236bee1
+	github.com/NeowayLabs/wabbit => github.com/vaikas/wabbit v0.0.0-20201002085521-b5b22698ecc7
 	github.com/docker/docker => github.com/docker/engine v0.0.0-20190717161051-705d9623b7c1
 	// Somehow mattmoor/bindings causes grief...
 	github.com/google/go-github/v32 => github.com/google/go-github/v32 v32.0.1-0.20200624231906-3d244d3d496e
