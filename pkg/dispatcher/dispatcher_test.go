@@ -239,6 +239,17 @@ func TestEndToEnd(t *testing.T) {
 			requeue:                  true,
 			backoffPolicy:            eventingduckv1.BackoffPolicyLinear,
 		},
+		"One event, success, response, goes to broker, failed once, requeued, then accepted": {
+			subscriberReceiveCount:   2,
+			subscriberHandlers:       []handlerFunc{accepted, accepted},
+			events:                   []ce.Event{createEvent(eventData)},
+			expectedSubscriberBodies: []string{expectedData, expectedData},
+			responseEvents:           []ce.Event{createEvent(responseData), createEvent(responseData)},
+			brokerReceiveCount:       2,
+			brokerHandlers:           []handlerFunc{failed, accepted},
+			expectedBrokerBodies:     []string{expectedResponseData, expectedResponseData},
+			requeue:                  true,
+		},
 	}
 
 	backoffDelay, err := time.ParseDuration("1s")
