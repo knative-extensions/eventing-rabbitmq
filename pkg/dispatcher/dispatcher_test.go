@@ -42,7 +42,6 @@ const (
 	rabbitURL            = "amqp://localhost:5672/%2f"
 	queueName            = "queue"
 	exchangeName         = "default/knative-testbroker"
-	expectedBody         = `"{\"testdata\":\"testdata\"}"`
 	eventData            = `{"testdata":"testdata"}`
 	eventData2           = `{"testdata":"testdata2"}`
 	responseData         = `{"testresponse":"testresponsedata"}`
@@ -134,6 +133,9 @@ func TestFailToConsume(t *testing.T) {
 		t.Error("Failed to parse duration: ", err)
 	}
 	ch, _, err := createRabbitAndQueue()
+	if err != nil {
+		t.Error("Failed to create rabbit and queue")
+	}
 	d := NewDispatcher("", "", false, 1, backoffDelay, eventingduckv1.BackoffPolicyExponential)
 	err = d.ConsumeFromQueue(context.TODO(), ch, "nosuchqueue")
 	if err == nil {
