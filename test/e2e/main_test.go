@@ -21,8 +21,8 @@ package rabbit_test
 import (
 	"context"
 	"fmt"
+	"github.com/n3wscott/rigging/pkg/lifecycle"
 	"os"
-	"sync"
 	"testing"
 	"text/template"
 
@@ -68,14 +68,18 @@ func TestKoPublish(t *testing.T) {
 
 var (
 	test_context context.Context
-	tc_once      sync.Once
 )
 
 func Context() context.Context {
-	tc_once.Do(func() {
-		test_context = sharedmain.EnableInjectionOrDie(nil, nil) // nolint
-	})
 	return test_context
+}
+
+func TestMain(m *testing.M) {
+	fmt.Println("EnableInjectionOrDie")
+	ctx := sharedmain.EnableInjectionOrDie(nil, nil)
+	lifecycle.InjectClients(ctx)
+	test_context = ctx
+	os.Exit(m.Run())
 }
 
 // TestSmokeBroker makes sure a Broker goes ready as a RabbitMQ Broker Class.
