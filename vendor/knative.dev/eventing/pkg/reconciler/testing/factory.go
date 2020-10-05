@@ -59,8 +59,10 @@ type Ctor func(context.Context, *Listers, configmap.Watcher) controller.Reconcil
 func MakeFactory(ctor Ctor, unstructured bool, logger *zap.SugaredLogger) Factory {
 	return func(t *testing.T, r *TableRow) (controller.Reconciler, ActionRecorderList, EventList) {
 		ls := NewListers(r.Objects)
-
-		ctx := context.Background()
+		ctx := r.Ctx
+		if ctx == nil {
+			ctx = context.Background()
+		}
 		ctx = logging.WithLogger(ctx, logger)
 
 		ctx, kubeClient := fakekubeclient.With(ctx, ls.GetKubeObjects()...)
@@ -135,23 +137,23 @@ func ToUnstructured(t *testing.T, objs []runtime.Object) (us []runtime.Object) {
 		// Determine and set the TypeMeta for this object based on our test scheme.
 		gvks, _, err := sch.ObjectKinds(obj)
 		if err != nil {
-			t.Fatalf("Unable to determine kind for type: %v", err)
+			t.Fatal("Unable to determine kind for type:", err)
 		}
 		apiv, k := gvks[0].ToAPIVersionAndKind()
 		ta, err := meta.TypeAccessor(obj)
 		if err != nil {
-			t.Fatalf("Unable to create type accessor: %v", err)
+			t.Fatal("Unable to create type accessor:", err)
 		}
 		ta.SetAPIVersion(apiv)
 		ta.SetKind(k)
 
 		b, err := json.Marshal(obj)
 		if err != nil {
-			t.Fatalf("Unable to marshal: %v", err)
+			t.Fatal("Unable to marshal:", err)
 		}
 		u := &unstructured.Unstructured{}
 		if err := json.Unmarshal(b, u); err != nil {
-			t.Fatalf("Unable to unmarshal: %v", err)
+			t.Fatal("Unable to unmarshal:", err)
 		}
 		us = append(us, u)
 	}
