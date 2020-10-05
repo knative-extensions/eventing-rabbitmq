@@ -22,10 +22,8 @@ import (
 	"testing"
 	"time"
 
-	"knative.dev/eventing/pkg/test/observer"
-	"knative.dev/pkg/injection/sharedmain"
-
 	"github.com/n3wscott/rigging"
+	"knative.dev/eventing/pkg/test/observer"
 	recorder_collector "knative.dev/eventing/pkg/test/observer/recorder-collector"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 
@@ -79,8 +77,7 @@ func DirectTestBrokerImpl(t *testing.T, brokerName, triggerName string) {
 	time.Sleep(time.Minute)
 
 	// TODO: need to validate set events.
-
-	ctx := sharedmain.EnableInjectionOrDie(nil, nil) //nolint
+	ctx := Context() // TODO: there needs to be a better way to do this.
 	c := recorder_collector.New(ctx)
 
 	from := duckv1.KReference{
