@@ -18,14 +18,15 @@ package rabbit_test
 
 import (
 	"fmt"
-	"knative.dev/eventing/pkg/test/observer"
-	"knative.dev/pkg/injection/sharedmain"
 	"strings"
 	"testing"
 	"time"
 
+	"knative.dev/eventing/pkg/test/observer"
+	"knative.dev/pkg/injection/sharedmain"
+
 	"github.com/n3wscott/rigging"
-	"knative.dev/eventing/pkg/test/observer/recorder-collector"
+	recorder_collector "knative.dev/eventing/pkg/test/observer/recorder-collector"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
