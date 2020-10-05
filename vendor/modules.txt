@@ -86,6 +86,8 @@ github.com/aws/aws-sdk-go/service/sts/stsiface
 github.com/beorn7/perks/quantile
 # github.com/blang/semver v3.5.1+incompatible
 github.com/blang/semver
+# github.com/bmizerany/perks v0.0.0-20141205001514-d9a9656a3a4b
+## explicit
 # github.com/cenkalti/backoff v2.2.1+incompatible
 github.com/cenkalti/backoff
 # github.com/census-instrumentation/opencensus-proto v0.3.0
@@ -126,6 +128,8 @@ github.com/containerd/continuity/syscallx
 github.com/containerd/continuity/sysx
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
+# github.com/dgryski/go-gk v0.0.0-20200319235926-a69029f61654
+## explicit
 # github.com/docker/distribution v2.7.1+incompatible
 github.com/docker/distribution/digestset
 github.com/docker/distribution/reference
@@ -186,7 +190,7 @@ github.com/go-openapi/spec
 github.com/go-openapi/swag
 # github.com/go-redis/redis v6.15.9+incompatible
 ## explicit
-# github.com/gobuffalo/envy v1.7.1
+# github.com/gobuffalo/envy v1.6.5
 github.com/gobuffalo/envy
 # github.com/gogo/protobuf v1.3.1
 github.com/gogo/protobuf/proto
@@ -242,7 +246,7 @@ github.com/google/mako/spec/proto/mako_go_proto
 github.com/google/uuid
 # github.com/googleapis/gax-go/v2 v2.0.5
 github.com/googleapis/gax-go/v2
-# github.com/googleapis/gnostic v0.4.0
+# github.com/googleapis/gnostic v0.3.1
 github.com/googleapis/gnostic/OpenAPIv2
 github.com/googleapis/gnostic/compiler
 github.com/googleapis/gnostic/extensions
@@ -353,11 +357,7 @@ github.com/rickb777/plural
 github.com/robfig/cron/v3
 # github.com/rogpeppe/fastuuid v1.2.0
 github.com/rogpeppe/fastuuid
-# github.com/rogpeppe/go-internal v1.5.2
-github.com/rogpeppe/go-internal/modfile
-github.com/rogpeppe/go-internal/module
-github.com/rogpeppe/go-internal/semver
-# github.com/sergi/go-diff v1.1.0
+# github.com/sergi/go-diff v1.0.0
 github.com/sergi/go-diff/diffmatchpatch
 # github.com/sirupsen/logrus v1.6.0
 github.com/sirupsen/logrus
@@ -366,6 +366,8 @@ github.com/spf13/pflag
 # github.com/streadway/amqp v1.0.0
 ## explicit
 github.com/streadway/amqp
+# github.com/streadway/quantile v0.0.0-20150917103942-b0c588724d25
+## explicit
 # github.com/stretchr/testify v1.6.1
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
@@ -1317,3 +1319,4 @@ sigs.k8s.io/yaml
 # k8s.io/apiserver => k8s.io/apiserver v0.18.8
 # k8s.io/client-go => k8s.io/client-go v0.18.8
 # k8s.io/cloud-provider => k8s.io/cloud-provider v0.18.8
+# knative.dev/pkg => ../pkg
