@@ -80,7 +80,7 @@ func DirectTestBrokerImpl(t *testing.T, brokerName, triggerName string) {
 	// TODO: need to validate set events.
 
 	ctx := sharedmain.EnableInjectionOrDie(nil, nil) //nolint
-	c := recorder_collector.New(ctx)                 //TODO: rigging does not use knative injection, if it did then this would work. Migrate rigging to knative injection.
+	c := recorder_collector.New(ctx)
 
 	from := duckv1.KReference{
 		Kind:       "Namespace",
