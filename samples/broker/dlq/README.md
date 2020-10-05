@@ -12,20 +12,20 @@ Sink while successfully processed events do not.
 
 ## Components
 
-* [failer](../../../cmd/failer/main.go) is a function which takes in a CloudEvent
-  and depending on what the specified HTTP response code in the message data is
-  will respond with that. So, to simulate a failure, we just send it a CloudEvent
-  with a payload of 500 and it's going to simulate a failure, by default it will
-  respond with a 200, hence indicating that it processed the event successfully
-  and it should be considered handled.
+- [failer](../../../cmd/failer/main.go) is a function which takes in a
+  CloudEvent and depending on what the specified HTTP response code in the
+  message data is will respond with that. So, to simulate a failure, we just
+  send it a CloudEvent with a payload of 500 and it's going to simulate a
+  failure, by default it will respond with a 200, hence indicating that it
+  processed the event successfully and it should be considered handled.
 
-* [pingsource](https://knative.dev/docs/eventing/samples/ping-source/index.html)
+- [pingsource](https://knative.dev/docs/eventing/samples/ping-source/index.html)
   is a Knative source which sends a CloudEvent on pre-defined intervals.
-  
-* [event-display](https://github.com/knative/eventing-contrib/tree/master/cmd/event_display]
+
+- [event-display](https://github.com/knative/eventing-contrib/tree/master/cmd/event_display]
   which is a tool that logs the CloudEvent that it receives formatted nicely.
-  
-* [RabbitMQ Broker](../../../broker/README.md)
+
+- [RabbitMQ Broker](../../../broker/README.md)
 
 ## Configuration
 
