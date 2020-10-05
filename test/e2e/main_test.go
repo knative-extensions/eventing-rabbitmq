@@ -19,12 +19,14 @@ limitations under the License.
 package rabbit_test
 
 import (
+	"context"
 	"fmt"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"knative.dev/pkg/injection/sharedmain"
 	"os"
+	"sync"
 	"testing"
 	"text/template"
-
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	// For our e2e testing, we want this linked first so that our
 	// system namespace environment variable is defaulted prior to
 	// logstream initialization.
@@ -62,20 +64,32 @@ func TestKoPublish(t *testing.T) {
 	_, _ = fmt.Fprint(os.Stdout, "\n\n")
 }
 
+var (
+	test_context context.Context
+	tc_once      sync.Once
+)
+
+func Context() context.Context {
+	tc_once.Do(func() {
+		test_context = sharedmain.EnableInjectionOrDie(nil, nil) // nolint
+	})
+	return test_context
+}
+
 // TestSmokeBroker makes sure a Broker goes ready as a RabbitMQ Broker Class.
 func TestSmokeBroker(t *testing.T) {
-	t.Cleanup(logstream.Start(t))
+	t.Cleanup(logstream.Start(Context(), t))
 	SmokeTestBrokerImpl(t, helpers.ObjectNameForTest(t))
 }
 
 // TestSmokeBrokerTrigger makes sure a Broker+Trigger goes ready as a RabbitMQ Broker Class.
 func TestSmokeBrokerTrigger(t *testing.T) {
-	t.Cleanup(logstream.Start(t))
+	t.Cleanup(logstream.Start(Context(), t))
 	SmokeTestBrokerTriggerImpl(t, helpers.ObjectNameForTest(t), helpers.ObjectNameForTest(t))
 }
 
 // TestBrokerDirect makes sure a Broker can delivery events to a consumer.
 func TestBrokerDirect(t *testing.T) {
-	t.Cleanup(logstream.Start(t))
+	t.Cleanup(logstream.Start(Context(), t))
 	DirectTestBrokerImpl(t, helpers.ObjectNameForTest(t), helpers.ObjectNameForTest(t))
 }

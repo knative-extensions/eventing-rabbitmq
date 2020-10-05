@@ -26,4 +26,5 @@ pwd
 
 echo "Installing Knative Eventing RabbitMQ API"
 
-ko apply -Rf ${REPO_ROOT_DIR}/config
+ko apply -f ${REPO_ROOT_DIR}/config/broker
+ko apply -f ${REPO_ROOT_DIR}/config/source
