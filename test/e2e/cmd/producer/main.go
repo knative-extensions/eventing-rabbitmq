@@ -18,10 +18,11 @@ package main
 
 import (
 	"context"
-	"github.com/kelseyhightower/envconfig"
 	"log"
 	"os"
 	"time"
+
+	"github.com/kelseyhightower/envconfig"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	_ "knative.dev/pkg/system/testing"

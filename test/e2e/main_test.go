@@ -21,12 +21,14 @@ package rabbit_test
 import (
 	"context"
 	"fmt"
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	"knative.dev/pkg/injection/sharedmain"
 	"os"
 	"sync"
 	"testing"
 	"text/template"
+
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"knative.dev/pkg/injection/sharedmain"
+
 	// For our e2e testing, we want this linked first so that our
 	// system namespace environment variable is defaulted prior to
 	// logstream initialization.
