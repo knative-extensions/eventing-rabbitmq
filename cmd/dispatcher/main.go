@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/kelseyhightower/envconfig"
+	"go.uber.org/zap"
 
 	"github.com/NeowayLabs/wabbit/amqp"
 	"knative.dev/eventing-rabbitmq/pkg/dispatcher"
@@ -57,8 +58,15 @@ func main() {
 		log.Fatal("Invalid BACKOFF_POLICY specified, must be exponential or linear")
 	}
 
+	backoffDelay := env.BackoffDelay
+	if backoffDelay == time.Duration(0) {
+		log.Printf("BackoffDelay: %q", backoffDelay)
+		backoffDelay = 50 * time.Millisecond
+	}
+
 	ctx := signals.NewContext()
 
+	logging.FromContext(ctx).Infow("BackoffDelay:", zap.Any("backoffDelay", backoffDelay))
 	conn, err := amqp.Dial(env.RabbitURL)
 	if err != nil {
 		logging.FromContext(ctx).Fatal("failed to connect to RabbitMQ: ", err)
@@ -80,6 +88,6 @@ func main() {
 		logging.FromContext(ctx).Fatal("failed to create QoS: %s", err)
 	}
 
-	d := dispatcher.NewDispatcher(env.BrokerIngressURL, env.SubscriberURL, env.Requeue, env.Retry, env.BackoffDelay, backoffPolicy)
+	d := dispatcher.NewDispatcher(env.BrokerIngressURL, env.SubscriberURL, env.Requeue, env.Retry, backoffDelay, backoffPolicy)
 	d.ConsumeFromQueue(ctx, channel, env.QueueName)
 }
