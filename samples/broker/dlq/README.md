@@ -225,9 +225,9 @@ vaikas-a01:wabbit vaikas$ kubectl -n dlq-demo -l='serving.knative.dev/service=fa
 ```
 
 You see there are both 200 / 503 events there. And more importantly, you can see
-that 200 is only sent once to the failer since it's processed
-correctly. However, the 503 is sent a total of 6 times because we have specified
-the retry of 5 (original, plus 5 retries for a total of 6 log entries).
+that 200 is only sent once to the failer since it's processed correctly.
+However, the 503 is sent a total of 6 times because we have specified the retry
+of 5 (original, plus 5 retries for a total of 6 log entries).
 
 However the event-display (the Dead Letter Sink) only sees the failed events
 with the response code set to 503.
