@@ -25,7 +25,6 @@ require (
 	github.com/tiago4orion/conjure v0.0.0-20150908101743-93cb30b9d218 // indirect
 	go.uber.org/zap v1.15.0
 	golang.org/x/tools v0.0.0-20200929223013-bf155c11ec6f // indirect
-	gopkg.in/yaml.v3 v3.0.0-20200601152816-913338de1bd2 // indirect
 	gotest.tools v2.2.0+incompatible
 	honnef.co/go/tools v0.0.1-2020.1.5 // indirect
 	k8s.io/api v0.18.8
@@ -34,9 +33,9 @@ require (
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/code-generator v0.18.8
 	k8s.io/kube-openapi v0.0.0-20200410145947-bcb3869e6f29
-	knative.dev/eventing v0.18.1-0.20201006091420-a8c3c3c8587b
-	knative.dev/pkg v0.0.0-20201006044120-247841408e57
-	knative.dev/test-infra v0.0.0-20201006044420-26457f2cad45
+	knative.dev/eventing v0.18.1-0.20201006223820-632c097a46bf
+	knative.dev/pkg v0.0.0-20201006235820-46761ba7c3dc
+	knative.dev/test-infra v0.0.0-20201006161322-f94f2bcbb2ee
 )
 
 replace (
