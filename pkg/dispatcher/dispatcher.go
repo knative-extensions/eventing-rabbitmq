@@ -24,7 +24,6 @@ import (
 
 	"github.com/NeowayLabs/wabbit"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
-	"github.com/cloudevents/sdk-go/v2/client"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"go.uber.org/zap"
@@ -74,13 +73,7 @@ func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel wabbit.Channe
 		return err
 	}
 
-	p, err := cehttp.NewObserved(cehttp.WithIsRetriableFunc(isRetriableFunc))
-	if err != nil {
-		logging.FromContext(ctx).Warn("failed to create http.NewObserved: ", err)
-		return err
-	}
-
-	ceClient, err := client.NewObserved(p, client.WithTimeNow(), client.WithUUIDs())
+	ceClient, err := cloudevents.NewDefaultClient(cehttp.WithIsRetriableFunc(isRetriableFunc))
 	if err != nil {
 		logging.FromContext(ctx).Warn("failed to create http client")
 		return err
