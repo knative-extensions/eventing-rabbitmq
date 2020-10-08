@@ -15,7 +15,7 @@ Sink while successfully processed events do not.
 - [failer](../../../cmd/failer/main.go) is a function which takes in a
   CloudEvent and depending on what the specified HTTP response code in the
   message data is will respond with that. So, to simulate a failure, we just
-  send it a CloudEvent with a payload of 503 and it's going to simulate a
+  send it a CloudEvent with a payload of 500 and it's going to simulate a
   failure, by default it will respond with a 200, hence indicating that it
   processed the event successfully and it should be considered handled.
 
@@ -31,7 +31,7 @@ Sink while successfully processed events do not.
 
 Demo creates two `PingSource`s and has them send an event once a minute. One of
 them sends an event that has responsecode set to 200 (event processed
-successfully) and one that has responsecode set to 503 (event processing
+successfully) and one that has responsecode set to 500 (event processing
 failed).
 
 Demo creates a `Broker` with the delivery configuration that specifies that
@@ -170,7 +170,7 @@ metadata:
   namespace: dlq-demo
 spec:
   schedule: "*/1 * * * *"
-  jsonData: '{"responsecode": 503}'
+  jsonData: '{"responsecode": 500}'
   sink:
     ref:
       apiVersion: eventing.knative.dev/v1beta1
@@ -211,26 +211,26 @@ kubectl apply -f 'https://storage.googleapis.com/knative-nightly/eventing-rabbit
 
 ### Check the results
 
-Look at the failer pod logs, you see it's receiving both 200/503 responses.
+Look at the failer pod logs, you see it's receiving both 200/500 responses.
 
 ```sh
 vaikas-a01:wabbit vaikas$ kubectl -n dlq-demo -l='serving.knative.dev/service=failer' logs -c user-container
 2020/10/06 10:35:00 using response code: 200
-2020/10/06 10:35:00 using response code: 503
-2020/10/06 10:35:00 using response code: 503
-2020/10/06 10:35:00 using response code: 503
-2020/10/06 10:35:01 using response code: 503
-2020/10/06 10:35:01 using response code: 503
-2020/10/06 10:35:03 using response code: 503
+2020/10/06 10:35:00 using response code: 500
+2020/10/06 10:35:00 using response code: 500
+2020/10/06 10:35:00 using response code: 500
+2020/10/06 10:35:01 using response code: 500
+2020/10/06 10:35:01 using response code: 500
+2020/10/06 10:35:03 using response code: 500
 ```
 
-You see there are both 200 / 503 events there. And more importantly, you can see
+You see there are both 200 / 500 events there. And more importantly, you can see
 that 200 is only sent once to the failer since it's processed correctly.
-However, the 503 is sent a total of 6 times because we have specified the retry
+However, the 500 is sent a total of 6 times because we have specified the retry
 of 5 (original, plus 5 retries for a total of 6 log entries).
 
 However the event-display (the Dead Letter Sink) only sees the failed events
-with the response code set to 503.
+with the response code set to 500.
 
 ```sh
 vaikas-a01:wabbit vaikas$ kubectl -n dlq-demo -l='serving.knative.dev/service=event-display' logs -c user-container
@@ -245,6 +245,6 @@ Context Attributes,
   datacontenttype: application/json
 Data,
   {
-    "responsecode": 503
+    "responsecode": 500
   }
 ```
