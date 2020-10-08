@@ -15,6 +15,8 @@ import (
 	cecontext "github.com/cloudevents/sdk-go/v2/context"
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/cloudevents/sdk-go/v2/protocol"
+	"go.opencensus.io/plugin/ochttp"
+	"go.opencensus.io/plugin/ochttp/propagation/tracecontext"
 )
 
 const (
@@ -26,6 +28,19 @@ type msgErr struct {
 	msg    *Message
 	respFn protocol.ResponseFn
 	err    error
+}
+
+// Default error codes that we retry on - string isn't used, it's just there so
+// people know what each error code's title is.
+// To modify this use Option
+var defaultRetriableErrors = map[int]string{
+	404: "Not Found",
+	413: "Payload Too Large",
+	425: "Too Early",
+	429: "Too Many Requests",
+	502: "Bad Gateway",
+	503: "Service Unavailable",
+	504: "Gateway Timeout",
 }
 
 // Protocol acts as both a http client and a http handler.
@@ -67,6 +82,8 @@ type Protocol struct {
 	server            *http.Server
 	handlerRegistered bool
 	middleware        []Middleware
+
+	isRetriableFunc IsRetriable
 }
 
 func New(opts ...Option) (*Protocol, error) {
@@ -90,6 +107,31 @@ func New(opts ...Option) (*Protocol, error) {
 		p.ShutdownTimeout = DefaultShutdownTimeout
 	}
 
+	if p.isRetriableFunc == nil {
+		p.isRetriableFunc = defaultIsRetriableFunc
+	}
+
+	return p, nil
+}
+
+func tracecontextMiddleware(h http.Handler) http.Handler {
+	return &ochttp.Handler{
+		Propagation: &tracecontext.HTTPFormat{},
+		Handler:     h,
+	}
+}
+
+// NewObserved creates an HTTP protocol with trace propagating middleware.
+func NewObserved(opts ...Option) (*Protocol, error) {
+	p, err := New(opts...)
+	if err != nil {
+		return nil, err
+	}
+	p.roundTripper = &ochttp.Transport{
+		Propagation: &tracecontext.HTTPFormat{},
+		Base:        p.roundTripper,
+	}
+	p.middleware = append(p.middleware, tracecontextMiddleware)
 	return p, nil
 }
 
@@ -327,4 +369,9 @@ func (p *Protocol) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	p.incoming <- msgErr{msg: m, respFn: fn} // Send to Request
 	// Block until ResponseFn is invoked
 	wg.Wait()
+}
+
+func defaultIsRetriableFunc(sc int) bool {
+	_, ok := defaultRetriableErrors[sc]
+	return ok
 }
