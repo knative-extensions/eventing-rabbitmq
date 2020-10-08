@@ -29,6 +29,9 @@ spec:
       containers:
         - name: producer
           image: {{ .images.producer }}
+          env:
+            name: COUNT
+            value: {{ .producerCount }}
 
 ---
 

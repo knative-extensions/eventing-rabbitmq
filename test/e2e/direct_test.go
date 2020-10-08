@@ -42,12 +42,13 @@ func init() {
 
 // DirectTestBrokerImpl makes sure an RabbitMQ Broker delivers events to a single consumer.
 func DirectTestBrokerImpl(t *testing.T, brokerName, triggerName string) {
-
+	sendCount := 5
 	opts := []rigging.Option{}
 
 	rig, err := rigging.NewInstall(opts, []string{"rabbitmq", "direct", "recorder"}, map[string]string{
-		"brokerName":  brokerName,
-		"triggerName": triggerName,
+		"brokerName":    brokerName,
+		"triggerName":   triggerName,
+		"producerCount": fmt.Sprintf("%d", sendCount),
 	})
 	if err != nil {
 		t.Fatalf("failed to create rig, %s", err)
@@ -74,7 +75,7 @@ func DirectTestBrokerImpl(t *testing.T, brokerName, triggerName string) {
 		}
 	}
 
-	time.Sleep(time.Minute)
+	time.Sleep(10 * time.Second)
 
 	// TODO: need to validate set events.
 	ctx := Context() // TODO: there needs to be a better way to do this.
@@ -91,11 +92,17 @@ func DirectTestBrokerImpl(t *testing.T, brokerName, triggerName string) {
 		return ob.Observer == obsName
 	})
 	if err != nil {
-		panic(err)
+		t.Fatalf("failed to list observed events, %s", err)
 	}
 
 	for i, e := range events {
 		fmt.Printf("[%d]: seen by %q\n%s\n", i, e.Observer, e.Event)
+	}
+
+	got := len(events)
+	want := sendCount
+	if want != got {
+		t.Errorf("failed to observe the correct number of events, want: %d, got: %d", want, got)
 	}
 
 	// Pass!

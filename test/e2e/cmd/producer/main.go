@@ -30,7 +30,7 @@ import (
 
 type envConfig struct {
 	Sink  string `envconfig:"K_SINK" required:"true"`
-	Count int    `envconfig:"COUNT" default:"10"`
+	Count int    `envconfig:"COUNT" default:"1"`
 }
 
 func main() {
