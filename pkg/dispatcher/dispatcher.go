@@ -24,6 +24,7 @@ import (
 
 	"github.com/NeowayLabs/wabbit"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
+	"github.com/cloudevents/sdk-go/v2/client"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"go.uber.org/zap"
@@ -73,14 +74,18 @@ func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel wabbit.Channe
 		return err
 	}
 
-	forever := make(chan bool)
+	p, err := cehttp.NewObserved(cehttp.WithIsRetriableFunc(isRetriableFunc))
+	if err != nil {
+		logging.FromContext(ctx).Warn("failed to create http.NewObserved: ", err)
+		return err
+	}
 
-	ceClient, err := cloudevents.NewDefaultClient()
+	ceClient, err := client.NewObserved(p, client.WithTimeNow(), client.WithUUIDs())
 	if err != nil {
 		logging.FromContext(ctx).Warn("failed to create http client")
 		return err
 	}
-
+	forever := make(chan bool)
 	go func() {
 		for msg := range msgs {
 			event := cloudevents.NewEvent()
@@ -128,6 +133,10 @@ func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel wabbit.Channe
 	fmt.Println("rabbitmq receiver started, exit with CTRL+C")
 	<-forever
 	return nil
+}
+
+func isRetriableFunc(sc int) bool {
+	return sc < 200 || sc >= 300
 }
 
 func isSuccess(ctx context.Context, result protocol.Result) bool {
