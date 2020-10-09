@@ -73,14 +73,12 @@ func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel wabbit.Channe
 		return err
 	}
 
-	forever := make(chan bool)
-
-	ceClient, err := cloudevents.NewDefaultClient()
+	ceClient, err := cloudevents.NewDefaultClient(cehttp.WithIsRetriableFunc(isRetriableFunc))
 	if err != nil {
 		logging.FromContext(ctx).Warn("failed to create http client")
 		return err
 	}
-
+	forever := make(chan bool)
 	go func() {
 		for msg := range msgs {
 			event := cloudevents.NewEvent()
@@ -128,6 +126,10 @@ func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel wabbit.Channe
 	fmt.Println("rabbitmq receiver started, exit with CTRL+C")
 	<-forever
 	return nil
+}
+
+func isRetriableFunc(sc int) bool {
+	return sc < 200 || sc >= 300
 }
 
 func isSuccess(ctx context.Context, result protocol.Result) bool {
