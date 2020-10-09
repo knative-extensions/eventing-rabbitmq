@@ -34,7 +34,7 @@ import (
 	"knative.dev/pkg/source"
 )
 
-func TestPostMessage_ServeHttp(t *testing.T) {
+func TestPostMessage_ServeHTTP(t *testing.T) {
 	testCases := map[string]struct {
 		sink              func(http.ResponseWriter, *http.Request)
 		reqBody           string
