@@ -34,7 +34,7 @@ import (
 	"knative.dev/pkg/source"
 )
 
-func TestPostMessage_ServeHttp(t *testing.T) {
+func TestPostMessage_ServeHTTP(t *testing.T) {
 	testCases := map[string]struct {
 		sink              func(http.ResponseWriter, *http.Request)
 		reqBody           string
@@ -61,7 +61,7 @@ func TestPostMessage_ServeHttp(t *testing.T) {
 			sinkServer := httptest.NewServer(h)
 			defer sinkServer.Close()
 
-			s, err := kncloudevents.NewHttpMessageSender(nil, sinkServer.URL)
+			s, err := kncloudevents.NewHTTPMessageSender(nil, sinkServer.URL)
 			if err != nil {
 				t.Fatal(err)
 			}
