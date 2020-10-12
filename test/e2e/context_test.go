@@ -1,3 +1,5 @@
+// +build !e2e
+
 /*
 Copyright 2020 The Knative Authors
 
@@ -18,25 +20,9 @@ package rabbit_test
 
 import (
 	"context"
-	"os"
-	"testing"
-
-	"github.com/n3wscott/rigging/pkg/lifecycle"
-	"knative.dev/pkg/injection"
-)
-
-var (
-	test_context context.Context
 )
 
 func Context() context.Context {
-	return test_context
-}
-
-func TestMain(m *testing.M) {
-	ctx, startInformers := injection.EnableInjectionOrDie(nil, nil) //nolint
-	lifecycle.InjectClients(ctx)
-	test_context = ctx
-	startInformers()
-	os.Exit(m.Run())
+	// no-op
+	return context.Background()
 }

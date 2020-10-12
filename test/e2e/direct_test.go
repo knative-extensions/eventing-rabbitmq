@@ -56,11 +56,11 @@ func DirectTestBrokerImpl(t *testing.T, brokerName, triggerName string) {
 	t.Logf("Created a new testing rig at namespace %s.", rig.Namespace())
 
 	// Uninstall deferred.
-	//defer func() {
-	//	if err := rig.Uninstall(); err != nil {
-	//		t.Errorf("failed to uninstall, %s", err)
-	//	}
-	//}()
+	defer func() {
+		if err := rig.Uninstall(); err != nil {
+			t.Error("failed to uninstall, ", err)
+		}
+	}()
 
 	refs := rig.Objects()
 	for _, r := range refs {
