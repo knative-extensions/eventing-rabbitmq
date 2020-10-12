@@ -68,6 +68,9 @@ func send(ctx context.Context, c cloudevents.Client, count int) {
 			"message": "Hello, World!",
 		})
 
+		// Try to send with retry.
+		ctx := cloudevents.ContextWithRetriesExponentialBackoff(ctx, 10*time.Millisecond, 100)
+
 		if result := c.Send(ctx, e); cloudevents.IsUndelivered(result) {
 			log.Print("Failed to send: ", result.Error())
 		} else if cloudevents.IsACK(result) {
