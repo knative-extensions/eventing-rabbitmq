@@ -48,7 +48,7 @@ func DirectTestBrokerImpl(t *testing.T, brokerName, triggerName string) {
 	rig, err := rigging.NewInstall(opts, []string{"rabbitmq", "direct", "recorder"}, map[string]string{
 		"brokerName":    brokerName,
 		"triggerName":   triggerName,
-		"producerCount": fmt.Sprintf("%d", sendCount),
+		"producerCount": fmt.Sprint(sendCount),
 	})
 	if err != nil {
 		t.Fatalf("failed to create rig, %s", err)
@@ -87,12 +87,12 @@ func DirectTestBrokerImpl(t *testing.T, brokerName, triggerName string) {
 		APIVersion: "v1",
 	}
 
-	obsName := fmt.Sprintf("recorder-%s", rig.Namespace())
+	obsName := fmt.Sprint("recorder-", rig.Namespace())
 	events, err := c.List(ctx, from, func(ob observer.Observed) bool {
 		return ob.Observer == obsName
 	})
 	if err != nil {
-		t.Fatalf("failed to list observed events, %s", err)
+		t.Fatal("failed to list observed events, ", err)
 	}
 
 	for i, e := range events {
