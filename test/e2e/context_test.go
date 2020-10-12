@@ -1,0 +1,44 @@
+// +build e2e
+
+/*
+Copyright 2020 The Knative Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package rabbit_test
+
+import (
+	"context"
+	"os"
+	"testing"
+
+	"github.com/n3wscott/rigging/pkg/lifecycle"
+	"knative.dev/pkg/injection"
+)
+
+var (
+	test_context context.Context
+)
+
+func Context() context.Context {
+	return test_context
+}
+
+func TestMain(m *testing.M) {
+	ctx, startInformers := injection.EnableInjectionOrDie(nil, nil) //nolint
+	lifecycle.InjectClients(ctx)
+	test_context = ctx
+	startInformers()
+	os.Exit(m.Run())
+}

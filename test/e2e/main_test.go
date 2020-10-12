@@ -19,7 +19,6 @@ limitations under the License.
 package rabbit_test
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"testing"
@@ -33,8 +32,6 @@ import (
 	_ "knative.dev/eventing-rabbitmq/test/defaultsystem"
 
 	"github.com/n3wscott/rigging/pkg/installer"
-	"github.com/n3wscott/rigging/pkg/lifecycle"
-	"knative.dev/pkg/injection"
 	"knative.dev/pkg/test/helpers"
 )
 
@@ -63,22 +60,6 @@ func TestKoPublish(t *testing.T) {
 		panic(err)
 	}
 	_, _ = fmt.Fprint(os.Stdout, "\n\n")
-}
-
-var (
-	test_context context.Context
-)
-
-func Context() context.Context {
-	return test_context
-}
-
-func TestMain(m *testing.M) {
-	ctx, startInformers := injection.EnableInjectionOrDie(nil, nil) //nolint
-	lifecycle.InjectClients(ctx)
-	test_context = ctx
-	startInformers()
-	os.Exit(m.Run())
 }
 
 // TestSmokeBroker makes sure a Broker goes ready as a RabbitMQ Broker Class.

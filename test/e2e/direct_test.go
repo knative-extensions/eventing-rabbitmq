@@ -76,7 +76,7 @@ func DirectTestBrokerImpl(t *testing.T, brokerName, triggerName string) {
 	}
 
 	// TODO: we want a wait for events for x time in the future.
-	time.Sleep(2 * time.Minute)
+	time.Sleep(1 * time.Minute)
 
 	// TODO: need to validate set events.
 	ctx := Context() // TODO: there needs to be a better way to do this.
