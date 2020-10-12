@@ -31,7 +31,7 @@ spec:
           image: {{ .images.producer }}
           env:
             - name: COUNT
-              value: {{ .producerCount }}
+              value: '{{ .producerCount }}'
 
 ---
 
