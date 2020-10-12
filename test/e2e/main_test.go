@@ -36,7 +36,6 @@ import (
 	"github.com/n3wscott/rigging/pkg/lifecycle"
 	"knative.dev/pkg/injection"
 	"knative.dev/pkg/test/helpers"
-	"knative.dev/pkg/test/logstream/v2"
 )
 
 // This test is more for debugging the ko publish process.
@@ -75,7 +74,6 @@ func Context() context.Context {
 }
 
 func TestMain(m *testing.M) {
-	fmt.Println("EnableInjectionOrDie")
 	ctx, startInformers := injection.EnableInjectionOrDie(nil, nil)
 	lifecycle.InjectClients(ctx)
 	test_context = ctx
@@ -85,18 +83,15 @@ func TestMain(m *testing.M) {
 
 // TestSmokeBroker makes sure a Broker goes ready as a RabbitMQ Broker Class.
 func TestSmokeBroker(t *testing.T) {
-	//t.Cleanup(logstream.Start(Context(), t))
 	SmokeTestBrokerImpl(t, helpers.ObjectNameForTest(t))
 }
 
 // TestSmokeBrokerTrigger makes sure a Broker+Trigger goes ready as a RabbitMQ Broker Class.
 func TestSmokeBrokerTrigger(t *testing.T) {
-	//t.Cleanup(logstream.Start(Context(), t))
 	SmokeTestBrokerTriggerImpl(t, helpers.ObjectNameForTest(t), helpers.ObjectNameForTest(t))
 }
 
 // TestBrokerDirect makes sure a Broker can delivery events to a consumer.
 func TestBrokerDirect(t *testing.T) {
-	t.Cleanup(logstream.Start(Context(), t))
 	DirectTestBrokerImpl(t, helpers.ObjectNameForTest(t), helpers.ObjectNameForTest(t))
 }
