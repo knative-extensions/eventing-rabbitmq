@@ -12,17 +12,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: rabbitmq.com/v1beta1
-kind: RabbitmqCluster
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: rabbitmqc
+  name: failer
   namespace: {{ .namespace }}
 spec:
   replicas: 1
-  resources:
-    requests:
-      cpu: 100m
-      memory: 100Mi
-    limits:
-      cpu: 100m
-      memory: 100Mi
+  selector:
+    matchLabels: &labels
+      app: failer
+  template:
+    metadata:
+      labels: *labels
+    spec:
+      containers:
+        - name: failer
+          image: {{ .images.failer }}
+          env:
+            - name: DEFAULT_RESPONSE_CODE
+              value: "500"
+
+---
+
+kind: Service
+apiVersion: v1
+metadata:
+  name: failer
+  namespace: {{ .namespace }}
+spec:
+  selector:
+    app: failer
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080

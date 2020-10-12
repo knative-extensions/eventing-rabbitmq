@@ -12,17 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: rabbitmq.com/v1beta1
-kind: RabbitmqCluster
+apiVersion: eventing.knative.dev/v1
+kind: Broker
 metadata:
-  name: rabbitmqc
+  name: {{ .brokerName }}
   namespace: {{ .namespace }}
+  annotations:
+    eventing.knative.dev/broker.class: RabbitMQBroker
 spec:
-  replicas: 1
-  resources:
-    requests:
-      cpu: 100m
-      memory: 100Mi
-    limits:
-      cpu: 100m
-      memory: 100Mi
+  config:
+    apiVersion: rabbitmq.com/v1beta1
+    kind: RabbitmqCluster
+    name: rabbitmqc
+  delivery:
+    deadLetterSink:
+      ref:
+        apiVersion: v1
+        kind: Service
+        name: recorder
+        namespace: {{ .namespace }}
+    retry: 5

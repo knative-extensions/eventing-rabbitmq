@@ -12,17 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: rabbitmq.com/v1beta1
-kind: RabbitmqCluster
+apiVersion: eventing.knative.dev/v1
+kind: Trigger
 metadata:
-  name: rabbitmqc
+  name: {{ .triggerName }}
   namespace: {{ .namespace }}
 spec:
-  replicas: 1
-  resources:
-    requests:
-      cpu: 100m
-      memory: 100Mi
-    limits:
-      cpu: 100m
-      memory: 100Mi
+  broker: {{ .brokerName }}
+  subscriber:
+    ref:
+      apiVersion: v1
+      kind: Service
+      name: failer

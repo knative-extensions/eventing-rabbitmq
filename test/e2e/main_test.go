@@ -96,3 +96,8 @@ func TestSmokeBrokerTrigger(t *testing.T) {
 func TestBrokerDirect(t *testing.T) {
 	DirectTestBrokerImpl(t, helpers.ObjectNameForTest(t), helpers.ObjectNameForTest(t))
 }
+
+// TestBrokerDLQ makes sure a Broker delivers events to a DLQ.
+func TestBrokerDLQ(t *testing.T) {
+	BrokerDLQTestImpl(t, helpers.ObjectNameForTest(t), helpers.ObjectNameForTest(t))
+}

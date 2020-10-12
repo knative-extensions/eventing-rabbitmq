@@ -37,19 +37,22 @@ func init() {
 	rigging.RegisterPackage(
 		"knative.dev/eventing-rabbitmq/test/e2e/cmd/recorder",
 		"knative.dev/eventing-rabbitmq/test/e2e/cmd/producer",
+		"knative.dev/eventing-rabbitmq/cmd/failer",
 	)
 }
 
 //
-// producer ---> broker --[trigger]--> recorder
+// producer ---> broker --[trigger]--> failer (always fails)
+//                  |
+//                  +--[DLQ]--> recorder
 //
 
-// DirectTestBrokerImpl makes sure an RabbitMQ Broker delivers events to a single consumer.
-func DirectTestBrokerImpl(t *testing.T, brokerName, triggerName string) {
+// BrokerDLQTestImpl makes sure an RabbitMQ Broker delivers events to a DLQ.
+func BrokerDLQTestImpl(t *testing.T, brokerName, triggerName string) {
 	sendCount := 5
 	opts := []rigging.Option{}
 
-	rig, err := rigging.NewInstall(opts, []string{"rabbitmq", "direct", "recorder"}, map[string]string{
+	rig, err := rigging.NewInstall(opts, []string{"rabbitmq", "dlq", "recorder"}, map[string]string{
 		"brokerName":    brokerName,
 		"triggerName":   triggerName,
 		"producerCount": fmt.Sprint(sendCount),
