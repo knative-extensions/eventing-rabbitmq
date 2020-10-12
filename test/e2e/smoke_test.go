@@ -40,7 +40,7 @@ func SmokeTestBrokerImpl(t *testing.T, brokerName string) {
 	// Uninstall deferred.
 	defer func() {
 		if err := rig.Uninstall(); err != nil {
-			t.Errorf("failed to uninstall, %s", err)
+			t.Error("failed to uninstall, ", err)
 		}
 	}()
 
@@ -76,7 +76,7 @@ func SmokeTestBrokerTriggerImpl(t *testing.T, brokerName, triggerName string) {
 	// Uninstall deferred.
 	defer func() {
 		if err := rig.Uninstall(); err != nil {
-			t.Errorf("failed to uninstall, %s", err)
+			t.Error("failed to uninstall, ", err)
 		}
 	}()
 
@@ -89,7 +89,7 @@ func SmokeTestBrokerTriggerImpl(t *testing.T, brokerName, triggerName string) {
 		}
 		_, err := rig.WaitForReadyOrDone(r, 5*time.Minute)
 		if err != nil {
-			t.Fatalf("failed to wait for ready or done, %s", err)
+			t.Fatal("failed to wait for ready or done, ", err)
 		}
 		// Pass!
 	}
