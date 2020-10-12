@@ -16,7 +16,7 @@ go test ./example/... -tags e2e -v
 Or to just run `TestFoo`:
 
 ```shell
-go test ./example/... -run Foo -tags e2e -v -=count=1
+go test ./example/... -run Foo -tags e2e -v -count=1
 ```
 
 

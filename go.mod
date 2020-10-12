@@ -5,10 +5,8 @@ go 1.14
 require (
 	github.com/NeowayLabs/wabbit v0.0.0-20200409220312-12e68ab5b0c6
 	github.com/aws/aws-sdk-go v1.34.11 // indirect
-	github.com/bmizerany/perks v0.0.0-20141205001514-d9a9656a3a4b // indirect
 	github.com/cloudevents/sdk-go/v2 v2.2.0
 	github.com/containerd/continuity v0.0.0-20200228182428-0f16d7a0959c
-	github.com/dgryski/go-gk v0.0.0-20200319235926-a69029f61654 // indirect
 	github.com/docker/go-connections v0.4.0
 	github.com/fsouza/go-dockerclient v1.6.5 // indirect
 	github.com/go-openapi/spec v0.19.7 // indirect
@@ -19,11 +17,10 @@ require (
 	github.com/influxdata/tdigest v0.0.1 // indirect
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/michaelklishin/rabbit-hole/v2 v2.4.0
-	github.com/n3wscott/rigging v0.0.2-0.20200909204211-040bdb39a369
+	github.com/n3wscott/rigging v0.2.0
 	github.com/onsi/ginkgo v1.14.0 // indirect
 	github.com/prometheus/client_golang v1.7.1 // indirect
 	github.com/streadway/amqp v1.0.0
-	github.com/streadway/quantile v0.0.0-20150917103942-b0c588724d25 // indirect
 	github.com/testcontainers/testcontainers-go v0.7.0
 	github.com/tiago4orion/conjure v0.0.0-20150908101743-93cb30b9d218 // indirect
 	go.uber.org/zap v1.15.0
@@ -36,8 +33,8 @@ require (
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/code-generator v0.18.8
 	k8s.io/kube-openapi v0.0.0-20200410145947-bcb3869e6f29
-	knative.dev/eventing v0.18.1-0.20201009013021-d37dbc88e6fd
-	knative.dev/pkg v0.0.0-20201009175121-3c4df8c27293
+	knative.dev/eventing v0.18.1-0.20201012172617-7d981f818ef0
+	knative.dev/pkg v0.0.0-20201012163217-54ad6c6d39a7
 	knative.dev/test-infra v0.0.0-20201009204121-322fb08edae7
 )
 
@@ -65,7 +62,4 @@ replace (
 	k8s.io/apiserver => k8s.io/apiserver v0.18.8
 	k8s.io/client-go => k8s.io/client-go v0.18.8
 	k8s.io/cloud-provider => k8s.io/cloud-provider v0.18.8
-
-	// DO NOT SUBMIT
-	knative.dev/pkg => ../pkg
 )

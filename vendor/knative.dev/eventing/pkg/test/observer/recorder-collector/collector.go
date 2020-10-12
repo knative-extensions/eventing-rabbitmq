@@ -19,7 +19,6 @@ package recorder_collector
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	recorder_vent "knative.dev/eventing/pkg/test/observer/recorder-vent"
 
@@ -68,7 +67,7 @@ func (c *collector) List(ctx context.Context, from duckv1.KReference, filters ..
 		case recorder_vent.EventReason:
 			ob := observer.Observed{}
 			if err := json.Unmarshal([]byte(v.Message), &ob); err != nil {
-				return nil, fmt.Errorf("failed to nnmarshal %q: %v", v.Message, err)
+				return nil, err
 			}
 			if filters != nil {
 				skip := false
