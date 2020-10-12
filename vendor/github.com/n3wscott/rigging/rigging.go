@@ -1,9 +1,9 @@
 package rigging
 
 import (
+	"context"
 	"errors"
 	"fmt"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"log"
 	"path/filepath"
 	"runtime"
@@ -13,10 +13,11 @@ import (
 	"github.com/n3wscott/rigging/pkg/installer"
 	"github.com/n3wscott/rigging/pkg/lifecycle"
 	yaml "github.com/n3wscott/rigging/pkg/manifest"
+	"github.com/n3wscott/rigging/pkg/namers"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
-	kntest "knative.dev/pkg/test"
-	"knative.dev/pkg/test/helpers"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"knative.dev/pkg/test/logstream/v2"
 )
 
 type Rigging interface {
@@ -127,6 +128,9 @@ type riggingImpl struct {
 	name              string
 	images            map[string]string
 
+	ls       logstream.Source
+	lsCancel logstream.Canceler
+
 	client   *lifecycle.Client
 	manifest yaml.Manifest
 }
@@ -145,6 +149,14 @@ func (r *riggingImpl) Install(dirs []string, config map[string]string) error {
 	if err := r.createEnvironment(); err != nil {
 		return err
 	}
+
+	// 1.1 Create a logstream for the rig.
+
+	// TODO: re-enable this when upstream logstream is back in working order.
+
+	r.ls = logstream.FromNamespace(context.Background(), r.client.Kube, r.Namespace())
+	var err error
+	r.lsCancel, err = r.ls.StartStream("rig", r.logstreamPodLogs)
 
 	// 2. Produce all images registered.
 
@@ -183,16 +195,17 @@ func (r *riggingImpl) Install(dirs []string, config map[string]string) error {
 	return nil
 }
 
+func (r *riggingImpl) logstreamPodLogs(foo string, bar ...interface{}) {
+	log.Println("don't know what to do with: ", foo, bar)
+}
+
 func (r *riggingImpl) createEnvironment() error {
 	if r.namespace == "" {
-		baseName := helpers.AppendRandomString(r.name)
-		r.namespace = helpers.MakeK8sNamePrefix(baseName)
+		baseName := namers.AppendRandomString(r.name)
+		r.namespace = namers.MakeK8sNamePrefix(baseName)
 	}
 
-	client, err := lifecycle.NewClient(
-		kntest.Flags.Kubeconfig,
-		kntest.Flags.Cluster,
-		r.namespace)
+	client, err := lifecycle.NewClient(r.Namespace())
 	if err != nil {
 		return fmt.Errorf("could not initialize clients: %v", err)
 	}
@@ -237,6 +250,11 @@ func (r *riggingImpl) Uninstall() error {
 	// X. Delete yaml.
 	if err := r.manifest.DeleteAll(); err != nil {
 		return err
+	}
+
+	// Stop the logstream
+	if r.lsCancel != nil {
+		r.lsCancel()
 	}
 
 	// Just chill for tick.

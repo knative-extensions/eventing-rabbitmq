@@ -17,7 +17,7 @@ require (
 	github.com/influxdata/tdigest v0.0.1 // indirect
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/michaelklishin/rabbit-hole/v2 v2.4.0
-	github.com/n3wscott/rigging v0.0.2-0.20200909204211-040bdb39a369
+	github.com/n3wscott/rigging v0.2.0
 	github.com/onsi/ginkgo v1.14.0 // indirect
 	github.com/prometheus/client_golang v1.7.1 // indirect
 	github.com/streadway/amqp v1.0.0
@@ -33,8 +33,8 @@ require (
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/code-generator v0.18.8
 	k8s.io/kube-openapi v0.0.0-20200410145947-bcb3869e6f29
-	knative.dev/eventing v0.18.1-0.20201012120417-1ef177f592f6
-	knative.dev/pkg v0.0.0-20201012033616-18350095f500
+	knative.dev/eventing v0.18.1-0.20201012172617-7d981f818ef0
+	knative.dev/pkg v0.0.0-20201012163217-54ad6c6d39a7
 	knative.dev/test-infra v0.0.0-20201009204121-322fb08edae7
 )
 

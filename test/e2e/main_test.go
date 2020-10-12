@@ -19,12 +19,17 @@ limitations under the License.
 package rabbit_test
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"testing"
 	"text/template"
 
+	"github.com/n3wscott/rigging/pkg/lifecycle"
+	"knative.dev/pkg/injection"
+
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+
 	// For our e2e testing, we want this linked first so that our
 	// system namespace environment variable is defaulted prior to
 	// logstream initialization.
@@ -32,7 +37,6 @@ import (
 
 	"github.com/n3wscott/rigging/pkg/installer"
 	"knative.dev/pkg/test/helpers"
-	"knative.dev/pkg/test/logstream"
 )
 
 // This test is more for debugging the ko publish process.
@@ -44,7 +48,9 @@ func TestKoPublish(t *testing.T) {
 
 	templateString := `
 	rigging.WithImages(map[string]string{
-		{{ range $key, $value := . }}"{{ $key }}": "{{ $value }}",{{ end }}
+{{ range $key, $value := . }}
+		"{{ $key }}": "{{ $value }}",
+{{ end }}
 	}),`
 
 	tp := template.New("t")
@@ -60,20 +66,33 @@ func TestKoPublish(t *testing.T) {
 	_, _ = fmt.Fprint(os.Stdout, "\n\n")
 }
 
+var (
+	test_context context.Context
+)
+
+func Context() context.Context {
+	return test_context
+}
+
+func TestMain(m *testing.M) {
+	ctx, startInformers := injection.EnableInjectionOrDie(nil, nil) //nolint
+	lifecycle.InjectClients(ctx)
+	test_context = ctx
+	startInformers()
+	os.Exit(m.Run())
+}
+
 // TestSmokeBroker makes sure a Broker goes ready as a RabbitMQ Broker Class.
 func TestSmokeBroker(t *testing.T) {
-	t.Cleanup(logstream.Start(t))
 	SmokeTestBrokerImpl(t, helpers.ObjectNameForTest(t))
 }
 
 // TestSmokeBrokerTrigger makes sure a Broker+Trigger goes ready as a RabbitMQ Broker Class.
 func TestSmokeBrokerTrigger(t *testing.T) {
-	t.Cleanup(logstream.Start(t))
 	SmokeTestBrokerTriggerImpl(t, helpers.ObjectNameForTest(t), helpers.ObjectNameForTest(t))
 }
 
 // TestBrokerDirect makes sure a Broker can delivery events to a consumer.
 func TestBrokerDirect(t *testing.T) {
-	t.Cleanup(logstream.Start(t))
 	DirectTestBrokerImpl(t, helpers.ObjectNameForTest(t), helpers.ObjectNameForTest(t))
 }

@@ -1,5 +1,7 @@
+// +build !e2e
+
 /*
-Copyright 2019 The Knative Authors
+Copyright 2020 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,16 +16,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package logstream
+package rabbit_test
 
-import "knative.dev/pkg/test"
+import (
+	"context"
+)
 
-type null struct{}
-
-var _ streamer = (*null)(nil)
-
-// Start implements streamer
-func (*null) Start(t test.TLegacy) Canceler {
-	t.Log("logstream was requested, but SYSTEM_NAMESPACE was unset.")
-	return func() {}
+func Context() context.Context {
+	// no-op
+	return context.Background()
 }

@@ -67,7 +67,7 @@ func (f *failer) gotEvent(inputEvent event.Event) (*event.Event, error) {
 	rc := f.defaultResponseCode
 	err := inputEvent.DataAs(data)
 	if err != nil {
-		log.Printf("Got error while unmarshalling data, using default response code: %s\n", err.Error())
+		log.Println("Got error while unmarshalling data, using default response code: ", err.Error())
 	} else if data.ResponseCode != 0 {
 		rc = data.ResponseCode
 		log.Printf("using response code: %d\n", rc)
@@ -78,7 +78,7 @@ func (f *failer) gotEvent(inputEvent event.Event) (*event.Event, error) {
 
 func main() {
 	if err := envconfig.Process("", &env); err != nil {
-		log.Printf("[ERROR] Failed to process env var: %s", err)
+		log.Println("[ERROR] Failed to process env var: ", err)
 		os.Exit(1)
 	}
 
@@ -88,6 +88,6 @@ func main() {
 	}
 
 	f := NewFailer(env.DefaultResponseCode)
-	log.Printf("listening on 8080, default responsecode %d\n", env.DefaultResponseCode)
+	log.Println("listening on 8080, default response code ", env.DefaultResponseCode)
 	log.Fatalf("failed to start receiver: %s\n", c.StartReceiver(context.Background(), f.gotEvent))
 }

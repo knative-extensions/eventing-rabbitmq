@@ -15,40 +15,39 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: recorder
+  name: producer
   namespace: {{ .namespace }}
 spec:
   replicas: 1
   selector:
     matchLabels: &labels
-      app: recorder
+      app: producer
   template:
     metadata:
       labels: *labels
     spec:
-      serviceAccount: recorder
       containers:
-        - name: recorder
-          image: {{ .images.recorder }}
+        - name: producer
+          image: {{ .images.producer }}
           env:
-            - name: SYSTEM_NAMESPACE
-              value: {{ .namespace }}
-            - name: OBSERVER_NAME
-              value: recorder-{{ .namespace }}
-            - name: K8S_EVENT_SINK
-              value: '{"apiVersion": "v1", "kind": "Namespace", "name": "{{ .namespace }}"}'
+            - name: COUNT
+              value: '{{ .producerCount }}'
 
 ---
 
-kind: Service
-apiVersion: v1
+apiVersion: sources.knative.dev/v1beta1
+kind: SinkBinding
 metadata:
-  name: recorder
+  name: bind-producer
   namespace: {{ .namespace }}
 spec:
-  selector:
-    app: recorder
-  ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 8080
+  subject:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: producer
+
+  sink:
+    ref:
+      apiVersion: eventing.knative.dev/v1
+      kind: Broker
+      name: {{ .brokerName }}

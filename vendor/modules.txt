@@ -296,13 +296,14 @@ github.com/michaelklishin/rabbit-hole/v2
 github.com/modern-go/concurrent
 # github.com/modern-go/reflect2 v1.0.1
 github.com/modern-go/reflect2
-# github.com/n3wscott/rigging v0.0.2-0.20200909204211-040bdb39a369
+# github.com/n3wscott/rigging v0.2.0
 ## explicit
 github.com/n3wscott/rigging
 github.com/n3wscott/rigging/pkg/images
 github.com/n3wscott/rigging/pkg/installer
 github.com/n3wscott/rigging/pkg/lifecycle
 github.com/n3wscott/rigging/pkg/manifest
+github.com/n3wscott/rigging/pkg/namers
 # github.com/onsi/ginkgo v1.14.0
 ## explicit
 # github.com/opencontainers/go-digest v1.0.0-rc1
@@ -1073,7 +1074,7 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/eventing v0.18.1-0.20201012120417-1ef177f592f6
+# knative.dev/eventing v0.18.1-0.20201012172617-7d981f818ef0
 ## explicit
 knative.dev/eventing/pkg/adapter/v2
 knative.dev/eventing/pkg/adapter/v2/util/crstatusevent
@@ -1169,6 +1170,7 @@ knative.dev/eventing/pkg/reconciler/names
 knative.dev/eventing/pkg/reconciler/testing
 knative.dev/eventing/pkg/reconciler/testing/v1
 knative.dev/eventing/pkg/test/observer
+knative.dev/eventing/pkg/test/observer/recorder-collector
 knative.dev/eventing/pkg/test/observer/recorder-vent
 knative.dev/eventing/pkg/test/observer/writer-vent
 knative.dev/eventing/pkg/tracing
@@ -1198,7 +1200,7 @@ knative.dev/eventing/test/test_images/print
 knative.dev/eventing/test/test_images/recordevents
 knative.dev/eventing/test/test_images/sequencestepper
 knative.dev/eventing/test/test_images/transformevents
-# knative.dev/pkg v0.0.0-20201012033616-18350095f500
+# knative.dev/pkg v0.0.0-20201012163217-54ad6c6d39a7
 ## explicit
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
@@ -1273,7 +1275,7 @@ knative.dev/pkg/test/ghutil
 knative.dev/pkg/test/helpers
 knative.dev/pkg/test/ingress
 knative.dev/pkg/test/logging
-knative.dev/pkg/test/logstream
+knative.dev/pkg/test/logstream/v2
 knative.dev/pkg/test/mako
 knative.dev/pkg/test/mako/alerter
 knative.dev/pkg/test/mako/alerter/github
