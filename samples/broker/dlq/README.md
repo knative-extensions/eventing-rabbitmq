@@ -206,7 +206,7 @@ EOF
 ### Create Failer
 
 ```sh
-ko apply -n dlq-demo -f ./config/failer
+kubectl apply -f 'https://storage.googleapis.com/knative-nightly/eventing-rabbitmq/latest/failer.yaml'
 ```
 
 ### Check the results
@@ -215,29 +215,33 @@ Look at the failer pod logs, you see it's receiving both 200/500 responses.
 
 ```sh
 vaikas-a01:wabbit vaikas$ kubectl -n dlq-demo -l='serving.knative.dev/service=failer' logs -c user-container
-2020/10/02 11:35:00 using response code: 500
-2020/10/02 11:35:00 using response code: 200
-2020/10/02 11:36:00 using response code: 200
-2020/10/02 11:36:00 using response code: 500
-2020/10/02 11:37:00 using response code: 200
-2020/10/02 11:37:00 using response code: 500
-2020/10/02 11:38:00 using response code: 200
-2020/10/02 11:38:00 using response code: 500
-2020/10/02 11:39:00 using response code: 500
+2020/10/06 10:35:00 using response code: 200
+2020/10/06 10:35:00 using response code: 500
+2020/10/06 10:35:00 using response code: 500
+2020/10/06 10:35:00 using response code: 500
+2020/10/06 10:35:01 using response code: 500
+2020/10/06 10:35:01 using response code: 500
+2020/10/06 10:35:03 using response code: 500
 ```
 
-You see there are both 200 / 500 events there.
+You see there are both 200 / 500 events there. And more importantly, you can see
+that 200 is only sent once to the failer since it's processed correctly.
+However, the 500 is sent a total of 6 times because we have specified the retry
+of 5 (original, plus 5 retries for a total of 6 log entries).
 
 However the event-display (the Dead Letter Sink) only sees the failed events
 with the response code set to 500.
 
 ```sh
 vaikas-a01:wabbit vaikas$ kubectl -n dlq-demo -l='serving.knative.dev/service=event-display' logs -c user-container
+☁️  cloudevents.Event
+Validation: valid
+Context Attributes,
   specversion: 1.0
   type: dev.knative.sources.ping
   source: /apis/v1/namespaces/dlq-demo/pingsources/ping-source-2
-  id: 11bb6bd0-c1df-4181-9139-b02126fde1a7
-  time: 2020-10-02T11:43:00.053647633Z
+  id: 166e89ff-19c7-4e9a-a593-9ed30dca0d7d
+  time: 2020-10-06T10:35:00.307531386Z
   datacontenttype: application/json
 Data,
   {

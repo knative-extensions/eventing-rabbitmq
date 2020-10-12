@@ -86,8 +86,6 @@ github.com/aws/aws-sdk-go/service/sts/stsiface
 github.com/beorn7/perks/quantile
 # github.com/blang/semver v3.5.1+incompatible
 github.com/blang/semver
-# github.com/bmizerany/perks v0.0.0-20141205001514-d9a9656a3a4b
-## explicit
 # github.com/cenkalti/backoff v2.2.1+incompatible
 github.com/cenkalti/backoff
 # github.com/census-instrumentation/opencensus-proto v0.3.0
@@ -97,7 +95,7 @@ github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1
 github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1
 github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1
 github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1
-# github.com/cloudevents/sdk-go/v2 v2.2.0
+# github.com/cloudevents/sdk-go/v2 v2.2.0 => github.com/cloudevents/sdk-go/v2 v2.3.1-0.20201008104108-58f826d67d91
 ## explicit
 github.com/cloudevents/sdk-go/v2
 github.com/cloudevents/sdk-go/v2/binding
@@ -128,8 +126,6 @@ github.com/containerd/continuity/syscallx
 github.com/containerd/continuity/sysx
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
-# github.com/dgryski/go-gk v0.0.0-20200319235926-a69029f61654
-## explicit
 # github.com/docker/distribution v2.7.1+incompatible
 github.com/docker/distribution/digestset
 github.com/docker/distribution/reference
@@ -190,7 +186,7 @@ github.com/go-openapi/spec
 github.com/go-openapi/swag
 # github.com/go-redis/redis v6.15.9+incompatible
 ## explicit
-# github.com/gobuffalo/envy v1.6.5
+# github.com/gobuffalo/envy v1.7.1
 github.com/gobuffalo/envy
 # github.com/gogo/protobuf v1.3.1
 github.com/gogo/protobuf/proto
@@ -246,7 +242,7 @@ github.com/google/mako/spec/proto/mako_go_proto
 github.com/google/uuid
 # github.com/googleapis/gax-go/v2 v2.0.5
 github.com/googleapis/gax-go/v2
-# github.com/googleapis/gnostic v0.3.1
+# github.com/googleapis/gnostic v0.4.0
 github.com/googleapis/gnostic/OpenAPIv2
 github.com/googleapis/gnostic/compiler
 github.com/googleapis/gnostic/extensions
@@ -300,14 +296,13 @@ github.com/michaelklishin/rabbit-hole/v2
 github.com/modern-go/concurrent
 # github.com/modern-go/reflect2 v1.0.1
 github.com/modern-go/reflect2
-# github.com/n3wscott/rigging v0.0.2-0.20200909204211-040bdb39a369 => ../../github.com/n3wscott/rigging
+# github.com/n3wscott/rigging v0.0.2-0.20200909204211-040bdb39a369
 ## explicit
 github.com/n3wscott/rigging
 github.com/n3wscott/rigging/pkg/images
 github.com/n3wscott/rigging/pkg/installer
 github.com/n3wscott/rigging/pkg/lifecycle
 github.com/n3wscott/rigging/pkg/manifest
-github.com/n3wscott/rigging/pkg/namers
 # github.com/onsi/ginkgo v1.14.0
 ## explicit
 # github.com/opencontainers/go-digest v1.0.0-rc1
@@ -358,7 +353,11 @@ github.com/rickb777/plural
 github.com/robfig/cron/v3
 # github.com/rogpeppe/fastuuid v1.2.0
 github.com/rogpeppe/fastuuid
-# github.com/sergi/go-diff v1.0.0
+# github.com/rogpeppe/go-internal v1.5.2
+github.com/rogpeppe/go-internal/modfile
+github.com/rogpeppe/go-internal/module
+github.com/rogpeppe/go-internal/semver
+# github.com/sergi/go-diff v1.1.0
 github.com/sergi/go-diff/diffmatchpatch
 # github.com/sirupsen/logrus v1.6.0
 github.com/sirupsen/logrus
@@ -367,8 +366,6 @@ github.com/spf13/pflag
 # github.com/streadway/amqp v1.0.0
 ## explicit
 github.com/streadway/amqp
-# github.com/streadway/quantile v0.0.0-20150917103942-b0c588724d25
-## explicit
 # github.com/stretchr/testify v1.6.1
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
@@ -649,8 +646,7 @@ gopkg.in/alecthomas/kingpin.v2
 gopkg.in/inf.v0
 # gopkg.in/yaml.v2 v2.3.0
 gopkg.in/yaml.v2
-# gopkg.in/yaml.v3 v3.0.0-20200601152816-913338de1bd2
-## explicit
+# gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
 gopkg.in/yaml.v3
 # gotest.tools v2.2.0+incompatible
 ## explicit
@@ -1077,7 +1073,7 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/eventing v0.18.1-0.20200930211729-b3184ba9dcd0
+# knative.dev/eventing v0.18.1-0.20201009013021-d37dbc88e6fd
 ## explicit
 knative.dev/eventing/pkg/adapter/v2
 knative.dev/eventing/pkg/adapter/v2/util/crstatusevent
@@ -1173,7 +1169,6 @@ knative.dev/eventing/pkg/reconciler/names
 knative.dev/eventing/pkg/reconciler/testing
 knative.dev/eventing/pkg/reconciler/testing/v1
 knative.dev/eventing/pkg/test/observer
-knative.dev/eventing/pkg/test/observer/recorder-collector
 knative.dev/eventing/pkg/test/observer/recorder-vent
 knative.dev/eventing/pkg/test/observer/writer-vent
 knative.dev/eventing/pkg/tracing
@@ -1184,6 +1179,8 @@ knative.dev/eventing/test/lib/dropevents/dropeventsfibonacci
 knative.dev/eventing/test/lib/dropevents/dropeventsfirst
 knative.dev/eventing/test/lib/duck
 knative.dev/eventing/test/lib/recordevents
+knative.dev/eventing/test/lib/recordevents/observer
+knative.dev/eventing/test/lib/recordevents/recorder_vent
 knative.dev/eventing/test/lib/resources
 knative.dev/eventing/test/lib/sender
 knative.dev/eventing/test/performance/infra
@@ -1201,7 +1198,7 @@ knative.dev/eventing/test/test_images/print
 knative.dev/eventing/test/test_images/recordevents
 knative.dev/eventing/test/test_images/sequencestepper
 knative.dev/eventing/test/test_images/transformevents
-# knative.dev/pkg v0.0.0-20200930201529-29e3385d1b8e => ../pkg
+# knative.dev/pkg v0.0.0-20201009175121-3c4df8c27293
 ## explicit
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
@@ -1300,7 +1297,7 @@ knative.dev/pkg/webhook/configmaps
 knative.dev/pkg/webhook/resourcesemantics
 knative.dev/pkg/webhook/resourcesemantics/defaulting
 knative.dev/pkg/webhook/resourcesemantics/validation
-# knative.dev/test-infra v0.0.0-20201002164834-8c07ff018549
+# knative.dev/test-infra v0.0.0-20201009204121-322fb08edae7
 ## explicit
 knative.dev/test-infra/scripts
 # sigs.k8s.io/structured-merge-diff/v3 v3.0.1-0.20200706213357-43c19bbb7fba
@@ -1308,9 +1305,9 @@ sigs.k8s.io/structured-merge-diff/v3/value
 # sigs.k8s.io/yaml v1.2.0
 sigs.k8s.io/yaml
 # github.com/NeowayLabs/wabbit => github.com/vaikas/wabbit v0.0.0-20201002085521-b5b22698ecc7
+# github.com/cloudevents/sdk-go/v2 => github.com/cloudevents/sdk-go/v2 v2.3.1-0.20201008104108-58f826d67d91
 # github.com/docker/docker => github.com/docker/engine v0.0.0-20190717161051-705d9623b7c1
 # github.com/google/go-github/v32 => github.com/google/go-github/v32 v32.0.1-0.20200624231906-3d244d3d496e
-# github.com/n3wscott/rigging => ../../github.com/n3wscott/rigging
 # github.com/operator-framework/operator-sdk => github.com/operator-framework/operator-sdk v0.11.0
 # github.com/prometheus/client_golang => github.com/prometheus/client_golang v0.9.2
 # k8s.io/api => k8s.io/api v0.18.8
@@ -1319,4 +1316,3 @@ sigs.k8s.io/yaml
 # k8s.io/apiserver => k8s.io/apiserver v0.18.8
 # k8s.io/client-go => k8s.io/client-go v0.18.8
 # k8s.io/cloud-provider => k8s.io/cloud-provider v0.18.8
-# knative.dev/pkg => ../pkg
