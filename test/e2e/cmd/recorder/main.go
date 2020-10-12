@@ -17,8 +17,9 @@ package main
 
 import (
 	"flag"
-	"knative.dev/pkg/injection"
 	"os"
+
+	"knative.dev/pkg/injection"
 
 	_ "knative.dev/pkg/system/testing"
 
