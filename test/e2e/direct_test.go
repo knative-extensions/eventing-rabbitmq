@@ -55,7 +55,7 @@ func DirectTestBrokerImpl(t *testing.T, brokerName, triggerName string) {
 		"producerCount": fmt.Sprint(sendCount),
 	})
 	if err != nil {
-		t.Fatalf("failed to create rig, %s", err)
+		t.Fatal("failed to create rig, ", err)
 	}
 	t.Logf("Created a new testing rig at namespace %s.", rig.Namespace())
 

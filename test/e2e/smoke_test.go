@@ -33,7 +33,7 @@ func SmokeTestBrokerImpl(t *testing.T, brokerName string) {
 		"brokerName": brokerName,
 	})
 	if err != nil {
-		t.Fatalf("failed to create rig, %s", err)
+		t.Fatal("failed to create rig, ", err)
 	}
 	t.Logf("Created a new testing rig at namespace %s.", rig.Namespace())
 
@@ -53,7 +53,7 @@ func SmokeTestBrokerImpl(t *testing.T, brokerName string) {
 		}
 		_, err := rig.WaitForReadyOrDone(r, 5*time.Minute)
 		if err != nil {
-			t.Fatalf("failed to wait for ready or done, %s", err)
+			t.Fatal("failed to wait for ready or done, ", err)
 		}
 		// Pass!
 	}
@@ -69,7 +69,7 @@ func SmokeTestBrokerTriggerImpl(t *testing.T, brokerName, triggerName string) {
 		"triggerName": triggerName,
 	})
 	if err != nil {
-		t.Fatalf("failed to create rig, %s", err)
+		t.Fatal("failed to create rig, ", err)
 	}
 	t.Logf("Created a new testing rig at namespace %s.", rig.Namespace())
 
