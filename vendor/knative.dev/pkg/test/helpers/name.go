@@ -23,6 +23,7 @@ import (
 	"unicode"
 
 	"knative.dev/pkg/kmeta"
+	"knative.dev/pkg/test"
 )
 
 const (
@@ -41,17 +42,13 @@ func init() {
 	rand.Seed(seed)
 }
 
-type named interface {
-	Name() string
-}
-
 // ObjectPrefixForTest returns the name prefix for this test's random names.
-func ObjectPrefixForTest(t named) string {
+func ObjectPrefixForTest(t test.T) string {
 	return MakeK8sNamePrefix(strings.TrimPrefix(t.Name(), testNamePrefix))
 }
 
 // ObjectNameForTest generates a random object name based on the test name.
-func ObjectNameForTest(t named) string {
+func ObjectNameForTest(t test.T) string {
 	return kmeta.ChildName(ObjectPrefixForTest(t), string(sep)+RandomString())
 }
 

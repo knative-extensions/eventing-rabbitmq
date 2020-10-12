@@ -3,7 +3,7 @@ package rigging
 import (
 	"errors"
 	"fmt"
-	"github.com/n3wscott/rigging/pkg/namers"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"log"
 	"path/filepath"
 	"runtime"
@@ -15,7 +15,8 @@ import (
 	yaml "github.com/n3wscott/rigging/pkg/manifest"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	kntest "knative.dev/pkg/test"
+	"knative.dev/pkg/test/helpers"
 )
 
 type Rigging interface {
@@ -184,11 +185,14 @@ func (r *riggingImpl) Install(dirs []string, config map[string]string) error {
 
 func (r *riggingImpl) createEnvironment() error {
 	if r.namespace == "" {
-		baseName := namers.AppendRandomString(r.name)
-		r.namespace = namers.MakeK8sNamePrefix(baseName)
+		baseName := helpers.AppendRandomString(r.name)
+		r.namespace = helpers.MakeK8sNamePrefix(baseName)
 	}
 
-	client, err := lifecycle.NewClient(r.Namespace())
+	client, err := lifecycle.NewClient(
+		kntest.Flags.Kubeconfig,
+		kntest.Flags.Cluster,
+		r.namespace)
 	if err != nil {
 		return fmt.Errorf("could not initialize clients: %v", err)
 	}

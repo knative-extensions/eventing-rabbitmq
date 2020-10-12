@@ -307,7 +307,6 @@ github.com/n3wscott/rigging/pkg/images
 github.com/n3wscott/rigging/pkg/installer
 github.com/n3wscott/rigging/pkg/lifecycle
 github.com/n3wscott/rigging/pkg/manifest
-github.com/n3wscott/rigging/pkg/namers
 # github.com/onsi/ginkgo v1.14.0
 ## explicit
 # github.com/opencontainers/go-digest v1.0.0-rc1
@@ -358,7 +357,7 @@ github.com/rickb777/plural
 github.com/robfig/cron/v3
 # github.com/rogpeppe/fastuuid v1.2.0
 github.com/rogpeppe/fastuuid
-# github.com/sergi/go-diff v1.0.0
+# github.com/sergi/go-diff v1.1.0
 github.com/sergi/go-diff/diffmatchpatch
 # github.com/sirupsen/logrus v1.6.0
 github.com/sirupsen/logrus
@@ -1202,7 +1201,7 @@ knative.dev/eventing/test/test_images/print
 knative.dev/eventing/test/test_images/recordevents
 knative.dev/eventing/test/test_images/sequencestepper
 knative.dev/eventing/test/test_images/transformevents
-# knative.dev/pkg v0.0.0-20201009175121-3c4df8c27293
+# knative.dev/pkg v0.0.0-20201009175121-3c4df8c27293 => ../pkg
 ## explicit
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck

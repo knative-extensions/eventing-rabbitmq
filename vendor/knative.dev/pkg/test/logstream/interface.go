@@ -17,7 +17,6 @@ limitations under the License.
 package logstream
 
 import (
-	"context"
 	"os"
 	"sync"
 
@@ -32,7 +31,7 @@ type Canceler func()
 // Start begins streaming the logs from system components with a `key:` matching
 // `test.ObjectNameForTest(t)` to `t.Log`.  It returns a Canceler, which must
 // be called before the test completes.
-func Start(ctx context.Context, t test.TLegacy) Canceler {
+func Start(t test.TLegacy) Canceler {
 	// Do this lazily to make import ordering less important.
 	once.Do(func() {
 		if ns := os.Getenv(system.NamespaceEnvKey); ns != "" {
@@ -44,11 +43,11 @@ func Start(ctx context.Context, t test.TLegacy) Canceler {
 		}
 	})
 
-	return stream.Start(ctx, t)
+	return stream.Start(t)
 }
 
 type streamer interface {
-	Start(ctx context.Context, t test.TLegacy) Canceler
+	Start(t test.TLegacy) Canceler
 }
 
 var (
