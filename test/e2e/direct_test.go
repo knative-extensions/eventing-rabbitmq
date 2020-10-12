@@ -56,11 +56,11 @@ func DirectTestBrokerImpl(t *testing.T, brokerName, triggerName string) {
 	t.Logf("Created a new testing rig at namespace %s.", rig.Namespace())
 
 	// Uninstall deferred.
-	defer func() {
-		if err := rig.Uninstall(); err != nil {
-			t.Errorf("failed to uninstall, %s", err)
-		}
-	}()
+	//defer func() {
+	//	if err := rig.Uninstall(); err != nil {
+	//		t.Errorf("failed to uninstall, %s", err)
+	//	}
+	//}()
 
 	refs := rig.Objects()
 	for _, r := range refs {
@@ -75,6 +75,7 @@ func DirectTestBrokerImpl(t *testing.T, brokerName, triggerName string) {
 		}
 	}
 
+	// TODO: we want a wait for events for x time in the future.
 	time.Sleep(2 * time.Minute)
 
 	// TODO: need to validate set events.
