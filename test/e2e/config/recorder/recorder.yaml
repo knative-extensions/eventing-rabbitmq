@@ -33,7 +33,7 @@ spec:
           env:
             - name: SYSTEM_NAMESPACE
               value: {{ .namespace }}
-            - name: AGENT_NAME
+            - name: OBSERVER_NAME
               value: recorder-{{ .namespace }}
             - name: K8S_EVENT_SINK
               value: '{"apiVersion": "v1", "kind": "Namespace", "name": "{{ .namespace }}"}'
