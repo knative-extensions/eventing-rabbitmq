@@ -75,7 +75,7 @@ func DirectTestBrokerImpl(t *testing.T, brokerName, triggerName string) {
 		}
 	}
 
-	time.Sleep(10 * time.Second)
+	time.Sleep(2 * time.Minute)
 
 	// TODO: need to validate set events.
 	ctx := Context() // TODO: there needs to be a better way to do this.
