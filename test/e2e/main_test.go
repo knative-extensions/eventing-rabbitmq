@@ -74,7 +74,7 @@ func Context() context.Context {
 }
 
 func TestMain(m *testing.M) {
-	ctx, startInformers := injection.EnableInjectionOrDie(nil, nil)
+	ctx, startInformers := injection.EnableInjectionOrDie(nil, nil) //nolint
 	lifecycle.InjectClients(ctx)
 	test_context = ctx
 	startInformers()

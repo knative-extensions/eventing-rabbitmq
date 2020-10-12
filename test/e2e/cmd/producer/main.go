@@ -36,19 +36,19 @@ type envConfig struct {
 func main() {
 	var env envConfig
 	if err := envconfig.Process("", &env); err != nil {
-		log.Printf("[ERROR] Failed to process env var: %s", err)
+		log.Print("[ERROR] Failed to process env var: ", err)
 		os.Exit(1)
 	}
 	ctx := cloudevents.ContextWithTarget(context.Background(), env.Sink)
 
 	p, err := cloudevents.NewHTTP()
 	if err != nil {
-		log.Fatalf("failed to create protocol: %s", err.Error())
+		log.Fatal("failed to create protocol: ", err.Error())
 	}
 
 	c, err := cloudevents.NewClient(p, cloudevents.WithTimeNow(), cloudevents.WithUUIDs())
 	if err != nil {
-		log.Fatalf("failed to create client, %v", err)
+		log.Fatal("failed to create client, ", err)
 	}
 
 	send(cloudevents.ContextWithRetriesExponentialBackoff(ctx, 10*time.Millisecond, 10), c, env.Count)
@@ -69,11 +69,11 @@ func send(ctx context.Context, c cloudevents.Client, count int) {
 		})
 
 		if result := c.Send(ctx, e); cloudevents.IsUndelivered(result) {
-			log.Printf("Failed to send: %s", result.Error())
+			log.Print("Failed to send: ", result.Error())
 		} else if cloudevents.IsACK(result) {
-			log.Printf("Sent: %d", i)
+			log.Print("Sent: ", i)
 		} else if cloudevents.IsNACK(result) {
-			log.Printf("Sent but not accepted: %s", result.Error())
+			log.Print("Sent but not accepted: ", result.Error())
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
