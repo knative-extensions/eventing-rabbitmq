@@ -21,11 +21,12 @@ package rabbit_test
 import (
 	"context"
 	"fmt"
-	"github.com/n3wscott/rigging/pkg/lifecycle"
-	"knative.dev/pkg/injection"
 	"os"
 	"testing"
 	"text/template"
+
+	"github.com/n3wscott/rigging/pkg/lifecycle"
+	"knative.dev/pkg/injection"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
