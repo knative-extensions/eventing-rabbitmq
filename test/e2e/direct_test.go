@@ -71,7 +71,7 @@ func DirectTestBrokerImpl(t *testing.T, brokerName, triggerName string) {
 		}
 		_, err := rig.WaitForReadyOrDone(r, 5*time.Minute)
 		if err != nil {
-			t.Fatalf("failed to wait for ready or done, %s", err)
+			t.Fatal("failed to wait for ready or done, ", err)
 		}
 	}
 
