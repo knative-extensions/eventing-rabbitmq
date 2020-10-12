@@ -17,6 +17,7 @@ package main
 
 import (
 	"flag"
+	"knative.dev/pkg/injection"
 	"os"
 
 	_ "knative.dev/pkg/system/testing"
@@ -24,12 +25,11 @@ import (
 	"knative.dev/eventing/pkg/test/observer"
 	recorder_vent "knative.dev/eventing/pkg/test/observer/recorder-vent"
 	writer_vent "knative.dev/eventing/pkg/test/observer/writer-vent"
-	"knative.dev/pkg/injection/sharedmain"
 )
 
 func main() {
 	flag.Parse()
-	ctx := sharedmain.EnableInjectionOrDie(nil, nil) //nolint
+	ctx, _ := injection.EnableInjectionOrDie(nil, nil) //nolint
 
 	obs := observer.New(
 		writer_vent.NewEventLog(ctx, os.Stdout),

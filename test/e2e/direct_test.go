@@ -88,7 +88,7 @@ func DirectTestBrokerImpl(t *testing.T, brokerName, triggerName string) {
 		APIVersion: "v1",
 	}
 
-	obsName := fmt.Sprint("recorder-", rig.Namespace())
+	obsName := "recorder-" + rig.Namespace()
 	events, err := c.List(ctx, from, func(ob observer.Observed) bool {
 		return ob.Observer == obsName
 	})
