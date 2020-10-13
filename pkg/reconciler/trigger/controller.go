@@ -38,7 +38,7 @@ import (
 	triggerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1/trigger"
 	"knative.dev/eventing/pkg/duck"
 	"knative.dev/pkg/client/injection/ducks/duck/v1/addressable"
-	"knative.dev/pkg/client/injection/ducks/duck/v1/conditions"
+	"knative.dev/pkg/client/injection/ducks/duck/v1/source"
 	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
 
 	"knative.dev/pkg/configmap"
@@ -92,7 +92,7 @@ func NewController(
 
 	logging.FromContext(ctx).Info("Setting up event handlers")
 
-	r.kresourceTracker = duck.NewListableTracker(ctx, conditions.Get, impl.EnqueueKey, controller.GetTrackerLease(ctx))
+	r.sourceTracker = duck.NewListableTracker(ctx, source.Get, impl.EnqueueKey, controller.GetTrackerLease(ctx))
 	r.addressableTracker = duck.NewListableTracker(ctx, addressable.Get, impl.EnqueueKey, controller.GetTrackerLease(ctx))
 	r.uriResolver = resolver.NewURIResolver(ctx, impl.EnqueueKey)
 

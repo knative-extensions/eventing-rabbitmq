@@ -26,16 +26,15 @@ require (
 	go.uber.org/zap v1.15.0
 	golang.org/x/tools v0.0.0-20200929223013-bf155c11ec6f // indirect
 	gotest.tools v2.2.0+incompatible
-	honnef.co/go/tools v0.0.1-2020.1.5 // indirect
 	k8s.io/api v0.18.8
 	k8s.io/apiextensions-apiserver v0.18.8 // indirect
 	k8s.io/apimachinery v0.18.8
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/code-generator v0.18.8
 	k8s.io/kube-openapi v0.0.0-20200410145947-bcb3869e6f29
-	knative.dev/eventing v0.18.1-0.20201012172617-7d981f818ef0
-	knative.dev/pkg v0.0.0-20201012163217-54ad6c6d39a7
-	knative.dev/test-infra v0.0.0-20201009204121-322fb08edae7
+	knative.dev/eventing v0.18.1-0.20201013101330-20784916d379
+	knative.dev/pkg v0.0.0-20201013083930-bcdd7509c05f
+	knative.dev/test-infra v0.0.0-20201013072830-525526118518
 )
 
 replace (
