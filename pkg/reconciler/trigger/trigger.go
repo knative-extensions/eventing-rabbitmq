@@ -68,7 +68,7 @@ type Reconciler struct {
 	brokerClass string
 
 	// Dynamic tracker to track KResources. In particular, it tracks the dependency between Triggers and Sources.
-	kresourceTracker duck.ListableTracker
+	sourceTracker duck.ListableTracker
 
 	// Dynamic tracker to track AddressableTypes. In particular, it tracks Trigger subscribers.
 	addressableTracker duck.ListableTracker
@@ -299,7 +299,7 @@ func (r *Reconciler) checkDependencyAnnotation(ctx context.Context, t *eventingv
 			t.Status.MarkDependencyFailed("ReferenceError", "Unable to unmarshal objectReference from dependency annotation of trigger: %v", err)
 			return fmt.Errorf("getting object ref from dependency annotation %q: %v", dependencyAnnotation, err)
 		}
-		trackKResource := r.kresourceTracker.TrackInNamespace(ctx, t)
+		trackKResource := r.sourceTracker.TrackInNamespace(ctx, t)
 		// Trigger and its dependent source are in the same namespace, we already did the validation in the webhook.
 		if err := trackKResource(dependencyObjRef); err != nil {
 			return fmt.Errorf("tracking dependency: %v", err)
@@ -314,7 +314,7 @@ func (r *Reconciler) checkDependencyAnnotation(ctx context.Context, t *eventingv
 }
 
 func (r *Reconciler) propagateDependencyReadiness(ctx context.Context, t *eventingv1.Trigger, dependencyObjRef corev1.ObjectReference) error {
-	lister, err := r.kresourceTracker.ListerFor(dependencyObjRef)
+	lister, err := r.sourceTracker.ListerFor(dependencyObjRef)
 	if err != nil {
 		t.Status.MarkDependencyUnknown("ListerDoesNotExist", "Failed to retrieve lister: %v", err)
 		return fmt.Errorf("retrieving lister: %v", err)
@@ -328,7 +328,7 @@ func (r *Reconciler) propagateDependencyReadiness(ctx context.Context, t *eventi
 		}
 		return fmt.Errorf("getting the dependency: %v", err)
 	}
-	dependency := dependencyObj.(*duckv1.KResource)
+	dependency := dependencyObj.(*duckv1.Source)
 
 	// The dependency hasn't yet reconciled our latest changes to
 	// its desired state, so its conditions are outdated.
