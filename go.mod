@@ -32,7 +32,7 @@ require (
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/code-generator v0.18.8
 	k8s.io/kube-openapi v0.0.0-20200410145947-bcb3869e6f29
-	knative.dev/eventing v0.18.1-0.20201015002139-88b92a9300b0
+	knative.dev/eventing v0.18.1-0.20201015104956-d8212a8a2cd4
 	knative.dev/pkg v0.0.0-20201014184531-9e655c6b02f6
 	knative.dev/test-infra v0.0.0-20201014021030-ae3984a33f82
 )
