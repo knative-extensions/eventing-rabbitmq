@@ -33,6 +33,7 @@ import (
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/logging"
+	"knative.dev/pkg/network"
 
 	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
@@ -45,7 +46,6 @@ import (
 	apisduck "knative.dev/pkg/apis/duck"
 
 	"knative.dev/eventing/pkg/duck"
-	"knative.dev/eventing/pkg/reconciler/names"
 	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/resolver"
 )
@@ -189,7 +189,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *eventingv1.Broker) pk
 
 	SetAddress(&b.Status, &apis.URL{
 		Scheme: "http",
-		Host:   names.ServiceHostName(ingressEndpoints.GetName(), ingressEndpoints.GetNamespace()),
+		Host:   network.GetServiceHostname(ingressEndpoints.GetName(), ingressEndpoints.GetNamespace()),
 	})
 
 	// If there's a Dead Letter Sink, then create a dispatcher for it. Note that this is for
