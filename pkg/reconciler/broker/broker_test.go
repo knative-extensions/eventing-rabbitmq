@@ -103,7 +103,7 @@ var (
 	ingressServiceName = "test-broker-broker-ingress"
 	brokerAddress      = &apis.URL{
 		Scheme: "http",
-		Host:   fmt.Sprintf("%s.%s.svc.%s", ingressServiceName, testNS, network.GetClusterDomainName()),
+		Host:   network.GetServiceHostname(ingressServiceName, testNS),
 	}
 	deadLetterSinkAddress = &apis.URL{
 		Scheme: "http",

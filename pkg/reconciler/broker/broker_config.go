@@ -25,7 +25,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	duckv1beta1 "knative.dev/eventing-rabbitmq/pkg/apis/duck/v1beta1"
-	"knative.dev/pkg/resolver"
 
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,6 +32,7 @@ import (
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/logging"
+	"knative.dev/pkg/network"
 
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
 )
@@ -136,7 +136,7 @@ func (r *Reconciler) rabbitmqURLFromRabbit(ctx context.Context, ref *duckv1.KRef
 		return nil, fmt.Errorf("rabbit Secret missing key %s", rab.Status.Admin.SecretReference.Keys["username"])
 	}
 
-	host := resolver.ServiceHostName(rab.Status.Admin.ServiceReference.Name, rab.Status.Admin.ServiceReference.Namespace)
+	host := network.GetServiceHostname(rab.Status.Admin.ServiceReference.Name, rab.Status.Admin.ServiceReference.Namespace)
 
 	return url.Parse(fmt.Sprintf("amqp://%s:%s@%s:%d", username, password, host, 5672))
 }
