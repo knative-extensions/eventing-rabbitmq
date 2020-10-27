@@ -63,6 +63,10 @@ spec:
             value: ko://knative.dev/eventing-rabbitmq/cmd/dispatcher
           - name: BROKER_DISPATCHER_SERVICE_ACCOUNT
             value: eventing-broker-filter
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
           - name: BROKER_IMAGE_PULL_SECRET_NAME
             value:
         securityContext:
