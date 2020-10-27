@@ -18,8 +18,6 @@ package main
 
 import (
 	"log"
-	"net/http"
-	"os"
 
 	"k8s.io/client-go/rest"
 	"knative.dev/pkg/injection"
@@ -27,7 +25,6 @@ import (
 	_ "knative.dev/pkg/system/testing"
 
 	"knative.dev/eventing/pkg/kncloudevents"
-	"knative.dev/eventing/test/lib/dropevents"
 	"knative.dev/eventing/test/lib/recordevents/observer"
 	"knative.dev/eventing/test/lib/recordevents/recorder_vent"
 	"knative.dev/eventing/test/test_images"
@@ -40,6 +37,7 @@ func main() {
 	}
 	//nolint // nil ctx is fine here, look at the code of EnableInjectionOrDie
 	ctx, _ := injection.EnableInjectionOrDie(nil, cfg)
+	ctx = test_images.ConfigureLogging(ctx, "recordevents")
 
 	if err := test_images.ConfigureTracing(logging.FromContext(ctx), ""); err != nil {
 		logging.FromContext(ctx).Fatal("Unable to setup trace publishing", err)
@@ -49,24 +47,7 @@ func main() {
 		recorder_vent.NewFromEnv(ctx),
 	)
 
-	algorithm, ok := os.LookupEnv(dropevents.SkipAlgorithmKey)
-	if ok {
-		skipper := dropevents.SkipperAlgorithm(algorithm)
-		counter := dropevents.CounterHandler{
-			Skipper: skipper,
-		}
-		err = obs.Start(ctx, kncloudevents.CreateHandler, func(handler http.Handler) http.Handler {
-			return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-				if counter.Skip() {
-					writer.WriteHeader(http.StatusConflict)
-					return
-				}
-				handler.ServeHTTP(writer, request)
-			})
-		})
-	} else {
-		err = obs.Start(ctx, kncloudevents.CreateHandler)
-	}
+	err = obs.Start(ctx, kncloudevents.CreateHandler)
 
 	if err != nil {
 		logging.FromContext(ctx).Fatal("Error during start", err)
