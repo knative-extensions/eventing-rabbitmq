@@ -28,7 +28,7 @@ import (
 	_ "k8s.io/kube-openapi/cmd/openapi-gen"
 	_ "knative.dev/pkg/codegen/cmd/injection-gen"
 
-	_ "knative.dev/test-infra/scripts"
+	_ "knative.dev/hack"
 
 	// codegen: hack/generate-knative.sh
 	_ "knative.dev/pkg/hack"
