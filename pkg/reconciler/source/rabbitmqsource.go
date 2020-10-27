@@ -119,12 +119,12 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, src *v1alpha1.RabbitmqSo
 
 func (r *Reconciler) createReceiveAdapter(ctx context.Context, src *v1alpha1.RabbitmqSource, sinkURI *apis.URL) (*v1.Deployment, error) {
 
-	loggingConfig, err := logging.LoggingConfigToJson(r.loggingConfig)
+	loggingConfig, err := logging.ConfigToJSON(r.loggingConfig)
 	if err != nil {
 		logging.FromContext(ctx).Error("error while converting logging config to JSON", zap.Any("receiveAdapter", err))
 	}
 
-	metricsConfig, err := metrics.MetricsOptionsToJson(r.metricsConfig)
+	metricsConfig, err := metrics.OptionsToJSON(r.metricsConfig)
 	if err != nil {
 		logging.FromContext(ctx).Error("error while converting metrics config to JSON", zap.Any("receiveAdapter", err))
 	}
