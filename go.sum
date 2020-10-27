@@ -1994,6 +1994,8 @@ knative.dev/eventing v0.18.1-0.20201027155533-17e1562518ef h1:e6x55uOHRQc6kHVKse
 knative.dev/eventing v0.18.1-0.20201027155533-17e1562518ef/go.mod h1:qdJt8Lo2ZsQZ/4YHG5bg5LkhpBhOjnjQA9NPyMSeOvY=
 knative.dev/eventing-contrib v0.6.1-0.20190723221543-5ce18048c08b/go.mod h1:SnXZgSGgMSMLNFTwTnpaOH7hXDzTFtw0J8OmHflNx3g=
 knative.dev/eventing-contrib v0.11.2/go.mod h1:SnXZgSGgMSMLNFTwTnpaOH7hXDzTFtw0J8OmHflNx3g=
+knative.dev/hack v0.0.0-20201027201633-1763a666eb41 h1:rr7i0FRR6oUgjK4s4kwudJR6i3AT1Ca/81h7NiWJyhU=
+knative.dev/hack v0.0.0-20201027201633-1763a666eb41/go.mod h1:PHt8x8yX5Z9pPquBEfIj0X66f8iWkWfR0S/sarACJrI=
 knative.dev/pkg v0.0.0-20191101194912-56c2594e4f11/go.mod h1:pgODObA1dTyhNoFxPZTTjNWfx6F0aKsKzn+vaT9XO/Q=
 knative.dev/pkg v0.0.0-20191111150521-6d806b998379/go.mod h1:pgODObA1dTyhNoFxPZTTjNWfx6F0aKsKzn+vaT9XO/Q=
 knative.dev/pkg v0.0.0-20200207155214-fef852970f43/go.mod h1:pgODObA1dTyhNoFxPZTTjNWfx6F0aKsKzn+vaT9XO/Q=

@@ -1147,6 +1147,9 @@ knative.dev/eventing/test/test_images/heartbeats
 knative.dev/eventing/test/test_images/performance
 knative.dev/eventing/test/test_images/print
 knative.dev/eventing/test/test_images/recordevents
+# knative.dev/hack v0.0.0-20201027201633-1763a666eb41
+## explicit
+knative.dev/hack
 # knative.dev/pkg v0.0.0-20201027160133-4ce8016d707c
 ## explicit
 knative.dev/pkg/apis
@@ -1249,7 +1252,6 @@ knative.dev/pkg/webhook/resourcesemantics
 knative.dev/pkg/webhook/resourcesemantics/defaulting
 knative.dev/pkg/webhook/resourcesemantics/validation
 # knative.dev/test-infra v0.0.0-20201026182042-46291de4ab66
-## explicit
 knative.dev/test-infra/scripts
 # sigs.k8s.io/structured-merge-diff/v3 v3.0.1-0.20200706213357-43c19bbb7fba
 sigs.k8s.io/structured-merge-diff/v3/value
