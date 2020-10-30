@@ -212,7 +212,7 @@ func UpdateLevelFromConfigMap(logger *zap.SugaredLogger, atomicLevel zap.AtomicL
 			// reset to global level
 			loggingCfg, err := zapConfigFromJSON(config.LoggingConfig)
 			switch {
-			case err == errEmptyLoggerConfig:
+			case errors.Is(err, errEmptyLoggerConfig):
 				level = zap.NewAtomicLevel().Level()
 			case err != nil:
 				logger.With(zap.Error(err)).Errorf("Failed to parse logger configuration. "+
@@ -238,13 +238,6 @@ func ConfigMapName() string {
 	return "config-logging"
 }
 
-// JsonToLoggingConfig converts a JSON string of a Config.
-// Always returns a non-nil Config.
-// TODO(vagababov): remove after downstream conversion.
-func JsonToLoggingConfig(jsonCfg string) (*Config, error) { //nolint No rename due to backwards incompatibility.
-	return JSONToConfig(jsonCfg)
-}
-
 // JSONToConfig converts a JSON string of a Config.
 // Always returns a non-nil Config.
 func JSONToConfig(jsonCfg string) (*Config, error) {
@@ -263,12 +256,6 @@ func JSONToConfig(jsonCfg string) (*Config, error) {
 		return NewConfigFromConfigMap(nil)
 	}
 	return cfg, nil
-}
-
-// LoggingConfigToJson converts a Config to a JSON string.
-// TODO(vagababov): remove after downstream conversion.
-func LoggingConfigToJson(cfg *Config) (string, error) { //nolint No rename due to backwards incompatibility.
-	return ConfigToJSON(cfg)
 }
 
 // ConfigToJSON  converts a Config to a JSON string.

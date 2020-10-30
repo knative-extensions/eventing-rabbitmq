@@ -19,11 +19,10 @@ require (
 	github.com/michaelklishin/rabbit-hole/v2 v2.4.0
 	github.com/n3wscott/rigging v0.3.0
 	github.com/onsi/ginkgo v1.14.0 // indirect
-	github.com/prometheus/client_golang v1.7.1 // indirect
 	github.com/streadway/amqp v1.0.0
 	github.com/testcontainers/testcontainers-go v0.7.0
 	github.com/tiago4orion/conjure v0.0.0-20150908101743-93cb30b9d218 // indirect
-	go.uber.org/zap v1.15.0
+	go.uber.org/zap v1.16.0
 	gotest.tools v2.2.0+incompatible
 	k8s.io/api v0.18.8
 	k8s.io/apiextensions-apiserver v0.18.8 // indirect
@@ -31,9 +30,9 @@ require (
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/code-generator v0.18.8
 	k8s.io/kube-openapi v0.0.0-20200410145947-bcb3869e6f29
-	knative.dev/eventing v0.18.1-0.20201027155533-17e1562518ef
-	knative.dev/hack v0.0.0-20201027201633-1763a666eb41
-	knative.dev/pkg v0.0.0-20201027160133-4ce8016d707c
+	knative.dev/eventing v0.18.1-0.20201029213834-0535f9b33fe8
+	knative.dev/hack v0.0.0-20201028205534-fe80f1c8af68
+	knative.dev/pkg v0.0.0-20201029122234-6d905b3f84a6
 )
 
 replace (
