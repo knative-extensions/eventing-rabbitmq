@@ -24,8 +24,8 @@ import (
 	_ "knative.dev/pkg/system/testing"
 
 	"knative.dev/eventing/pkg/test/observer"
-	recorder_vent "knative.dev/eventing/test/lib/recordevents/recorder_vent"
 	writer_vent "knative.dev/eventing/test/lib/recordevents/logger_vent"
+	recorder_vent "knative.dev/eventing/test/lib/recordevents/recorder_vent"
 )
 
 func main() {
