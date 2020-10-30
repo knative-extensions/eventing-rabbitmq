@@ -16,25 +16,32 @@ limitations under the License.
 package main
 
 import (
-	"flag"
-	"os"
+	"knative.dev/eventing/test/test_images"
+	"log"
+	"k8s.io/client-go/rest"
+	"knative.dev/pkg/logging"
 
 	"knative.dev/pkg/injection"
 
 	_ "knative.dev/pkg/system/testing"
 
-	"knative.dev/eventing/pkg/test/observer"
-	writer_vent "knative.dev/eventing/test/lib/recordevents/logger_vent"
-	recorder_vent "knative.dev/eventing/test/lib/recordevents/recorder_vent"
+	loggerVent "knative.dev/eventing/test/lib/recordevents/logger_vent"
+	"knative.dev/eventing/test/lib/recordevents/observer"
+	recorderVent "knative.dev/eventing/test/lib/recordevents/recorder_vent"
 )
 
 func main() {
-	flag.Parse()
-	ctx, _ := injection.EnableInjectionOrDie(nil, nil) //nolint
+	cfg, err := rest.InClusterConfig()
+	if err != nil {
+		log.Fatal("Error while reading the cfg", err)
+	}
+	//nolint // nil ctx is fine here, look at the code of EnableInjectionOrDie
+	ctx, _ := injection.EnableInjectionOrDie(nil, cfg)
+	ctx = test_images.ConfigureLogging(ctx, "recordevents")
 
-	obs := observer.New(
-		writer_vent.NewEventLog(ctx, os.Stdout),
-		recorder_vent.NewFromEnv(ctx),
+	obs := observer.NewFromEnv(ctx,
+		loggerVent.Logger(logging.FromContext(ctx).Infof),
+		recorderVent.NewFromEnv(ctx),
 	)
 
 	if err := obs.Start(ctx); err != nil {
