@@ -16,9 +16,10 @@ limitations under the License.
 package main
 
 import (
-	"knative.dev/eventing/test/test_images"
 	"log"
+
 	"k8s.io/client-go/rest"
+	"knative.dev/eventing/test/test_images"
 	"knative.dev/pkg/logging"
 
 	"knative.dev/pkg/injection"
