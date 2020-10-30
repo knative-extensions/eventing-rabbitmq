@@ -30,9 +30,9 @@ require (
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/code-generator v0.18.8
 	k8s.io/kube-openapi v0.0.0-20200410145947-bcb3869e6f29
-	knative.dev/eventing v0.18.1-0.20201029213834-0535f9b33fe8
+	knative.dev/eventing v0.18.1-0.20201030125934-a140ee886356
 	knative.dev/hack v0.0.0-20201028205534-fe80f1c8af68
-	knative.dev/pkg v0.0.0-20201029122234-6d905b3f84a6
+	knative.dev/pkg v0.0.0-20201030122234-256ae893994a
 )
 
 replace (
