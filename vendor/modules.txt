@@ -684,7 +684,6 @@ k8s.io/api/storage/v1
 k8s.io/api/storage/v1alpha1
 k8s.io/api/storage/v1beta1
 # k8s.io/apiextensions-apiserver v0.18.8 => k8s.io/apiextensions-apiserver v0.18.8
-## explicit
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1
@@ -1026,7 +1025,7 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/eventing v0.18.1-0.20201030152235-29ff9510e6f6
+# knative.dev/eventing v0.18.1-0.20201103105004-c96ac1b0c861
 ## explicit
 knative.dev/eventing/pkg/adapter/v2
 knative.dev/eventing/pkg/adapter/v2/util/crstatusevent
@@ -1147,10 +1146,10 @@ knative.dev/eventing/test/test_images/heartbeats
 knative.dev/eventing/test/test_images/performance
 knative.dev/eventing/test/test_images/print
 knative.dev/eventing/test/test_images/recordevents
-# knative.dev/hack v0.0.0-20201028205534-fe80f1c8af68
+# knative.dev/hack v0.0.0-20201103151104-3d5abc3a0075
 ## explicit
 knative.dev/hack
-# knative.dev/pkg v0.0.0-20201030200734-72451e0d5973
+# knative.dev/pkg v0.0.0-20201103155803-bdd7fe1f177c
 ## explicit
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
