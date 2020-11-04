@@ -313,6 +313,29 @@ func TestReconcile(t *testing.T) {
 				Object: triggerWithFilterReady(),
 			}},
 		}, {
+			Name: "reconcile deployment, fails to get it.",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				ReadyBroker(),
+				triggerWithFilter(),
+				createSecret(rabbitURL),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, triggerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeWarning, "InternalError", ``),
+			},
+			WithReactors: []clientgotesting.ReactionFunc{
+				InduceFailure("get", "deployments"),
+			},
+			WantCreates: []runtime.Object{
+				createDispatcherDeployment(),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: triggerWithFilterReady(),
+			}},
+		}, {
 			Name: "Creates everything with ref",
 			Key:  testKey,
 			Objects: []runtime.Object{

@@ -247,6 +247,7 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, t *eventingv1.Trigger) pk
 // reconcileDeployment reconciles the K8s Deployment 'd'.
 func (r *Reconciler) reconcileDeployment(ctx context.Context, d *v1.Deployment) (*v1.Deployment, error) {
 	current, err := r.deploymentLister.Deployments(d.Namespace).Get(d.Name)
+	logging.FromContext(ctx).Error("Got Error", err)
 	if apierrs.IsNotFound(err) {
 		_, err = r.kubeClientSet.AppsV1().Deployments(d.Namespace).Create(ctx, d, metav1.CreateOptions{})
 		if err != nil {
