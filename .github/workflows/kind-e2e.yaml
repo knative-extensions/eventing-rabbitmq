@@ -78,15 +78,15 @@ jobs:
       run: |
         set -x
 
-        kubectl apply -f https://github.com/rabbitmq/cluster-operator/releases/download/0.46.0/cluster-operator.yml
+        kubectl apply -f https://github.com/rabbitmq/cluster-operator/releases/download/0.48.0/cluster-operator.yml
 
     - name: Install Knative Eventing
       run: |
         set -x
 
-        kubectl apply --filename https://github.com/knative/eventing/releases/download/v0.17.0/eventing-crds.yaml
+        kubectl apply --filename https://github.com/knative/eventing/releases/download/v0.18.4/eventing-crds.yaml
         sleep 2 # Wait for the CRDs to be reconciled.
-        kubectl apply --filename https://github.com/knative/eventing/releases/download/v0.17.0/eventing-core.yaml
+        kubectl apply --filename https://github.com/knative/eventing/releases/download/v0.18.4/eventing-core.yaml
 
     - name: Install
       working-directory: ./src/knative.dev/${{ github.event.repository.name }}
