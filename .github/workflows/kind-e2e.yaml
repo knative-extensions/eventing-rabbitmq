@@ -117,6 +117,19 @@ jobs:
         # For debugging.
         kubectl get pods --all-namespaces
 
+        echo "===================== Pod Logs ============================="
+        namespace=knative-eventing
+        for pod in $(kubectl get pod -n $namespace | awk '{print $1}'); do
+          for container in $(kubectl get pod "${pod}" -n $namespace -ojsonpath='{.spec.containers[*].name}'); do
+            echo "Namespace, Pod, Container: ${namespace}, ${pod}, ${container}"
+            kubectl logs -n $namespace "${pod}" -c "${container}" || true
+            echo "----------------------------------------------------------"
+            echo "Namespace, Pod, Container (Previous instance): ${namespace}, ${pod}, ${container}"
+            kubectl logs -p -n $namespace "${pod}" -c "${container}" || true
+            echo "============================================================"
+          done
+        done
+
     - name: Run e2e Tests
       working-directory: ./src/knative.dev/${{ github.event.repository.name }}
       run: |
@@ -144,7 +157,7 @@ jobs:
 
         echo "===================== Pod Logs ============================="
         namespace=knative-eventing
-        for pod in $(kubectl get pod -n $namespace | grep Running | awk '{print $1}'); do
+        for pod in $(kubectl get pod -n $namespace | awk '{print $1}'); do
           for container in $(kubectl get pod "${pod}" -n $namespace -ojsonpath='{.spec.containers[*].name}'); do
             echo "Namespace, Pod, Container: ${namespace}, ${pod}, ${container}"
             kubectl logs -n $namespace "${pod}" -c "${container}" || true
