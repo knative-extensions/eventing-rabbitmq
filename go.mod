@@ -43,6 +43,8 @@ replace (
 	github.com/docker/docker => github.com/docker/engine v0.0.0-20190717161051-705d9623b7c1
 	// Somehow mattmoor/bindings causes grief...
 	github.com/google/go-github/v32 => github.com/google/go-github/v32 v32.0.1-0.20200624231906-3d244d3d496e
+	// DO NOT SUBMIT
+	github.com/n3wscott/rigging => github.com/vaikas/rigging v0.0.2-0.20201110225941-e1136a26ac01
 
 	// WORKAROUND until KEDA v2 is not released
 	github.com/operator-framework/operator-sdk => github.com/operator-framework/operator-sdk v0.11.0

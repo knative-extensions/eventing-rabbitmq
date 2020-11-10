@@ -156,7 +156,7 @@ func (c *Client) WaitForResourceReady(namespace, name string, gvr schema.GroupVe
 		}
 		obj := like.DeepCopy()
 		if err = runtime.DefaultUnstructuredConverter.FromUnstructured(us.Object, obj); err != nil {
-			log.Fatalf("Error DefaultUnstructuree.Dynamiconverter. %v", err)
+			log.Fatalf("Error DefaultUnstructured.Dynamiconverter. %v", err)
 		}
 		obj.ResourceVersion = gvr.Version
 		obj.APIVersion = gvr.GroupVersion().String()
@@ -169,7 +169,9 @@ func (c *Client) WaitForResourceReady(namespace, name string, gvr schema.GroupVe
 				lastMsg = msg
 			}
 		}
-
+		if ready.IsTrue() {
+			log.Printf("%s is ready, %+v\n", name, us)
+		}
 		return ready.IsTrue(), nil
 	})
 }

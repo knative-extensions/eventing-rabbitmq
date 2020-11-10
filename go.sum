@@ -993,8 +993,6 @@ github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8m
 github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
 github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
 github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f/go.mod h1:ZdcZmHo+o7JKHSa8/e818NopupXU1YMK5fe1lsApnBw=
-github.com/n3wscott/rigging v0.3.0 h1:VfMFhT88OoTlL+Rn0wUh6E9VX7/p0WY+5XSaJnKW7GM=
-github.com/n3wscott/rigging v0.3.0/go.mod h1:8ytcx9poEr61WW7hS7wibYLHpCD1mlvn0BXT65Gcsm0=
 github.com/nakabonne/nestif v0.3.0/go.mod h1:dI314BppzXjJ4HsCnbo7XzrJHPszZsjnk5wEBSYHI2c=
 github.com/nats-io/gnatsd v1.4.1/go.mod h1:nqco77VO78hLCJpIcVfygDP2rPGfsEHkGTUk94uh5DQ=
 github.com/nats-io/go-nats v1.7.0/go.mod h1:+t7RHT5ApZebkrQdnn6AhQJmhJJiKAvJUio1PiiCtj0=
@@ -1295,6 +1293,8 @@ github.com/urfave/cli v1.18.0/go.mod h1:70zkFmudgCuE/ngEzBv17Jvp/497gISqfk5gWijb
 github.com/urfave/cli v1.20.0/go.mod h1:70zkFmudgCuE/ngEzBv17Jvp/497gISqfk5gWijbERA=
 github.com/urfave/cli v1.22.1/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtXRu0=
 github.com/uudashr/gocognit v1.0.1/go.mod h1:j44Ayx2KW4+oB6SWMv8KsmHzZrOInQav7D3cQMJ5JUM=
+github.com/vaikas/rigging v0.0.2-0.20201110225941-e1136a26ac01 h1:4Zrs57O9SKIBp5NCjI4ftLfGaGi6C/LuuRfdQ9TArZU=
+github.com/vaikas/rigging v0.0.2-0.20201110225941-e1136a26ac01/go.mod h1:8ytcx9poEr61WW7hS7wibYLHpCD1mlvn0BXT65Gcsm0=
 github.com/vaikas/wabbit v0.0.0-20201002085521-b5b22698ecc7 h1:0g4y6QxFl0AelPYIjA7Dze55Zbas+h1d5/X2ppJT7s0=
 github.com/vaikas/wabbit v0.0.0-20201002085521-b5b22698ecc7/go.mod h1:LntnTHRv9NGjFDelZ9txk2X41poMA7m0bql3uFrQewI=
 github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6KllzawFIhcdPw=
