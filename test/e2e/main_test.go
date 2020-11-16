@@ -23,10 +23,8 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"strings"
 	"testing"
 	"text/template"
-	"time"
 
 	"knative.dev/pkg/injection"
 
@@ -37,7 +35,6 @@ import (
 	// logstream initialization.
 	_ "knative.dev/eventing-rabbitmq/test/defaultsystem"
 	"knative.dev/reconciler-test/pkg/environment"
-	"knative.dev/reconciler-test/pkg/k8s"
 )
 
 func init() {
@@ -47,11 +44,6 @@ func init() {
 var (
 	test_context context.Context
 	global       environment.GlobalEnvironment
-)
-
-const (
-	interval = 1 * time.Second
-	timeout  = 5 * time.Minute
 )
 
 func Context() context.Context {
@@ -127,18 +119,4 @@ func TestBrokerDLQ(t *testing.T) {
 	ctx, env := global.Environment()
 	env.Test(ctx, t, BrokerDLQTest())
 	env.Finish()
-}
-
-func AllGoReady(ctx context.Context, t *testing.T) {
-	env := environment.FromContext(ctx)
-	for _, ref := range env.References() {
-		if !strings.Contains(ref.APIVersion, "knative.dev") {
-			// Let's not care so much about checking the status of non-Knative
-			// resources.
-			continue
-		}
-		if err := k8s.WaitForReadyOrDone(ctx, ref, interval, timeout); err != nil {
-			t.Fatal("failed to wait for ready or done, ", err)
-		}
-	}
 }
