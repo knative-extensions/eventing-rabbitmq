@@ -38,11 +38,6 @@ import (
 	_ "knative.dev/pkg/system/testing"
 )
 
-const (
-	interval = 1 * time.Second
-	timeout  = 5 * time.Minute
-)
-
 //
 // producer ---> broker --[trigger]--> failer (always fails)
 //                  |
