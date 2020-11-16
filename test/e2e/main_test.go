@@ -22,10 +22,11 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"knative.dev/pkg/injection"
 	"os"
 	"testing"
 	"text/template"
+
+	"knative.dev/pkg/injection"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
@@ -97,7 +98,6 @@ func TestSmokeBroker(t *testing.T) {
 	env.Finish()
 }
 
-
 // TestSmokeBrokerTrigger makes sure a Broker+Trigger goes ready as a RabbitMQ Broker Class.
 func TestSmokeBrokerTrigger(t *testing.T) {
 	t.Parallel()
@@ -121,4 +121,3 @@ func TestBrokerDLQ(t *testing.T) {
 	env.Test(ctx, t, BrokerDLQTest())
 	env.Finish()
 }
-
