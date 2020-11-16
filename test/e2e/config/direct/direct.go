@@ -2,10 +2,13 @@
 
 /*
 Copyright 2020 The Knative Authors
+
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
+
     http://www.apache.org/licenses/LICENSE-2.0
+
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,19 +19,18 @@ limitations under the License.
 package direct
 
 import (
-"context"
-"testing"
+	"context"
+	"testing"
 
-"knative.dev/reconciler-test/pkg/environment"
-"knative.dev/reconciler-test/pkg/feature"
-"knative.dev/reconciler-test/pkg/manifest"
+	"knative.dev/reconciler-test/pkg/environment"
+	"knative.dev/reconciler-test/pkg/feature"
+	"knative.dev/reconciler-test/pkg/manifest"
 )
 
 func init() {
 	environment.RegisterPackage(manifest.ImagesLocalYaml()...)
 	environment.WithImages(map[string]string{
 		"ko://knative.dev/eventing-rabbitmq/test/e2e/cmd/producer": "kind.local/producer-35be09e7925e4d603eb8a2e5a9207882:891371837a579fe86e52734e79899343109b38419a4a2d56e88ee35057163d8e",
-
 	})
 }
 
