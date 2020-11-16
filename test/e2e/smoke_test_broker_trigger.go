@@ -56,4 +56,5 @@ func AllGoReady(ctx context.Context, t *testing.T) {
 			t.Fatal("failed to wait for ready or done, ", err)
 		}
 	}
+	t.Log("all resources ready")
 }

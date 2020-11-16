@@ -24,6 +24,7 @@ import (
 
 	"knative.dev/eventing-rabbitmq/test/e2e/config/dlq"
 	"knative.dev/eventing-rabbitmq/test/e2e/config/rabbitmq"
+	"knative.dev/eventing-rabbitmq/test/e2e/config/recorder"
 	"knative.dev/eventing/pkg/test/observer"
 	recorder_collector "knative.dev/eventing/pkg/test/observer/recorder-collector"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -47,6 +48,7 @@ func BrokerDLQTest() *feature.Feature {
 	f := new(feature.Feature)
 	f.Setup("install a rabbitmq", rabbitmq.Install())
 	f.Setup("dlq works", dlq.Install())
+	f.Setup("install recorder", recorder.Install())
 	f.Alpha("RabbitMQ broker").Must("goes ready", AllGoReady)
 	f.Alpha("RabbitMQ broker").Must("deliver DLQ events", CheckDelivery)
 	return f
