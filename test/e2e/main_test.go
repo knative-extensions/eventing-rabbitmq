@@ -19,7 +19,6 @@ limitations under the License.
 package e2e
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"os"
@@ -41,14 +40,7 @@ func init() {
 	environment.InitFlags(flag.CommandLine)
 }
 
-var (
-	test_context context.Context
-	global       environment.GlobalEnvironment
-)
-
-func Context() context.Context {
-	return test_context
-}
+var global environment.GlobalEnvironment
 
 // This test is more for debugging the ko publish process.
 func TestKoPublish2(t *testing.T) {
