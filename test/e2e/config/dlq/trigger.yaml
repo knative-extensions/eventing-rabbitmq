@@ -15,10 +15,10 @@
 apiVersion: eventing.knative.dev/v1
 kind: Trigger
 metadata:
-  name: {{ .triggerName }}
+  name: testtrigger
   namespace: {{ .namespace }}
 spec:
-  broker: {{ .brokerName }}
+  broker: testbroker
   subscriber:
     ref:
       apiVersion: v1

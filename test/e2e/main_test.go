@@ -16,17 +16,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package rabbit_test
+package e2e
 
 import (
 	"context"
+	"flag"
 	"fmt"
+	"knative.dev/pkg/injection"
 	"os"
 	"testing"
 	"text/template"
-
-	"github.com/n3wscott/rigging/pkg/lifecycle"
-	"knative.dev/pkg/injection"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
@@ -34,24 +33,40 @@ import (
 	// system namespace environment variable is defaulted prior to
 	// logstream initialization.
 	_ "knative.dev/eventing-rabbitmq/test/defaultsystem"
-
-	"github.com/n3wscott/rigging/pkg/installer"
-	"knative.dev/pkg/test/helpers"
+	"knative.dev/reconciler-test/pkg/environment"
 )
 
+var global environment.GlobalEnvironment
+
+func init() {
+	environment.InitFlags(flag.CommandLine)
+}
+
+var (
+	test_context context.Context
+)
+
+func Context() context.Context {
+	return test_context
+}
+
 // This test is more for debugging the ko publish process.
-func TestKoPublish(t *testing.T) {
-	ic, err := installer.ProduceImages()
+func TestKoPublish2(t *testing.T) {
+	ic, err := environment.ProduceImages()
 	if err != nil {
-		t.Fatalf("failed to produce images, %s", err)
+		panic(fmt.Errorf("failed to produce images, %s", err))
 	}
 
 	templateString := `
-	rigging.WithImages(map[string]string{
-{{ range $key, $value := . }}
-		"{{ $key }}": "{{ $value }}",
-{{ end }}
-	}),`
+// The following could be used to bypass the image generation process.
+import "knative.dev/reconciler-test/pkg/environment"
+func init() {
+	environment.WithImages(map[string]string{
+		{{ range $key, $value := . }}"{{ $key }}": "{{ $value }}",
+		{{ end }}
+	})
+}
+`
 
 	tp := template.New("t")
 	temp, err := tp.Parse(templateString)
@@ -66,38 +81,44 @@ func TestKoPublish(t *testing.T) {
 	_, _ = fmt.Fprint(os.Stdout, "\n\n")
 }
 
-var (
-	test_context context.Context
-)
-
-func Context() context.Context {
-	return test_context
-}
-
 func TestMain(m *testing.M) {
+	flag.Parse()
 	ctx, startInformers := injection.EnableInjectionOrDie(nil, nil) //nolint
-	lifecycle.InjectClients(ctx)
-	test_context = ctx
 	startInformers()
+	global = environment.NewGlobalEnvironment(ctx)
 	os.Exit(m.Run())
 }
 
 // TestSmokeBroker makes sure a Broker goes ready as a RabbitMQ Broker Class.
 func TestSmokeBroker(t *testing.T) {
-	SmokeTestBrokerImpl(t, helpers.ObjectNameForTest(t))
+	t.Parallel()
+	ctx, env := global.Environment()
+	env.Test(ctx, t, SmokeTestBroker())
+	env.Finish()
 }
+
 
 // TestSmokeBrokerTrigger makes sure a Broker+Trigger goes ready as a RabbitMQ Broker Class.
 func TestSmokeBrokerTrigger(t *testing.T) {
-	SmokeTestBrokerTriggerImpl(t, helpers.ObjectNameForTest(t), helpers.ObjectNameForTest(t))
+	t.Parallel()
+	ctx, env := global.Environment()
+	env.Test(ctx, t, SmokeTestBrokerTrigger())
+	env.Finish()
 }
 
 // TestBrokerDirect makes sure a Broker can delivery events to a consumer.
 func TestBrokerDirect(t *testing.T) {
-	DirectTestBrokerImpl(t, helpers.ObjectNameForTest(t), helpers.ObjectNameForTest(t))
+	t.Parallel()
+	ctx, env := global.Environment()
+	env.Test(ctx, t, DirectTestBroker())
+	env.Finish()
 }
 
 // TestBrokerDLQ makes sure a Broker delivers events to a DLQ.
 func TestBrokerDLQ(t *testing.T) {
-	BrokerDLQTestImpl(t, helpers.ObjectNameForTest(t), helpers.ObjectNameForTest(t))
+	t.Parallel()
+	ctx, env := global.Environment()
+	env.Test(ctx, t, BrokerDLQTest())
+	env.Finish()
 }
+

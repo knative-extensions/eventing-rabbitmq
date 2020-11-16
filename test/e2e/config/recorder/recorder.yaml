@@ -29,7 +29,7 @@ spec:
       serviceAccount: recorder
       containers:
         - name: recorder
-          image: {{ .images.recorder }}
+          image: ko://knative.dev/eventing-rabbitmq/test/e2e/cmd/recorder
           env:
             - name: SYSTEM_NAMESPACE
               value: {{ .namespace }}

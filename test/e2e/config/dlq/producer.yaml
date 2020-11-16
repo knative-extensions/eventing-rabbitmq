@@ -28,7 +28,7 @@ spec:
     spec:
       containers:
         - name: producer
-          image: {{ .images.producer }}
+          image: ko://knative.dev/eventing-rabbitmq/test/e2e/cmd/producer
           env:
             - name: COUNT
               value: '{{ .producerCount }}'
@@ -50,4 +50,4 @@ spec:
     ref:
       apiVersion: eventing.knative.dev/v1
       kind: Broker
-      name: {{ .brokerName }}
+      name: testbroker
