@@ -46,7 +46,7 @@ func init() {
 
 var (
 	test_context context.Context
-	global environment.GlobalEnvironment
+	global       environment.GlobalEnvironment
 )
 
 const (
