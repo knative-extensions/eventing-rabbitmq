@@ -27,9 +27,6 @@ import (
 
 func init() {
 	environment.RegisterPackage(manifest.ImagesLocalYaml()...)
-	environment.WithImages(map[string]string{
-		"ko://knative.dev/eventing-rabbitmq/test/e2e/cmd/producer": "kind.local/producer-35be09e7925e4d603eb8a2e5a9207882:891371837a579fe86e52734e79899343109b38419a4a2d56e88ee35057163d8e",
-	})
 }
 
 func Install() feature.StepFn {
