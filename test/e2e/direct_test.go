@@ -19,16 +19,15 @@ limitations under the License.
 package e2e
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
-	"context"
-
 
 	"knative.dev/eventing-rabbitmq/test/e2e/config/direct"
 	"knative.dev/eventing-rabbitmq/test/e2e/config/rabbitmq"
-	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/environment"
+	"knative.dev/reconciler-test/pkg/feature"
 
 	"knative.dev/eventing/pkg/test/observer"
 	recorder_collector "knative.dev/eventing/pkg/test/observer/recorder-collector"
