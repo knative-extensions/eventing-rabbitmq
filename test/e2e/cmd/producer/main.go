@@ -51,10 +51,8 @@ func main() {
 		log.Fatal("failed to create client, ", err)
 	}
 
-	// RabbitCluster takes about 90 seconds to come up, so sleep that before even trying...
-	// TODO: What can test infa do about this so we don't get created before Rabbit is up.
 	log.Print("sleeping")
-	time.Sleep(90 * time.Second)
+	time.Sleep(10 * time.Second)
 	log.Print("done sleeping, sending events now")
 	send(cloudevents.ContextWithRetriesExponentialBackoff(ctx, 10*time.Millisecond, 10), c, env.Count)
 
