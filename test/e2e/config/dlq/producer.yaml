@@ -28,26 +28,10 @@ spec:
     spec:
       containers:
         - name: producer
-          image: {{ .images.producer }}
+          image: ko://knative.dev/eventing-rabbitmq/test/e2e/cmd/producer
           env:
             - name: COUNT
               value: '{{ .producerCount }}'
+            - name: K_SINK
+              value: http://testbroker-broker-ingress.{{ .namespace }}.svc.cluster.local
 
----
-
-apiVersion: sources.knative.dev/v1beta1
-kind: SinkBinding
-metadata:
-  name: bind-producer
-  namespace: {{ .namespace }}
-spec:
-  subject:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: producer
-
-  sink:
-    ref:
-      apiVersion: eventing.knative.dev/v1
-      kind: Broker
-      name: {{ .brokerName }}

@@ -61,7 +61,7 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 			sinkServer := httptest.NewServer(h)
 			defer sinkServer.Close()
 
-			s, err := kncloudevents.NewHTTPMessageSender(nil, sinkServer.URL)
+			s, err := kncloudevents.NewHTTPMessageSenderWithTarget(sinkServer.URL)
 			if err != nil {
 				t.Fatal(err)
 			}

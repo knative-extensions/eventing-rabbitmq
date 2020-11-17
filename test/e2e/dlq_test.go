@@ -14,32 +14,27 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package rabbit_test
+package e2e
 
 import (
+	"context"
 	"fmt"
-	"strings"
 	"testing"
 	"time"
 
-	"github.com/n3wscott/rigging"
+	"knative.dev/eventing-rabbitmq/test/e2e/config/dlq"
+	"knative.dev/eventing-rabbitmq/test/e2e/config/recorder"
 	"knative.dev/eventing/pkg/test/observer"
 	recorder_collector "knative.dev/eventing/pkg/test/observer/recorder-collector"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
+
+	"knative.dev/reconciler-test/pkg/environment"
+	"knative.dev/reconciler-test/pkg/feature"
 
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	_ "knative.dev/pkg/system/testing"
 )
-
-// Create the container images required for the test.
-func init() {
-	rigging.RegisterPackage(
-		"knative.dev/eventing-rabbitmq/test/e2e/cmd/recorder",
-		"knative.dev/eventing-rabbitmq/test/e2e/cmd/producer",
-		"knative.dev/eventing-rabbitmq/cmd/failer",
-	)
-}
 
 //
 // producer ---> broker --[trigger]--> failer (always fails)
@@ -48,45 +43,23 @@ func init() {
 //
 
 // BrokerDLQTestImpl makes sure an RabbitMQ Broker delivers events to a DLQ.
-func BrokerDLQTestImpl(t *testing.T, brokerName, triggerName string) {
+func BrokerDLQTest() *feature.Feature {
+	f := new(feature.Feature)
+
+	f.Setup("dlq works", dlq.Install())
+	f.Setup("install recorder", recorder.Install())
+	f.Alpha("RabbitMQ broker").Must("goes ready", AllGoReady)
+	f.Alpha("RabbitMQ broker").Must("deliver DLQ events", CheckDelivery)
+	return f
+}
+
+func CheckDelivery(ctx context.Context, t *testing.T) {
+	env := environment.FromContext(ctx)
 	sendCount := 5
-	opts := []rigging.Option{}
-
-	rig, err := rigging.NewInstall(opts, []string{"rabbitmq", "dlq", "recorder"}, map[string]string{
-		"brokerName":    brokerName,
-		"triggerName":   triggerName,
-		"producerCount": fmt.Sprint(sendCount),
-	})
-	if err != nil {
-		t.Fatal("failed to create rig, ", err)
-	}
-	t.Logf("Created a new testing rig at namespace %s.", rig.Namespace())
-
-	// Uninstall deferred.
-	defer func() {
-		if err := rig.Uninstall(); err != nil {
-			t.Error("failed to uninstall, ", err)
-		}
-	}()
-
-	refs := rig.Objects()
-	for _, r := range refs {
-		if !strings.Contains(r.APIVersion, "knative.dev") {
-			// Let's not care so much about checking the status of non-knative
-			// resources.
-			continue
-		}
-		_, err := rig.WaitForReadyOrDone(r, 5*time.Minute)
-		if err != nil {
-			t.Fatal("failed to wait for ready or done, ", err)
-		}
-	}
 
 	// TODO: we want a wait for events for x time in the future.
 	time.Sleep(1 * time.Minute)
 
-	// TODO: need to validate set events.
-	ctx := Context() // TODO: there needs to be a better way to do this.
 	c := recorder_collector.New(ctx)
 
 	from := duckv1.KReference{
@@ -95,7 +68,7 @@ func BrokerDLQTestImpl(t *testing.T, brokerName, triggerName string) {
 		APIVersion: "v1",
 	}
 
-	obsName := "recorder-" + rig.Namespace()
+	obsName := "recorder-" + env.Namespace()
 	events, err := c.List(ctx, from, func(ob observer.Observed) bool {
 		return ob.Observer == obsName
 	})

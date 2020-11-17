@@ -51,6 +51,9 @@ func main() {
 		log.Fatal("failed to create client, ", err)
 	}
 
+	log.Print("sleeping")
+	time.Sleep(10 * time.Second)
+	log.Print("done sleeping, sending events now")
 	send(cloudevents.ContextWithRetriesExponentialBackoff(ctx, 10*time.Millisecond, 10), c, env.Count)
 
 	// Wait.

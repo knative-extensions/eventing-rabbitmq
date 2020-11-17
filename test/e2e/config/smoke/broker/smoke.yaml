@@ -15,7 +15,9 @@
 apiVersion: eventing.knative.dev/v1
 kind: Broker
 metadata:
-  name: {{ .brokerName }}
+# TODO: How to autogen this name?
+#  name: {{ .brokerName }}
+  name: testbroker
   namespace: {{ .namespace }}
   annotations:
     eventing.knative.dev/broker.class: RabbitMQBroker

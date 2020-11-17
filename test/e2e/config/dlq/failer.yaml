@@ -28,7 +28,7 @@ spec:
     spec:
       containers:
         - name: failer
-          image: {{ .images.failer }}
+          image: ko://knative.dev/eventing-rabbitmq/cmd/failer
           env:
             - name: DEFAULT_RESPONSE_CODE
               value: "500"

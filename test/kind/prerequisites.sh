@@ -27,10 +27,10 @@ pwd
 
 echo "Installing RabbitMQ Cluster Operator"
 
-kubectl apply -f https://github.com/rabbitmq/cluster-operator/releases/download/0.46.0/cluster-operator.yml
+kubectl apply -f https://github.com/rabbitmq/cluster-operator/releases/download/v1.0.0/cluster-operator.yml
 
 echo "Installing Knative Eventing"
 
-kubectl apply --filename https://github.com/knative/eventing/releases/download/v0.18.4/eventing-crds.yaml
+kubectl apply --filename https://github.com/knative/eventing/releases/download/v0.19.0/eventing-crds.yaml
 sleep 2 # Wait for the CRDs to be reconciled.
-kubectl apply --filename https://github.com/knative/eventing/releases/download/v0.18.4/eventing-core.yaml
+kubectl apply --filename https://github.com/knative/eventing/releases/download/v0.19.0/eventing-core.yaml
