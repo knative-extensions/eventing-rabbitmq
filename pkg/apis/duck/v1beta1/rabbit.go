@@ -48,11 +48,11 @@ type RabbitSpec struct{}
 
 // RabbitStatus.
 type RabbitStatus struct {
-	// RabbitAdmin identifies information on internal resources.
-	Admin *RabbitAdmin `json:"admin,omitempty"`
+	// DefaultUser identifies information on internal resources.
+	DefaultUser *RabbitDefaultUser `json:"defaultUser,omitempty"`
 }
 
-type RabbitAdmin struct {
+type RabbitDefaultUser struct {
 	SecretReference  *RabbitReference `json:"secretReference,omitempty"`
 	ServiceReference *RabbitReference `json:"serviceReference,omitempty"`
 }
