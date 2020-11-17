@@ -7,12 +7,40 @@
 install Knative Serving and Eventing as documented
 [here](https://knative.dev/docs/install/any-kubernetes-cluster/)
 
-Install the RabbitMQ Operator as documented
-[here](https://github.com/rabbitmq/cluster-operator).
+If you have an existing RabbitMQ cluster that you'd like to use, you can skip
+installing the RabbitMQ Cluster operator.
 
-Create a RabbitMQ Cluster:
+If you do not have a RabbitMQ cluster, you can install the RabbitMQ Operator as
+documented [here](https://github.com/rabbitmq/cluster-operator) which makes it
+easy to spin up a RabbitMQ cluster. At least version v1.0.0 is required.
+
+## Installation
+
+You can install a released version of [Knative RabbitMQ
+Broker](https://github.com/knative-sandbox/eventing-rabbitmq/releases/)
+
+For example, if you wanted to install version v0.19.0 you would run:
+
+```shell
+kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/download/v0.19.0/rabbitmq-broker.yaml
+```
+
+If you want to run the latest version from this repo, you can use
+[`ko`](https://github.com/google/ko) to install it.
 
 ```
+ko apply -f config/broker/
+```
+
+## Creating a Knative RabbitMQ Broker
+
+### Creating a Knative RabbitMQ Broker using RabbitMQ cluster operator
+
+If you want to use the RabbitMQ Cluster operator to install your RabbitMQ
+cluster, you can easily create a RabbitMQ cluster by executing the following
+command:
+
+```shell
 kubectl apply -f - << EOF
 apiVersion: rabbitmq.com/v1beta1
 kind: RabbitmqCluster
@@ -24,52 +52,9 @@ spec:
 EOF
 ```
 
-create a secret containing the brokerURL for that cluster (skip this if using
-_way two_):
+Then create Knative RabbitMQ Broker by executing the following command:
 
-```sh
-R_USERNAME=$(kubectl get secret --namespace default rokn-rabbitmq-admin -o jsonpath="{.data.username}" | base64 --decode)
-R_PASSWORD=$(kubectl get secret --namespace default rokn-rabbitmq-admin -o jsonpath="{.data.password}" | base64 --decode)
-
-kubectl create secret generic rokn-rabbitmq-broker-secret \
-    --from-literal=brokerURL="amqp://$R_USERNAME:$R_PASSWORD@rokn-rabbitmq-client.default:5672"
-```
-
-You can also optionally install
-[KEDA based autoscaler](https://github.com/knative-sandbox/eventing-autoscaler-keda).
-
-## Installation
-
-You must have [`ko`](https://github.com/google/ko) installed. Then install the
-broker-controller from this repository:
-
-```
-ko apply -f config/broker/
-```
-
-## Demo
-
-create a broker:
-
-```
-kubectl apply -f - << EOF
-  apiVersion: eventing.knative.dev/v1
-  kind: Broker
-  metadata:
-    name: default
-    annotations:
-      eventing.knative.dev/broker.class: RabbitMQBroker
-  spec:
-    config:
-      apiVersion: v1
-      kind: Secret
-      name: rokn-rabbitmq-broker-secret
-EOF
-```
-
-or _way two_:
-
-```
+```shell
 kubectl apply -f - << EOF
   apiVersion: eventing.knative.dev/v1
   kind: Broker
@@ -85,7 +70,52 @@ kubectl apply -f - << EOF
 EOF
 ```
 
-create a trigger:
+### Existing RabbitMQ
+
+If you have an existing RabbitMQ that you'd like to use instead of creating a
+new one, you must specify how the Knative RabbitMQ Broker can talk to it. For
+that, you need to create a secret containing the brokerURL for your existing
+cluster:
+
+```sh
+R_USERNAME=$(kubectl get secret --namespace default rokn-rabbitmq-admin -o jsonpath="{.data.username}" | base64 --decode)
+R_PASSWORD=$(kubectl get secret --namespace default rokn-rabbitmq-admin -o jsonpath="{.data.password}" | base64 --decode)
+
+kubectl create secret generic rokn-rabbitmq-broker-secret \
+    --from-literal=brokerURL="amqp://$R_USERNAME:$R_PASSWORD@rokn-rabbitmq-client.default:5672"
+```
+
+Then create Knative RabbitMQ Broker by executing the following command:
+
+```shell
+kubectl apply -f - << EOF
+  apiVersion: eventing.knative.dev/v1
+  kind: Broker
+  metadata:
+    name: default
+    annotations:
+      eventing.knative.dev/broker.class: RabbitMQBroker
+  spec:
+    config:
+      apiVersion: v1
+      kind: Secret
+      name: rokn-rabbitmq-broker-secret
+EOF
+```
+
+## Autoscaling (optional)
+
+To get autoscaling (scale to zero as well as up from 0), you can also optionally
+install [KEDA based
+autoscaler](https://github.com/knative-sandbox/eventing-autoscaler-keda). 
+
+## Demo
+
+### Create a Knative Trigger
+
+Next you need to create a Trigger, specifying which events get routed to
+where. For this example, we use a simple PingSource, which generates an event
+once a minute.
 
 ```
 kubectl apply -f - << EOF
@@ -107,7 +137,7 @@ kubectl apply -f - << EOF
 EOF
 ```
 
-create a Ping Source:
+Create a Ping Source by executing the following command:
 
 ```
 kubectl apply -f - << EOF
@@ -126,7 +156,7 @@ kubectl apply -f - << EOF
 EOF
 ```
 
-create an event_display subscriber:
+Create an event_display subscriber:
 
 ```
 kubectl apply -f - << EOF
