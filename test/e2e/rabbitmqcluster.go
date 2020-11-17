@@ -85,7 +85,7 @@ func RabbitMQClusterReady(ctx context.Context, t *testing.T) {
 		}
 		obj := like.DeepCopy()
 		if err = runtime.DefaultUnstructuredConverter.FromUnstructured(us.Object, obj); err != nil {
-			log.Fatalf("Error DefaultUnstructuree.Dynamiconverter. %v", err)
+			log.Fatal("Error DefaultUnstructuree.Dynamiconverter ")
 		}
 		obj.ResourceVersion = gvr.Version
 		obj.APIVersion = gvr.GroupVersion().String()
