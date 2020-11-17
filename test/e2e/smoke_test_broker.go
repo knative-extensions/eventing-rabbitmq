@@ -17,7 +17,6 @@ limitations under the License.
 package e2e
 
 import (
-	"knative.dev/eventing-rabbitmq/test/e2e/config/rabbitmq"
 	"knative.dev/eventing-rabbitmq/test/e2e/config/smoke/broker"
 	"knative.dev/reconciler-test/pkg/feature"
 )
@@ -26,7 +25,6 @@ import (
 func SmokeTestBroker() *feature.Feature {
 	f := new(feature.Feature)
 
-	f.Setup("install a rabbitmq", rabbitmq.Install())
 	f.Setup("install a broker", broker.Install())
 	f.Alpha("RabbitMQ broker").Must("goes ready", AllGoReady)
 	return f

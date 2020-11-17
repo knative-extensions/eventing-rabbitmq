@@ -22,7 +22,6 @@ import (
 	"testing"
 	"time"
 
-	"knative.dev/eventing-rabbitmq/test/e2e/config/rabbitmq"
 	"knative.dev/eventing-rabbitmq/test/e2e/config/smoke/brokertrigger"
 	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"
@@ -38,7 +37,6 @@ const (
 func SmokeTestBrokerTrigger() *feature.Feature {
 	f := new(feature.Feature)
 
-	f.Setup("install a rabbitmq", rabbitmq.Install())
 	f.Setup("install a broker", brokertrigger.Install())
 	f.Alpha("RabbitMQ broker").Must("goes ready", AllGoReady)
 	return f
