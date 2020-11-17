@@ -23,14 +23,14 @@ require (
 	github.com/tiago4orion/conjure v0.0.0-20150908101743-93cb30b9d218 // indirect
 	go.uber.org/zap v1.16.0
 	gotest.tools v2.2.0+incompatible
-	k8s.io/api v0.18.8
-	k8s.io/apimachinery v0.18.8
+	k8s.io/api v0.18.12
+	k8s.io/apimachinery v0.18.12
 	k8s.io/client-go v12.0.0+incompatible
-	k8s.io/code-generator v0.18.8
+	k8s.io/code-generator v0.18.12
 	k8s.io/kube-openapi v0.0.0-20200410145947-bcb3869e6f29
-	knative.dev/eventing v0.19.1-0.20201113172001-fd20fbcbdbda
+	knative.dev/eventing v0.19.1-0.20201117202251-be93f9495205
 	knative.dev/hack v0.0.0-20201112185459-01a34c573bd8
-	knative.dev/pkg v0.0.0-20201113182900-615f17a0eb05
+	knative.dev/pkg v0.0.0-20201117200952-14386bb65da0
 	knative.dev/reconciler-test v0.0.0-20201113174300-2b45d4c2e686
 )
 
