@@ -55,6 +55,7 @@ func DirectTestBroker() *feature.Feature {
 	return f
 }
 
+
 func CheckDirectEvents(ctx context.Context, t *testing.T) {
 	env := environment.FromContext(ctx)
 

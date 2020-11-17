@@ -43,7 +43,7 @@ func init() {
 var global environment.GlobalEnvironment
 
 // This test is more for debugging the ko publish process.
-func TestKoPublish2(t *testing.T) {
+func TestKoPublish(t *testing.T) {
 	ic, err := environment.ProduceImages()
 	if err != nil {
 		panic(fmt.Errorf("failed to produce images, %s", err))
@@ -85,6 +85,7 @@ func TestMain(m *testing.M) {
 func TestSmokeBroker(t *testing.T) {
 	t.Parallel()
 	ctx, env := global.Environment()
+	env.Test(ctx, t, RabbitMQCluster())
 	env.Test(ctx, t, SmokeTestBroker())
 	env.Finish()
 }
@@ -93,6 +94,7 @@ func TestSmokeBroker(t *testing.T) {
 func TestSmokeBrokerTrigger(t *testing.T) {
 	t.Parallel()
 	ctx, env := global.Environment()
+	env.Test(ctx, t, RabbitMQCluster())
 	env.Test(ctx, t, SmokeTestBrokerTrigger())
 	env.Finish()
 }
@@ -101,6 +103,7 @@ func TestSmokeBrokerTrigger(t *testing.T) {
 func TestBrokerDirect(t *testing.T) {
 	t.Parallel()
 	ctx, env := global.Environment()
+	env.Test(ctx, t, RabbitMQCluster())
 	env.Test(ctx, t, DirectTestBroker())
 	env.Finish()
 }
@@ -109,6 +112,7 @@ func TestBrokerDirect(t *testing.T) {
 func TestBrokerDLQ(t *testing.T) {
 	t.Parallel()
 	ctx, env := global.Environment()
+	env.Test(ctx, t, RabbitMQCluster())
 	env.Test(ctx, t, BrokerDLQTest())
 	env.Finish()
 }
