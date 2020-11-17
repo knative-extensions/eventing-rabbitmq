@@ -115,28 +115,28 @@ func (r *Reconciler) rabbitmqURLFromRabbit(ctx context.Context, ref *duckv1.KRef
 
 	rab := o.(*duckv1beta1.Rabbit)
 
-	if rab.Status.Admin == nil || rab.Status.Admin.SecretReference == nil || rab.Status.Admin.ServiceReference == nil {
+	if rab.Status.DefaultUser == nil || rab.Status.DefaultUser.SecretReference == nil || rab.Status.DefaultUser.ServiceReference == nil {
 		return nil, fmt.Errorf("rabbit \"%s/%s\" not ready", ref.Namespace, ref.Name)
 	}
 
-	_ = rab.Status.Admin.SecretReference
+	_ = rab.Status.DefaultUser.SecretReference
 
-	s, err := r.kubeClientSet.CoreV1().Secrets(rab.Status.Admin.SecretReference.Namespace).Get(ctx, rab.Status.Admin.SecretReference.Name, metav1.GetOptions{})
+	s, err := r.kubeClientSet.CoreV1().Secrets(rab.Status.DefaultUser.SecretReference.Namespace).Get(ctx, rab.Status.DefaultUser.SecretReference.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	password, ok := s.Data[rab.Status.Admin.SecretReference.Keys["password"]]
+	password, ok := s.Data[rab.Status.DefaultUser.SecretReference.Keys["password"]]
 	if !ok {
-		return nil, fmt.Errorf("rabbit Secret missing key %s", rab.Status.Admin.SecretReference.Keys["password"])
+		return nil, fmt.Errorf("rabbit Secret missing key %s", rab.Status.DefaultUser.SecretReference.Keys["password"])
 	}
 
-	username, ok := s.Data[rab.Status.Admin.SecretReference.Keys["username"]]
+	username, ok := s.Data[rab.Status.DefaultUser.SecretReference.Keys["username"]]
 	if !ok {
-		return nil, fmt.Errorf("rabbit Secret missing key %s", rab.Status.Admin.SecretReference.Keys["username"])
+		return nil, fmt.Errorf("rabbit Secret missing key %s", rab.Status.DefaultUser.SecretReference.Keys["username"])
 	}
 
-	host := network.GetServiceHostname(rab.Status.Admin.ServiceReference.Name, rab.Status.Admin.ServiceReference.Namespace)
+	host := network.GetServiceHostname(rab.Status.DefaultUser.ServiceReference.Name, rab.Status.DefaultUser.ServiceReference.Namespace)
 
 	return url.Parse(fmt.Sprintf("amqp://%s:%s@%s:%d", username, password, host, 5672))
 }

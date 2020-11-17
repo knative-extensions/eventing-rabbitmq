@@ -24,6 +24,9 @@ jobs:
         - v0.18.5
         - v0.17.9
 
+        rabbitmq-operator-version:
+          - 1.0.0
+
         # Map between K8s and KinD versions.
         # This is attempting to make it a bit clearer what's being tested.
         # See: https://github.com/kubernetes-sigs/kind/releases/tag/v0.9.0
@@ -105,7 +108,7 @@ jobs:
       run: |
         set -x
 
-        kubectl apply -f https://github.com/rabbitmq/cluster-operator/releases/download/0.46.0/cluster-operator.yml
+        kubectl apply -f https://github.com/rabbitmq/cluster-operator/releases/download/${{ matrix.rabbitmq-operator-version }}/cluster-operator.yml
 
     - name: Install Knative Eventing
       run: |
