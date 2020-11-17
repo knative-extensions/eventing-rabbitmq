@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"knative.dev/eventing-rabbitmq/test/e2e/config/direct"
-	"knative.dev/eventing-rabbitmq/test/e2e/config/rabbitmq"
 	"knative.dev/eventing-rabbitmq/test/e2e/config/recorder"
 	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"
@@ -47,14 +46,12 @@ import (
 func DirectTestBroker() *feature.Feature {
 	f := new(feature.Feature)
 
-	f.Setup("install a rabbitmq", rabbitmq.Install())
 	f.Setup("install test resources", direct.Install())
 	f.Setup("install recorder", recorder.Install())
 	f.Alpha("RabbitMQ broker").Must("goes ready", AllGoReady)
 	f.Alpha("RabbitMQ broker").Must("goes ready", CheckDirectEvents)
 	return f
 }
-
 
 func CheckDirectEvents(ctx context.Context, t *testing.T) {
 	env := environment.FromContext(ctx)

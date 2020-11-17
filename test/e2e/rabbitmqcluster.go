@@ -19,30 +19,32 @@ package e2e
 import (
 	"context"
 	"fmt"
+
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	duckv1 "knative.dev/pkg/apis/duck/v1"
-	"knative.dev/pkg/injection/clients/dynamicclient"
 	"log"
 
+	duckv1 "knative.dev/pkg/apis/duck/v1"
+	"knative.dev/pkg/injection/clients/dynamicclient"
+
 	"k8s.io/apimachinery/pkg/api/meta"
+
+	"testing"
 
 	"knative.dev/eventing-rabbitmq/test/e2e/config/rabbitmq"
 	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"
-	"testing"
 )
 
 const (
 	rabbitMQClusterName = "rabbitmqc"
-	rabbitMQAPIVersion = "rabbitmq.com/v1beta1"
+	rabbitMQAPIVersion  = "rabbitmq.com/v1beta1"
 	rabbitMQClusterKind = "RabbitmqCluster"
 )
-
 
 // RabbitMQCluster creates a rabbitmq.com/rabbitmqclusters cluster that the
 // Broker under test will use. This assumes that the RabbitMQ Operator has
@@ -50,8 +52,8 @@ const (
 func RabbitMQCluster() *feature.Feature {
 	f := new(feature.Feature)
 
-	f.Setup("install a rabbitmq", rabbitmq.Install())
-	f.Requirement("RabbitMQ broker goes ready", RabbitMQClusterReady)
+	f.Setup("install a rabbitmqcluster", rabbitmq.Install())
+	f.Requirement("RabbitMQCluster goes ready", RabbitMQClusterReady)
 	return f
 }
 
@@ -59,10 +61,10 @@ func RabbitMQClusterReady(ctx context.Context, t *testing.T) {
 	env := environment.FromContext(ctx)
 	namespace := env.Namespace()
 	rabbitCluster := corev1.ObjectReference{
-		Namespace: namespace,
-		Name: rabbitMQClusterName,
+		Namespace:  namespace,
+		Name:       rabbitMQClusterName,
 		APIVersion: rabbitMQAPIVersion,
-		Kind: rabbitMQClusterKind,
+		Kind:       rabbitMQClusterKind,
 	}
 	k := rabbitCluster.GroupVersionKind()
 	gvr, _ := meta.UnsafeGuessKindToResource(k)
