@@ -7,10 +7,12 @@
 install Knative Serving and Eventing as documented
 [here](https://knative.dev/docs/install/any-kubernetes-cluster/)
 
-Install the RabbitMQ Operator as documented. At least version v1.0.0 is
-required. If you have an existing RabbitMQ and want to use that, please use the
-(existing RabbitMQ instructions)[#existing-rabbitmq].
-[here](https://github.com/rabbitmq/cluster-operator).
+If you have an existing RabbitMQ cluster that you'd like to use, you can skip
+installing the RabbitMQ Cluster operator.
+
+If you do not have a RabbitMQ cluster, you can install the RabbitMQ Operator as
+documented [here](https://github.com/rabbitmq/cluster-operator) which makes it
+easy to spin up a RabbitMQ cluster. At least version v1.0.0 is required.
 
 ## Installation
 
@@ -34,8 +36,9 @@ ko apply -f config/broker/
 
 ### Creating a Knative RabbitMQ Broker using RabbitMQ cluster operator
 
-You can easily create a RabbitMQ cluster by using the RabbitMQ operator by
-executing the following command:
+If you want to use the RabbitMQ Cluster operator to install your RabbitMQ
+cluster, you can easily create a RabbitMQ cluster by executing the following
+command:
 
 ```shell
 kubectl apply -f - << EOF
