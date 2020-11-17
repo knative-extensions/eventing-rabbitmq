@@ -27,7 +27,7 @@ pwd
 
 echo "Installing RabbitMQ Cluster Operator"
 
-kubectl apply -f https://github.com/rabbitmq/cluster-operator/releases/download/0.46.0/cluster-operator.yml
+kubectl apply -f https://github.com/rabbitmq/cluster-operator/releases/download/v1.0.0/cluster-operator.yml
 
 echo "Installing Knative Eventing"
 
