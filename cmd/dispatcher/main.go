@@ -17,17 +17,20 @@ limitations under the License.
 package main
 
 import (
-	"log"
+	"context"
+	"errors"
 	"time"
 
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 
 	"github.com/NeowayLabs/wabbit/amqp"
-	"knative.dev/eventing-rabbitmq/pkg/dispatcher"
+	amqperr "github.com/streadway/amqp"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/signals"
+
+	"knative.dev/eventing-rabbitmq/pkg/dispatcher"
 )
 
 type envConfig struct {
@@ -43,10 +46,18 @@ type envConfig struct {
 	BackoffDelay  time.Duration `envconfig:"BACKOFF_DELAY" required:"false"`
 }
 
+const (
+	defaultBackoffDelay = 50 * time.Millisecond
+	defaultPrefetch     = 1
+	defaultPrefetchSize = 0
+)
+
 func main() {
+	ctx := signals.NewContext()
+
 	var env envConfig
 	if err := envconfig.Process("", &env); err != nil {
-		log.Fatal("Failed to process env var: ", err)
+		logging.FromContext(ctx).Fatal("Failed to process env var: ", err)
 	}
 
 	var backoffPolicy eventingduckv1.BackoffPolicyType
@@ -55,39 +66,53 @@ func main() {
 	} else if env.BackoffPolicy == "linear" {
 		backoffPolicy = eventingduckv1.BackoffPolicyLinear
 	} else {
-		log.Fatal("Invalid BACKOFF_POLICY specified, must be exponential or linear")
+		logging.FromContext(ctx).Fatalf("Invalid BACKOFF_POLICY specified: must be %q or %q", eventingduckv1.BackoffPolicyExponential, eventingduckv1.BackoffPolicyLinear)
 	}
 
 	backoffDelay := env.BackoffDelay
 	if backoffDelay == time.Duration(0) {
-		log.Printf("BackoffDelay: %q", backoffDelay)
-		backoffDelay = 50 * time.Millisecond
+		logging.FromContext(ctx).Infow("BackoffDelay is zero, enforcing default", zap.Any("default", defaultBackoffDelay))
+		backoffDelay = defaultBackoffDelay
 	}
+	logging.FromContext(ctx).Infow("Setting BackoffDelay", zap.Any("backoffDelay", backoffDelay))
 
-	ctx := signals.NewContext()
-
-	logging.FromContext(ctx).Infow("BackoffDelay:", zap.Any("backoffDelay", backoffDelay))
 	conn, err := amqp.Dial(env.RabbitURL)
 	if err != nil {
-		logging.FromContext(ctx).Fatal("failed to connect to RabbitMQ: ", err)
+		logging.FromContext(ctx).Fatal("Failed to connect to RabbitMQ: ", err)
 	}
-	defer conn.Close()
+	defer func() {
+		err = conn.Close()
+		if err != nil {
+			logging.FromContext(ctx).Warn("Failed to close connection: ", err)
+		}
+	}()
 
 	channel, err := conn.Channel()
 	if err != nil {
-		logging.FromContext(ctx).Fatal("failed to open a channel: ", err)
+		logging.FromContext(ctx).Fatal("Failed to open a channel: ", err)
 	}
-	defer channel.Close()
+	defer func() {
+		err = channel.Close()
+		if err != nil && !errors.Is(err, amqperr.ErrClosed) {
+			logging.FromContext(ctx).Warn("Failed to close channel: ", err)
+		}
+	}()
 
 	err = channel.Qos(
-		1,     // prefetch count
-		0,     // prefetch size
-		false, // global
+		defaultPrefetch,     // prefetch count
+		defaultPrefetchSize, // prefetch size
+		false,               // global
 	)
 	if err != nil {
-		logging.FromContext(ctx).Fatal("failed to create QoS: %s", err)
+		logging.FromContext(ctx).Fatal("Failed to create QoS: ", err)
 	}
 
 	d := dispatcher.NewDispatcher(env.BrokerIngressURL, env.SubscriberURL, env.Requeue, env.Retry, backoffDelay, backoffPolicy)
-	d.ConsumeFromQueue(ctx, channel, env.QueueName)
+	if err := d.ConsumeFromQueue(ctx, channel, env.QueueName); err != nil {
+		// ignore ctx cancelled and channel closed errors
+		if errors.Is(err, context.Canceled) || errors.Is(err, amqperr.ErrClosed) {
+			return
+		}
+		logging.FromContext(ctx).Fatal("Failed to consume from queue: ", err)
+	}
 }

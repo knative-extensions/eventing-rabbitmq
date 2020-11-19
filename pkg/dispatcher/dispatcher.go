@@ -19,16 +19,21 @@ package dispatcher
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/NeowayLabs/wabbit"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
+	"github.com/pkg/errors"
+	amqperr "github.com/streadway/amqp"
 	"go.uber.org/zap"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/pkg/logging"
+)
+
+const (
+	ackMultiple = false // send ack/nack for multiple messages
 )
 
 type Dispatcher struct {
@@ -56,8 +61,9 @@ func NewDispatcher(brokerIngressURL, subscriberURL string, requeue bool, maxRetr
 
 }
 
+// ConsumeFromQueue consumes messages from the given message channel and queue.
+// When the context is cancelled a context.Canceled error is returned.
 func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel wabbit.Channel, queueName string) error {
-	logging.FromContext(ctx).Infow("Starting to process message for: ", zap.String("Queue", queueName))
 	msgs, err := channel.Consume(
 		queueName, // queue
 		"",        // consumer
@@ -69,27 +75,41 @@ func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel wabbit.Channe
 		},
 	)
 	if err != nil {
-		logging.FromContext(ctx).Warn("failed to create consumer: ", err)
-		return err
+		return errors.Wrap(err, "create consumer")
 	}
 
 	ceClient, err := cloudevents.NewDefaultClient(cehttp.WithIsRetriableFunc(isRetriableFunc))
 	if err != nil {
-		logging.FromContext(ctx).Warn("failed to create http client")
-		return err
+		return errors.Wrap(err, "create http client")
 	}
-	forever := make(chan bool)
-	go func() {
-		for msg := range msgs {
+
+	logging.FromContext(ctx).Info("rabbitmq receiver started, exit with CTRL+C")
+	logging.FromContext(ctx).Infow("Starting to process messages", zap.String("queue", queueName))
+
+	for {
+		select {
+		case <-ctx.Done():
+			logging.FromContext(ctx).Info("context done, stopping message consumer")
+			return ctx.Err()
+
+		case msg, ok := <-msgs:
+			if !ok {
+				logging.FromContext(ctx).Warn("message channel closed, stopping message consumer")
+				return amqperr.ErrClosed
+			}
+
 			event := cloudevents.NewEvent()
 			err := json.Unmarshal(msg.Body(), &event)
 			if err != nil {
-				logging.FromContext(ctx).Info("failed to unmarshal event (nacking and not requeueing): ", err)
-				msg.Nack(false, false) // not multiple, do not requeue
+				logging.FromContext(ctx).Warn("failed to unmarshal event (NACK-ing and not re-queueing): ", err)
+				err = msg.Nack(ackMultiple, false) // do not requeue
+				if err != nil {
+					logging.FromContext(ctx).Warn("failed to NACK event: ", err)
+				}
 				continue
 			}
-			logging.FromContext(ctx).Debugf("Got event as: %+v", event)
 
+			logging.FromContext(ctx).Debugf("Got event as: %+v", event)
 			ctx = cloudevents.ContextWithTarget(ctx, d.subscriberURL)
 
 			if d.backoffPolicy == eventingduckv1.BackoffPolicyLinear {
@@ -101,7 +121,10 @@ func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel wabbit.Channe
 			response, result := ceClient.Request(ctx, event)
 			if !isSuccess(ctx, result) {
 				logging.FromContext(ctx).Warnf("Failed to deliver to %q requeue: %v", d.subscriberURL, d.requeue)
-				msg.Nack(false, d.requeue) // not multiple
+				err = msg.Nack(ackMultiple, d.requeue)
+				if err != nil {
+					logging.FromContext(ctx).Warn("failed to NACK event: ", err)
+				}
 				continue
 			}
 
@@ -115,17 +138,20 @@ func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel wabbit.Channe
 				result := ceClient.Send(ctx, *response)
 				if !isSuccess(ctx, result) {
 					logging.FromContext(ctx).Warnf("Failed to deliver to %q requeue: %v", d.brokerIngressURL, d.requeue)
-					msg.Nack(false, d.requeue) // not multiple
+					err = msg.Nack(ackMultiple, d.requeue) // not multiple
+					if err != nil {
+						logging.FromContext(ctx).Warn("failed to NACK event: ", err)
+					}
 					continue
 				}
 			}
-			msg.Ack(false) // not multiple
-		}
-	}()
 
-	fmt.Println("rabbitmq receiver started, exit with CTRL+C")
-	<-forever
-	return nil
+			err = msg.Ack(ackMultiple)
+			if err != nil {
+				logging.FromContext(ctx).Warn("failed to ACK event: ", err)
+			}
+		}
+	}
 }
 
 func isRetriableFunc(sc int) bool {
@@ -139,12 +165,14 @@ func isSuccess(ctx context.Context, result protocol.Result) bool {
 		if cloudevents.ResultAs(retriesResult.Result, &httpResult) {
 			if httpResult.StatusCode > 199 && httpResult.StatusCode < 300 {
 				return true
+			} else {
+				return false
 			}
-		} else {
-			logging.FromContext(ctx).Warnf("Invalid result type, not HTTP Result")
 		}
-	} else {
-		logging.FromContext(ctx).Warnf("Invalid result type, not RetriesResult")
+		logging.FromContext(ctx).Warnf("Invalid result type, not HTTP Result")
+		return false
 	}
+
+	logging.FromContext(ctx).Warnf("Invalid result type, not RetriesResult")
 	return false
 }
