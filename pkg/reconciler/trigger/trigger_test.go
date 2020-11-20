@@ -23,6 +23,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	cloudevents "github.com/cloudevents/sdk-go/v2"
+
 	"knative.dev/pkg/network"
 
 	"github.com/NeowayLabs/wabbit/amqptest/server"
@@ -36,10 +38,10 @@ import (
 
 	clientgotesting "k8s.io/client-go/testing"
 	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
-	broker "knative.dev/eventing-rabbitmq/pkg/reconciler/broker"
+	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
-	sourcesv1beta1 "knative.dev/eventing/pkg/apis/sources/v1beta1"
+	sourcesv1beta2 "knative.dev/eventing/pkg/apis/sources/v1beta2"
 	fakeeventingclient "knative.dev/eventing/pkg/client/injection/client/fake"
 	"knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1/trigger"
 	"knative.dev/eventing/pkg/duck"
@@ -57,8 +59,8 @@ import (
 	"knative.dev/pkg/resolver"
 
 	_ "knative.dev/eventing/pkg/client/injection/informers/eventing/v1/trigger/fake"
-	rtv1alpha1 "knative.dev/eventing/pkg/reconciler/testing"
 	. "knative.dev/eventing/pkg/reconciler/testing/v1"
+	rtv1beta2 "knative.dev/eventing/pkg/reconciler/testing/v1beta2"
 	_ "knative.dev/pkg/client/injection/ducks/duck/v1/addressable/fake"
 	. "knative.dev/pkg/reconciler/testing"
 )
@@ -83,9 +85,10 @@ const (
 
 	pingSourceName       = "test-ping-source"
 	testSchedule         = "*/2 * * * *"
+	testContentType      = cloudevents.TextPlain
 	testData             = "data"
 	sinkName             = "testsink"
-	dependencyAnnotation = "{\"kind\":\"PingSource\",\"name\":\"test-ping-source\",\"apiVersion\":\"sources.knative.dev/v1beta1\"}"
+	dependencyAnnotation = "{\"kind\":\"PingSource\",\"name\":\"test-ping-source\",\"apiVersion\":\"sources.knative.dev/v1beta2\"}"
 	currentGeneration    = 1
 	outdatedGeneration   = 0
 
@@ -733,37 +736,38 @@ func config() *duckv1.KReference {
 	}
 }
 
-func makeFalseStatusPingSource() *sourcesv1beta1.PingSource {
-	return rtv1alpha1.NewPingSourceV1Beta1(pingSourceName, testNS, rtv1alpha1.WithPingSourceV1B1SinkNotFound)
+func makeFalseStatusPingSource() *sourcesv1beta2.PingSource {
+	return rtv1beta2.NewPingSource(pingSourceName, testNS, rtv1beta2.WithPingSourceSinkNotFound)
 }
 
-func makeUnknownStatusCronJobSource() *sourcesv1beta1.PingSource {
-	cjs := rtv1alpha1.NewPingSourceV1Beta1(pingSourceName, testNS)
+func makeUnknownStatusCronJobSource() *sourcesv1beta2.PingSource {
+	cjs := rtv1beta2.NewPingSource(pingSourceName, testNS)
 	cjs.Status.InitializeConditions()
 	return cjs
 }
 
-func makeGenerationNotEqualPingSource() *sourcesv1beta1.PingSource {
+func makeGenerationNotEqualPingSource() *sourcesv1beta2.PingSource {
 	c := makeFalseStatusPingSource()
 	c.Generation = currentGeneration
 	c.Status.ObservedGeneration = outdatedGeneration
 	return c
 }
 
-func makeReadyPingSource() *sourcesv1beta1.PingSource {
+func makeReadyPingSource() *sourcesv1beta2.PingSource {
 	u, _ := apis.ParseURL(sinkURI)
-	return rtv1alpha1.NewPingSourceV1Beta1(pingSourceName, testNS,
-		rtv1alpha1.WithPingSourceV1B1Spec(sourcesv1beta1.PingSourceSpec{
-			Schedule: testSchedule,
-			JsonData: testData,
+	return rtv1beta2.NewPingSource(pingSourceName, testNS,
+		rtv1beta2.WithPingSourceSpec(sourcesv1beta2.PingSourceSpec{
+			Schedule:    testSchedule,
+			ContentType: testContentType,
+			Data:        testData,
 			SourceSpec: duckv1.SourceSpec{
 				Sink: brokerDestv1,
 			},
 		}),
-		rtv1alpha1.WithInitPingSourceV1B1Conditions,
-		rtv1alpha1.WithPingSourceV1B1Deployed,
-		rtv1alpha1.WithPingSourceV1B1CloudEventAttributes,
-		rtv1alpha1.WithPingSourceV1B1Sink(u),
+		rtv1beta2.WithInitPingSourceConditions,
+		rtv1beta2.WithPingSourceDeployed,
+		rtv1beta2.WithPingSourceCloudEventAttributes,
+		rtv1beta2.WithPingSourceSink(u),
 	)
 }
 
