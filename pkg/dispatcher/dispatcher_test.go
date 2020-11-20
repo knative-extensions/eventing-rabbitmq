@@ -142,7 +142,7 @@ func TestFailToConsume(t *testing.T) {
 		t.Fatal("Did not fail to consume.", err)
 	}
 
-	if err.Error() != "Unknown queue 'nosuchqueue'" {
+	if err.Error() != "create consumer: Unknown queue 'nosuchqueue'" {
 		t.Fatal("Unexpected failure message, got: ", err)
 	}
 }
@@ -171,6 +171,9 @@ func TestEndToEnd(t *testing.T) {
 		// Messages we expect Subscriber / Broker to receive
 		expectedSubscriberBodies []string
 		expectedBrokerBodies     []string
+
+		// 	any error we expect from consuming from the queue
+		consumeErr error
 	}{
 		// ** No requeues **
 		"One event, success, no response": {
@@ -178,18 +181,21 @@ func TestEndToEnd(t *testing.T) {
 			subscriberHandlers:       []handlerFunc{accepted},
 			events:                   []ce.Event{createEvent(eventData)},
 			expectedSubscriberBodies: []string{expectedData},
+			consumeErr:               context.Canceled,
 		},
 		"One event, failure, no response": {
 			subscriberReceiveCount:   1,
 			subscriberHandlers:       []handlerFunc{failed},
 			events:                   []ce.Event{createEvent(eventData)},
 			expectedSubscriberBodies: []string{expectedData},
+			consumeErr:               context.Canceled,
 		},
 		"two events, success, no response": {
 			subscriberReceiveCount:   2,
 			subscriberHandlers:       []handlerFunc{accepted, accepted},
 			events:                   []ce.Event{createEvent(eventData), createEvent(eventData2)},
 			expectedSubscriberBodies: []string{expectedData, expectedData2},
+			consumeErr:               context.Canceled,
 		},
 		"two events, first malformed, one delivered": {
 			subscriberReceiveCount:   1,
@@ -197,6 +203,7 @@ func TestEndToEnd(t *testing.T) {
 			rawMessages:              [][]byte{[]byte("garbage")},
 			events:                   []ce.Event{createEvent(eventData2)},
 			expectedSubscriberBodies: []string{expectedData2},
+			consumeErr:               context.Canceled,
 		},
 		"One event, success, response, goes to broker, accepted": {
 			subscriberReceiveCount:   1,
@@ -207,6 +214,7 @@ func TestEndToEnd(t *testing.T) {
 			brokerReceiveCount:       1,
 			brokerHandlers:           []handlerFunc{accepted},
 			expectedBrokerBodies:     []string{expectedResponseData},
+			consumeErr:               context.Canceled,
 		},
 		"One event, success, response, goes to broker, failed": {
 			subscriberReceiveCount:   1,
@@ -217,6 +225,7 @@ func TestEndToEnd(t *testing.T) {
 			brokerReceiveCount:       1,
 			brokerHandlers:           []handlerFunc{failed},
 			expectedBrokerBodies:     []string{expectedResponseData},
+			consumeErr:               context.Canceled,
 		},
 		// ** With requeues **
 		"One event, success, no response, requeue": {
@@ -225,6 +234,7 @@ func TestEndToEnd(t *testing.T) {
 			events:                   []ce.Event{createEvent(eventData)},
 			expectedSubscriberBodies: []string{expectedData},
 			requeue:                  true,
+			consumeErr:               context.Canceled,
 		},
 		"One event, 2 failures, 3rd one succeeds no response, requeue": {
 			subscriberReceiveCount:   3,
@@ -232,6 +242,7 @@ func TestEndToEnd(t *testing.T) {
 			events:                   []ce.Event{createEvent(eventData)},
 			expectedSubscriberBodies: []string{expectedData, expectedData, expectedData},
 			requeue:                  true,
+			consumeErr:               context.Canceled,
 		},
 		"One event, 2 failures, 3rd one succeeds no response, linear retry, requeue": {
 			subscriberReceiveCount:   3,
@@ -240,6 +251,7 @@ func TestEndToEnd(t *testing.T) {
 			expectedSubscriberBodies: []string{expectedData, expectedData, expectedData},
 			requeue:                  true,
 			backoffPolicy:            eventingduckv1.BackoffPolicyLinear,
+			consumeErr:               context.Canceled,
 		},
 		"One event, success, response, goes to broker, failed once, requeued, then accepted": {
 			subscriberReceiveCount:   2,
@@ -251,6 +263,7 @@ func TestEndToEnd(t *testing.T) {
 			brokerHandlers:           []handlerFunc{failed, accepted},
 			expectedBrokerBodies:     []string{expectedResponseData, expectedResponseData},
 			requeue:                  true,
+			consumeErr:               context.Canceled,
 		},
 	}
 
@@ -280,7 +293,7 @@ func TestEndToEnd(t *testing.T) {
 			broker := httptest.NewServer(brokerHandler)
 			defer broker.Close()
 
-			ch, server, err := createRabbitAndQueue()
+			ch, srv, err := createRabbitAndQueue()
 			if err != nil {
 				t.Error("Failed to create Rabbit and queue:", err)
 			}
@@ -292,11 +305,11 @@ func TestEndToEnd(t *testing.T) {
 				}
 			}
 			for i := range tc.events {
-				bytes, err := json.Marshal(tc.events[i])
+				b, err := json.Marshal(tc.events[i])
 				if err != nil {
 					t.Errorf("Failed to marshal the event %d: %s", i, err)
 				}
-				err = ch.Publish(exchangeName, "process.data", bytes, nil)
+				err = ch.Publish(exchangeName, "process.data", b, nil)
 				if err != nil {
 					t.Errorf("Failed to publish event %d: %s", i, err)
 				}
@@ -310,8 +323,18 @@ func TestEndToEnd(t *testing.T) {
 
 			}
 			d := NewDispatcher(broker.URL, subscriber.URL, tc.requeue, tc.maxRetries, backoffDelay, backoffPolicy)
+
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			var wg sync.WaitGroup
+			wg.Add(1)
 			go func() {
-				d.ConsumeFromQueue(context.TODO(), ch, queueName)
+				defer wg.Done()
+				if err := d.ConsumeFromQueue(ctx, ch, queueName); err != tc.consumeErr {
+					t.Errorf("unexpected consumer error, want %v got %v", tc.consumeErr, err)
+				}
+
 			}()
 
 			brokerFinished := false
@@ -333,8 +356,12 @@ func TestEndToEnd(t *testing.T) {
 				}
 			}
 
+			// stop the consumer and wait
+			cancel()
+			wg.Wait()
+
 			ch.Close()
-			server.Stop()
+			srv.Stop()
 			if subscriberHandler.getReceivedCount() != tc.subscriberReceiveCount {
 				t.Errorf("subscriber got %d events, wanted %d", subscriberHandler.getReceivedCount(), tc.subscriberReceiveCount)
 			} else {
