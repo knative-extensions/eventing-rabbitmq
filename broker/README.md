@@ -16,8 +16,8 @@ easy to spin up a RabbitMQ cluster. At least version v1.0.0 is required.
 
 ## Installation
 
-You can install a released version of [Knative RabbitMQ
-Broker](https://github.com/knative-sandbox/eventing-rabbitmq/releases/)
+You can install a released version of
+[Knative RabbitMQ Broker](https://github.com/knative-sandbox/eventing-rabbitmq/releases/)
 
 For example, if you wanted to install version v0.19.0 you would run:
 
@@ -106,16 +106,16 @@ EOF
 ## Autoscaling (optional)
 
 To get autoscaling (scale to zero as well as up from 0), you can also optionally
-install [KEDA based
-autoscaler](https://github.com/knative-sandbox/eventing-autoscaler-keda). 
+install
+[KEDA based autoscaler](https://github.com/knative-sandbox/eventing-autoscaler-keda).
 
 ## Demo
 
 ### Create a Knative Trigger
 
-Next you need to create a Trigger, specifying which events get routed to
-where. For this example, we use a simple PingSource, which generates an event
-once a minute.
+Next you need to create a Trigger, specifying which events get routed to where.
+For this example, we use a simple PingSource, which generates an event once a
+minute.
 
 ```
 kubectl apply -f - << EOF
