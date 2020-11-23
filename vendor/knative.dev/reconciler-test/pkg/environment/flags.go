@@ -30,6 +30,8 @@ var (
 	l = new(feature.Levels)
 )
 
+// InitFlags registers the requirement and state filter flags supported by the
+// testing framework.
 func InitFlags(fs *flag.FlagSet) {
 	// States
 	*s = feature.Any
