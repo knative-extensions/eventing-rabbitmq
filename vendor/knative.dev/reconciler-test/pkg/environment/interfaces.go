@@ -37,6 +37,10 @@ type GlobalEnvironment interface {
 
 // Environment is the ephemeral testing environment to test features.
 type Environment interface {
+	// Prerequisite will execute the feature using the given Context and T,
+	// the feature should not have any asserts.
+	Prerequisite(ctx context.Context, t *testing.T, f *feature.Feature)
+
 	// Test will execute the feature test using the given Context and T.
 	Test(ctx context.Context, t *testing.T, f *feature.Feature)
 

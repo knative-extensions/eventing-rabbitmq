@@ -129,6 +129,7 @@ github.com/docker/distribution/digestset
 github.com/docker/distribution/reference
 github.com/docker/distribution/registry/api/errcode
 # github.com/docker/docker v1.13.1 => github.com/docker/engine v0.0.0-20190717161051-705d9623b7c1
+## explicit
 github.com/docker/docker/api
 github.com/docker/docker/api/types
 github.com/docker/docker/api/types/blkiodev
@@ -349,6 +350,7 @@ github.com/rogpeppe/go-internal/modfile
 github.com/rogpeppe/go-internal/module
 github.com/rogpeppe/go-internal/semver
 # github.com/sergi/go-diff v1.1.0
+## explicit
 github.com/sergi/go-diff/diffmatchpatch
 # github.com/sirupsen/logrus v1.6.0
 github.com/sirupsen/logrus
@@ -476,6 +478,8 @@ golang.org/x/xerrors
 golang.org/x/xerrors/internal
 # gomodules.xyz/jsonpatch/v2 v2.1.0
 gomodules.xyz/jsonpatch/v2
+# gonum.org/v1/netlib v0.0.0-20190331212654-76723241ea4e
+## explicit
 # google.golang.org/api v0.34.0
 google.golang.org/api/googleapi
 google.golang.org/api/googleapi/transport
@@ -1018,7 +1022,7 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/eventing v0.19.1-0.20201117202251-be93f9495205
+# knative.dev/eventing v0.19.1-0.20201123074053-1402d0f399ca
 ## explicit
 knative.dev/eventing/pkg/adapter/v2
 knative.dev/eventing/pkg/adapter/v2/util/crstatusevent
@@ -1146,10 +1150,10 @@ knative.dev/eventing/test/test_images/heartbeats
 knative.dev/eventing/test/test_images/performance
 knative.dev/eventing/test/test_images/print
 knative.dev/eventing/test/test_images/recordevents
-# knative.dev/hack v0.0.0-20201112185459-01a34c573bd8
+# knative.dev/hack v0.0.0-20201120192952-353db687ec5b
 ## explicit
 knative.dev/hack
-# knative.dev/pkg v0.0.0-20201117200952-14386bb65da0
+# knative.dev/pkg v0.0.0-20201123014053-92bc25a0a520
 ## explicit
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
@@ -1249,7 +1253,7 @@ knative.dev/pkg/webhook/configmaps
 knative.dev/pkg/webhook/resourcesemantics
 knative.dev/pkg/webhook/resourcesemantics/defaulting
 knative.dev/pkg/webhook/resourcesemantics/validation
-# knative.dev/reconciler-test v0.0.0-20201113174300-2b45d4c2e686
+# knative.dev/reconciler-test v0.0.0-20201119161052-83e399255464
 ## explicit
 knative.dev/reconciler-test/pkg/environment
 knative.dev/reconciler-test/pkg/feature

@@ -22,13 +22,17 @@ import (
 	"testing"
 )
 
+// Feature is a list of steps and feature name.
 type Feature struct {
 	Name  string
 	Steps []Step
 }
 
+// StepFn is the function signature for steps.
 type StepFn func(ctx context.Context, t *testing.T)
 
+// Step is a structure to hold the step function, step name and state, level and
+// timing configuration.
 type Step struct {
 	Name string
 	S    States
@@ -37,6 +41,8 @@ type Step struct {
 	Fn   StepFn
 }
 
+// TestName returns the constructed test name based on the timing, step, state,
+// level, and the Name provided in the step.
 func (s *Step) TestName() string {
 	switch s.T {
 	case Assert:
@@ -46,6 +52,7 @@ func (s *Step) TestName() string {
 	}
 }
 
+// Setup adds a step function to the feature set at the Setup timing phase.
 func (f *Feature) Setup(name string, fn StepFn) {
 	f.AddStep(Step{
 		Name: name,
@@ -56,6 +63,7 @@ func (f *Feature) Setup(name string, fn StepFn) {
 	})
 }
 
+// Requirement adds a step function to the feature set at the Requirement timing phase.
 func (f *Feature) Requirement(name string, fn StepFn) {
 	f.AddStep(Step{
 		Name: name,
@@ -66,20 +74,7 @@ func (f *Feature) Requirement(name string, fn StepFn) {
 	})
 }
 
-func (f *Feature) Teardown(name string, fn StepFn) {
-	f.AddStep(Step{
-		Name: name,
-		S:    Any,
-		L:    All,
-		T:    Teardown,
-		Fn:   fn,
-	})
-}
-
-func (f *Feature) AddStep(step ...Step) {
-	f.Steps = append(f.Steps, step...)
-}
-
+// Assert adds a step function to the feature set at the Assert timing phase.
 func (a *Asserter) Assert(l Levels, name string, fn StepFn) {
 	a.f.AddStep(Step{
 		Name: fmt.Sprintf("%s %s", a.name, name),
@@ -90,6 +85,23 @@ func (a *Asserter) Assert(l Levels, name string, fn StepFn) {
 	})
 }
 
+// Teardown adds a step function to the feature set at the Teardown timing phase.
+func (f *Feature) Teardown(name string, fn StepFn) {
+	f.AddStep(Step{
+		Name: name,
+		S:    Any,
+		L:    All,
+		T:    Teardown,
+		Fn:   fn,
+	})
+}
+
+// AddStep appends one or more steps to the Feature.
+func (f *Feature) AddStep(step ...Step) {
+	f.Steps = append(f.Steps, step...)
+}
+
+// Assertable is a fluent interface based on Levels for creating an Assert step.
 type Assertable interface {
 	Must(name string, fn StepFn) Assertable
 	Should(name string, fn StepFn) Assertable
@@ -98,14 +110,17 @@ type Assertable interface {
 	ShouldNot(name string, fn StepFn) Assertable
 }
 
+// Alpha is a fluent style method for creating an Assert step in Alpha State.
 func (f *Feature) Alpha(name string) Assertable {
 	return f.asserter(Alpha, name)
 }
 
+// Beta is a fluent style method for creating an Assert step in Beta State.
 func (f *Feature) Beta(name string) Assertable {
 	return f.asserter(Beta, name)
 }
 
+// Stable is a fluent style method for creating an Assert step in Stable State.
 func (f *Feature) Stable(name string) Assertable {
 	return f.asserter(Stable, name)
 }
