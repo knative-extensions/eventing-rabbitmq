@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: eventing.knative.dev/v1
-kind: Broker
+apiVersion: v1
+kind: Service
 metadata:
   name: {{ .name }}
   namespace: {{ .namespace }}
-  annotations:
-    eventing.knative.dev/broker.class: RabbitMQBroker
 spec:
-  config:
-    apiVersion: rabbitmq.com/v1beta1
-    kind: RabbitmqCluster
-    name: rabbitmqc
+  selector:
+    app: eventshub-{{ .name }}
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080

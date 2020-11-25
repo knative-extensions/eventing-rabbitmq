@@ -44,6 +44,7 @@ jobs:
       GOPATH: ${{ github.workspace }}
       GO111MODULE: off
       KO_DOCKER_REPO: kind.local
+      SYSTEM_NAMESPACE: knative-eventing
 
     steps:
     - name: Set up Go 1.14.x

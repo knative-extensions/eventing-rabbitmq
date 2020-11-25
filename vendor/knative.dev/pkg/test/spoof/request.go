@@ -14,17 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package e2e
+package spoof
 
-import (
-	"knative.dev/eventing-rabbitmq/test/e2e/config/smoke/broker"
-	"knative.dev/reconciler-test/pkg/feature"
-)
+import "net/http"
 
-// SmokeTestBrokerImpl makes sure an RabbitMQ Broker goes ready.
-func SmokeTestBroker(brokerName string) *feature.Feature {
-	f := new(feature.Feature)
-	f.Setup("install a broker", broker.Install(brokerName))
-	f.Alpha("RabbitMQ broker").Must("goes ready", AllGoReady)
-	return f
+// RequestOption enables configuration of requests
+// when polling for endpoint states.
+type RequestOption func(*http.Request)
+
+// WithHeader will add the provided headers to the request.
+func WithHeader(header http.Header) RequestOption {
+	return func(r *http.Request) {
+		if r.Header == nil {
+			r.Header = header
+			return
+		}
+		for key, values := range header {
+			for _, value := range values {
+				r.Header.Add(key, value)
+			}
+		}
+	}
 }

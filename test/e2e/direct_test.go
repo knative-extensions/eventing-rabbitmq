@@ -1,5 +1,3 @@
-// +build e2e
-
 /*
 Copyright 2020 The Knative Authors
 
@@ -49,7 +47,7 @@ func DirectTestBroker() *feature.Feature {
 	f.Setup("install test resources", direct.Install())
 	f.Setup("install recorder", recorder.Install())
 	f.Alpha("RabbitMQ broker").Must("goes ready", AllGoReady)
-	f.Alpha("RabbitMQ broker").Must("goes ready", CheckDirectEvents)
+	f.Alpha("RabbitMQ broker").Must("retrieve events", CheckDirectEvents)
 	return f
 }
 

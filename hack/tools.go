@@ -45,4 +45,7 @@ import (
 
 	// For chaos testing the leaderelection stuff.
 	_ "knative.dev/pkg/leaderelection/chaosduck"
+
+	// For e2e testing.
+	_ "knative.dev/reconciler-test/cmd/eventshub"
 )

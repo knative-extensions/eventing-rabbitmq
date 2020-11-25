@@ -14,27 +14,38 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package broker
+package svc
 
 import (
 	"context"
 	"testing"
 
-	"knative.dev/reconciler-test/pkg/environment"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/manifest"
 )
 
-func init() {
-	environment.RegisterPackage(manifest.ImagesLocalYaml()...)
-}
+// Install will create a Service resource mapping :80 to :8080 on the provided
+// selector for pods.
+func Install(name, selectorKey, selectorValue string) feature.StepFn {
+	cfg := map[string]interface{}{
+		"name":          name,
+		"selectorKey":   selectorKey,
+		"selectorValue": selectorValue,
+	}
 
-func Install(name string) feature.StepFn {
 	return func(ctx context.Context, t *testing.T) {
-		if _, err := manifest.InstallLocalYaml(ctx, map[string]interface{}{
-			"name": name,
-		}); err != nil {
+		if _, err := manifest.InstallLocalYaml(ctx, cfg); err != nil {
 			t.Fatal(err)
 		}
+	}
+}
+
+// AsRef returns a KRef for a Service without namespace.
+func AsRef(name string) *duckv1.KReference {
+	return &duckv1.KReference{
+		Kind:       "Service",
+		Name:       name,
+		APIVersion: "v1",
 	}
 }

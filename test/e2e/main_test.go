@@ -21,6 +21,11 @@ package e2e
 import (
 	"flag"
 	"fmt"
+	"knative.dev/eventing/test/rekt/features"
+	"knative.dev/pkg/system"
+	"knative.dev/reconciler-test/pkg/feature"
+	"knative.dev/reconciler-test/pkg/k8s"
+	"knative.dev/reconciler-test/pkg/knative"
 	"os"
 	"testing"
 	"text/template"
@@ -85,8 +90,9 @@ func TestMain(m *testing.M) {
 func TestSmokeBroker(t *testing.T) {
 	t.Parallel()
 	ctx, env := global.Environment()
-	env.Test(ctx, t, RabbitMQCluster())
-	env.Test(ctx, t, SmokeTestBroker())
+	env.Prerequisite(ctx, t, RabbitMQCluster())
+	brokerName := feature.MakeRandomK8sName("broker")
+	env.Test(ctx, t, SmokeTestBroker(brokerName))
 	env.Finish()
 }
 
@@ -94,7 +100,7 @@ func TestSmokeBroker(t *testing.T) {
 func TestSmokeBrokerTrigger(t *testing.T) {
 	t.Parallel()
 	ctx, env := global.Environment()
-	env.Test(ctx, t, RabbitMQCluster())
+	env.Prerequisite(ctx, t, RabbitMQCluster())
 	env.Test(ctx, t, SmokeTestBrokerTrigger())
 	env.Finish()
 }
@@ -103,7 +109,7 @@ func TestSmokeBrokerTrigger(t *testing.T) {
 func TestBrokerDirect(t *testing.T) {
 	t.Parallel()
 	ctx, env := global.Environment()
-	env.Test(ctx, t, RabbitMQCluster())
+	env.Prerequisite(ctx, t, RabbitMQCluster())
 	env.Test(ctx, t, DirectTestBroker())
 	env.Finish()
 }
@@ -112,7 +118,23 @@ func TestBrokerDirect(t *testing.T) {
 func TestBrokerDLQ(t *testing.T) {
 	t.Parallel()
 	ctx, env := global.Environment()
-	env.Test(ctx, t, RabbitMQCluster())
+	env.Prerequisite(ctx, t, RabbitMQCluster())
 	env.Test(ctx, t, BrokerDLQTest())
+	env.Finish()
+}
+
+// TestBrokerAsMiddleware makes sure a Broker acts as middleware.
+func TestBrokerAsMiddleware(t *testing.T) {
+	t.Parallel()
+	ctx, env := global.Environment(
+		knative.WithKnativeNamespace(system.Namespace()),
+		knative.WithLoggingConfig,
+		knative.WithTracingConfig,
+		k8s.WithEventListener,
+	)
+	brokerName := feature.MakeRandomK8sName("broker")
+	env.Prerequisite(ctx, t, RabbitMQCluster())
+	env.Prerequisite(ctx, t, SmokeTestBroker(brokerName))
+	env.Test(ctx, t, features.BrokerAsMiddleware(brokerName))
 	env.Finish()
 }

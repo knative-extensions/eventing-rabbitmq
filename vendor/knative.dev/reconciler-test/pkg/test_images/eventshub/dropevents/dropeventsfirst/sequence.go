@@ -14,17 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package e2e
+package dropeventsfirst
 
-import (
-	"knative.dev/eventing-rabbitmq/test/e2e/config/smoke/broker"
-	"knative.dev/reconciler-test/pkg/feature"
-)
+type First struct {
+	N uint64
+}
 
-// SmokeTestBrokerImpl makes sure an RabbitMQ Broker goes ready.
-func SmokeTestBroker(brokerName string) *feature.Feature {
-	f := new(feature.Feature)
-	f.Setup("install a broker", broker.Install(brokerName))
-	f.Alpha("RabbitMQ broker").Must("goes ready", AllGoReady)
-	return f
+func (f First) Skip(counter uint64) bool {
+	return f.N >= counter
 }

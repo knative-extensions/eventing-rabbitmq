@@ -14,17 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package e2e
-
-import (
-	"knative.dev/eventing-rabbitmq/test/e2e/config/smoke/broker"
-	"knative.dev/reconciler-test/pkg/feature"
-)
-
-// SmokeTestBrokerImpl makes sure an RabbitMQ Broker goes ready.
-func SmokeTestBroker(brokerName string) *feature.Feature {
-	f := new(feature.Feature)
-	f.Setup("install a broker", broker.Install(brokerName))
-	f.Alpha("RabbitMQ broker").Must("goes ready", AllGoReady)
-	return f
-}
+// Package recorder_vent implements an eventshub.EventLog backed by Kubernetes
+// Events using an event recorder.
+package recorder_vent

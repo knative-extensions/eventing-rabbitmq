@@ -14,27 +14,38 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package broker
+package broker_test
 
 import (
-	"context"
-	"testing"
+	"os"
 
-	"knative.dev/reconciler-test/pkg/environment"
-	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/manifest"
 )
 
-func init() {
-	environment.RegisterPackage(manifest.ImagesLocalYaml()...)
-}
-
-func Install(name string) feature.StepFn {
-	return func(ctx context.Context, t *testing.T) {
-		if _, err := manifest.InstallLocalYaml(ctx, map[string]interface{}{
-			"name": name,
-		}); err != nil {
-			t.Fatal(err)
-		}
+func Example() {
+	images := map[string]string{}
+	cfg := map[string]interface{}{
+		"name":      "foo",
+		"namespace": "bar",
 	}
+
+	files, err := manifest.ExecuteLocalYAML(images, cfg)
+	if err != nil {
+		panic(err)
+	}
+
+	manifest.OutputYAML(os.Stdout, files)
+	// Output:
+	// apiVersion: eventing.knative.dev/v1
+	// kind: Broker
+	// metadata:
+	//   name: foo
+	//   namespace: bar
+	//   annotations:
+	//     eventing.knative.dev/broker.class: RabbitMQBroker
+	// spec:
+	//   config:
+	//     apiVersion: rabbitmq.com/v1beta1
+	//     kind: RabbitmqCluster
+	//     name: rabbitmqc
 }
