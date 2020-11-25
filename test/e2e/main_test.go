@@ -21,14 +21,15 @@ package e2e
 import (
 	"flag"
 	"fmt"
+	"os"
+	"testing"
+	"text/template"
+
 	"knative.dev/eventing/test/rekt/features"
 	"knative.dev/pkg/system"
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/k8s"
 	"knative.dev/reconciler-test/pkg/knative"
-	"os"
-	"testing"
-	"text/template"
 
 	"knative.dev/pkg/injection"
 
