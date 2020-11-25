@@ -32,10 +32,10 @@ require (
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/code-generator v0.18.12
 	k8s.io/kube-openapi v0.0.0-20200410145947-bcb3869e6f29
-	knative.dev/eventing v0.19.1-0.20201123074053-1402d0f399ca
-	knative.dev/hack v0.0.0-20201120192952-353db687ec5b
-	knative.dev/pkg v0.0.0-20201123014053-92bc25a0a520
-	knative.dev/reconciler-test v0.0.0-20201119161052-83e399255464
+	knative.dev/eventing v0.19.1-0.20201125205735-a2efccb25959
+	knative.dev/hack v0.0.0-20201125150036-c0ad7c75a71e
+	knative.dev/pkg v0.0.0-20201125095035-9bf616d2f46a
+	knative.dev/reconciler-test v0.0.0-20201124190335-83a44efcdfef
 )
 
 replace (
