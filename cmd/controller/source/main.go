@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	component = "rabbitmq_controller"
+	component = "rabbitmq-controller"
 )
 
 func main() {
