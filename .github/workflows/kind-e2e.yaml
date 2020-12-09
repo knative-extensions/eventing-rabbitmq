@@ -18,6 +18,7 @@ jobs:
         - v1.17.11
         - v1.18.8
         - v1.19.1
+        - v1.20.0
 
         eventing-version:
         - v0.19.0
@@ -40,6 +41,9 @@ jobs:
         - k8s-version: v1.19.1
           kind-version: v0.9.0
           kind-image-sha: sha256:98cf5288864662e37115e362b23e4369c8c4a408f99cbc06e58ac30ddc721600
+        - k8s-version: v1.20.0
+          kind-version: v0.9.0
+          kind-image-sha: sha256:ad1bcd4daa6607940a897527b6e7479c523759ad17d7f26b3d0e088fc062fef5
     env:
       GOPATH: ${{ github.workspace }}
       GO111MODULE: off
