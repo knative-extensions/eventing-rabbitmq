@@ -423,40 +423,6 @@ func TestAdapter_ConsumeMessages(t *testing.T) {
 	}
 }
 
-func TestAdapter_JsonEncode(t *testing.T) {
-	statsReporter, _ := source.NewStatsReporter()
-
-	a := &Adapter{
-		config: &adapterConfig{
-			Topic:   "",
-			Brokers: "amqp://localhost:5672/%2f",
-			ExchangeConfig: ExchangeConfig{
-				TypeOf:      "direct",
-				Durable:     true,
-				AutoDeleted: false,
-				Internal:    false,
-				NoWait:      false,
-			},
-			QueueConfig: QueueConfig{
-				Name:             "",
-				Durable:          false,
-				DeleteWhenUnused: false,
-				Exclusive:        true,
-				NoWait:           false,
-			},
-		},
-		logger:   zap.NewNop(),
-		reporter: statsReporter,
-	}
-	data, err := a.JsonEncode([]byte(`{"Test":"json"}`))
-	if err != nil {
-		t.Errorf("JsonEncode failed: %s", err)
-	}
-	if data == nil {
-		t.Errorf("Json decoded incorrectly")
-	}
-}
-
 type fakeHandler struct {
 	body   []byte
 	header http.Header

@@ -116,3 +116,12 @@ func TestBrokerDLQ(t *testing.T) {
 	env.Test(ctx, t, BrokerDLQTest())
 	env.Finish()
 }
+
+// TestSourceDirect makes sure a source delivers events to Sink.
+func TestSourceDirect(t *testing.T) {
+	t.Parallel()
+	ctx, env := global.Environment()
+	env.Test(ctx, t, RabbitMQCluster())
+	env.Test(ctx, t, DirectTestSource())
+	env.Finish()
+}
