@@ -18,7 +18,6 @@ package rabbitmq
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	nethttp "net/http"
 	"strings"
@@ -30,6 +29,7 @@ import (
 	"github.com/cloudevents/sdk-go/v2/binding"
 	"github.com/cloudevents/sdk-go/v2/protocol/http"
 	"go.uber.org/zap"
+	"k8s.io/apimachinery/pkg/util/uuid"
 	sourcesv1alpha1 "knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 	"knative.dev/eventing/pkg/adapter/v2"
 	"knative.dev/eventing/pkg/kncloudevents"
@@ -239,7 +239,7 @@ func (a *Adapter) ConsumeMessages(channel *wabbit.Channel,
 		(*queue).Name(),
 		"",
 		wabbit.Option{
-			"noAck":     false,
+			"autoAck":   false,
 			"exclusive": a.config.QueueConfig.Exclusive,
 			"noLocal":   false,
 			"noWait":    a.config.QueueConfig.NoWait,
@@ -263,21 +263,19 @@ func (a *Adapter) PollForMessages(channel *wabbit.Channel,
 			if ok {
 				logger.Info("Received: ", zap.Any("value", string(msg.Body())))
 
-				go func(message *wabbit.Delivery) {
-					if err := a.postMessage(*message); err == nil {
-						logger.Info("Successfully sent event to sink")
-						err = (*channel).Ack((*message).DeliveryTag(), true)
-						if err != nil {
-							logger.Error("Sending Ack failed with Delivery Tag")
-						}
-					} else {
-						logger.Error("Sending event to sink failed: ", zap.Error(err))
-						err = (*channel).Nack((*message).DeliveryTag(), true, true)
-						if err != nil {
-							logger.Error("Sending Nack failed with Delivery Tag")
-						}
+				if err := a.postMessage(msg); err == nil {
+					logger.Info("Successfully sent event to sink")
+					err = msg.Ack(false)
+					if err != nil {
+						logger.Error("Sending Ack failed with Delivery Tag")
 					}
-				}(&msg)
+				} else {
+					logger.Error("Sending event to sink failed: ", zap.Error(err))
+					err = msg.Nack(false, true)
+					if err != nil {
+						logger.Error("Sending Nack failed with Delivery Tag")
+					}
+				}
 			} else {
 				return nil
 			}
@@ -295,21 +293,21 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 		return err
 	}
 
+	// TODO: See if the message is already a Cloud Event and if so, do not wrap, just use as is.
 	event := cloudevents.NewEvent()
-
-	event.SetID(msg.MessageId())
+	if msg.MessageId() != "" {
+		event.SetID(msg.MessageId())
+	} else {
+		event.SetID(string(uuid.NewUUID()))
+	}
 	event.SetTime(msg.Timestamp())
 	event.SetType(sourcesv1alpha1.RabbitmqEventType)
 	event.SetSource(sourcesv1alpha1.RabbitmqEventSource(a.config.Namespace, a.config.Name, a.config.Topic))
 	event.SetSubject(msg.MessageId())
 	event.SetExtension("key", msg.MessageId())
 
-	eventData, err := a.JsonEncode(msg.Body())
-	if err != nil {
-		return err
-	}
-
-	err = event.SetData(*cloudevents.StringOfApplicationJSON(), eventData)
+	// TODO: Check the content type and use it instead.
+	err = event.SetData(*cloudevents.StringOfApplicationJSON(), msg.Body())
 	if err != nil {
 		return err
 	}
@@ -339,19 +337,6 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 
 	_ = a.reporter.ReportEventCount(reportArgs, res.StatusCode)
 	return nil
-}
-
-func (a *Adapter) JsonEncode(body []byte) (interface{}, error) {
-	var payload map[string]interface{}
-
-	logger := a.logger
-
-	if err := json.Unmarshal(body, &payload); err != nil {
-		logger.Info("Error unmarshalling JSON: ", zap.Error(err))
-		return body, err
-	} else {
-		return payload, nil
-	}
 }
 
 func fillDefaultValuesForExchangeConfig(config *ExchangeConfig, topic string) *ExchangeConfig {

@@ -44,7 +44,7 @@ an Event Display Service.
    Role, Controller, and Source.
 
    ```shell script
-   $ ko apply -f contrib/rabbitmq/config
+   $ ko apply -f config/source
    ...
    serviceaccount/rabbitmq-controller-manager created
    clusterrole.rbac.authorization.k8s.io/eventing-sources-rabbitmq-controller created
@@ -54,7 +54,8 @@ an Event Display Service.
    statefulset.apps/rabbitmq-controller-manager created
    ```
 
-2. Check that the `rabbitmq-controller-manager-0` pod is running.
+2. Check that the `rabbitmq-controller-manager` pod is running. The name of the pod may be different
+   than shown here.
 
    ```shell script
    $ kubectl get pods -n knative-sources
@@ -65,7 +66,7 @@ an Event Display Service.
 3. Check the `controller-manager-0` pod logs.
 
    ```shell script
-   $ kubectl logs rabbitmq-controller-manager-0 -n knative-sources
+   $ kubectl logs -l 'control-plane=rabbitmq-controller-manager' -n knative-sources
    2019/03/19 22:25:54 Registering Components.
    2019/03/19 22:25:54 Setting up Controller.
    2019/03/19 22:25:54 Adding the Rabbitmq Source controller.
@@ -88,7 +89,7 @@ an Event Display Service.
 
    - Configure channel config properties based on this documentation.
 
-     ```shell script
+     ```
      1. Qos controls how many messages or how many bytes the server will try to keep on
      the network for consumers before receiving delivery acks.  The intent of Qos is
      to make sure the network buffers stay full between the server and client.
@@ -119,11 +120,9 @@ an Event Display Service.
      7. http://www.rabbitmq.com/blog/2012/04/25/rabbitmq-performance-measurements-part-2/
      ```
 
-   ````
-
    - Configure exchange config properties based on this documentation.
 
-     ```shell script
+     ```
      1. Exchange names starting with "amq." are reserved for pre-declared and
      standardized exchanges. The client MAY declare an exchange starting with
      "amq." if the passive option is set, or the exchange already exists.  Names can
@@ -168,11 +167,11 @@ an Event Display Service.
 
      10. Optional amqp.Table of arguments that are specific to the server's implementation of
      the exchange can be sent for exchange types that require extra parameters.
-   ````
+     ```
 
    - Configure queue config properties based on this documentation.
 
-     ```shell script
+     ```
      1. The queue name may be empty, in which case the server will generate a unique name
      which will be returned in the Name field of Queue struct.
 
@@ -207,12 +206,12 @@ an Event Display Service.
      ```
 
    - A sample example is available
-     [here](samples/example/event-source-example.yaml).
+     [here](../samples/source/example/event-source-example.yaml).
 
 4. Build and deploy the event source.
 
    ```shell script
-   $ ko apply -f contrib/rabbitmq/samples/event-source.yaml
+   $ ko apply -f samples/source/event-source.yaml
    ...
    rabbitmqsource.sources.eventing.knative.dev/rabbitmq-source created
    ```
@@ -229,7 +228,7 @@ an Event Display Service.
 6. Ensure the Rabbitmq Event Source started with the necessary configuration.
 
    ```shell script
-   $ kubectl logs rabbitmq-source-xlnhq-5544766765-dnl5s
+   $ kubectl logs -l "eventing.knative.dev/source=rabbitmq-source-controller"
    {"level":"info","ts":"2019-04-09T23:09:59.156Z","caller":"receive_adapter/main.go:112","msg":"Starting Rabbitmq Receive Adapter...","adapter":{"Brokers":"amqp://guest:guest@rabbitmq:5672/","Topic":"","ExchangeConfig":{"Name":"","TypeOf":"fanout","Durable":true,"AutoDeleted":false,"Internal":false,"NoWait":false},"QueueConfig":{"Name":"","RoutingKey":"","Durable":false,"DeleteWhenUnused":false,"Exclusive":false,"NoWait":false},"SinkURI":"http://event-display.default.svc.cluster.local/"}}
    ```
 
@@ -238,7 +237,7 @@ an Event Display Service.
 1. Build and deploy the Event Display Service.
 
    ```shell script
-   $ ko apply -f contrib/rabbitmq/samples/event-display.yaml
+   $ ko apply -f samples/source/event-display.yaml
    ...
    service.serving.knative.dev/event-display created
    ```
@@ -256,7 +255,7 @@ an Event Display Service.
 ### Verify
 
 1. Produce the message shown below to Rabbitmq. A simple producer is available
-   [here](samples/example/simple_producer.go)
+   [here](../samples/source/example/simple_producer.go)
 
    ```shell script
    "Hello World"
@@ -266,7 +265,7 @@ an Event Display Service.
    sink properly.
 
    ```shell script
-   $ kubectl logs rabbitmq-source-xlnhq-5544766765-dnl5s
+   $ kubectl logs -l "eventing.knative.dev/source=rabbitmq-source-controller"
    ...
    {"level":"info","ts":1554244010.3225584,"logger":"fallback","caller":"adapter/adapter.go:158","msg":"Received: {value 15 0 Hello World <nil>}"}
    {"level":"info","ts":1554244016.0724912,"logger":"fallback","caller":"adapter/adapter.go:196","msg":"Successfully sent event to sink"}
@@ -275,24 +274,34 @@ an Event Display Service.
 3. Ensure the Event Display received the message sent to it by the Event Source.
 
    ```shell script
-   $ kubectl logs event-display-00001-deployment-5d5df6c7-gv2j4 -c user-container
+   $ kubectl logs -l "serving.knative.dev/service=event-display" -c user-container
 
-   ☁️  CloudEvent: valid ✅
+   ☁️  cloudevents.Event
+   Validation: valid
    Context Attributes,
-     SpecVersion: 0.2
-     Type: dev.knative.rabbitmq.event
-     Source: amqp://guest:guest@rabbitmq:5672/
-     ID: 9e239dea-821e-4e64-982f-ea802962cd4e
-     Time: 2019-04-02T22:59:51.148696204Z
-     ContentType: application/json
-     Extensions:
-       key:
-   Transport Context,
-     URI: /
-     Host: event-display.default.svc.cluster.local
-     Method: POST
+     specversion: 1.0
+     type: dev.knative.rabbitmq.event
+     source: /apis/v1/namespaces/default/rabbitmqsources/rabbitmq-source
+     id: f00c1f52-33a1-4d3d-993f-750f20c804da
+     time: 2020-12-18T01:15:20.450860898Z
+     datacontenttype: application/json
+   Extensions,
+     key:
    Data,
-     Hello World
+     Hello rabbitmq!
+   ☁️  cloudevents.Event
+   Validation: valid
+   Context Attributes,
+     specversion: 1.0
+     type: dev.knative.rabbitmq.event
+     source: /apis/v1/namespaces/default/rabbitmqsources/rabbitmq-source
+     id: 81472c5a-7901-4d03-bbfb-00b7ca852d5f
+     time: 2020-12-18T01:15:21.668571977Z
+     datacontenttype: application/json
+   Extensions,
+     key:
+   Data,
+     Hello rabbitmq!
    ```
 
 ## Teardown Steps
