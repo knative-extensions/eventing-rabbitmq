@@ -58,7 +58,6 @@ func NewDispatcher(brokerIngressURL, subscriberURL string, requeue bool, maxRetr
 		backoffDelay:     backoffDelay,
 		backoffPolicy:    backoffPolicy,
 	}
-
 }
 
 // ConsumeFromQueue consumes messages from the given message channel and queue.

@@ -47,7 +47,6 @@ func main() {
 		os.Exit(1)
 	}
 	connStr := fmt.Sprintf("amqp://%s:%s@%s", env.Username, env.Password, env.Broker)
-	log.Printf("Using connection String: %q", connStr)
 
 	conn, err := amqp.Dial(connStr)
 	failOnError(err, "Failed to connect to RabbitMQ")
