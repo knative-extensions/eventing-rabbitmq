@@ -22,6 +22,7 @@ import (
 
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
+	v1beta1 "knative.dev/eventing-rabbitmq/pkg/apis/messaging/v1beta1"
 	v1alpha1 "knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 )
 
@@ -51,7 +52,11 @@ func (f *genericInformer) Lister() cache.GenericLister {
 // TODO extend this to unknown resources with a client pool
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
-	// Group=sources.knative.dev, Version=v1alpha1
+	// Group=messaging.knative.dev, Version=v1beta1
+	case v1beta1.SchemeGroupVersion.WithResource("rabbitmqchannels"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Messaging().V1beta1().RabbitmqChannels().Informer()}, nil
+
+		// Group=sources.knative.dev, Version=v1alpha1
 	case v1alpha1.SchemeGroupVersion.WithResource("rabbitmqsources"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Sources().V1alpha1().RabbitmqSources().Informer()}, nil
 

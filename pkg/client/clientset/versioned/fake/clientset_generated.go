@@ -24,6 +24,8 @@ import (
 	fakediscovery "k8s.io/client-go/discovery/fake"
 	"k8s.io/client-go/testing"
 	clientset "knative.dev/eventing-rabbitmq/pkg/client/clientset/versioned"
+	messagingv1beta1 "knative.dev/eventing-rabbitmq/pkg/client/clientset/versioned/typed/messaging/v1beta1"
+	fakemessagingv1beta1 "knative.dev/eventing-rabbitmq/pkg/client/clientset/versioned/typed/messaging/v1beta1/fake"
 	sourcesv1alpha1 "knative.dev/eventing-rabbitmq/pkg/client/clientset/versioned/typed/sources/v1alpha1"
 	fakesourcesv1alpha1 "knative.dev/eventing-rabbitmq/pkg/client/clientset/versioned/typed/sources/v1alpha1/fake"
 )
@@ -74,6 +76,11 @@ func (c *Clientset) Tracker() testing.ObjectTracker {
 }
 
 var _ clientset.Interface = &Clientset{}
+
+// MessagingV1beta1 retrieves the MessagingV1beta1Client
+func (c *Clientset) MessagingV1beta1() messagingv1beta1.MessagingV1beta1Interface {
+	return &fakemessagingv1beta1.FakeMessagingV1beta1{Fake: &c.Fake}
+}
 
 // SourcesV1alpha1 retrieves the SourcesV1alpha1Client
 func (c *Clientset) SourcesV1alpha1() sourcesv1alpha1.SourcesV1alpha1Interface {

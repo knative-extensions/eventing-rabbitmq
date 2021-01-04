@@ -23,11 +23,13 @@ import (
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
+	messagingv1beta1 "knative.dev/eventing-rabbitmq/pkg/client/clientset/versioned/typed/messaging/v1beta1"
 	sourcesv1alpha1 "knative.dev/eventing-rabbitmq/pkg/client/clientset/versioned/typed/sources/v1alpha1"
 )
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
+	MessagingV1beta1() messagingv1beta1.MessagingV1beta1Interface
 	SourcesV1alpha1() sourcesv1alpha1.SourcesV1alpha1Interface
 }
 
@@ -35,7 +37,13 @@ type Interface interface {
 // version included in a Clientset.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	sourcesV1alpha1 *sourcesv1alpha1.SourcesV1alpha1Client
+	messagingV1beta1 *messagingv1beta1.MessagingV1beta1Client
+	sourcesV1alpha1  *sourcesv1alpha1.SourcesV1alpha1Client
+}
+
+// MessagingV1beta1 retrieves the MessagingV1beta1Client
+func (c *Clientset) MessagingV1beta1() messagingv1beta1.MessagingV1beta1Interface {
+	return c.messagingV1beta1
 }
 
 // SourcesV1alpha1 retrieves the SourcesV1alpha1Client
@@ -64,6 +72,10 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	}
 	var cs Clientset
 	var err error
+	cs.messagingV1beta1, err = messagingv1beta1.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
 	cs.sourcesV1alpha1, err = sourcesv1alpha1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
@@ -80,6 +92,7 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 // panics if there is an error in the config.
 func NewForConfigOrDie(c *rest.Config) *Clientset {
 	var cs Clientset
+	cs.messagingV1beta1 = messagingv1beta1.NewForConfigOrDie(c)
 	cs.sourcesV1alpha1 = sourcesv1alpha1.NewForConfigOrDie(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClientForConfigOrDie(c)
@@ -89,6 +102,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
+	cs.messagingV1beta1 = messagingv1beta1.New(c)
 	cs.sourcesV1alpha1 = sourcesv1alpha1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)

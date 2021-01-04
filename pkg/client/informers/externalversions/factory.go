@@ -28,6 +28,7 @@ import (
 	cache "k8s.io/client-go/tools/cache"
 	versioned "knative.dev/eventing-rabbitmq/pkg/client/clientset/versioned"
 	internalinterfaces "knative.dev/eventing-rabbitmq/pkg/client/informers/externalversions/internalinterfaces"
+	messaging "knative.dev/eventing-rabbitmq/pkg/client/informers/externalversions/messaging"
 	sources "knative.dev/eventing-rabbitmq/pkg/client/informers/externalversions/sources"
 )
 
@@ -171,7 +172,12 @@ type SharedInformerFactory interface {
 	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
+	Messaging() messaging.Interface
 	Sources() sources.Interface
+}
+
+func (f *sharedInformerFactory) Messaging() messaging.Interface {
+	return messaging.New(f, f.namespace, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Sources() sources.Interface {
