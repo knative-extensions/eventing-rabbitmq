@@ -43,15 +43,15 @@ import (
 // producer ---> rabbitmq --[source]--> recorder
 //
 
-// DirectTestSource makes sure an RabbitMQ Source delivers events to a sink.
-func DirectTestSource() *feature.Feature {
+// DirectSourceTest makes sure an RabbitMQ Source delivers events to a sink.
+func DirectSourceTest() *feature.Feature {
 	f := new(feature.Feature)
 
 	f.Setup("install test resources", source.Install())
 	f.Setup("install recorder", recorder.Install())
-	f.Alpha("RabbitMQ broker").Must("goes ready", AllGoReady)
+	f.Alpha("RabbitMQ source").Must("goes ready", AllGoReady)
 	f.Setup("install producer", sourceproducer.Install())
-	f.Alpha("RabbitMQ broker").Must("goes ready", CheckDirectSinkEvents)
+	f.Alpha("RabbitMQ source").Must("Delivers events", CheckDirectSinkEvents)
 	return f
 }
 
@@ -60,7 +60,7 @@ func CheckDirectSinkEvents(ctx context.Context, t *testing.T) {
 
 	sendCount := 5
 	// TODO: we want a wait for events for x time in the future.
-	time.Sleep(1 * time.Minute)
+	time.Sleep(2 * time.Minute)
 
 	c := recorder_collector.New(ctx)
 

@@ -122,6 +122,6 @@ func TestSourceDirect(t *testing.T) {
 	t.Parallel()
 	ctx, env := global.Environment()
 	env.Test(ctx, t, RabbitMQCluster())
-	env.Test(ctx, t, DirectTestSource())
+	env.Test(ctx, t, DirectSourceTest())
 	env.Finish()
 }
