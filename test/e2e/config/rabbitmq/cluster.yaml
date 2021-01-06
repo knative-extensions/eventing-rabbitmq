@@ -21,8 +21,8 @@ spec:
   replicas: 1
   resources:
     limits:
-      cpu: "200m"
-      memory: "200Mi"
+      cpu: "300m"
+      memory: "300Mi"
     requests:
-      cpu: "200m"
-      memory: "200Mi"
+      cpu: "300m"
+      memory: "300Mi"
