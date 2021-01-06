@@ -40,10 +40,8 @@ spec:
               topologyKey: kubernetes.io/hostname
             weight: 100
 
-      serviceAccountName: rabbitmq-webhook
- 
+      serviceAccountName: rabbitmq-webhook 
       enableServiceLinks: false
-
       containers:
       - name: rabbitmq-webhook
         terminationMessagePolicy: FallbackToLogsOnError
