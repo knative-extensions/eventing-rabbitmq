@@ -98,7 +98,7 @@ func RabbitMQClusterReady(ctx context.Context, t *testing.T) {
 			conditionCount++
 			if condition.Status != corev1.ConditionTrue {
 				allReady = false
-				msg := fmt.Sprintf("%s condition %s is not ready, %s: %s", rabbitMQClusterName, condition.Type, condition.Reason, condition.Message)
+				msg := fmt.Sprintf("%s/%s condition %s is not ready, %s: %s", namespace, rabbitMQClusterName, condition.Type, condition.Reason, condition.Message)
 				if msg != lastMsg {
 					log.Println(msg)
 					lastMsg = msg
@@ -111,4 +111,5 @@ func RabbitMQClusterReady(ctx context.Context, t *testing.T) {
 	if err != nil {
 		t.Fatal("RabbitMQCluster did not become ready")
 	}
+	fmt.Printf("rabbitmqcluster %s/%s is ready", namespace, rabbitMQClusterName)
 }

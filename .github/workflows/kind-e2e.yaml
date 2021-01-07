@@ -124,7 +124,7 @@ jobs:
         sleep 2 # Wait for the CRDs to be reconciled.
         kubectl apply --filename https://github.com/knative/eventing/releases/download/${{ matrix.eventing-version }}/eventing-core.yaml
 
-    - name: Install
+    - name: Install Broker
       working-directory: ./src/knative.dev/${{ github.event.repository.name }}
       run: |
         set -x
@@ -132,6 +132,15 @@ jobs:
 
         # Install Broker.
         ko apply -f ./config/broker/
+
+    - name: Install Source
+      working-directory: ./src/knative.dev/${{ github.event.repository.name }}
+      run: |
+        set -x
+        # TODO: this should use the release script and then apply the newly created release yaml in the future.
+
+        # Install Source.
+        ko apply -f ./config/source/
 
 # todo: skip the quacken at the moment.
 #  - name: Release the Quacken
@@ -159,7 +168,7 @@ jobs:
         set -x
 
         # Run the tests tagged as e2e on the KinD cluster.
-        go test -v -race -count=1 -timeout=15m -tags=e2e ./test/e2e/...
+        go test -v -race -count=1 -timeout=25m -tags=e2e ./test/e2e/...
 
     - name: Gather Failure Data
       if: ${{ failure() }}
