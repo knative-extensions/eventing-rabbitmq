@@ -12,7 +12,7 @@ require (
 	github.com/fsouza/go-dockerclient v1.6.5 // indirect
 	github.com/go-openapi/spec v0.19.7 // indirect
 	github.com/go-redis/redis v6.15.9+incompatible // indirect
-	github.com/google/go-cmp v0.5.2
+	github.com/google/go-cmp v0.5.4
 	github.com/google/licenseclassifier v0.0.0-20200708223521-3d09a0ea2f39
 	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/influxdata/tdigest v0.0.1 // indirect
@@ -32,10 +32,10 @@ require (
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/code-generator v0.18.12
 	k8s.io/kube-openapi v0.0.0-20200410145947-bcb3869e6f29
-	knative.dev/eventing v0.19.1-0.20201123074053-1402d0f399ca
-	knative.dev/hack v0.0.0-20201120192952-353db687ec5b
-	knative.dev/pkg v0.0.0-20201123014053-92bc25a0a520
-	knative.dev/reconciler-test v0.0.0-20201119161052-83e399255464
+	knative.dev/eventing v0.19.1-0.20210106210736-1ed0e63c3887
+	knative.dev/hack v0.0.0-20201214230143-4ed1ecb8db24
+	knative.dev/pkg v0.0.0-20210107022335-51c72e24c179
+	knative.dev/reconciler-test v0.0.0-20201124190335-83a44efcdfef
 )
 
 replace (
