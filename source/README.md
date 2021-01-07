@@ -54,8 +54,8 @@ an Event Display Service.
    statefulset.apps/rabbitmq-controller-manager created
    ```
 
-2. Check that the `rabbitmq-controller-manager` pod is running. The name of the pod may be different
-   than shown here.
+2. Check that the `rabbitmq-controller-manager` pod is running. The name of the
+   pod may be different than shown here.
 
    ```shell script
    $ kubectl get pods -n knative-sources
