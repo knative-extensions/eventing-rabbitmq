@@ -41,7 +41,7 @@ spec:
             weight: 100
 
       serviceAccountName: rabbitmq-webhook
-
+      enableServiceLinks: false
       containers:
       - name: rabbitmq-webhook
         terminationMessagePolicy: FallbackToLogsOnError
