@@ -111,5 +111,5 @@ func RabbitMQClusterReady(ctx context.Context, t *testing.T) {
 	if err != nil {
 		t.Fatal("RabbitMQCluster did not become ready")
 	}
-	fmt.Printf("rabbitmqcluster %s/%s is ready", namespace, rabbitMQClusterName)
+	log.Printf("rabbitmqcluster %s/%s is ready\n", namespace, rabbitMQClusterName)
 }
