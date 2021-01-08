@@ -48,6 +48,8 @@ func main() {
 	}
 	connStr := fmt.Sprintf("amqp://%s:%s@%s", env.Username, env.Password, env.Broker)
 
+	time.Sleep(1 * time.Minute)
+
 	conn, err := amqp.Dial(connStr)
 	failOnError(err, "Failed to connect to RabbitMQ")
 	defer conn.Close()
