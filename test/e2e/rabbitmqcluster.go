@@ -19,6 +19,7 @@ package e2e
 import (
 	"context"
 	"fmt"
+
 	"knative.dev/pkg/apis"
 
 	corev1 "k8s.io/api/core/v1"
