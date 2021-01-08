@@ -47,8 +47,8 @@ import (
 func DirectSourceTest() *feature.Feature {
 	f := new(feature.Feature)
 
-	f.Setup("install test resources", source.Install())
 	f.Setup("install recorder", recorder.Install())
+	f.Setup("install test resources", source.Install())
 	f.Alpha("RabbitMQ source").Must("goes ready", AllGoReady)
 	f.Setup("install producer", sourceproducer.Install())
 	f.Alpha("RabbitMQ source").Must("Delivers events", CheckDirectSinkEvents)
