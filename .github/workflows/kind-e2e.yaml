@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [ 'master', 'release-*' ]
 
+  schedule:
+  - cron: '0 */2 * * *'
+
 jobs:
 
   ko-resolve:
