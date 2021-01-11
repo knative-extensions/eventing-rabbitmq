@@ -238,7 +238,7 @@ jobs:
         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
         SLACK_CHANNEL: 'eventing-delivery'
         MSG_MINIMAL: 'true'
-        SLACK_TITLE: Periodic e2e for RabbitMQ on kind on ${{ matrix.k8s-version }} failed.
+        SLACK_TITLE: Periodic e2e for RabbitMQ on kind on (${{ matrix.k8s-version }}, ${{ matrix.eventing-version }}) failed.
         SLACK_MESSAGE: |
           For detailed logs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
