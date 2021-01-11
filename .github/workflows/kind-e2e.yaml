@@ -230,7 +230,7 @@ jobs:
 
     - name: Post failure notice to Slack
       # Note: using env.SLACK_WEBHOOK here because secrets are not allowed in the if block.
-      if: env.SLACK_WEBHOOK != '' && ${{ failure() && github.event_name != 'pull_request' }}
+      if: env.SLACK_WEBHOOK != '' && ${{ failure() }} && github.event_name != 'pull_request'
       uses: rtCamp/action-slack-notify@v2.1.0
       env:
         SLACK_ICON: http://github.com/knative.png?size=48
