@@ -20,11 +20,12 @@ package e2e
 
 import (
 	"context"
+	"testing"
+
 	"knative.dev/eventing-rabbitmq/test/e2e/config/source"
 	"knative.dev/eventing-rabbitmq/test/e2e/config/sourceproducer"
 	"knative.dev/reconciler-test/pkg/eventshub"
 	"knative.dev/reconciler-test/pkg/feature"
-	"testing"
 
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
