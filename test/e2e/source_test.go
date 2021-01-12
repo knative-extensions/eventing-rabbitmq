@@ -40,7 +40,7 @@ func DirectSourceTest() *feature.Feature {
 	f := new(feature.Feature)
 
 	f.Setup("install RabbitMQ source", source.Install())
-	f.Requirement("RabbitMQ source").Must("goes ready", AllGoReady)
+	f.Alpha("RabbitMQ source").Must("goes ready", AllGoReady)
 	// Note this is a different producer than events hub because it publishes
 	// directly to RabbitMQ
 	f.Setup("install producer", sourceproducer.Install())
