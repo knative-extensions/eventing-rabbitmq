@@ -38,11 +38,13 @@ import (
 	_ "knative.dev/eventing/test/test_images/heartbeats"
 	_ "knative.dev/eventing/test/test_images/performance"
 	_ "knative.dev/eventing/test/test_images/print"
-	_ "knative.dev/eventing/test/test_images/recordevents"
 
 	// Licenseclassifier
 	_ "github.com/google/licenseclassifier"
 
 	// For chaos testing the leaderelection stuff.
 	_ "knative.dev/pkg/leaderelection/chaosduck"
+
+	// eventshub is a cloudevents sender/receiver utility for e2e testing.
+	_ "knative.dev/reconciler-test/cmd/eventshub"
 )

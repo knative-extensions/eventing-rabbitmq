@@ -18,17 +18,10 @@ package e2e
 
 import (
 	"context"
-	"fmt"
 	"testing"
-	"time"
 
 	"knative.dev/eventing-rabbitmq/test/e2e/config/dlq"
-	"knative.dev/eventing-rabbitmq/test/e2e/config/recorder"
-	"knative.dev/eventing/pkg/test/observer"
-	recorder_collector "knative.dev/eventing/pkg/test/observer/recorder-collector"
-	duckv1 "knative.dev/pkg/apis/duck/v1"
-
-	"knative.dev/reconciler-test/pkg/environment"
+	"knative.dev/reconciler-test/pkg/eventshub"
 	"knative.dev/reconciler-test/pkg/feature"
 
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
@@ -47,44 +40,12 @@ func BrokerDLQTest() *feature.Feature {
 	f := new(feature.Feature)
 
 	f.Setup("dlq works", dlq.Install())
-	f.Setup("install recorder", recorder.Install())
 	f.Alpha("RabbitMQ broker").Must("goes ready", AllGoReady)
-	f.Alpha("RabbitMQ broker").Must("deliver DLQ events", CheckDelivery)
+	f.Alpha("RabbitMQ source").
+		Must("the recorder received all sent events within the time",
+			func(ctx context.Context, t *testing.T) {
+				// TODO: Use constraint matching instead of just counting number of events.
+				eventshub.StoreFromContext(ctx, "recorder").AssertAtLeast(5)
+			})
 	return f
-}
-
-func CheckDelivery(ctx context.Context, t *testing.T) {
-	env := environment.FromContext(ctx)
-	sendCount := 5
-
-	// TODO: we want a wait for events for x time in the future.
-	time.Sleep(1 * time.Minute)
-
-	c := recorder_collector.New(ctx)
-
-	from := duckv1.KReference{
-		Kind:       "Namespace",
-		Name:       "default",
-		APIVersion: "v1",
-	}
-
-	obsName := "recorder-" + env.Namespace()
-	events, err := c.List(ctx, from, func(ob observer.Observed) bool {
-		return ob.Observer == obsName
-	})
-	if err != nil {
-		t.Fatal("failed to list observed events, ", err)
-	}
-
-	for i, e := range events {
-		fmt.Printf("[%d]: seen by %q\n%s\n", i, e.Observer, e.Event)
-	}
-
-	got := len(events)
-	want := sendCount
-	if want != got {
-		t.Errorf("failed to observe the correct number of events, want: %d, got: %d", want, got)
-	}
-
-	// Pass!
 }

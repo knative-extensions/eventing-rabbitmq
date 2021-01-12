@@ -26,6 +26,7 @@ import (
 	"text/template"
 
 	"knative.dev/pkg/injection"
+	"knative.dev/pkg/system"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
@@ -34,6 +35,8 @@ import (
 	// logstream initialization.
 	_ "knative.dev/eventing-rabbitmq/test/defaultsystem"
 	"knative.dev/reconciler-test/pkg/environment"
+	"knative.dev/reconciler-test/pkg/k8s"
+	"knative.dev/reconciler-test/pkg/knative"
 )
 
 func init() {
@@ -102,8 +105,14 @@ func TestSmokeBrokerTrigger(t *testing.T) {
 // TestBrokerDirect makes sure a Broker can delivery events to a consumer.
 func TestBrokerDirect(t *testing.T) {
 	t.Parallel()
-	ctx, env := global.Environment()
+	ctx, env := global.Environment(
+		knative.WithKnativeNamespace(system.Namespace()),
+		knative.WithLoggingConfig,
+		knative.WithTracingConfig,
+		k8s.WithEventListener,
+	)
 	env.Test(ctx, t, RabbitMQCluster())
+	env.Test(ctx, t, RecorderFeature())
 	env.Test(ctx, t, DirectTestBroker())
 	env.Finish()
 }
@@ -111,8 +120,14 @@ func TestBrokerDirect(t *testing.T) {
 // TestBrokerDLQ makes sure a Broker delivers events to a DLQ.
 func TestBrokerDLQ(t *testing.T) {
 	t.Parallel()
-	ctx, env := global.Environment()
+	ctx, env := global.Environment(
+		knative.WithKnativeNamespace(system.Namespace()),
+		knative.WithLoggingConfig,
+		knative.WithTracingConfig,
+		k8s.WithEventListener,
+	)
 	env.Test(ctx, t, RabbitMQCluster())
+	env.Test(ctx, t, RecorderFeature())
 	env.Test(ctx, t, BrokerDLQTest())
 	env.Finish()
 }
@@ -120,8 +135,15 @@ func TestBrokerDLQ(t *testing.T) {
 // TestSourceDirect makes sure a source delivers events to Sink.
 func TestSourceDirect(t *testing.T) {
 	t.Parallel()
-	ctx, env := global.Environment()
+
+	ctx, env := global.Environment(
+		knative.WithKnativeNamespace(system.Namespace()),
+		knative.WithLoggingConfig,
+		knative.WithTracingConfig,
+		k8s.WithEventListener,
+	)
 	env.Test(ctx, t, RabbitMQCluster())
+	env.Test(ctx, t, RecorderFeature())
 	env.Test(ctx, t, DirectSourceTest())
 	env.Finish()
 }
