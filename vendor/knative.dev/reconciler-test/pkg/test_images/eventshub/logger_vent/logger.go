@@ -14,6 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package recorder_collector holds a class to collect the logs from a recorder
-// vented event log.
-package recorder_collector
+package logger_vent
+
+import "knative.dev/reconciler-test/pkg/test_images/eventshub"
+
+type Logger func(string, ...interface{})
+
+func (l Logger) Vent(observed eventshub.EventInfo) error {
+	l("Event: \n%s", observed.String())
+
+	return nil
+}

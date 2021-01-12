@@ -14,25 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package recorder
-
-import (
-	"context"
-	"testing"
-
-	"knative.dev/reconciler-test/pkg/environment"
-	"knative.dev/reconciler-test/pkg/feature"
-	"knative.dev/reconciler-test/pkg/manifest"
-)
-
-func init() {
-	environment.RegisterPackage(manifest.ImagesLocalYaml()...)
-}
-
-func Install() feature.StepFn {
-	return func(ctx context.Context, t *testing.T) {
-		if _, err := manifest.InstallLocalYaml(ctx, nil); err != nil {
-			t.Fatal(err)
-		}
-	}
-}
+// Package recorder_vent implements an eventshub.EventLog backed by Kubernetes
+// Events using an event recorder.
+package recorder_vent

@@ -47,6 +47,7 @@ func DirectSourceTest() *feature.Feature {
 	f.Alpha("RabbitMQ source").
 		Must("the recorder received all sent events within the time",
 			func(ctx context.Context, t *testing.T) {
+				// TODO: Use constraint matching instead of just counting number of events.
 				eventshub.StoreFromContext(ctx, "recorder").AssertAtLeast(5)
 			})
 

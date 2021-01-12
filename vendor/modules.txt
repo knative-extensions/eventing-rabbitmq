@@ -1128,7 +1128,6 @@ knative.dev/eventing/pkg/reconciler/testing
 knative.dev/eventing/pkg/reconciler/testing/v1
 knative.dev/eventing/pkg/reconciler/testing/v1beta2
 knative.dev/eventing/pkg/test/observer
-knative.dev/eventing/pkg/test/observer/recorder-collector
 knative.dev/eventing/pkg/test/observer/recorder-vent
 knative.dev/eventing/pkg/test/observer/writer-vent
 knative.dev/eventing/pkg/utils
@@ -1262,6 +1261,7 @@ knative.dev/pkg/webhook/resourcesemantics/defaulting
 knative.dev/pkg/webhook/resourcesemantics/validation
 # knative.dev/reconciler-test v0.0.0-20201124190335-83a44efcdfef
 ## explicit
+knative.dev/reconciler-test/cmd/eventshub
 knative.dev/reconciler-test/pkg/environment
 knative.dev/reconciler-test/pkg/eventshub
 knative.dev/reconciler-test/pkg/feature
@@ -1271,6 +1271,13 @@ knative.dev/reconciler-test/pkg/knative
 knative.dev/reconciler-test/pkg/manifest
 knative.dev/reconciler-test/pkg/test_images
 knative.dev/reconciler-test/pkg/test_images/eventshub
+knative.dev/reconciler-test/pkg/test_images/eventshub/dropevents
+knative.dev/reconciler-test/pkg/test_images/eventshub/dropevents/dropeventsfibonacci
+knative.dev/reconciler-test/pkg/test_images/eventshub/dropevents/dropeventsfirst
+knative.dev/reconciler-test/pkg/test_images/eventshub/logger_vent
+knative.dev/reconciler-test/pkg/test_images/eventshub/receiver
+knative.dev/reconciler-test/pkg/test_images/eventshub/recorder_vent
+knative.dev/reconciler-test/pkg/test_images/eventshub/sender
 # sigs.k8s.io/structured-merge-diff/v3 v3.0.1-0.20200706213357-43c19bbb7fba
 sigs.k8s.io/structured-merge-diff/v3/value
 # sigs.k8s.io/yaml v1.2.0
