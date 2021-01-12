@@ -20,19 +20,11 @@ package e2e
 
 import (
 	"context"
-	"fmt"
-	"testing"
-	"time"
-
-	"knative.dev/eventing-rabbitmq/test/e2e/config/recorder"
 	"knative.dev/eventing-rabbitmq/test/e2e/config/source"
 	"knative.dev/eventing-rabbitmq/test/e2e/config/sourceproducer"
-	"knative.dev/reconciler-test/pkg/environment"
+	"knative.dev/reconciler-test/pkg/eventshub"
 	"knative.dev/reconciler-test/pkg/feature"
-
-	"knative.dev/eventing/pkg/test/observer"
-	recorder_collector "knative.dev/eventing/pkg/test/observer/recorder-collector"
-	duckv1 "knative.dev/pkg/apis/duck/v1"
+	"testing"
 
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -47,46 +39,16 @@ import (
 func DirectSourceTest() *feature.Feature {
 	f := new(feature.Feature)
 
-	f.Setup("install recorder", recorder.Install())
-	f.Setup("install test resources", source.Install())
-	f.Alpha("RabbitMQ source").Must("goes ready", AllGoReady)
+	f.Setup("install RabbitMQ source", source.Install())
+	f.Requirement("RabbitMQ source").Must("goes ready", AllGoReady)
+	// Note this is a different producer than events hub because it publishes
+	// directly to RabbitMQ
 	f.Setup("install producer", sourceproducer.Install())
-	f.Alpha("RabbitMQ source").Must("Delivers events", CheckDirectSinkEvents)
+	f.Alpha("RabbitMQ source").
+		Must("the recorder received all sent events within the time",
+			func(ctx context.Context, t *testing.T) {
+				eventshub.StoreFromContext(ctx, "recorder").AssertAtLeast(5)
+			})
+
 	return f
-}
-
-func CheckDirectSinkEvents(ctx context.Context, t *testing.T) {
-	env := environment.FromContext(ctx)
-
-	sendCount := 5
-	// TODO: we want a wait for events for x time in the future.
-	time.Sleep(2 * time.Minute)
-
-	c := recorder_collector.New(ctx)
-
-	from := duckv1.KReference{
-		Kind:       "Namespace",
-		Name:       "default",
-		APIVersion: "v1",
-	}
-
-	obsName := "recorder-" + env.Namespace()
-	events, err := c.List(ctx, from, func(ob observer.Observed) bool {
-		return ob.Observer == obsName
-	})
-	if err != nil {
-		t.Fatal("failed to list observed events, ", err)
-	}
-
-	for i, e := range events {
-		fmt.Printf("[%d]: seen by %q\n%s\n", i, e.Observer, e.Event)
-	}
-
-	got := len(events)
-	want := sendCount
-	if want != got {
-		t.Errorf("failed to observe the correct number of events, want: %d, got: %d", want, got)
-	}
-
-	// Pass!
 }

@@ -26,6 +26,7 @@ import (
 	"text/template"
 
 	"knative.dev/pkg/injection"
+	"knative.dev/pkg/system"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
@@ -34,6 +35,8 @@ import (
 	// logstream initialization.
 	_ "knative.dev/eventing-rabbitmq/test/defaultsystem"
 	"knative.dev/reconciler-test/pkg/environment"
+	"knative.dev/reconciler-test/pkg/k8s"
+	"knative.dev/reconciler-test/pkg/knative"
 )
 
 func init() {
@@ -44,6 +47,7 @@ var global environment.GlobalEnvironment
 
 // This test is more for debugging the ko publish process.
 func TestKoPublish(t *testing.T) {
+	environment.RegisterPackage("knative.dev/reconciler-test/cmd/eventshub")
 	ic, err := environment.ProduceImages()
 	if err != nil {
 		panic(fmt.Errorf("failed to produce images, %s", err))
@@ -120,8 +124,21 @@ func TestBrokerDLQ(t *testing.T) {
 // TestSourceDirect makes sure a source delivers events to Sink.
 func TestSourceDirect(t *testing.T) {
 	t.Parallel()
-	ctx, env := global.Environment()
+
+	environment.RegisterPackage("knative.dev/reconciler-test/cmd/eventshub")
+	_, err := environment.ProduceImages()
+	if err != nil {
+		panic(fmt.Errorf("failed to produce images, %s", err))
+	}
+
+	ctx, env := global.Environment(
+		knative.WithKnativeNamespace(system.Namespace()),
+		knative.WithLoggingConfig,
+		knative.WithTracingConfig,
+		k8s.WithEventListener,
+	)
 	env.Test(ctx, t, RabbitMQCluster())
+	env.Test(ctx, t, RecorderFeature())
 	env.Test(ctx, t, DirectSourceTest())
 	env.Finish()
 }

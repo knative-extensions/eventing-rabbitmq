@@ -12,42 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: recorder
-  namespace: {{ .namespace }}
-spec:
-  replicas: 1
-  selector:
-    matchLabels: &labels
-      app: recorder
-  template:
-    metadata:
-      labels: *labels
-    spec:
-      serviceAccount: recorder
-      containers:
-        - name: recorder
-          image: ko://knative.dev/reconciler-test/cmd/eventshub
-          env:
-            - name: SYSTEM_NAMESPACE
-              value: {{ .namespace }}
-            - name: OBSERVER_NAME
-              value: recorder-{{ .namespace }}
-            - name: K8S_EVENT_SINK
-              value: '{"apiVersion": "v1", "kind": "Namespace", "name": "{{ .namespace }}"}'
-
----
-
-kind: Service
 apiVersion: v1
+kind: Service
 metadata:
-  name: recorder
+  name: {{ .name }}
   namespace: {{ .namespace }}
 spec:
   selector:
-    app: recorder
+    app: eventshub-{{ .name }}
   ports:
     - protocol: TCP
       port: 80
