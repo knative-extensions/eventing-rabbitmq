@@ -47,7 +47,6 @@ var global environment.GlobalEnvironment
 
 // This test is more for debugging the ko publish process.
 func TestKoPublish(t *testing.T) {
-	environment.RegisterPackage("knative.dev/reconciler-test/cmd/eventshub")
 	ic, err := environment.ProduceImages()
 	if err != nil {
 		panic(fmt.Errorf("failed to produce images, %s", err))
