@@ -14,11 +14,12 @@ limitations under the License.
 package e2e
 
 import (
+	"time"
+
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/reconciler-test/pkg/eventshub"
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/k8s"
-	"time"
 )
 
 func RecorderFeature() *feature.Feature {

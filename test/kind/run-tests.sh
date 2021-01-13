@@ -22,6 +22,7 @@ readonly REPO_ROOT_DIR
 
 export KO_DOCKER_REPO=kind.local
 export KIND_CLUSTER_NAME=knik
+export SYSTEM_NAMESPACE=knative-eventing
 
 echo "Starting End-to-End tests for Knative Eventing RabbitMQ API"
 

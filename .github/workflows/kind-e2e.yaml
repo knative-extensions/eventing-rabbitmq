@@ -49,8 +49,9 @@ jobs:
           kind-image-sha: sha256:b40ecf8bcb188f6a0d0f5d406089c48588b75edc112c6f635d26be5de1c89040
     env:
       GOPATH: ${{ github.workspace }}
-      GO111MODULE: off
       KO_DOCKER_REPO: kind.local
+      SYSTEM_NAMESPACE: knative-eventing
+      KIND_CLUSTER_NAME: kind
 
     steps:
     - name: Defaults
@@ -78,7 +79,7 @@ jobs:
     - name: Install KinD
       working-directory: ./src/knative.dev/${{ github.event.repository.name }}
       env:
-        KIND_VERSION: v0.9.0
+        KIND_VERSION: ${{ matrix.kind-version }}
       run: |
         set -x
 
