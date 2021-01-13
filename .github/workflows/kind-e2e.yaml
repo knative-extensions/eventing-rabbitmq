@@ -52,6 +52,7 @@ jobs:
       GO111MODULE: off
       KO_DOCKER_REPO: kind.local
       SYSTEM_NAMESPACE: knative-eventing
+      KIND_CLUSTER_NAME: kind
 
     steps:
     - name: Defaults
@@ -79,7 +80,7 @@ jobs:
     - name: Install KinD
       working-directory: ./src/knative.dev/${{ github.event.repository.name }}
       env:
-        KIND_VERSION: v0.9.0
+        KIND_VERSION: ${{ matrix.kind-version }}
       run: |
         set -x
 
