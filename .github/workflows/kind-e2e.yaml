@@ -179,6 +179,8 @@ jobs:
       run: |
         set -x
 
+        ko publish -B knative.dev/reconciler-test/cmd/eventshub
+
         # Run the TestKoPublish e2e test.
         go test -v -race -count=1 -timeout=15m -tags=e2e ./test/e2e/... -run 'TestKoPublish'
 
