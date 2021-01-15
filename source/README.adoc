@@ -35,15 +35,15 @@ The event's payload will be set to the data content of the message.
 [source,json]
 ----
 {
-  'specversion': '1.0',
-  'type': 'dev.knative.rabbitmq.event',
-  'source': '/apis/v1/namespaces/default/rabbitmqsources/rabbitmq-source',
-  'id': 'f00c1f52-33a1-4d3d-993f-750f20c804da',
-  'time': '2020-12-18T01:15:20.450860898Z',
-  'subject': '',
-  'datacontenttype': 'application/json',
-  'key': '',
-  'data': 'Hello rabbitmq!'
+  "specversion": "1.0",
+  "type": "dev.knative.rabbitmq.event",
+  "source": "/apis/v1/namespaces/default/rabbitmqsources/rabbitmq-source",
+  "id": "f00c1f52-33a1-4d3d-993f-750f20c804da",
+  "time": "2020-12-18T01:15:20.450860898Z",
+  "subject": "",
+  "datacontenttype": "application/json",
+  "key": "",
+  "data": "Hello rabbitmq!"
 }
 ----
 
@@ -75,9 +75,10 @@ The event's payload will be set to the data content of the message.
 |===
 
 The following example assumes a secret created with something like the following:
-[source,shell]
 ----
-kubectl create secret generic rabbitmq-secret --from-literal=user=*rabbit-user* --from-file=password=*/tmp/password*
+kubectl create secret generic rabbitmq-secret \
+  --from-literal=user=rabbit-user \
+  --from-file=password=/tmp/password
 ----
 
 
