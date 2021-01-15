@@ -32,7 +32,7 @@ The event's payload will be set to the data content of the message.
 === Samples
 
 (in CloudEvents JSON format):
-[json]
+[source,json]
 ----
 {
   'specversion': '1.0',
@@ -75,13 +75,13 @@ The event's payload will be set to the data content of the message.
 |===
 
 The following example assumes a secret created with something like the following:
-[shell]
+[source,shell]
 ----
 kubectl create secret generic rabbitmq-secret --from-literal=user=*rabbit-user* --from-file=password=*/tmp/password*
 ----
 
 
-[yaml]
+[source,yaml]
 ----
 apiVersion: sources.knative.dev/v1alpha1
 kind: RabbitmqSource
