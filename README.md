@@ -14,10 +14,13 @@ as an implementation.
 
 > See <https://github.com/knative/eventing-contrib/pull/336> for background /
 > discussion.
+
 ## RabbitMQ Broker
+
 See [Install and Demo](./broker/README.md)
 
 ## RabbitMQ Source
+
 See [Install and Demo](./source/README.md)
 
 ## Nightly Artifacts
