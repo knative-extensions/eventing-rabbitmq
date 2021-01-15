@@ -1,8 +1,13 @@
+
+:toc:
+:toc-placement!:
 = RabbitMQ Source
 
 The RabbitMQ source translates messages on a RabbitMQ exchange to CloudEvents
 over HTTP for use with Knative Eventing. The Source can bind to an existing
 exchange or create a new one, as needed.
+
+toc::[]
 
 
 == Published Events
