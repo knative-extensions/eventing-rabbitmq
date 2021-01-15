@@ -19,11 +19,12 @@ All messages received by the Source will be published with the following schema:
 | Attribute | Value | Notes
 
 | `type` | `dev.knative.rabbitmq.event` |
-| `source` | `/apis/v1/namespace/*$NS*/rabbitmqsources/*$NAME*#*$TOPIC*` | `NS`, `NAME` and `TOPIC` are derived from the Source configuration. |
-| `id` | a unique id | This uses the MessageId if available, and a UUID otherwise. |
-| `subject` | the message's id | empty string if no message ID is present. |
+| `source` | `/apis/v1/namespace/*$NS*/rabbitmqsources/*$NAME*#*$TOPIC*`
+   | `NS`, `NAME` and `TOPIC` are derived from the Source configuration.
+| `id` | a unique id | This uses the MessageId if available, and a UUID otherwise.
+| `subject` | the message's id | empty string if no message ID is present.
 | `datacontenttype` | `application/json` | Currently static.
-| `key` | the message's id | empty string if no message ID is present.|
+| `key` | the message's id | empty string if no message ID is present.
 |===
 
 The event's payload will be set to the data content of the message.
@@ -73,6 +74,12 @@ The event's payload will be set to the data content of the message.
 | `sink` | A reference to an https://knative.dev/docs/eventing/#event-consumers[Addressable] Kubernetes object.
 |===
 
+The following example assumes a secret created with something like the following:
+[shell]
+----
+kubectl create secret generic rabbitmq-secret --from-literal=user=*rabbit-user* --from-file=password=*/tmp/password*
+----
+
 
 [yaml]
 ----
@@ -82,28 +89,18 @@ metadata:
   name: rabbitmq-source
 spec:
   brokers: "rabbitmq:5672/"
-  topic: ""
   user:
     secretKeyRef:
-      name: "rabbitmq-source-key"
+      name: "rabbitmq-secret"
       key: "user"
   password:
     secretKeyRef:
-      name: "rabbitmq-source-key"
+      name: "rabbitmq-secret"
       key: "password"
   exchange_config:
     type: "fanout"
     durable: true
     auto_deleted: false
-    internal: false
-    nowait: false
-  queue_config:
-    name: ""
-    routing_key: ""
-    durable: false
-    delete_when_unused: false
-    exclusive: false
-    nowait: false
   sink:
     ref:
       apiVersion: serving.knative.dev/v1
