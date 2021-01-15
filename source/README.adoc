@@ -47,7 +47,7 @@ The event's payload will be set to the data content of the message.
 }
 ----
 
-=== Creating and Managing Sources
+== Creating and Managing Sources
 
 
 .Table Source Parameters
@@ -74,13 +74,15 @@ The event's payload will be set to the data content of the message.
 | `sink` | A reference to an https://knative.dev/docs/eventing/#event-consumers[Addressable] Kubernetes object.
 |===
 
-The following example assumes a secret created with something like the following:
+The following example object assumes a secret created with the following:
 ----
 kubectl create secret generic rabbitmq-secret \
   --from-literal=user=rabbit-user \
   --from-file=password=/tmp/password
 ----
 
+Note that not all parameters need to be specified; unspecified parameters will be
+defaulted false / empty.
 
 [source,yaml]
 ----
