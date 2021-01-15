@@ -1,0 +1,137 @@
+= RabbitMQ Source
+
+The RabbitMQ source translates messages on a RabbitMQ exchange to CloudEvents
+over HTTP for use with Knative Eventing. The Source can bind to an existing
+exchange or create a new one, as needed.
+
+
+== Published Events
+
+All messages received by the Source will be published with the following schema:
+
+.Table Event Attributes
+|===
+| Attribute | Value | Notes
+
+| `type` | `dev.knative.rabbitmq.event` |
+| `source` | `/apis/v1/namespace/*$NS*/rabbitmqsources/*$NAME*#*$TOPIC*` | `NS`, `NAME` and `TOPIC` are derived from the Source configuration. |
+| `id` | a unique id | This uses the MessageId if available, and a UUID otherwise. |
+| `subject` | the message's id | empty string if no message ID is present. |
+| `datacontenttype` | `application/json` | Currently static.
+| `key` | the message's id | empty string if no message ID is present.|
+|===
+
+The event's payload will be set to the data content of the message.
+
+=== Samples
+
+(in CloudEvents JSON format):
+[json]
+----
+{
+  'specversion': '1.0',
+  'type': 'dev.knative.rabbitmq.event',
+  'source': '/apis/v1/namespaces/default/rabbitmqsources/rabbitmq-source',
+  'id': 'f00c1f52-33a1-4d3d-993f-750f20c804da',
+  'time': '2020-12-18T01:15:20.450860898Z',
+  'subject': '',
+  'datacontenttype': 'application/json',
+  'key': '',
+  'data': 'Hello rabbitmq!'
+}
+----
+
+=== Creating and Managing Sources
+
+
+.Table Source Parameters
+|===
+| Field | Value
+
+| `spec.brokers` | Host+Port of the Broker, with a trailing "/"
+| `user.secretKeyRef` | Username for broker auth; field `key` in a Kubernetes Secret named `name`
+| `password.secretKeyRef` | Password for broker auth; field `key` in a Kubernetes Secret named `name`
+| `topic` | The topic for the exchange
+| `exchange_config` | Settings for the exchange
+| `exchange_config.type` | https://www.rabbitmq.com/tutorials/amqp-concepts.html#exchanges[Exchange type]. Can be "fanout", "direct", "topic", "match" or "headers"
+| `exchange_config.durable` | Boolean
+| `exchange_config.auto_deleted` | Boolean
+| `exchange_config.internal` | Boolean
+| `exchange_config.nowait` | Boolean
+| `queue_config` | Settings for the queue
+| `queue_config.name` | Name of the queue (may be empty)
+| `queue_config.routing_key` | Routing key for the queue
+| `queue_config.durable` | Boolean
+| `queue_config.delete_when_unused` | Boolean
+| `queue_config.exclusive` | Boolean
+| `queue_config.nowait` | Boolean
+| `sink` | A reference to an https://knative.dev/docs/eventing/#event-consumers[Addressable] Kubernetes object.
+|===
+
+
+[yaml]
+----
+apiVersion: sources.knative.dev/v1alpha1
+kind: RabbitmqSource
+metadata:
+  name: rabbitmq-source
+spec:
+  brokers: "rabbitmq:5672/"
+  topic: ""
+  user:
+    secretKeyRef:
+      name: "rabbitmq-source-key"
+      key: "user"
+  password:
+    secretKeyRef:
+      name: "rabbitmq-source-key"
+      key: "password"
+  exchange_config:
+    type: "fanout"
+    durable: true
+    auto_deleted: false
+    internal: false
+    nowait: false
+  queue_config:
+    name: ""
+    routing_key: ""
+    durable: false
+    delete_when_unused: false
+    exclusive: false
+    nowait: false
+  sink:
+    ref:
+      apiVersion: serving.knative.dev/v1
+      kind: Service
+      name: event-display
+----
+
+== Administration
+
+=== Prerequisites
+
+You will need a https://www.rabbitmq.com/[RabbitMQ] installation. On Kubernetes,
+you can use
+https://www.rabbitmq.com/kubernetes/operator/operator-overview.html[the RabbitMQ
+operator] to set up a RabbitMQ installation. An understanding of RabbitMQ
+concepts like Brokers, Exchanges, and Queues will alos be helpful.
+
+=== Installation
+
+Install from the nightly build:
+
+[source,sh]
+----
+kubectl apply -f https://storage.googleapis.com/knative-nightly/eventing-rabbitmq/latest/rabbitmq-source.yaml
+----
+
+=== Configuration Options
+
+The standard `config-observability`, `config-logging` et al ConfigMaps may be
+used to manage the logging and metrics configuration.
+
+== Next Steps
+
+== Additional Resources
+
+
