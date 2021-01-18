@@ -31,6 +31,10 @@ jobs:
 
         rabbitmq-operator-version:
         - v1.0.0
+        - v1.1.0
+        - v1.2.0
+        - v1.3.0
+        - v1.4.0
 
         # Map between K8s and KinD versions.
         # This is attempting to make it a bit clearer what's being tested.
