@@ -27,18 +27,11 @@ import (
 )
 
 /*
-Small function that demonstrates two concepts:
+Small function that is used to test DLQ by failing incoming events.
 
-1. Deserializing / Serializing data
-2. Using direct reply to modify incoming events (decorating in this example)
-
-Incoming data is assumbed to be CloudEventBaseData with two fields
- Sequence int
- Message string
-
-This function appends env[MESSAGE] to the Message portion of the data.
-It is used by the samples in the Knative sequence section:
-https://knative.dev/docs/eventing/sequence/
+Reads in the incoming Cloud Event and if it contains a responsecode in
+the payload will respond with that, otherwise uses a value passed in
+the environmental variable DEFAULT_RESPONSE_CODE.
 */
 
 type envConfig struct {
