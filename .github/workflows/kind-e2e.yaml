@@ -56,6 +56,10 @@ jobs:
       GOPATH: ${{ github.workspace }}
       KO_DOCKER_REPO: kind.local
       SYSTEM_NAMESPACE: knative-eventing
+      # Where the Rabbitmq cluster operator is installed
+      RABBITMQ_SYSTEM_NAMESPACE: rabbitmq-system
+      # Where the Rabbitmq source is installed
+      RABBITMQ_SOURCE_NAMESPACE: knative-sources
       KIND_CLUSTER_NAME: kind
 
     steps:
@@ -168,14 +172,11 @@ jobs:
     - name: Wait for Ready
       working-directory: ./src/knative.dev/${{ github.event.repository.name }}
       run: |
-        set -x
-
-        # Probably don't need this anymore, but keep until we
-        # have something that waits for pods to becomes ready.
-        sleep 60
-
-        # For debugging.
-        kubectl get pods --all-namespaces
+        set -e
+        source ./vendor/knative.dev/hack/infra-library.sh
+        wait_until_pods_running ${SYSTEM_NAMESPACE}
+        wait_until_pods_running ${RABBITMQ_SYSTEM_NAMESPACE}
+        wait_until_pods_running ${RABBITMQ_SOURCE_NAMESPACE}
 
       # Run kopublish test
     - name: Run ko publish e2e Tests
