@@ -39,6 +39,10 @@ func main() {
 		log.Print("[ERROR] Failed to process env var: ", err)
 		os.Exit(1)
 	}
+	// The ordering is not all that well supported and do not want
+	// to migrate this branch to the reconciler-test. Sleep until broker is for sure up.
+	time.Sleep(128 * time.Second)
+
 	ctx := cloudevents.ContextWithTarget(context.Background(), env.Sink)
 
 	p, err := cloudevents.NewHTTP()
