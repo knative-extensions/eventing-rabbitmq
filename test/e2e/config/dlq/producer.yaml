@@ -33,4 +33,4 @@ spec:
             - name: COUNT
               value: '{{ .producerCount }}'
             - name: K_SINK
-              value: http://testbroker-broker-ingress.{{ .namespace }}.svc.cluster.local
+              value: http://{{ .brokerName }}-broker-ingress.{{ .namespace }}.svc.cluster.local
