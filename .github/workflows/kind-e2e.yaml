@@ -19,6 +19,13 @@ jobs:
         - v1.18.8
         - v1.19.1
 
+        rabbitmq-operator-version:
+        - v1.0.0
+        - v1.1.0
+        - v1.2.0
+        - v1.3.0
+        - v1.4.0
+
         # Map between K8s and KinD versions.
         # This is attempting to make it a bit clearer what's being tested.
         # See: https://github.com/kubernetes-sigs/kind/releases/tag/v0.9.0
@@ -34,7 +41,9 @@ jobs:
           kind-image-sha: sha256:98cf5288864662e37115e362b23e4369c8c4a408f99cbc06e58ac30ddc721600
     env:
       GOPATH: ${{ github.workspace }}
-      GO111MODULE: off
+      SYSTEM_NAMESPACE: knative-eventing
+      # Where the Rabbitmq cluster operator is installed.
+      RABBITMQ_SYSTEM_NAMESPACE: rabbitmq-system
       KO_DOCKER_REPO: kind.local
 
     steps:
@@ -45,7 +54,9 @@ jobs:
 
     - name: Install Dependencies
       run: |
-        GO111MODULE=on go get github.com/google/ko/cmd/ko@master
+        curl -L https://github.com/google/ko/releases/download/v0.7.0/ko_0.7.0_Linux_x86_64.tar.gz | tar xzf - ko
+        chmod +x ./ko
+        sudo mv ko /usr/local/bin
 
     - name: Check out code onto GOPATH
       uses: actions/checkout@v2
@@ -55,7 +66,7 @@ jobs:
     - name: Install KinD
       working-directory: ./src/knative.dev/${{ github.event.repository.name }}
       env:
-        KIND_VERSION: v0.8.1
+        KIND_VERSION: ${{ matrix.kind-version }}
       run: |
         set -x
 
@@ -100,7 +111,7 @@ jobs:
       run: |
         set -x
 
-        kubectl apply -f https://github.com/rabbitmq/cluster-operator/releases/download/0.46.0/cluster-operator.yml
+        kubectl apply -f https://github.com/rabbitmq/cluster-operator/releases/download/${{ matrix.rabbitmq-operator-version }}/cluster-operator.yml
 
     - name: Install Knative Eventing
       run: |
@@ -130,14 +141,10 @@ jobs:
     - name: Wait for Ready
       working-directory: ./src/knative.dev/${{ github.event.repository.name }}
       run: |
-        set -x
-
-        # Probably don't need this anymore, but keep until we
-        # have something that waits for pods to becomes ready.
-        sleep 60
-
-        # For debugging.
-        kubectl get pods --all-namespaces
+        set -e
+        source ./vendor/knative.dev/hack/infra-library.sh
+        wait_until_pods_running ${SYSTEM_NAMESPACE}
+        wait_until_pods_running ${RABBITMQ_SYSTEM_NAMESPACE}
 
     - name: Run e2e Tests
       working-directory: ./src/knative.dev/${{ github.event.repository.name }}
