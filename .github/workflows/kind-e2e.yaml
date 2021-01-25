@@ -42,7 +42,7 @@ jobs:
     env:
       GOPATH: ${{ github.workspace }}
       SYSTEM_NAMESPACE: knative-eventing
-      # Where the Rabbitmq cluster operator is installed
+      # Where the Rabbitmq cluster operator is installed.
       RABBITMQ_SYSTEM_NAMESPACE: rabbitmq-system
       KO_DOCKER_REPO: kind.local
 
