@@ -30,12 +30,8 @@ require (
 	k8s.io/api v0.19.7
 	k8s.io/apimachinery v0.19.7
 	k8s.io/client-go v0.19.7
-	//k8s.io/client-go v0.19.7
-	//	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
 	k8s.io/code-generator v0.19.7
 	k8s.io/kube-openapi v0.0.0-20200805222855-6aeccd4b50c6
-	//	k8s.io/kube-openapi v0.0.0-20200805222855-6aeccd4b50c6
-	//	k8s.io/utils v0.0.0-20200729134348-d5654de09c73 // indirect
 	knative.dev/eventing v0.20.1-0.20210125233430-d4302617c965
 	knative.dev/hack v0.0.0-20210120165453-8d623a0af457
 	knative.dev/pkg v0.0.0-20210124203454-7101e9d4f6c6
