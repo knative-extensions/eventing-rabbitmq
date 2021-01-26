@@ -25,8 +25,10 @@ import (
 )
 
 // RabbitmqSourceLister helps list RabbitmqSources.
+// All objects returned here must be treated as read-only.
 type RabbitmqSourceLister interface {
 	// List lists all RabbitmqSources in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.RabbitmqSource, err error)
 	// RabbitmqSources returns an object that can list and get RabbitmqSources.
 	RabbitmqSources(namespace string) RabbitmqSourceNamespaceLister
@@ -57,10 +59,13 @@ func (s *rabbitmqSourceLister) RabbitmqSources(namespace string) RabbitmqSourceN
 }
 
 // RabbitmqSourceNamespaceLister helps list and get RabbitmqSources.
+// All objects returned here must be treated as read-only.
 type RabbitmqSourceNamespaceLister interface {
 	// List lists all RabbitmqSources in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.RabbitmqSource, err error)
 	// Get retrieves the RabbitmqSource from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1alpha1.RabbitmqSource, error)
 	RabbitmqSourceNamespaceListerExpansion
 }
