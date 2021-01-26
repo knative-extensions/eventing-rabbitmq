@@ -27,15 +27,15 @@ require (
 	go.uber.org/zap v1.16.0
 	gonum.org/v1/netlib v0.0.0-20190331212654-76723241ea4e // indirect
 	gotest.tools v2.2.0+incompatible
-	k8s.io/api v0.18.12
-	k8s.io/apimachinery v0.18.12
-	k8s.io/client-go v12.0.0+incompatible
-	k8s.io/code-generator v0.18.12
-	k8s.io/kube-openapi v0.0.0-20200410145947-bcb3869e6f29
-	knative.dev/eventing v0.20.1-0.20210120154053-d1bac1e2b92b
+	k8s.io/api v0.19.7
+	k8s.io/apimachinery v0.19.7
+	k8s.io/client-go v0.19.7
+	k8s.io/code-generator v0.19.7
+	k8s.io/kube-openapi v0.0.0-20200805222855-6aeccd4b50c6
+	knative.dev/eventing v0.20.1-0.20210125233430-d4302617c965
 	knative.dev/hack v0.0.0-20210120165453-8d623a0af457
-	knative.dev/pkg v0.0.0-20210121025054-992644aa1905
-	knative.dev/reconciler-test v0.0.0-20210115075620-6fe6ef693370
+	knative.dev/pkg v0.0.0-20210124203454-7101e9d4f6c6
+	knative.dev/reconciler-test v0.0.0-20210125215930-c46f01f1a397
 )
 
 replace (
@@ -48,16 +48,6 @@ replace (
 	// Somehow mattmoor/bindings causes grief...
 	github.com/google/go-github/v32 => github.com/google/go-github/v32 v32.0.1-0.20200624231906-3d244d3d496e
 
-	// WORKAROUND until KEDA v2 is not released
-	github.com/operator-framework/operator-sdk => github.com/operator-framework/operator-sdk v0.11.0
-
 	// lock prom import to avoid a bad goautoneg import.
 	github.com/prometheus/client_golang => github.com/prometheus/client_golang v0.9.2
-
-	k8s.io/api => k8s.io/api v0.18.8
-	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.18.8
-	k8s.io/apimachinery => k8s.io/apimachinery v0.18.8
-	k8s.io/apiserver => k8s.io/apiserver v0.18.8
-	k8s.io/client-go => k8s.io/client-go v0.18.8
-	k8s.io/cloud-provider => k8s.io/cloud-provider v0.18.8
 )
