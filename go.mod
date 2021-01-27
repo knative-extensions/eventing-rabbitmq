@@ -1,6 +1,6 @@
 module knative.dev/eventing-rabbitmq
 
-go 1.14
+go 1.15
 
 require (
 	github.com/NeowayLabs/wabbit v0.0.0-20200409220312-12e68ab5b0c6
