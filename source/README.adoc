@@ -12,7 +12,90 @@ exchange, or create a new exchange if required.
 toc::[]
 
 
-== Published events
+== Getting started
+
+=== Install
+
+* Install the RabbitMQ source from the nightly build (requires cluster administrator):
+
+[source,sh]
+----
+kubectl apply -f https://storage.googleapis.com/knative-nightly/eventing-rabbitmq/latest/rabbitmq-source.yaml
+----
+
+=== Create a `RabbitmqSource`
+
+[source,sh]
+----
+kubectl create secret generic rabbitmq-secret \
+  --from-literal=user=rabbit-user \
+  --from-file=password=/tmp/password
+----
+
+Then `kubectl apply` the following object to send events to the `event-display` service:
+
+[source,yaml]
+----
+apiVersion: sources.knative.dev/v1alpha1
+kind: RabbitmqSource
+metadata:
+  name: rabbitmq-source
+spec:
+  brokers: "rabbitmq:5672/"
+  user:
+    secretKeyRef:
+      name: "rabbitmq-secret"
+      key: "user"
+  password:
+    secretKeyRef:
+      name: "rabbitmq-secret"
+      key: "password"
+  exchange_config:
+    type: "fanout"
+  sink:
+    ref:
+      apiVersion: serving.knative.dev/v1
+      kind: Service
+      name: event-display
+----
+
+=== Publish and receive a message:
+
+Using https://www.rabbitmq.com/management-cli.html[`rabbitmqadmin`]:
+
+
+[source,shell]
+----
+rabbitmqadmin publish exchange=amq.fanout payload="Hello rabbitmq!"
+----
+
+.CloudEvents JSON format
+[source,json]
+----
+{
+  "specversion": "1.0",
+  "type": "dev.knative.rabbitmq.event",
+  "source": "/apis/v1/namespaces/default/rabbitmqsources/rabbitmq-source",
+  "id": "f00c1f52-33a1-4d3d-993f-750f20c804da",
+  "time": "2020-12-18T01:15:20.450860898Z",
+  "subject": "",
+  "datacontenttype": "application/json",
+  "key": "",
+  "data": "Hello rabbitmq!"
+}
+----
+
+== Reference
+
+=== Prerequisites
+
+* A https://www.rabbitmq.com/[RabbitMQ] installation. On Kubernetes, you can use
+https://www.rabbitmq.com/kubernetes/operator/operator-overview.html[the RabbitMQ
+operator] to set up a RabbitMQ installation.
+
+* An understanding of RabbitMQ concepts like Brokers, Exchanges, and Queues.
+
+=== Event schema
 
 All messages received by the RabbitMQ source are published with the following
 schema:
@@ -32,37 +115,11 @@ schema:
 
 The payload of the event is set to the data content of the message.
 
-=== Samples
+=== Resource fields
 
-For a message published with the payload "Hello rabbitmq!", for example with
-https://www.rabbitmq.com/management-cli.html[`rabbitmqadmin`]:
+// Note: this could link to generated documentation if that's easy to do...
 
-[source,shell]
-----
-rabbitmqadmin publish exchange=amq.default payload="Hello rabbitmq!"
-----
-
-The source sends the following event content:
-
-.CloudEvents JSON format
-[source,json]
-----
-{
-  "specversion": "1.0",
-  "type": "dev.knative.rabbitmq.event",
-  "source": "/apis/v1/namespaces/default/rabbitmqsources/rabbitmq-source",
-  "id": "f00c1f52-33a1-4d3d-993f-750f20c804da",
-  "time": "2020-12-18T01:15:20.450860898Z",
-  "subject": "",
-  "datacontenttype": "application/json",
-  "key": "",
-  "data": "Hello rabbitmq!"
-}
-----
-
-== Creating and managing sources
-
-Sources are Kubernetes objects. In addition to the standard Kubernetes
+`RabbitmqSources` are Kubernetes objects. In addition to the standard Kubernetes
 `apiVersion`, `kind`, and `metadata`, they have the following `spec` fields:
 
 :optional: *
@@ -93,71 +150,17 @@ Sources are Kubernetes objects. In addition to the standard Kubernetes
 
 {optional} These attributes are optional.
 
-You will need a Kubernetes Secret to hold the RabbitMQ username and
-password. The following command is one way to create a secret with the username
-`rabbit-user` and the password taken from the `/tmp/password` file.
-----
-kubectl create secret generic rabbitmq-secret \
-  --from-literal=user=rabbit-user \
-  --from-file=password=/tmp/password
-----
-
 Note that many parameters do not need to be specified. Unspecified optional
 parameters will be defaulted to `false` or `""` (empty string).
-
-[source,yaml]
-----
-apiVersion: sources.knative.dev/v1alpha1
-kind: RabbitmqSource
-metadata:
-  name: rabbitmq-source
-spec:
-  brokers: "rabbitmq:5672/"
-  user:
-    secretKeyRef:
-      name: "rabbitmq-secret"
-      key: "user"
-  password:
-    secretKeyRef:
-      name: "rabbitmq-secret"
-      key: "password"
-  exchange_config:
-    type: "fanout"
-    durable: true
-    auto_deleted: false
-  sink:
-    ref:
-      apiVersion: serving.knative.dev/v1
-      kind: Service
-      name: event-display
-----
 
 The source will provide output information about readiness or errors via the
 `status` field on the object once it has been created in the cluster.
 
 // TODO: should we have error documentation?
 
-== Administration
+=== Debugging tips
 
-The following information is intended for kubernetes cluster administrators
-looking to install the RabbitMQ source.
-
-=== Prerequisites
-
-* A https://www.rabbitmq.com/[RabbitMQ] installation. On Kubernetes, you can use
-https://www.rabbitmq.com/kubernetes/operator/operator-overview.html[the RabbitMQ
-operator] to set up a RabbitMQ installation.
-
-* An understanding of RabbitMQ concepts like Brokers, Exchanges, and Queues.
-
-=== Installation
-
-* Install the RabbitMQ source from the nightly build:
-
-[source,sh]
-----
-kubectl apply -f https://storage.googleapis.com/knative-nightly/eventing-rabbitmq/latest/rabbitmq-source.yaml
-----
+TODO: write up troubleshooting steps (`status.condition` values and other places to look to debug issues).
 
 === Configuration options
 
@@ -167,8 +170,6 @@ and
 https://github.com/knative/eventing/blob/master/config/core/configmaps/logging.yaml[`config-logging`]
 ConfigMaps may be used to manage the logging and metrics configuration.
 
-== Next Steps
-
 == Additional Resources
 
-
+* The https://www.rabbitmq.com/kubernetes/operator/operator-overview.html[RabbitMQ Operator for Kubernetes] can be handy for running RabbitMQ on Kubernetes.
