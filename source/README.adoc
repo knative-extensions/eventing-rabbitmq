@@ -4,15 +4,18 @@
 = RabbitMQ Source
 
 The RabbitMQ source translates messages on a RabbitMQ exchange to CloudEvents,
-which can then be used with Knative Eventing over HTTP. The source can bind to
-an existing RabbitMQ exchange, or create a new exchange if required.
+which can then be sent to other Knative Eventing components (Brokers, Channels,
+or other https://knative.dev/docs/eventing/#event-consumers[Addressable]
+objects) over HTTP. The RabbitMQ source can bind to an existing RabbitMQ
+exchange, or create a new exchange if required.
 
 toc::[]
 
 
 == Published events
 
-All messages received by the source are published with the following schema:
+All messages received by the RabbitMQ source are published with the following
+schema:
 
 .Event attributes
 |===
@@ -129,7 +132,7 @@ spec:
       name: event-display
 ----
 
-The Source will provide output information about readiness or errors via the
+The source will provide output information about readiness or errors via the
 `status` field on the object once it has been created in the cluster.
 
 // TODO: should we have error documentation?
@@ -149,7 +152,7 @@ operator] to set up a RabbitMQ installation.
 
 === Installation
 
-* Install the source from the nightly build:
+* Install the RabbitMQ source from the nightly build:
 
 [source,sh]
 ----
