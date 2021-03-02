@@ -19,7 +19,6 @@ package e2e
 import (
 	"context"
 	"strings"
-	"testing"
 	"time"
 
 	"knative.dev/eventing-rabbitmq/test/e2e/config/smoke/brokertrigger"
@@ -42,7 +41,7 @@ func SmokeTestBrokerTrigger() *feature.Feature {
 	return f
 }
 
-func AllGoReady(ctx context.Context, t *testing.T) {
+func AllGoReady(ctx context.Context, t feature.T) {
 	env := environment.FromContext(ctx)
 	for _, ref := range env.References() {
 		if !strings.Contains(ref.APIVersion, "knative.dev") {

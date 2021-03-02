@@ -18,7 +18,6 @@ package e2e
 
 import (
 	"context"
-	"testing"
 
 	"knative.dev/eventing-rabbitmq/test/e2e/config/dlq"
 	"knative.dev/reconciler-test/pkg/eventshub"
@@ -43,7 +42,7 @@ func BrokerDLQTest() *feature.Feature {
 	f.Alpha("RabbitMQ broker").Must("goes ready", AllGoReady)
 	f.Alpha("RabbitMQ source").
 		Must("the recorder received all sent events within the time",
-			func(ctx context.Context, t *testing.T) {
+			func(ctx context.Context, t feature.T) {
 				// TODO: Use constraint matching instead of just counting number of events.
 				eventshub.StoreFromContext(ctx, "recorder").AssertAtLeast(5)
 			})

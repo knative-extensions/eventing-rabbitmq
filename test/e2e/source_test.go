@@ -20,7 +20,6 @@ package e2e
 
 import (
 	"context"
-	"testing"
 
 	"knative.dev/eventing-rabbitmq/test/e2e/config/source"
 	"knative.dev/eventing-rabbitmq/test/e2e/config/sourceproducer"
@@ -47,7 +46,7 @@ func DirectSourceTest() *feature.Feature {
 	f.Setup("install producer", sourceproducer.Install())
 	f.Alpha("RabbitMQ source").
 		Must("the recorder received all sent events within the time",
-			func(ctx context.Context, t *testing.T) {
+			func(ctx context.Context, t feature.T) {
 				// TODO: Use constraint matching instead of just counting number of events.
 				eventshub.StoreFromContext(ctx, "recorder").AssertAtLeast(5)
 			})
