@@ -35,8 +35,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/meta"
 
-	"testing"
-
 	"knative.dev/eventing-rabbitmq/test/e2e/config/rabbitmq"
 	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"
@@ -59,7 +57,7 @@ func RabbitMQCluster() *feature.Feature {
 	return f
 }
 
-func RabbitMQClusterReady(ctx context.Context, t *testing.T) {
+func RabbitMQClusterReady(ctx context.Context, t feature.T) {
 	namespace := environment.FromContext(ctx).Namespace()
 	lastMsg := ""
 	err := wait.PollImmediate(interval, timeout, func() (bool, error) {
