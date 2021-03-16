@@ -196,7 +196,7 @@ github.com/golang/protobuf/ptypes/any
 github.com/golang/protobuf/ptypes/duration
 github.com/golang/protobuf/ptypes/timestamp
 github.com/golang/protobuf/ptypes/wrappers
-# github.com/google/go-cmp v0.5.4
+# github.com/google/go-cmp v0.5.5
 ## explicit
 github.com/google/go-cmp/cmp
 github.com/google/go-cmp/cmp/cmpopts
@@ -208,8 +208,9 @@ github.com/google/go-cmp/cmp/internal/value
 github.com/google/go-github/v27/github
 # github.com/google/go-querystring v1.0.0
 github.com/google/go-querystring/query
-# github.com/google/gofuzz v1.1.0
+# github.com/google/gofuzz v1.2.0
 github.com/google/gofuzz
+github.com/google/gofuzz/bytesource
 # github.com/google/licenseclassifier v0.0.0-20200708223521-3d09a0ea2f39
 ## explicit
 github.com/google/licenseclassifier
@@ -308,7 +309,7 @@ github.com/prometheus/client_golang/prometheus/internal
 github.com/prometheus/client_golang/prometheus/promhttp
 # github.com/prometheus/client_model v0.2.0
 github.com/prometheus/client_model/go
-# github.com/prometheus/common v0.15.0
+# github.com/prometheus/common v0.19.0
 github.com/prometheus/common/expfmt
 github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg
 github.com/prometheus/common/log
@@ -349,7 +350,7 @@ github.com/testcontainers/testcontainers-go/wait
 ## explicit
 # github.com/tsenart/vegeta/v12 v12.8.4
 github.com/tsenart/vegeta/v12/lib
-# go.opencensus.io v0.22.6
+# go.opencensus.io v0.23.0
 go.opencensus.io
 go.opencensus.io/internal
 go.opencensus.io/internal/tagencoding
@@ -490,7 +491,7 @@ google.golang.org/genproto/googleapis/monitoring/v3
 google.golang.org/genproto/googleapis/rpc/status
 google.golang.org/genproto/googleapis/type/calendarperiod
 google.golang.org/genproto/protobuf/field_mask
-# google.golang.org/grpc v1.35.0
+# google.golang.org/grpc v1.36.0
 google.golang.org/grpc
 google.golang.org/grpc/attributes
 google.golang.org/grpc/backoff
@@ -987,7 +988,7 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/eventing v0.21.1-0.20210309225325-879407f613a0
+# knative.dev/eventing v0.21.1-0.20210315222641-248cd1b3cc69
 ## explicit
 knative.dev/eventing/pkg/adapter/v2
 knative.dev/eventing/pkg/adapter/v2/util/crstatusevent
@@ -1096,7 +1097,7 @@ knative.dev/eventing/test/test_images/print
 # knative.dev/hack v0.0.0-20210309141825-9b73a256fd9a
 ## explicit
 knative.dev/hack
-# knative.dev/pkg v0.0.0-20210310050525-cc278e1666ca
+# knative.dev/pkg v0.0.0-20210315160101-6a33a1ab29ac
 ## explicit
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
@@ -1195,7 +1196,7 @@ knative.dev/pkg/webhook/configmaps
 knative.dev/pkg/webhook/resourcesemantics
 knative.dev/pkg/webhook/resourcesemantics/defaulting
 knative.dev/pkg/webhook/resourcesemantics/validation
-# knative.dev/reconciler-test v0.0.0-20210310072325-2521dadad94c
+# knative.dev/reconciler-test v0.0.0-20210312233400-e0697952bd54
 ## explicit
 knative.dev/reconciler-test/cmd/eventshub
 knative.dev/reconciler-test/pkg/environment

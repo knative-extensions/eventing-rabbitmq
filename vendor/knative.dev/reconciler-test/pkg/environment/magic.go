@@ -18,9 +18,11 @@ package environment
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -85,6 +87,22 @@ func (mr *MagicEnvironment) Finish() {
 		panic(err)
 	}
 	mr.milestones.Finished()
+}
+
+// WithPollTimings is an environment option to override default poll timings.
+func WithPollTimings(interval, timeout time.Duration) EnvOpts {
+	return func(ctx context.Context, env Environment) (context.Context, error) {
+		return ContextWithPollTimings(ctx, interval, timeout), nil
+	}
+}
+
+// Managed enables auto-lifecycle management of the environment. Including:
+//  - registers a t.Cleanup callback on env.Finish().
+func Managed(t feature.T) EnvOpts {
+	return func(ctx context.Context, env Environment) (context.Context, error) {
+		t.Cleanup(env.Finish)
+		return ctx, nil
+	}
 }
 
 func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context, Environment) {
@@ -157,6 +175,22 @@ func (mr *MagicEnvironment) RequirementLevel() feature.Levels {
 
 func (mr *MagicEnvironment) FeatureState() feature.States {
 	return mr.s
+}
+
+// InNamespace takes the namespace that the tests should be run in instead of creating
+// a namespace. This is useful if the Unit Under Test (UUT) is created ahead of the tests
+// to be run. Longer term this should make it easier to decouple the UUT from the generic
+// conformance tests, for example, create a Broker of type {Kafka, RabbitMQ} and the tests
+// themselves should not care.
+func InNamespace(namespace string) EnvOpts {
+	return func(ctx context.Context, env Environment) (context.Context, error) {
+		mr, ok := env.(*MagicEnvironment)
+		if !ok {
+			return ctx, errors.New("InNamespace: not a magic env")
+		}
+		mr.namespace = namespace
+		return ctx, nil
+	}
 }
 
 func (mr *MagicEnvironment) Namespace() string {
