@@ -148,7 +148,6 @@ jobs:
         source ./vendor/knative.dev/hack/infra-library.sh
         wait_until_pods_running ${SYSTEM_NAMESPACE}
         wait_until_pods_running ${RABBITMQ_SYSTEM_NAMESPACE}
-        wait_until_pods_running ${RABBITMQ_SOURCE_NAMESPACE}
 
       # Run conformance tests
     - name: Run conformance Tests
