@@ -1,4 +1,4 @@
-name: KinD e2e tests
+name: KinD conformance tests
 
 on:
   push:
