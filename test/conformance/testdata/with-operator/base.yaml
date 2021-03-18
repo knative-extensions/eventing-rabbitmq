@@ -1,0 +1,14 @@
+apiVersion: eventing.knative.dev/v1
+kind: Broker
+metadata:
+  name: {{ .name }}
+  namespace: {{ .namespace }}
+  {{ if .brokerClass }}
+  annotations:
+    eventing.knative.dev/broker.class: {{ .brokerClass }}
+  {{ end }}
+spec:
+  config:
+    apiVersion: rabbitmq.com/v1beta1
+    kind: RabbitmqCluster
+    name: rabbitbroker
