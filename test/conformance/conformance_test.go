@@ -24,22 +24,28 @@ import (
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
+	"knative.dev/pkg/system"
 	_ "knative.dev/pkg/system/testing"
 
 	"knative.dev/eventing/test/rekt/features/broker"
 	b "knative.dev/eventing/test/rekt/resources/broker"
 	"knative.dev/reconciler-test/pkg/environment"
+	"knative.dev/reconciler-test/pkg/k8s"
+	"knative.dev/reconciler-test/pkg/knative"
 )
 
 // TestBrokerConformance
 func TestBrokerConformance(t *testing.T) {
-	ctx, env := global.Environment(environment.Managed(t))
-	cfg := []b.CfgFn{b.WithBrokerClass(eventingGlobal.BrokerClass)}
-	if eventingGlobal.BrokerTemplatesDir != "" {
-		cfg = append(cfg, b.WithBrokerTemplateFiles(eventingGlobal.BrokerTemplatesDir))
-	}
+	ctx, env := global.Environment(
+		knative.WithKnativeNamespace(system.Namespace()),
+		knative.WithLoggingConfig,
+		knative.WithTracingConfig,
+		k8s.WithEventListener,
+		environment.Managed(t),
+	)
+
 	// Install and wait for a Ready Broker.
-	env.Prerequisite(ctx, t, broker.GoesReady("default", cfg...))
+	env.Prerequisite(ctx, t, broker.GoesReady("default", b.WithEnvConfig()...))
 	env.TestSet(ctx, t, broker.ControlPlaneConformance("default"))
 	env.TestSet(ctx, t, broker.DataPlaneConformance("default"))
 }
