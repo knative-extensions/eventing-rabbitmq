@@ -17,26 +17,68 @@ limitations under the License.
 package resources
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 
 	corev1 "k8s.io/api/core/v1"
-
-	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
-	"knative.dev/eventing-rabbitmq/pkg/reconciler/io"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/kmeta"
 
 	"github.com/NeowayLabs/wabbit"
+	rabbitv1alpha2 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
 	"github.com/streadway/amqp"
+	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
+	"knative.dev/eventing-rabbitmq/pkg/reconciler/io"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 )
 
 // ExchangeArgs are the arguments to create a RabbitMQ Exchange.
 type ExchangeArgs struct {
-	Broker      *eventingv1.Broker
-	RabbitMQURL *url.URL
+	Broker          *eventingv1.Broker
+	RabbitMQURL     *url.URL
+	RabbitMQCluster string
 	// Set to true to create a DLX, which basically just means we're going
 	// to create it with a /DLX as the prepended name.
 	DLX bool
+}
+
+func NewExchange(ctx context.Context, args *ExchangeArgs) (*rabbitv1alpha2.Exchange, error) {
+	exchangeName := kmeta.ChildName(ExchangeName(args.Broker, args.DLX), string(args.Broker.GetUID()))
+	return &rabbitv1alpha2.Exchange{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: args.Broker.Namespace,
+			Name:      exchangeName,
+			//				fmt.Sprintf("%s-", args.Broker.Name), string(args.Broker.GetUID())),
+			OwnerReferences: []metav1.OwnerReference{
+				*kmeta.NewControllerRef(args.Broker),
+			},
+			Labels: ExchangeLabels(args.Broker),
+		},
+		Spec: rabbitv1alpha2.ExchangeSpec{
+			// Why is the name in the Spec again? Is this different from the ObjectMeta.Name? If not,
+			// maybe it should be removed?
+			Name:       exchangeName,
+			Type:       "headers",
+			Durable:    true,
+			AutoDelete: false,
+			// TODO: We had before also internal / nowait set to false. Are these in Arguments,
+			// or do they get sane defaults that we can just work with?
+			// TODO: This one has to exist in the same namespace as this exchange.
+			RabbitmqClusterReference: rabbitv1alpha2.RabbitmqClusterReference{
+				Name: args.RabbitMQCluster,
+			},
+		},
+	}, nil
+
+}
+
+// ExchangeLabels generates the labels present on the Exchange linking the Broker to the
+// Exchange.
+func ExchangeLabels(b *eventingv1.Broker) map[string]string {
+	return map[string]string{
+		"eventing.knative.dev/broker": b.Name,
+	}
 }
 
 // DeclareExchange declares the Exchange for a Broker.

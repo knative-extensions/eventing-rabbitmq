@@ -35,6 +35,7 @@ import (
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/network"
 
+	rabbitclientset "github.com/rabbitmq/messaging-topology-operator/pkg/generated/clientset/versioned"
 	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
 	triggerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
@@ -54,6 +55,7 @@ type Reconciler struct {
 	eventingClientSet clientset.Interface
 	dynamicClientSet  dynamic.Interface
 	kubeClientSet     kubernetes.Interface
+	rabbitClientSet   rabbitclientset.Interface
 
 	// listers index properties about resources
 	brokerLister     eventinglisters.BrokerLister

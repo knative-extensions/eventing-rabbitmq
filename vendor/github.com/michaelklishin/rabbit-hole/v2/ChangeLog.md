@@ -1,6 +1,29 @@
-## Changes Between 2.4.0 and 2.5.0 (in development)
+## Changes Between 2.6.0 and 2.7.0 (under development)
 
 No changes yet.
+
+## Changes Between 2.5.0 and 2.6.0 (Nov 25, 2020)
+
+### Feature Flag Management
+
+The client now can list and enable feature flags
+using the `ListFeatureFlags` and `EnableFeatureFlag` functions.
+
+Contributed by David Ansari.
+
+GitHub issue: [#167](https://github.com/michaelklishin/rabbit-hole/pull/167)
+
+## Changes Between 2.4.0 and 2.5.0 (Sep 28th, 2020)
+
+### Shovels: Support for Numerical Delete-After Values
+
+The `delete-after` Shovel parameter now can be deserialised to
+a numerical TTL value as well as special string values such as `"never"`.
+
+Contributed by Michal @mkuratczyk Kuratczyk.
+
+GitHub issue: [#164](https://github.com/michaelklishin/rabbit-hole/pull/164)
+
 
 ## Changes Between 2.3.0 and 2.4.0 (Aug 4th, 2020)
 

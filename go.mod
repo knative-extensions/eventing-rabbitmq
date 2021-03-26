@@ -17,15 +17,13 @@ require (
 	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/influxdata/tdigest v0.0.1 // indirect
 	github.com/kelseyhightower/envconfig v1.4.0
-	github.com/michaelklishin/rabbit-hole/v2 v2.4.0
-	github.com/onsi/ginkgo v1.14.0 // indirect
+	github.com/michaelklishin/rabbit-hole/v2 v2.6.0
 	github.com/pkg/errors v0.9.1
-	github.com/sergi/go-diff v1.1.0 // indirect
+	github.com/rabbitmq/messaging-topology-operator v0.4.1
 	github.com/streadway/amqp v1.0.0
 	github.com/testcontainers/testcontainers-go v0.7.0
 	github.com/tiago4orion/conjure v0.0.0-20150908101743-93cb30b9d218 // indirect
 	go.uber.org/zap v1.16.0
-	gonum.org/v1/netlib v0.0.0-20190331212654-76723241ea4e // indirect
 	gotest.tools v2.2.0+incompatible
 	k8s.io/api v0.19.7
 	k8s.io/apimachinery v0.19.7
@@ -50,4 +48,7 @@ replace (
 
 	// lock prom import to avoid a bad goautoneg import.
 	github.com/prometheus/client_golang => github.com/prometheus/client_golang v0.9.2
+
+	// DO NOT SUBMIT
+	github.com/rabbitmq/messaging-topology-operator => github.com/vaikas/messaging-topology-operator v0.4.2-0.20210326181125-f1ca39a2352a
 )
