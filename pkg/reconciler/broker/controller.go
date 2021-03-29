@@ -21,6 +21,7 @@ import (
 	"log"
 
 	"knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
+	rabbitmqclient "knative.dev/eventing-rabbitmq/pkg/client/injection/rabbitmq.com/client"
 	eventingclient "knative.dev/eventing/pkg/client/injection/client"
 
 	"github.com/kelseyhightower/envconfig"
@@ -98,6 +99,7 @@ func NewController(
 		brokerClass:               env.BrokerClass,
 		dialerFunc:                dialer.RealDialer,
 		dispatcherImage:           env.DispatcherImage,
+		rabbitClientSet:           rabbitmqclient.Get(ctx),
 	}
 
 	impl := brokerreconciler.NewImpl(ctx, r, env.BrokerClass, func(impl *controller.Impl) controller.Options {
