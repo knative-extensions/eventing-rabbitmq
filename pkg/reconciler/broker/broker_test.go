@@ -32,6 +32,8 @@ import (
 
 	rabbitv1alpha2 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
 	clientgotesting "k8s.io/client-go/testing"
+	rabbitmqduck "knative.dev/eventing-rabbitmq/pkg/apis/duck/v1beta1"
+	rabbitduck "knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
 	fakerabbitclient "knative.dev/eventing-rabbitmq/pkg/client/injection/rabbitmq.com/client/fake"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
@@ -146,6 +148,8 @@ func init() {
 	// Add types to scheme
 	_ = eventingv1.AddToScheme(scheme.Scheme)
 	_ = duckv1.AddToScheme(scheme.Scheme)
+	_ = rabbitmqduck.AddToScheme(scheme.Scheme)
+	_ = rabbitmqduck.RealAddToScheme(scheme.Scheme)
 }
 
 func TestReconcile(t *testing.T) {
@@ -667,6 +671,7 @@ func TestReconcile(t *testing.T) {
 		ctx = v1b1addr.WithDuck(ctx)
 		ctx = v1addr.WithDuck(ctx)
 		ctx = conditions.WithDuck(ctx)
+		ctx = rabbitduck.WithDuck(ctx)
 		eventingv1.RegisterAlternateBrokerConditionSet(rabbitBrokerCondSet)
 		fakeServer := server.NewServer(rabbitURL)
 		fakeServer.Start()
@@ -692,6 +697,7 @@ func TestReconcile(t *testing.T) {
 			dispatcherImage:    dispatcherImage,
 			rabbitClientSet:    fakerabbitclient.Get(ctx),
 			exchangeLister:     listers.GetExchangeLister(),
+			rabbitLister:       rabbitduck.Get(ctx),
 		}
 		return broker.NewReconciler(ctx, logger,
 			fakeeventingclient.Get(ctx), listers.GetBrokerLister(),

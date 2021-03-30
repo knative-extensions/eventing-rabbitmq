@@ -20,6 +20,7 @@ import (
 	"context"
 	"log"
 
+	"knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
 	rabbitmqclient "knative.dev/eventing-rabbitmq/pkg/client/injection/rabbitmq.com/client"
 	eventingclient "knative.dev/eventing/pkg/client/injection/client"
 
@@ -83,6 +84,7 @@ func NewController(
 	brokerInformer := brokerinformer.Get(ctx)
 	serviceInformer := serviceinformer.Get(ctx)
 	endpointsInformer := endpointsinformer.Get(ctx)
+	rabbitInformer := rabbit.Get(ctx)
 	exchangeInformer := exchangeinformer.Get(ctx)
 
 	r := &Reconciler{
@@ -94,6 +96,7 @@ func NewController(
 		serviceLister:             serviceInformer.Lister(),
 		endpointsLister:           endpointsInformer.Lister(),
 		deploymentLister:          deploymentInformer.Lister(),
+		rabbitLister:              rabbitInformer,
 		ingressImage:              env.IngressImage,
 		ingressServiceAccountName: env.IngressServiceAccount,
 		brokerClass:               env.BrokerClass,
