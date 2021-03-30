@@ -48,7 +48,4 @@ replace (
 
 	// lock prom import to avoid a bad goautoneg import.
 	github.com/prometheus/client_golang => github.com/prometheus/client_golang v0.9.2
-
-	// DO NOT SUBMIT
-	github.com/rabbitmq/messaging-topology-operator => github.com/vaikas/messaging-topology-operator v0.4.2-0.20210326181125-f1ca39a2352a
 )

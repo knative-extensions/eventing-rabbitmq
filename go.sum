@@ -911,8 +911,8 @@ github.com/urfave/cli v0.0.0-20171014202726-7bc6a0acffa5/go.mod h1:70zkFmudgCuE/
 github.com/urfave/cli v1.20.0/go.mod h1:70zkFmudgCuE/ngEzBv17Jvp/497gISqfk5gWijbERA=
 github.com/urfave/cli v1.22.1/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtXRu0=
 github.com/uudashr/gocognit v0.0.0-20190926065955-1655d0de0517/go.mod h1:j44Ayx2KW4+oB6SWMv8KsmHzZrOInQav7D3cQMJ5JUM=
-github.com/vaikas/messaging-topology-operator v0.4.2-0.20210326181125-f1ca39a2352a h1:N42t4IsKOM3WGCEl5KcGVm1ZEJvkE53wc/I13GZTZaE=
-github.com/vaikas/messaging-topology-operator v0.4.2-0.20210326181125-f1ca39a2352a/go.mod h1:ZAYIPYMvC9KxOSbILOBF9/PUeU35eS8Fvyl+vD3YRAA=
+github.com/vaikas/messaging-topology-operator v0.4.2-0.20210330175204-f6906221317f h1:eAR/yL9Fz2C97wkoBswukBhvsLy/rfkitnsS6ARh2Bw=
+github.com/vaikas/messaging-topology-operator v0.4.2-0.20210330175204-f6906221317f/go.mod h1:ItGOMArAuWOr/bq9i4REII3b2BDN+BQ+//grUTQfGvA=
 github.com/vaikas/wabbit v0.0.0-20201002085521-b5b22698ecc7 h1:0g4y6QxFl0AelPYIjA7Dze55Zbas+h1d5/X2ppJT7s0=
 github.com/vaikas/wabbit v0.0.0-20201002085521-b5b22698ecc7/go.mod h1:LntnTHRv9NGjFDelZ9txk2X41poMA7m0bql3uFrQewI=
 github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6KllzawFIhcdPw=
@@ -1497,8 +1497,9 @@ k8s.io/code-generator v0.0.0-20190912054826-cd179ad6a269/go.mod h1:V5BD6M4CyaN5m
 k8s.io/code-generator v0.18.2/go.mod h1:+UHX5rSbxmR8kzS+FAv7um6dtYrZokQvjHpDSYRVkTc=
 k8s.io/code-generator v0.19.7/go.mod h1:lwEq3YnLYb/7uVXLorOJfxg+cUu2oihFhHZ0n9NIla0=
 k8s.io/code-generator v0.20.1/go.mod h1:UsqdF+VX4PU2g46NC2JRs4gc+IfrctnwHb76RNbWHJg=
-k8s.io/code-generator v0.20.2 h1:SQaysped4EtUDk3u1zphnUJiOAwFdhHx9xS3WKAE0x8=
 k8s.io/code-generator v0.20.2/go.mod h1:UsqdF+VX4PU2g46NC2JRs4gc+IfrctnwHb76RNbWHJg=
+k8s.io/code-generator v0.20.5 h1:qQp2F2ZnosUqeV7ZqKE6bQnf7x9Ps9RFfKZxw1r5HsM=
+k8s.io/code-generator v0.20.5/go.mod h1:UsqdF+VX4PU2g46NC2JRs4gc+IfrctnwHb76RNbWHJg=
 k8s.io/component-base v0.0.0-20190918160511-547f6c5d7090/go.mod h1:933PBGtQFJky3TEwYx4aEPZ4IxqhWh3R6DCmzqIn1hA=
 k8s.io/component-base v0.18.2/go.mod h1:kqLlMuhJNHQ9lz8Z7V5bxUUtjFZnrypArGl58gmDfUM=
 k8s.io/component-base v0.19.7/go.mod h1:YX8spPBgwl3I6UGcSdQiEMAqRMSUsGQOW7SEr4+Qa3U=

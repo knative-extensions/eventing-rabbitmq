@@ -43,7 +43,7 @@ type ExchangeArgs struct {
 	DLX bool
 }
 
-func NewExchange(ctx context.Context, args *ExchangeArgs) (*rabbitv1alpha2.Exchange, error) {
+func NewExchange(ctx context.Context, args *ExchangeArgs) *rabbitv1alpha2.Exchange {
 	exchangeName := kmeta.ChildName(ExchangeName(args.Broker, args.DLX), string(args.Broker.GetUID()))
 	return &rabbitv1alpha2.Exchange{
 		ObjectMeta: metav1.ObjectMeta{
@@ -69,8 +69,7 @@ func NewExchange(ctx context.Context, args *ExchangeArgs) (*rabbitv1alpha2.Excha
 				Name: args.RabbitMQCluster,
 			},
 		},
-	}, nil
-
+	}
 }
 
 // ExchangeLabels generates the labels present on the Exchange linking the Broker to the

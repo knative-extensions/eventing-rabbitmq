@@ -30,7 +30,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 
+	rabbitv1alpha2 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
 	clientgotesting "k8s.io/client-go/testing"
+	fakerabbitclient "knative.dev/eventing-rabbitmq/pkg/client/injection/rabbitmq.com/client/fake"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
@@ -47,13 +49,16 @@ import (
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	fakedynamicclient "knative.dev/pkg/injection/clients/dynamicclient/fake"
+	"knative.dev/pkg/kmeta"
 	logtesting "knative.dev/pkg/logging/testing"
 	"knative.dev/pkg/network"
 	"knative.dev/pkg/resolver"
 
+	rtlisters "knative.dev/eventing-rabbitmq/pkg/reconciler/testing"
 	_ "knative.dev/eventing/pkg/client/injection/informers/eventing/v1/trigger/fake"
 	rt "knative.dev/eventing/pkg/reconciler/testing/v1"
 	_ "knative.dev/pkg/client/injection/ducks/duck/v1/addressable/fake"
+
 	. "knative.dev/pkg/reconciler/testing"
 
 	"github.com/NeowayLabs/wabbit/amqptest/server"
@@ -68,6 +73,7 @@ const (
 	rabbitSecretName       = "test-secret"
 	rabbitBrokerSecretName = "test-broker-broker-rabbit"
 	rabbitURL              = "amqp://localhost:5672/%2f"
+	rabbitMQBrokerName     = "rabbitbrokerhere"
 	ingressImage           = "ingressimage"
 
 	deadLetterSinkKind       = "Service"
@@ -259,18 +265,23 @@ func TestReconcile(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
+					WithBrokerUID("uid-for-test"),
 					WithBrokerClass(brokerClass),
-					WithBrokerConfig(config()),
+					WithBrokerConfig(configForRabbitOperator()),
 					WithInitBrokerConditions),
 				createSecret("invalid data"),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
+					WithBrokerUID("uid-for-test"),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
-					WithBrokerConfig(config()),
+					WithBrokerConfig(configForRabbitOperator()),
 					WithExchangeFailed("ExchangeFailure", `Failed to create exchange: Network unreachable`)),
 			}},
+			WantCreates: []runtime.Object{
+				createExchange(false),
+			},
 			WantPatches: []clientgotesting.PatchActionImpl{
 				patchFinalizers(testNS, brokerName),
 			},
@@ -651,7 +662,7 @@ func TestReconcile(t *testing.T) {
 	}
 
 	logger := logtesting.TestLogger(t)
-	table.Test(t, rt.MakeFactory(func(ctx context.Context, listers *rt.Listers, cmw configmap.Watcher) controller.Reconciler {
+	table.Test(t, rtlisters.MakeFactory(func(ctx context.Context, listers *rtlisters.Listers, cmw configmap.Watcher) controller.Reconciler {
 		ctx = v1a1addr.WithDuck(ctx)
 		ctx = v1b1addr.WithDuck(ctx)
 		ctx = v1addr.WithDuck(ctx)
@@ -679,6 +690,8 @@ func TestReconcile(t *testing.T) {
 			adminURL:           ts.URL,
 			ingressImage:       ingressImage,
 			dispatcherImage:    dispatcherImage,
+			rabbitClientSet:    fakerabbitclient.Get(ctx),
+			exchangeLister:     listers.GetExchangeLister(),
 		}
 		return broker.NewReconciler(ctx, logger,
 			fakeeventingclient.Get(ctx), listers.GetBrokerLister(),
@@ -785,6 +798,15 @@ func config() *duckv1.KReference {
 	}
 }
 
+func configForRabbitOperator() *duckv1.KReference {
+	return &duckv1.KReference{
+		Name:       rabbitMQBrokerName,
+		Namespace:  testNS,
+		Kind:       "RabbitmqCluster",
+		APIVersion: "rabbitmq.com/v1beta1",
+	}
+}
+
 // FilterLabels generates the labels present on all resources representing the filter of the given
 // Broker.
 func IngressLabels() map[string]string {
@@ -842,4 +864,40 @@ func createDispatcherDeployment() *appsv1.Deployment {
 		Subscriber:         deadLetterSinkAddress,
 	}
 	return resources.MakeDispatcherDeployment(args)
+}
+
+func createExchange(dlx bool) *rabbitv1alpha2.Exchange {
+	broker := &eventingv1.Broker{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      brokerName,
+			Namespace: testNS,
+			UID:       "uid-for-test",
+		},
+	}
+	exchangeName := kmeta.ChildName(resources.ExchangeName(broker, dlx), string(broker.GetUID()))
+	return &rabbitv1alpha2.Exchange{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: testNS,
+			Name:      exchangeName,
+			//				fmt.Sprintf("%s-", args.Broker.Name), string(args.Broker.GetUID())),
+			OwnerReferences: []metav1.OwnerReference{
+				*kmeta.NewControllerRef(broker),
+			},
+			Labels: resources.ExchangeLabels(broker),
+		},
+		Spec: rabbitv1alpha2.ExchangeSpec{
+			// Why is the name in the Spec again? Is this different from the ObjectMeta.Name? If not,
+			// maybe it should be removed?
+			Name:       exchangeName,
+			Type:       "headers",
+			Durable:    true,
+			AutoDelete: false,
+			// TODO: We had before also internal / nowait set to false. Are these in Arguments,
+			// or do they get sane defaults that we can just work with?
+			// TODO: This one has to exist in the same namespace as this exchange.
+			RabbitmqClusterReference: rabbitv1alpha2.RabbitmqClusterReference{
+				Name: rabbitMQBrokerName,
+			},
+		},
+	}
 }

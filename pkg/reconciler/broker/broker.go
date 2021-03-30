@@ -36,6 +36,7 @@ import (
 	"knative.dev/pkg/network"
 
 	rabbitclientset "github.com/rabbitmq/messaging-topology-operator/pkg/generated/clientset/versioned"
+	rabbitlisters "github.com/rabbitmq/messaging-topology-operator/pkg/generated/listers/rabbitmq.com/v1alpha2"
 	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
 	triggerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
@@ -64,6 +65,7 @@ type Reconciler struct {
 	secretLister     corev1listers.SecretLister
 	deploymentLister appsv1listers.DeploymentLister
 	rabbitLister     apisduck.InformerFactory
+	exchangeLister   rabbitlisters.ExchangeLister
 
 	ingressImage              string
 	ingressServiceAccountName string
@@ -127,6 +129,11 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *eventingv1.Broker) pk
 	args, err := r.getExchangeArgs(ctx, b)
 	if err != nil {
 		MarkExchangeFailed(&b.Status, "ExchangeCredentialsUnavailable", "Failed to get arguments for creating exchange: %s", err)
+		return err
+	}
+
+	err = r.reconcileExchange(ctx, args)
+	if err != nil {
 		return err
 	}
 
@@ -379,6 +386,28 @@ func (r *Reconciler) reconcileDLQBinding(ctx context.Context, b *eventingv1.Brok
 	if err != nil {
 		logging.FromContext(ctx).Error("Problem declaring Broker DLQ Binding", zap.Error(err))
 		return err
+	}
+	return nil
+}
+
+func (r *Reconciler) reconcileExchange(ctx context.Context, args *resources.ExchangeArgs) error {
+	want := resources.NewExchange(ctx, args)
+	current, err := r.exchangeLister.Exchanges(args.Broker.Namespace).Get(resources.ExchangeName(args.Broker, args.DLX))
+	if apierrs.IsNotFound(err) {
+		_, err = r.rabbitClientSet.RabbitmqV1alpha2().Exchanges(args.Broker.Namespace).Create(ctx, want, metav1.CreateOptions{})
+		if err != nil {
+			return err
+		}
+	} else if err != nil {
+		return err
+	} else if !equality.Semantic.DeepDerivative(want.Spec, current.Spec) {
+		// Don't modify the informers copy.
+		desired := current.DeepCopy()
+		desired.Spec = want.Spec
+		_, err = r.rabbitClientSet.RabbitmqV1alpha2().Exchanges(args.Broker.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
