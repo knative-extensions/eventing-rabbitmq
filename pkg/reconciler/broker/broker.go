@@ -124,7 +124,9 @@ var rabbitBrokerCondSet = apis.NewLivingConditionSet(
 // messaging-topology-operator or the libraries.
 func isUsingOperator(b *eventingv1.Broker) bool {
 	if b != nil && b.Spec.Config != nil {
-		return b.Spec.Config.Kind == "RabbitmqCluster"
+		return false
+		// TODO: vaikas: Enable this to use CRD based reconciler.
+		//		return b.Spec.Config.Kind == "RabbitmqCluster"
 	}
 	return false
 }
@@ -152,95 +154,8 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *eventingv1.Broker) pk
 			return err
 		}
 	}
-
-	s, err := resources.DeclareExchange(r.dialerFunc, args)
-	if err != nil {
-		logging.FromContext(ctx).Errorw("Problem creating RabbitMQ Exchange", zap.Error(err))
-		MarkExchangeFailed(&b.Status, "ExchangeFailure", "Failed to create exchange: %s", err)
-		return err
-	}
-	MarkExchangeReady(&b.Status)
-	// Always just create the DLX, if we want to only create if there's a delivery spec to save
-	// resources, revisit as in if it hogs up resources too much even if it's not being used for
-	// example.
-	args.DLX = true
-	_, err = resources.DeclareExchange(r.dialerFunc, args)
-	if err != nil {
-		logging.FromContext(ctx).Errorw("Problem creating RabbitMQ DLX", zap.Error(err))
-		MarkDLXFailed(&b.Status, "ExchangeFailure", "Failed to create DLX: %s", err)
-		return err
-	}
-
-	queueArgs := &triggerresources.QueueArgs{
-		QueueName:   triggerresources.CreateBrokerDeadLetterQueueName(b),
-		RabbitmqURL: args.RabbitMQURL.String(),
-	}
-	_, err = triggerresources.DeclareQueue(r.dialerFunc, queueArgs)
-	if err != nil {
-		logging.FromContext(ctx).Errorw("Problem creating RabbitMQ Dead Letter Queue", zap.Error(err))
-		MarkDLXFailed(&b.Status, "QueueFailure", "Failed to create Dead Letter Queue: %s", err)
-		return err
-	}
-	MarkDLXReady(&b.Status)
-
-	if err := r.reconcileDLQBinding(ctx, b); err != nil {
-		logging.FromContext(ctx).Error("Problem reconciling DLX dispatcher Deployment", zap.Error(err))
-		MarkDeadLetterSinkFailed(&b.Status, "DeploymentFailure", "%v", err)
-		return err
-	}
-	MarkDeadLetterSinkReady(&b.Status)
-
-	if err := r.reconcileSecret(ctx, s); err != nil {
-		logging.FromContext(ctx).Errorw("Problem reconciling Secret", zap.Error(err))
-		MarkSecretFailed(&b.Status, "SecretFailure", "Failed to reconcile secret: %s", err)
-		return err
-	}
-	MarkSecretReady(&b.Status)
-
-	if err := r.reconcileIngressDeployment(ctx, b); err != nil {
-		logging.FromContext(ctx).Errorw("Problem reconciling ingress Deployment", zap.Error(err))
-		MarkIngressFailed(&b.Status, "DeploymentFailure", "Failed to reconcile deployment: %s", err)
-		return err
-	}
-
-	ingressEndpoints, err := r.reconcileIngressService(ctx, b)
-	if err != nil {
-		logging.FromContext(ctx).Errorw("Problem reconciling ingress Service", zap.Error(err))
-		MarkIngressFailed(&b.Status, "ServiceFailure", "Failed to reconcile service: %s", err)
-		return err
-	}
-	PropagateIngressAvailability(&b.Status, ingressEndpoints)
-
-	SetAddress(&b.Status, &apis.URL{
-		Scheme: "http",
-		Host:   network.GetServiceHostname(ingressEndpoints.GetName(), ingressEndpoints.GetNamespace()),
-	})
-
-	// If there's a Dead Letter Sink, then create a dispatcher for it. Note that this is for
-	// the whole broker, unlike for the Trigger, where we create one dispatcher per Trigger.
-	var dlsURI *apis.URL
-	if b.Spec.Delivery != nil && b.Spec.Delivery.DeadLetterSink != nil {
-		dlsURI, err = r.uriResolver.URIFromDestinationV1(ctx, *b.Spec.Delivery.DeadLetterSink, b)
-		if err != nil {
-			logging.FromContext(ctx).Error("Unable to get the DeadLetterSink URI", zap.Error(err))
-			MarkDeadLetterSinkFailed(&b.Status, "Unable to get the DeadLetterSink's URI", "%v", err)
-			return err
-		}
-
-		// TODO(vaikas): Set the custom annotation for resolved URI?...
-		// TODO(vaikas): Should this be a first level BrokerStatus field?
-	}
-
-	// Note that if we didn't actually resolve the URI above, as in it's left as nil it's ok to pass here
-	// it deals with it properly.
-	if err := r.reconcileDLXDispatchercherDeployment(ctx, b, dlsURI); err != nil {
-		logging.FromContext(ctx).Error("Problem reconciling DLX dispatcher Deployment", zap.Error(err))
-		MarkDeadLetterSinkFailed(&b.Status, "DeploymentFailure", "%v", err)
-		return err
-	}
-
-	// So, at this point the Broker is ready and everything should be solid
-	// for the triggers to act upon.
+	// TODO: vaikas. Pull some of the common things (deployments, etc.) from reconcileUsingLibraries into here
+	// that need to be done regardless of whether we're doing a CRD or library based approach.
 	return nil
 }
 
