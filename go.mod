@@ -48,4 +48,10 @@ replace (
 
 	// lock prom import to avoid a bad goautoneg import.
 	github.com/prometheus/client_golang => github.com/prometheus/client_golang v0.9.2
+
+	k8s.io/api => k8s.io/api v0.19.7
+	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.19.7
+	k8s.io/apimachinery => k8s.io/apimachinery v0.19.7
+	k8s.io/client-go => k8s.io/client-go v0.19.7
+	k8s.io/code-generator => k8s.io/code-generator v0.19.7
 )

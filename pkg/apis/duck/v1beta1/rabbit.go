@@ -18,9 +18,11 @@ package v1beta1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/apis/duck"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 // At the moment, a Rabbit is the subset of RabbitmqCluster from https://github.com/rabbitmq/cluster-operator/
@@ -50,6 +52,7 @@ type RabbitSpec struct{}
 type RabbitStatus struct {
 	// DefaultUser identifies information on internal resources.
 	DefaultUser *RabbitDefaultUser `json:"defaultUser,omitempty"`
+	Conditions  duckv1.Conditions  `json:"conditions"`
 }
 
 type RabbitDefaultUser struct {

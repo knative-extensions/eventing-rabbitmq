@@ -86,7 +86,7 @@ func (r *Reconciler) rabbitmqURLFromSecret(ctx context.Context, ref *duckv1.KRef
 	}
 	val := s.Data[resources.BrokerURLSecretKey]
 	if val == nil {
-		return nil, fmt.Errorf("Secret missing key %s", resources.BrokerURLSecretKey)
+		return nil, fmt.Errorf("secret missing key %s", resources.BrokerURLSecretKey)
 	}
 
 	return url.Parse(string(val))

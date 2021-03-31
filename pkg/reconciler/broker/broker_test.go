@@ -26,6 +26,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -37,6 +38,7 @@ import (
 	fakerabbitclient "knative.dev/eventing-rabbitmq/pkg/client/injection/rabbitmq.com/client/fake"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
+	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	fakeeventingclient "knative.dev/eventing/pkg/client/injection/client/fake"
 	"knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1/broker"
@@ -149,7 +151,6 @@ func init() {
 	_ = eventingv1.AddToScheme(scheme.Scheme)
 	_ = duckv1.AddToScheme(scheme.Scheme)
 	_ = rabbitmqduck.AddToScheme(scheme.Scheme)
-	_ = rabbitmqduck.RealAddToScheme(scheme.Scheme)
 }
 
 func TestReconcile(t *testing.T) {
@@ -274,6 +275,7 @@ func TestReconcile(t *testing.T) {
 					WithBrokerConfig(configForRabbitOperator()),
 					WithInitBrokerConditions),
 				createSecret("invalid data"),
+				createRabbitMQCluster(),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
@@ -903,6 +905,56 @@ func createExchange(dlx bool) *rabbitv1alpha2.Exchange {
 			// TODO: This one has to exist in the same namespace as this exchange.
 			RabbitmqClusterReference: rabbitv1alpha2.RabbitmqClusterReference{
 				Name: rabbitMQBrokerName,
+			},
+		},
+	}
+}
+
+func createRabbitMQCluster() *unstructured.Unstructured {
+	labels := map[string]interface{}{
+		eventing.BrokerLabelKey:                 brokerName,
+		"eventing.knative.dev/brokerEverything": "true",
+	}
+	annotations := map[string]interface{}{
+		"eventing.knative.dev/scope": "cluster",
+	}
+
+	return &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "rabbitmq.com/v1beta1",
+			"kind":       "RabbitmqCluster",
+			"metadata": map[string]interface{}{
+				"creationTimestamp": nil,
+				"namespace":         testNS,
+				"name":              rabbitMQBrokerName,
+				"labels":            labels,
+				"annotations":       annotations,
+			},
+			"status": map[string]interface{}{
+				"defaultUser": map[string]interface{}{
+					"secretReference": map[string]interface{}{
+						"keys": map[string]interface{}{
+							"password": "password",
+							"username": "username",
+						},
+						"name":      "test-cluster-operator",
+						"namespace": testNS,
+					},
+					"serviceReference": map[string]interface{}{
+						"name":      "rabbitmqsvc",
+						"namespace": testNS,
+					},
+				},
+				"conditions": []interface{}{
+					map[string]interface{}{
+						"status": "True",
+						"type":   "ReconcileSuccess",
+					},
+					map[string]interface{}{
+						"status": "True",
+						"type":   "ClusterAvailable",
+					},
+				},
 			},
 		},
 	}
