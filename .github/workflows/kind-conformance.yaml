@@ -134,15 +134,15 @@ jobs:
 
     - name: Install Cert Manager
       run: |
-      set -x
+        set -x
 
-      kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.2.0/cert-manager.yaml
+        kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.2.0/cert-manager.yaml
 
     - name: Install Cert Manager
       run: |
-      set -x
+        set -x
 
-      kubectl apply -f https://github.com/rabbitmq/messaging-topology-operator/releases/latest/download/messaging-topology-operator-with-certmanager.yaml
+        kubectl apply -f https://github.com/rabbitmq/messaging-topology-operator/releases/latest/download/messaging-topology-operator-with-certmanager.yaml
 
     - name: Install Knative Eventing
       run: |
