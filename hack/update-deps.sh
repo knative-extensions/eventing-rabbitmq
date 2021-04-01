@@ -24,3 +24,9 @@ go_update_deps "$@"
 
 rm -rf $(find third_party/ -name '*.mod')
 rm -rf $(find third_party/ -name '*.go')
+
+# Remove the _webhook.go files that cause (unnecessarily) controller-runtime
+# to get pulled in, which in turn causes issues with double-defining 'kubeconfig'
+# flag, which of course leads to all kinds of hilarity.
+
+rm vendor/github.com/rabbitmq/messaging-topology-operator/api/v1alpha2/*webhook.go

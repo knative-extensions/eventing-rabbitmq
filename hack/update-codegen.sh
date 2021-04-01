@@ -73,7 +73,7 @@ EXTERNAL_INFORMER_PKG="github.com/rabbitmq/messaging-topology-operator/pkg/gener
     "rabbitmq.com:v1alpha2" \
     --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt \
 
-mv ${REPO_ROOT_DIR}/vendor/github.com/rabbitmq/messaging-topology-operator/api/rabbitmq.com/v1alpha2 ${REPO_ROOT_DIR}/vendor/github.com/rabbitmq/messaging-topology-operator/api/v1alpha2 
+mv ${REPO_ROOT_DIR}/vendor/github.com/rabbitmq/messaging-topology-operator/api/rabbitmq.com/v1alpha2 ${REPO_ROOT_DIR}/vendor/github.com/rabbitmq/messaging-topology-operator/api/v1alpha2
 rm -rf ${REPO_ROOT_DIR}/vendor/github.com/rabbitmq/messaging-topology-operator/api/rabbitmq.com
 
 # Make sure our dependencies are up-to-date

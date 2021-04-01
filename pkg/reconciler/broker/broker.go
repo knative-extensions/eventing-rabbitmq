@@ -360,12 +360,6 @@ func (r *Reconciler) reconcileUsingLibraries(ctx context.Context, b *eventingv1.
 	// 1. RabbitMQ Exchange
 	// 2. Ingress Deployment
 	// 3. K8s Service that points to the Ingress Deployment
-	args, err := r.getExchangeArgs(ctx, b)
-	if err != nil {
-		MarkExchangeFailed(&b.Status, "ExchangeCredentialsUnavailable", "Failed to get arguments for creating exchange: %s", err)
-		return err
-	}
-
 	s, err := resources.DeclareExchange(r.dialerFunc, args)
 	if err != nil {
 		logging.FromContext(ctx).Errorw("Problem creating RabbitMQ Exchange", zap.Error(err))
