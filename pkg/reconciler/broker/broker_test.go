@@ -31,7 +31,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 
-	rabbitv1alpha2 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
 	clientgotesting "k8s.io/client-go/testing"
 	rabbitmqduck "knative.dev/eventing-rabbitmq/pkg/apis/duck/v1beta1"
 	rabbitduck "knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
@@ -53,7 +52,6 @@ import (
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	fakedynamicclient "knative.dev/pkg/injection/clients/dynamicclient/fake"
-	"knative.dev/pkg/kmeta"
 	logtesting "knative.dev/pkg/logging/testing"
 	"knative.dev/pkg/network"
 	"knative.dev/pkg/resolver"
@@ -295,107 +293,107 @@ func TestReconcile(t *testing.T) {
 			WantErr: true,
 		}, {
 			/*
-					TODO: vaikas: Enable...
-					Name: "Exchange create, creates Exchange CRD",
-					Key:  testKey,
-					Objects: []runtime.Object{
-						NewBroker(brokerName, testNS,
-							WithBrokerUID("uid-for-test"),
-							WithBrokerClass(brokerClass),
-							WithBrokerConfig(configForRabbitOperator()),
-							WithInitBrokerConditions),
-						createSecret("invalid data"),
-						createRabbitMQCluster(),
-					},
-					WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-						Object: NewBroker(brokerName, testNS,
-							WithBrokerUID("uid-for-test"),
-							WithBrokerClass(brokerClass),
-							WithInitBrokerConditions,
-							WithBrokerConfig(configForRabbitOperator()),
-							WithExchangeFailed("ExchangeFailure", `Failed to create exchange: Network unreachable`)),
-					}},
-					WantCreates: []runtime.Object{
-						createExchange(false),
-					},
-					WantPatches: []clientgotesting.PatchActionImpl{
-						patchFinalizers(testNS, brokerName),
-					},
-					WantEvents: []string{
-						Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
-						Eventf(corev1.EventTypeWarning, "InternalError", `Network unreachable`),
-					},
-					WantErr: true,
-				}, {
-					Name: "Secret create fails",
-					Key:  testKey,
-					Objects: []runtime.Object{
-						NewBroker(brokerName, testNS,
-							WithBrokerClass(brokerClass),
-							WithBrokerConfig(config()),
-							WithInitBrokerConditions),
-						createSecret(rabbitURL),
-					},
-					WithReactors: []clientgotesting.ReactionFunc{
-						InduceFailure("create", "secrets"),
-					},
-					WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-						Object: NewBroker(brokerName, testNS,
-							WithBrokerClass(brokerClass),
-							WithInitBrokerConditions,
-							WithBrokerConfig(config()),
-							WithExchangeReady(),
-							WithDLXReady(),
-							WithDeadLetterSinkReady(),
-							WithSecretFailed("SecretFailure", `Failed to reconcile secret: inducing failure for create secrets`)),
-					}},
-					WantCreates: []runtime.Object{
-						createExchangeSecret(),
-					},
-					WantPatches: []clientgotesting.PatchActionImpl{
-						patchFinalizers(testNS, brokerName),
-					},
-					WantEvents: []string{
-						Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
-						Eventf(corev1.EventTypeWarning, "InternalError", `inducing failure for create secrets`),
-					},
-					WantErr: true,
-				}, {
-					Name: "Secret update fails",
-					Key:  testKey,
-					Objects: []runtime.Object{
-						NewBroker(brokerName, testNS,
-							WithBrokerClass(brokerClass),
-							WithBrokerConfig(config()),
-							WithInitBrokerConditions),
-						createSecret(rabbitURL),
-						createDifferentExchangeSecret(),
-					},
-					WithReactors: []clientgotesting.ReactionFunc{
-						InduceFailure("update", "secrets"),
-					},
-					WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-						Object: NewBroker(brokerName, testNS,
-							WithBrokerClass(brokerClass),
-							WithInitBrokerConditions,
-							WithBrokerConfig(config()),
-							WithExchangeReady(),
-							WithDLXReady(),
-							WithDeadLetterSinkReady(),
-							WithSecretFailed("SecretFailure", `Failed to reconcile secret: inducing failure for update secrets`)),
-					}},
-					WantUpdates: []clientgotesting.UpdateActionImpl{{
-						Object: createExchangeSecret(),
-					}},
-					WantPatches: []clientgotesting.PatchActionImpl{
-						patchFinalizers(testNS, brokerName),
-					},
-					WantEvents: []string{
-						Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
-						Eventf(corev1.EventTypeWarning, "InternalError", `inducing failure for update secrets`),
-					},
-					WantErr: true,
+				TODO: vaikas: Enable...
+				Name: "Exchange create, creates Exchange CRD",
+				Key:  testKey,
+				Objects: []runtime.Object{
+					NewBroker(brokerName, testNS,
+						WithBrokerUID("uid-for-test"),
+						WithBrokerClass(brokerClass),
+						WithBrokerConfig(configForRabbitOperator()),
+						WithInitBrokerConditions),
+					createSecret("invalid data"),
+					createRabbitMQCluster(),
+				},
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+					Object: NewBroker(brokerName, testNS,
+						WithBrokerUID("uid-for-test"),
+						WithBrokerClass(brokerClass),
+						WithInitBrokerConditions,
+						WithBrokerConfig(configForRabbitOperator()),
+						WithExchangeFailed("ExchangeFailure", `Failed to create exchange: Network unreachable`)),
+				}},
+				WantCreates: []runtime.Object{
+					createExchange(false),
+				},
+				WantPatches: []clientgotesting.PatchActionImpl{
+					patchFinalizers(testNS, brokerName),
+				},
+				WantEvents: []string{
+					Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
+					Eventf(corev1.EventTypeWarning, "InternalError", `Network unreachable`),
+				},
+				WantErr: true,
 			*/
+		}, {
+			Name: "Secret create fails",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerClass),
+					WithBrokerConfig(config()),
+					WithInitBrokerConditions),
+				createSecret(rabbitURL),
+			},
+			WithReactors: []clientgotesting.ReactionFunc{
+				InduceFailure("create", "secrets"),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerClass),
+					WithInitBrokerConditions,
+					WithBrokerConfig(config()),
+					WithExchangeReady(),
+					WithDLXReady(),
+					WithDeadLetterSinkReady(),
+					WithSecretFailed("SecretFailure", `Failed to reconcile secret: inducing failure for create secrets`)),
+			}},
+			WantCreates: []runtime.Object{
+				createExchangeSecret(),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, brokerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
+				Eventf(corev1.EventTypeWarning, "InternalError", `inducing failure for create secrets`),
+			},
+			WantErr: true,
+		}, {
+			Name: "Secret update fails",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerClass),
+					WithBrokerConfig(config()),
+					WithInitBrokerConditions),
+				createSecret(rabbitURL),
+				createDifferentExchangeSecret(),
+			},
+			WithReactors: []clientgotesting.ReactionFunc{
+				InduceFailure("update", "secrets"),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerClass),
+					WithInitBrokerConditions,
+					WithBrokerConfig(config()),
+					WithExchangeReady(),
+					WithDLXReady(),
+					WithDeadLetterSinkReady(),
+					WithSecretFailed("SecretFailure", `Failed to reconcile secret: inducing failure for update secrets`)),
+			}},
+			WantUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: createExchangeSecret(),
+			}},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, brokerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
+				Eventf(corev1.EventTypeWarning, "InternalError", `inducing failure for update secrets`),
+			},
+			WantErr: true,
 		}, {
 			Name: "Deployment create fails",
 			Key:  testKey,
@@ -837,6 +835,8 @@ func config() *duckv1.KReference {
 	}
 }
 
+// TODO: vaikas uncomment
+/*
 func configForRabbitOperator() *duckv1.KReference {
 	return &duckv1.KReference{
 		Name:       rabbitMQBrokerName,
@@ -845,6 +845,7 @@ func configForRabbitOperator() *duckv1.KReference {
 		APIVersion: "rabbitmq.com/v1beta1",
 	}
 }
+*/
 
 // FilterLabels generates the labels present on all resources representing the filter of the given
 // Broker.
@@ -905,6 +906,8 @@ func createDispatcherDeployment() *appsv1.Deployment {
 	return resources.MakeDispatcherDeployment(args)
 }
 
+// TODO: Uncomment this in a followup when adding tests.
+/*
 func createExchange(dlx bool) *rabbitv1alpha2.Exchange {
 	broker := &eventingv1.Broker{
 		ObjectMeta: metav1.ObjectMeta{
@@ -940,6 +943,7 @@ func createExchange(dlx bool) *rabbitv1alpha2.Exchange {
 		},
 	}
 }
+*/
 
 func createRabbitMQCluster() *unstructured.Unstructured {
 	labels := map[string]interface{}{
