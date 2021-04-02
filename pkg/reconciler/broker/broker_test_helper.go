@@ -18,8 +18,8 @@ import (
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
-	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	v1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	"knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1/broker"
 	"knative.dev/pkg/apis"
@@ -31,7 +31,7 @@ type BrokerOption func(*v1.Broker)
 
 // NewBroker creates a Broker with BrokerOptions.
 func NewBroker(name, namespace string, o ...BrokerOption) *v1.Broker {
-	eventingv1.RegisterAlternateBrokerConditionSet(rabbitBrokerCondSet)
+	v1.RegisterAlternateBrokerConditionSet(rabbitBrokerCondSet)
 	b := &v1.Broker{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
@@ -65,6 +65,13 @@ func WithBrokerResourceVersion(rv string) BrokerOption {
 func WithBrokerGeneration(gen int64) BrokerOption {
 	return func(s *v1.Broker) {
 		s.Generation = gen
+	}
+}
+
+// WithBrokerUID sets the UID for a Broker. Handy for testing ownerrefs.
+func WithBrokerUID(uid string) BrokerOption {
+	return func(b *v1.Broker) {
+		b.UID = types.UID(uid)
 	}
 }
 

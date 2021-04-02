@@ -65,10 +65,23 @@ rules:
     - "patch"
     - "watch"
   - apiGroups:
-      - rabbitmq.com
+    - rabbitmq.com
     resources:
-      - rabbitmqclusters
+    - rabbitmqclusters
     verbs:
-      - "get"
-      - "list"
-      - "watch"
+    - "get"
+    - "list"
+    - "watch"
+  - apiGroups:
+    - rabbitmq.com
+    resources:
+    - exchanges
+    - queues
+    verbs:
+    - "get"
+    - "list"
+    - "create"
+    - "update"
+    - "delete"
+    - "patch"
+    - "watch"

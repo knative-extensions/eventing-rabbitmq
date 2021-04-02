@@ -21,6 +21,7 @@ import (
 	"log"
 
 	"knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
+	rabbitmqclient "knative.dev/eventing-rabbitmq/pkg/client/injection/rabbitmq.com/client"
 	eventingclient "knative.dev/eventing/pkg/client/injection/client"
 
 	"github.com/kelseyhightower/envconfig"
@@ -31,6 +32,7 @@ import (
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 
 	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
+	exchangeinformer "knative.dev/eventing-rabbitmq/pkg/client/injection/rabbitmq.com/informers/rabbitmq.com/v1alpha2/exchange"
 	brokerinformer "knative.dev/eventing/pkg/client/injection/informers/eventing/v1/broker"
 	brokerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1/broker"
 	"knative.dev/eventing/pkg/duck"
@@ -41,6 +43,7 @@ import (
 	endpointsinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/endpoints"
 	secretinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/secret"
 	serviceinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/service"
+
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/injection/clients/dynamicclient"
@@ -82,6 +85,7 @@ func NewController(
 	serviceInformer := serviceinformer.Get(ctx)
 	endpointsInformer := endpointsinformer.Get(ctx)
 	rabbitInformer := rabbit.Get(ctx)
+	exchangeInformer := exchangeinformer.Get(ctx)
 
 	r := &Reconciler{
 		eventingClientSet:         eventingclient.Get(ctx),
@@ -98,6 +102,8 @@ func NewController(
 		brokerClass:               env.BrokerClass,
 		dialerFunc:                dialer.RealDialer,
 		dispatcherImage:           env.DispatcherImage,
+		rabbitClientSet:           rabbitmqclient.Get(ctx),
+		exchangeLister:            exchangeInformer.Lister(),
 	}
 
 	impl := brokerreconciler.NewImpl(ctx, r, env.BrokerClass, func(impl *controller.Impl) controller.Options {
@@ -131,6 +137,11 @@ func NewController(
 	})
 
 	deploymentInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.FilterControllerGK(eventingv1.Kind("Broker")),
+		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
+	})
+
+	exchangeInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.FilterControllerGK(eventingv1.Kind("Broker")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
