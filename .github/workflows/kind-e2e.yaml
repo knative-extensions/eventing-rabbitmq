@@ -132,8 +132,10 @@ jobs:
         set -x
 
         kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.2.0/cert-manager.yaml
+        # Sleep for 30 so things come up
+        sleep 30
 
-    - name: Install Cert Manager
+    - name: Install RabbitMQ Messaging Topology Operator
       run: |
         set -x
 
