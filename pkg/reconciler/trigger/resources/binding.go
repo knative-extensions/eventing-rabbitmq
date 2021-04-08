@@ -17,12 +17,19 @@ limitations under the License.
 package resources
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
 	"reflect"
+
+	rabbitv1alpha2 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"knative.dev/pkg/kmeta"
 
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
@@ -38,11 +45,67 @@ const (
 type BindingArgs struct {
 	Trigger                *eventingv1.Trigger
 	Broker                 *eventingv1.Broker // only for DLQ
+	BindingName            string
+	BindingKey             string
 	RoutingKey             string
+	SourceName             string
 	BrokerURL              string
 	RabbitmqManagementPort int
 	AdminURL               string
 	QueueName              string // only for DLQ
+}
+
+func NewBinding(ctx context.Context, broker *eventingv1.Broker, args *BindingArgs) (*rabbitv1alpha2.Binding, error) {
+	arguments := map[string]string{
+		"x-match":  "all",
+		BindingKey: args.BindingKey,
+	}
+	if args.Trigger != nil && args.Trigger.Spec.Filter != nil {
+		for key, val := range args.Trigger.Spec.Filter.Attributes {
+			arguments[key] = val
+		}
+	}
+	argumentsJson, err := json.Marshal(arguments)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode binding arguments %+v : %s", argumentsJson, err)
+	}
+
+	binding := &rabbitv1alpha2.Binding{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: broker.Namespace,
+			Name:      args.BindingName,
+			OwnerReferences: []metav1.OwnerReference{
+				*kmeta.NewControllerRef(broker),
+			},
+			Labels: BindingLabels(broker),
+		},
+		Spec: rabbitv1alpha2.BindingSpec{
+			Vhost:           "/",
+			Source:          args.SourceName,
+			Destination:     args.QueueName,
+			DestinationType: "queue",
+			RoutingKey:      args.RoutingKey,
+			Arguments: &runtime.RawExtension{
+				Raw: argumentsJson,
+			},
+
+			// TODO: We had before also internal / nowait set to false. Are these in Arguments,
+			// or do they get sane defaults that we can just work with?
+			// TODO: This one has to exist in the same namespace as this exchange.
+			RabbitmqClusterReference: rabbitv1alpha2.RabbitmqClusterReference{
+				Name: broker.Spec.Config.Name,
+			},
+		},
+	}
+	return binding, nil
+}
+
+// BindingLabels generates the labels present on the Queue linking the Broker / Trigger to the
+// Binding.
+func BindingLabels(b *eventingv1.Broker) map[string]string {
+	return map[string]string{
+		"eventing.knative.dev/broker": b.Name,
+	}
 }
 
 // MakeBinding declares the Binding from the Broker's Exchange to the Trigger's Queue.
@@ -197,10 +260,9 @@ func managementPort(args *BindingArgs) int {
 	return DefaultManagementPort
 }
 
-// ExchangeName derives the Exchange name from the Broker name
 func ExchangeName(namespace, brokerName string, DLX bool) string {
 	if DLX {
-		return fmt.Sprintf("%s/knative-%s/DLX", namespace, brokerName)
+		return fmt.Sprintf("%s.%s.dlx", namespace, brokerName)
 	}
-	return fmt.Sprintf("%s/knative-%s", namespace, brokerName)
+	return fmt.Sprintf("%s.%s", namespace, brokerName)
 }

@@ -94,7 +94,7 @@ func TestMakeIngressDeployment(t *testing.T) {
 							},
 						}, {
 							Name:  "EXCHANGE_NAME",
-							Value: ns + "/knative-" + brokerName,
+							Value: ns + "." + brokerName,
 						}},
 						Ports: []corev1.ContainerPort{{
 							ContainerPort: 8080,

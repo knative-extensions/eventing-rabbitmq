@@ -18,6 +18,7 @@ package broker
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"go.uber.org/zap"
@@ -66,6 +67,8 @@ type Reconciler struct {
 	deploymentLister appsv1listers.DeploymentLister
 	rabbitLister     apisduck.InformerFactory
 	exchangeLister   rabbitlisters.ExchangeLister
+	queueLister      rabbitlisters.QueueLister
+	bindingLister    rabbitlisters.BindingLister
 
 	ingressImage              string
 	ingressServiceAccountName string
@@ -124,9 +127,7 @@ var rabbitBrokerCondSet = apis.NewLivingConditionSet(
 // messaging-topology-operator or the libraries.
 func isUsingOperator(b *eventingv1.Broker) bool {
 	if b != nil && b.Spec.Config != nil {
-		return false
-		// TODO: vaikas: Enable this to use CRD based reconciler.
-		//		return b.Spec.Config.Kind == "RabbitmqCluster"
+		return b.Spec.Config.Kind == "RabbitmqCluster"
 	}
 	return false
 }
@@ -144,6 +145,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *eventingv1.Broker) pk
 	}
 
 	if isUsingOperator(b) {
+		args.RabbitMQCluster = b.Spec.Config.Name
 		err := r.reconcileUsingCRD(ctx, b, args)
 		if err != nil {
 			return err
@@ -324,6 +326,7 @@ func (r *Reconciler) reconcileExchange(ctx context.Context, args *resources.Exch
 	want := resources.NewExchange(ctx, args)
 	current, err := r.exchangeLister.Exchanges(args.Broker.Namespace).Get(resources.ExchangeName(args.Broker, args.DLX))
 	if apierrs.IsNotFound(err) {
+		logging.FromContext(ctx).Debugw("Creating rabbitmq exchange", zap.String("exchange name", want.Name))
 		_, err = r.rabbitClientSet.RabbitmqV1alpha2().Exchanges(args.Broker.Namespace).Create(ctx, want, metav1.CreateOptions{})
 		if err != nil {
 			return err
@@ -342,17 +345,157 @@ func (r *Reconciler) reconcileExchange(ctx context.Context, args *resources.Exch
 	return nil
 }
 
-func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker, args *resources.ExchangeArgs) error {
-	err := r.reconcileExchange(ctx, args)
+func (r *Reconciler) reconcileQueue(ctx context.Context, b *eventingv1.Broker) error {
+	queueName := triggerresources.CreateBrokerDeadLetterQueueName(b)
+	// Create a Queue for the DLX
+	args := &triggerresources.QueueArgs{
+		QueueName: queueName,
+	}
+
+	want := triggerresources.NewQueue(ctx, b, args)
+	current, err := r.queueLister.Queues(b.Namespace).Get(queueName)
+	if apierrs.IsNotFound(err) {
+		logging.FromContext(ctx).Debugw("Creating rabbitmq exchange", zap.String("queue name", want.Name))
+		_, err = r.rabbitClientSet.RabbitmqV1alpha2().Queues(b.Namespace).Create(ctx, want, metav1.CreateOptions{})
+		if err != nil {
+			return err
+		}
+	} else if err != nil {
+		return err
+	} else if !equality.Semantic.DeepDerivative(want.Spec, current.Spec) {
+		// Don't modify the informers copy.
+		desired := current.DeepCopy()
+		desired.Spec = want.Spec
+		_, err = r.rabbitClientSet.RabbitmqV1alpha2().Queues(b.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func (r *Reconciler) reconcileBinding(ctx context.Context, b *eventingv1.Broker) error {
+	// We can use the same name for queue / binding to keep things simpler
+	bindingName := triggerresources.CreateBrokerDeadLetterQueueName(b)
+
+	bindingArgs := &triggerresources.BindingArgs{
+		Broker:      b,
+		BindingName: bindingName,
+		BindingKey:  b.Name,
+		RoutingKey:  "",
+		SourceName:  resources.ExchangeName(b, true),
+		QueueName:   triggerresources.CreateBrokerDeadLetterQueueName(b),
+	}
+
+	want, err := triggerresources.NewBinding(ctx, b, bindingArgs)
 	if err != nil {
+		return fmt.Errorf("failed to create the binding spec: %w", err)
+	}
+	current, err := r.bindingLister.Bindings(b.Namespace).Get(bindingName)
+	if apierrs.IsNotFound(err) {
+		logging.FromContext(ctx).Infow("Creating rabbitmq binding", zap.String("binding name", want.Name))
+		_, err = r.rabbitClientSet.RabbitmqV1alpha2().Bindings(b.Namespace).Create(ctx, want, metav1.CreateOptions{})
+		if err != nil {
+			return err
+		}
+	} else if err != nil {
+		return err
+	} else if !equality.Semantic.DeepDerivative(want.Spec, current.Spec) {
+		// Don't modify the informers copy.
+		desired := current.DeepCopy()
+		desired.Spec = want.Spec
+		_, err = r.rabbitClientSet.RabbitmqV1alpha2().Bindings(b.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker, args *resources.ExchangeArgs) error {
+	logging.FromContext(ctx).Info("Reconciling exchange")
+	if err := r.reconcileExchange(ctx, args); err != nil {
+		MarkExchangeFailed(&b.Status, "ExchangeFailure", "Failed to reconcile exchange: %s", err)
 		return err
 	}
 	args.DLX = true
-	err = r.reconcileExchange(ctx, args)
-	if err != nil {
+
+	logging.FromContext(ctx).Info("Reconciling DLX exchange")
+	if err := r.reconcileExchange(ctx, args); err != nil {
+		MarkExchangeFailed(&b.Status, "ExchangeFailure", "Failed to reconcile DLX exchange: %s", err)
 		return err
 	}
 	MarkExchangeReady(&b.Status)
+
+	logging.FromContext(ctx).Info("Reconciling queue")
+	if err := r.reconcileQueue(ctx, b); err != nil {
+		MarkDLXFailed(&b.Status, "QueueFailure", "Failed to reconcile Dead Letter Queue: %s", err)
+		return err
+	}
+
+	MarkDLXReady(&b.Status)
+
+	logging.FromContext(ctx).Info("Reconciling binding")
+	if err := r.reconcileBinding(ctx, b); err != nil {
+		MarkDeadLetterSinkFailed(&b.Status, "DLQ binding", "%v", err)
+		return err
+	}
+	MarkDeadLetterSinkReady(&b.Status)
+
+	// TODO: These are copy & paste, we should hoist them out.
+	s := resources.MakeSecret(args)
+	if err := r.reconcileSecret(ctx, s); err != nil {
+		logging.FromContext(ctx).Errorw("Problem reconciling Secret", zap.Error(err))
+		MarkSecretFailed(&b.Status, "SecretFailure", "Failed to reconcile secret: %s", err)
+		return err
+	}
+	MarkSecretReady(&b.Status)
+
+	if err := r.reconcileIngressDeployment(ctx, b); err != nil {
+		logging.FromContext(ctx).Errorw("Problem reconciling ingress Deployment", zap.Error(err))
+		MarkIngressFailed(&b.Status, "DeploymentFailure", "Failed to reconcile deployment: %s", err)
+		return err
+	}
+
+	ingressEndpoints, err := r.reconcileIngressService(ctx, b)
+	if err != nil {
+		logging.FromContext(ctx).Errorw("Problem reconciling ingress Service", zap.Error(err))
+		MarkIngressFailed(&b.Status, "ServiceFailure", "Failed to reconcile service: %s", err)
+		return err
+	}
+	PropagateIngressAvailability(&b.Status, ingressEndpoints)
+
+	SetAddress(&b.Status, &apis.URL{
+		Scheme: "http",
+		Host:   network.GetServiceHostname(ingressEndpoints.GetName(), ingressEndpoints.GetNamespace()),
+	})
+
+	// If there's a Dead Letter Sink, then create a dispatcher for it. Note that this is for
+	// the whole broker, unlike for the Trigger, where we create one dispatcher per Trigger.
+	var dlsURI *apis.URL
+	if b.Spec.Delivery != nil && b.Spec.Delivery.DeadLetterSink != nil {
+		dlsURI, err = r.uriResolver.URIFromDestinationV1(ctx, *b.Spec.Delivery.DeadLetterSink, b)
+		if err != nil {
+			logging.FromContext(ctx).Error("Unable to get the DeadLetterSink URI", zap.Error(err))
+			MarkDeadLetterSinkFailed(&b.Status, "Unable to get the DeadLetterSink's URI", "%v", err)
+			return err
+		}
+
+		// TODO(vaikas): Set the custom annotation for resolved URI?...
+		// TODO(vaikas): Should this be a first level BrokerStatus field?
+	}
+
+	// Note that if we didn't actually resolve the URI above, as in it's left as nil it's ok to pass here
+	// it deals with it properly.
+	if err := r.reconcileDLXDispatchercherDeployment(ctx, b, dlsURI); err != nil {
+		logging.FromContext(ctx).Error("Problem reconciling DLX dispatcher Deployment", zap.Error(err))
+		MarkDeadLetterSinkFailed(&b.Status, "DeploymentFailure", "%v", err)
+		return err
+	}
+
+	// So, at this point the Broker is ready and everything should be solid
+	// for the triggers to act upon.
+	return nil
+
 	return nil
 }
 
@@ -391,8 +534,8 @@ func (r *Reconciler) reconcileUsingLibraries(ctx context.Context, b *eventingv1.
 	MarkDLXReady(&b.Status)
 
 	if err := r.reconcileDLQBinding(ctx, b); err != nil {
-		logging.FromContext(ctx).Error("Problem reconciling DLX dispatcher Deployment", zap.Error(err))
-		MarkDeadLetterSinkFailed(&b.Status, "DeploymentFailure", "%v", err)
+		logging.FromContext(ctx).Error("Problem reconciling DLX Binding", zap.Error(err))
+		MarkDeadLetterSinkFailed(&b.Status, "DLQ binding", "%v", err)
 		return err
 	}
 	MarkDeadLetterSinkReady(&b.Status)
