@@ -225,6 +225,15 @@ jobs:
         echo "===================== RabbitMQClusters ====================="
         kubectl get RabbitMQCluster --all-namespaces=true -oyaml
 
+        echo "===================== RabbitMQ Exchanges ====================="
+        kubectl get exchange.rabbitmq.com --all-namespaces=true -oyaml
+
+        echo "===================== RabbitMQ Queues ====================="
+        kubectl get queue.rabbitmq.com --all-namespaces=true -oyaml
+
+        echo "===================== RabbitMQ Bindings ====================="
+        kubectl get binding.rabbitmq.com --all-namespaces=true -oyaml
+
         echo "===================== K8s Events ==========================="
         kubectl get events --all-namespaces=true -oyaml
 
