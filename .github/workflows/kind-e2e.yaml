@@ -134,6 +134,13 @@ jobs:
 
         kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.2.0/cert-manager.yaml
 
+    - name: Wait for Cert Manager Ready
+      working-directory: ./src/knative.dev/${{ github.event.repository.name }}
+      run: |
+        set -e
+        source ./vendor/knative.dev/hack/infra-library.sh
+        wait_until_pods_running ${CERT_MANAGER_NAMESPACE}
+
     - name: Install RabbitMQ Messaging Topology Operator
       run: |
         set -x
@@ -180,7 +187,6 @@ jobs:
         set -e
         source ./vendor/knative.dev/hack/infra-library.sh
         wait_until_pods_running ${SYSTEM_NAMESPACE}
-        wait_until_pods_running ${CERT_MANAGER_NAMESPACE}
         wait_until_pods_running ${RABBITMQ_SYSTEM_NAMESPACE}
         wait_until_pods_running ${RABBITMQ_SOURCE_NAMESPACE}
 
