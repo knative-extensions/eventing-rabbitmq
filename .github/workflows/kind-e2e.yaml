@@ -51,6 +51,8 @@ jobs:
       RABBITMQ_SYSTEM_NAMESPACE: rabbitmq-system
       # Where the Rabbitmq source is installed
       RABBITMQ_SOURCE_NAMESPACE: knative-sources
+      # Where the Cert Manager gets installed
+      CERT_MANAGER_NAMESPACE: cert-manager
       KIND_CLUSTER_NAME: kind
 
     steps:
@@ -131,8 +133,6 @@ jobs:
         set -x
 
         kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.2.0/cert-manager.yaml
-        # Sleep for 120 so things come up
-        sleep 120
 
     - name: Install RabbitMQ Messaging Topology Operator
       run: |
@@ -180,6 +180,7 @@ jobs:
         set -e
         source ./vendor/knative.dev/hack/infra-library.sh
         wait_until_pods_running ${SYSTEM_NAMESPACE}
+        wait_until_pods_running ${CERT_MANAGER_NAMESPACE}
         wait_until_pods_running ${RABBITMQ_SYSTEM_NAMESPACE}
         wait_until_pods_running ${RABBITMQ_SOURCE_NAMESPACE}
 
@@ -228,15 +229,17 @@ jobs:
         kubectl get events --all-namespaces=true -oyaml
 
         echo "===================== Pod Logs ============================="
-        namespace=knative-eventing
-        for pod in $(kubectl get pod -n $namespace | awk '{print $1}'); do
-          for container in $(kubectl get pod "${pod}" -n $namespace -ojsonpath='{.spec.containers[*].name}'); do
-            echo "Namespace, Pod, Container: ${namespace}, ${pod}, ${container}"
-            kubectl logs -n $namespace "${pod}" -c "${container}" || true
-            echo "----------------------------------------------------------"
-            echo "Namespace, Pod, Container (Previous instance): ${namespace}, ${pod}, ${container}"
-            kubectl logs -p -n $namespace "${pod}" -c "${container}" || true
-            echo "============================================================"
+        namespaces=(knative-eventing rabbitmq-system)
+        for namespace in ${namespaces[@]}; do
+          for pod in $(kubectl get pod -n $namespace | awk '{print $1}'); do
+            for container in $(kubectl get pod "${pod}" -n $namespace -ojsonpath='{.spec.containers[*].name}'); do
+              echo "Namespace, Pod, Container: ${namespace}, ${pod}, ${container}"
+              kubectl logs -n $namespace "${pod}" -c "${container}" || true
+              echo "----------------------------------------------------------"
+              echo "Namespace, Pod, Container (Previous instance): ${namespace}, ${pod}, ${container}"
+              kubectl logs -p -n $namespace "${pod}" -c "${container}" || true
+              echo "============================================================"
+            done
           done
         done
 
