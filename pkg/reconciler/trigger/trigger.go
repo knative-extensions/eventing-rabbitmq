@@ -228,10 +228,10 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, t *eventingv1.Trigger) pk
 	rabbitmqURL, err := r.rabbitmqURL(ctx, t)
 	// If there's no secret, we can't delete the queue. Deleting an object should not require creation
 	// of a secret, and for example if the namespace is being deleted, there's nothing we can do.
-	// For now, return an error, the user can always just manually remove a finalizer.
+	// For now, return nil rather than leave the Trigger around.
 	if err != nil {
 		logging.FromContext(ctx).Errorf("Failed to fetch rabbitmq secret while finalizing, leaking a queue %s/%s", t.Namespace, t.Name)
-		return err
+		return nil
 	}
 
 	err = resources.DeleteQueue(r.dialerFunc, &resources.QueueArgs{
