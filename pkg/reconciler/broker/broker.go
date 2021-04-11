@@ -428,6 +428,7 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 	if dlxExchange != nil {
 		if !isReady(dlxExchange.Status.Conditions) {
 			logging.FromContext(ctx).Warnf("DLX exchange %q is not ready", dlxExchange.Name)
+			MarkExchangeFailed(&b.Status, "ExchangeFailure", "DLX exchange is not ready")
 			return nil
 		}
 	}
@@ -442,6 +443,7 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 	if queue != nil {
 		if !isReady(queue.Status.Conditions) {
 			logging.FromContext(ctx).Warnf("Queue %q is not ready", queue.Name)
+			MarkDLXFailed(&b.Status, "QueueFailure", "Dead Letter Queue is not ready")
 			return nil
 		}
 	}
@@ -457,6 +459,7 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 	if binding != nil {
 		if !isReady(binding.Status.Conditions) {
 			logging.FromContext(ctx).Warnf("Binding %q is not ready", binding.Name)
+			MarkDeadLetterSinkFailed(&b.Status, "DLQ binding", "DLQ binding is not ready")
 			return nil
 		}
 	}

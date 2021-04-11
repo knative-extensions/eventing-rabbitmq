@@ -190,6 +190,14 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 			t.Status.MarkDependencyFailed("QueueFailure", "%v", err)
 			return err
 		}
+		if queue != nil {
+			if !isReady(queue.Status.Conditions) {
+				logging.FromContext(ctx).Warnf("Queue %q is not ready", queue.Name)
+				t.Status.MarkDependencyFailed("QueueFailure", "Queue %q is not ready", queue.Name)
+				return nil
+			}
+		}
+
 		logging.FromContext(ctx).Info("Reconciled rabbitmq queue", zap.Any("queue", queue))
 
 		binding, err := r.reconcileBinding(ctx, broker, t)
@@ -201,6 +209,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		if binding != nil {
 			if !isReady(binding.Status.Conditions) {
 				logging.FromContext(ctx).Warnf("Binding %q is not ready", binding.Name)
+				t.Status.MarkDependencyFailed("BindingFailure", "Binding %q is not ready", binding.Name)
 				return nil
 			}
 
