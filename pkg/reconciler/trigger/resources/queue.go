@@ -38,19 +38,25 @@ type QueueArgs struct {
 	QueueName       string
 	RabbitmqURL     string
 	RabbitmqCluster string
+	// If the queue is for Trigger, this holds the trigger so we can create a proper Owner Ref
+	Trigger *eventingv1.Trigger
 	// If non-empty, wire the queue into this DLX.
 	DLX string
 }
 
 func NewQueue(ctx context.Context, b *eventingv1.Broker, args *QueueArgs) *rabbitv1alpha2.Queue {
+	var or metav1.OwnerReference
+	if args.Trigger != nil {
+		or = *kmeta.NewControllerRef(args.Trigger)
+	} else {
+		or = *kmeta.NewControllerRef(b)
+	}
 	q := &rabbitv1alpha2.Queue{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: b.Namespace,
-			Name:      args.QueueName,
-			OwnerReferences: []metav1.OwnerReference{
-				*kmeta.NewControllerRef(b),
-			},
-			Labels: QueueLabels(b),
+			Namespace:       b.Namespace,
+			Name:            args.QueueName,
+			OwnerReferences: []metav1.OwnerReference{or},
+			Labels:          QueueLabels(b),
 		},
 		Spec: rabbitv1alpha2.QueueSpec{
 			// Why is the name in the Spec again? Is this different from the ObjectMeta.Name? If not,

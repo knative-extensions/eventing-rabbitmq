@@ -56,6 +56,12 @@ type BindingArgs struct {
 }
 
 func NewBinding(ctx context.Context, broker *eventingv1.Broker, args *BindingArgs) (*rabbitv1alpha2.Binding, error) {
+	var or metav1.OwnerReference
+	if args.Trigger != nil {
+		or = *kmeta.NewControllerRef(args.Trigger)
+	} else {
+		or = *kmeta.NewControllerRef(broker)
+	}
 	arguments := map[string]string{
 		"x-match":  "all",
 		BindingKey: args.BindingKey,
@@ -72,12 +78,10 @@ func NewBinding(ctx context.Context, broker *eventingv1.Broker, args *BindingArg
 
 	binding := &rabbitv1alpha2.Binding{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: broker.Namespace,
-			Name:      args.BindingName,
-			OwnerReferences: []metav1.OwnerReference{
-				*kmeta.NewControllerRef(broker),
-			},
-			Labels: BindingLabels(broker),
+			Namespace:       broker.Namespace,
+			Name:            args.BindingName,
+			OwnerReferences: []metav1.OwnerReference{or},
+			Labels:          BindingLabels(broker),
 		},
 		Spec: rabbitv1alpha2.BindingSpec{
 			Vhost:           "/",

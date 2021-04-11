@@ -419,6 +419,7 @@ func (r *Reconciler) reconcileQueue(ctx context.Context, b *eventingv1.Broker, t
 	args := &resources.QueueArgs{
 		QueueName: queueName,
 		DLX:       brokerresources.ExchangeName(b, true),
+		Trigger:   t,
 	}
 
 	want := resources.NewQueue(ctx, b, args)
