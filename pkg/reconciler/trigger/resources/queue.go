@@ -67,10 +67,8 @@ func NewQueue(ctx context.Context, b *eventingv1.Broker, args *QueueArgs) *rabbi
 		},
 	}
 	if args.DLX != "" {
-		rabbitArgs := make(map[string]interface{}, 1)
-		rabbitArgs["x-dead-letter-exchange"] = interface{}(args.DLX)
 		q.Spec.Arguments = &runtime.RawExtension{
-			Raw: []byte(`"x-dead-letter-exchange":"` + args.DLX + `"`),
+			Raw: []byte(`{"x-dead-letter-exchange":"` + args.DLX + `"}`),
 		}
 	}
 	return q

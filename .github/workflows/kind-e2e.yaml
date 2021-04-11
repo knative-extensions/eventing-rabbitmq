@@ -207,8 +207,6 @@ jobs:
         # Run the tests tagged as e2e on the KinD cluster that have Broker in the test name
         go test -v -race -count=1 -timeout=15m -tags=e2e ./test/e2e/... -run 'Test.*BrokerDLQ.*'
 
-        # Run source test
-
     # Run only Broker specific tests due to large resource requirements of rabbitmqcluster
     - name: Run Broker Direct e2e Tests
       working-directory: ./src/knative.dev/${{ github.event.repository.name }}
@@ -218,6 +216,7 @@ jobs:
         # Run the tests tagged as e2e on the KinD cluster that have Broker in the test name
         go test -v -race -count=1 -timeout=15m -tags=e2e ./test/e2e/... -run 'Test.*BrokerDirect.*'
 
+    # Run source test
     - name: Run source e2e Tests
       working-directory: ./src/knative.dev/${{ github.event.repository.name }}
       run: |

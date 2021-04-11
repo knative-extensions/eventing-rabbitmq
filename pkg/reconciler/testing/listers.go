@@ -209,3 +209,9 @@ func (l *Listers) GetRabbitObjects() []runtime.Object {
 func (l *Listers) GetExchangeLister() rabbitlisters.ExchangeLister {
 	return rabbitlisters.NewExchangeLister(l.indexerFor(&rabbitv1alpha2.Exchange{}))
 }
+func (l *Listers) GetQueueLister() rabbitlisters.QueueLister {
+	return rabbitlisters.NewQueueLister(l.indexerFor(&rabbitv1alpha2.Queue{}))
+}
+func (l *Listers) GetBindingLister() rabbitlisters.BindingLister {
+	return rabbitlisters.NewBindingLister(l.indexerFor(&rabbitv1alpha2.Binding{}))
+}

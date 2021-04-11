@@ -163,6 +163,10 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *eventingv1.Broker) pk
 }
 
 func (r *Reconciler) FinalizeKind(ctx context.Context, b *eventingv1.Broker) pkgreconciler.Event {
+	if isUsingOperator(b) {
+		// Everything gets cleaned up by garbage collection in this case.
+		return nil
+	}
 	args, err := r.getExchangeArgs(ctx, b)
 	if err != nil {
 		// TODO: Problem here is that depending on the kind of error we get back, say there's no

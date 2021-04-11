@@ -20,6 +20,7 @@ import (
 	"context"
 	"log"
 
+	rabbitmqclient "knative.dev/eventing-rabbitmq/pkg/client/injection/rabbitmq.com/client"
 	eventingclient "knative.dev/eventing/pkg/client/injection/client"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/injection/clients/dynamicclient"
@@ -32,6 +33,7 @@ import (
 	v1 "knative.dev/eventing/pkg/apis/eventing/v1"
 
 	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
+	bindinginformer "knative.dev/eventing-rabbitmq/pkg/client/injection/rabbitmq.com/informers/rabbitmq.com/v1alpha2/binding"
 	brokerinformer "knative.dev/eventing/pkg/client/injection/informers/eventing/v1/broker"
 	triggerinformer "knative.dev/eventing/pkg/client/injection/informers/eventing/v1/trigger"
 	brokerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1/broker"
@@ -40,6 +42,8 @@ import (
 	"knative.dev/pkg/client/injection/ducks/duck/v1/addressable"
 	"knative.dev/pkg/client/injection/ducks/duck/v1/source"
 	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
+
+	queueinformer "knative.dev/eventing-rabbitmq/pkg/client/injection/rabbitmq.com/informers/rabbitmq.com/v1alpha2/queue"
 
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
@@ -72,6 +76,8 @@ func NewController(
 	brokerInformer := brokerinformer.Get(ctx)
 	deploymentInformer := deploymentinformer.Get(ctx)
 	triggerInformer := triggerinformer.Get(ctx)
+	queueInformer := queueinformer.Get(ctx)
+	bindingInformer := bindinginformer.Get(ctx)
 
 	r := &Reconciler{
 		eventingClientSet:            eventingclient.Get(ctx),
@@ -84,6 +90,9 @@ func NewController(
 		dispatcherServiceAccountName: env.DispatcherServiceAccount,
 		brokerClass:                  env.BrokerClass,
 		dialerFunc:                   dialer.RealDialer,
+		queueLister:                  queueInformer.Lister(),
+		bindingLister:                bindingInformer.Lister(),
+		rabbitClientSet:              rabbitmqclient.Get(ctx),
 	}
 
 	impl := triggerreconciler.NewImpl(ctx, r, func(impl *controller.Impl) controller.Options {
@@ -97,6 +106,14 @@ func NewController(
 	r.uriResolver = resolver.NewURIResolver(ctx, impl.EnqueueKey)
 
 	deploymentInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.FilterControllerGK(v1.Kind("Trigger")),
+		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
+	})
+	queueInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.FilterControllerGK(v1.Kind("Trigger")),
+		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
+	})
+	bindingInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.FilterControllerGK(v1.Kind("Trigger")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
@@ -133,6 +150,5 @@ func NewController(
 			}
 		},
 	))
-
 	return impl
 }
