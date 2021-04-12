@@ -449,7 +449,7 @@ func (r *Reconciler) reconcileBinding(ctx context.Context, b *eventingv1.Broker,
 		BindingName: bindingName,
 		BindingKey:  t.Name,
 		RoutingKey:  "",
-		SourceName:  brokerresources.ExchangeName(b, true),
+		SourceName:  brokerresources.ExchangeName(b, false),
 		QueueName:   bindingName,
 	}
 
