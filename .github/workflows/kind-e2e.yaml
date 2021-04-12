@@ -140,6 +140,8 @@ jobs:
         set -e
         source ./vendor/knative.dev/hack/infra-library.sh
         wait_until_pods_running ${CERT_MANAGER_NAMESPACE}
+        # Even though pods are running, seems like every now and then things are not ready in the next step.
+        sleep 15
 
     - name: Install RabbitMQ Messaging Topology Operator
       run: |
@@ -199,22 +201,14 @@ jobs:
         # Run the TestKoPublish e2e test.
         go test -v -race -count=1 -timeout=15m -tags=e2e ./test/e2e/... -run 'TestKoPublish'
 
-    - name: Run Broker DLQ e2e Tests
-      working-directory: ./src/knative.dev/${{ github.event.repository.name }}
-      run: |
-        set -x
-
-        # Run the tests tagged as e2e on the KinD cluster that have Broker in the test name
-        go test -v -race -count=1 -timeout=15m -tags=e2e ./test/e2e/... -run 'Test.*BrokerDLQ.*'
-
     # Run only Broker specific tests due to large resource requirements of rabbitmqcluster
-    - name: Run Broker Direct e2e Tests
+    - name: Run Broker e2e Tests
       working-directory: ./src/knative.dev/${{ github.event.repository.name }}
       run: |
         set -x
 
         # Run the tests tagged as e2e on the KinD cluster that have Broker in the test name
-        go test -v -race -count=1 -timeout=15m -tags=e2e ./test/e2e/... -run 'Test.*BrokerDirect.*'
+        go test -v -race -count=1 -timeout=15m -tags=e2e ./test/e2e/... -run 'Test.*Broker.*'
 
     # Run source test
     - name: Run source e2e Tests

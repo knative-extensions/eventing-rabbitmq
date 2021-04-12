@@ -146,6 +146,8 @@ jobs:
         set -e
         source ./vendor/knative.dev/hack/infra-library.sh
         wait_until_pods_running ${CERT_MANAGER_NAMESPACE}
+        # Even though pods are running, seems like every now and then things are not ready in the next step.
+        sleep 15
 
     - name: Install RabbitMQ Messaging Topology Operator
       run: |
