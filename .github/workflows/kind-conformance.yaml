@@ -17,7 +17,7 @@ on:
 jobs:
 
   ko-resolve:
-    name: e2e tests
+    name: conformance tests
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false # Keep running if one leg fails.
@@ -28,10 +28,10 @@ jobs:
         - v1.20.0
 
         eventing-version:
-        - v0.21.0
+        - v0.22.0
 
         rabbitmq-operator-version:
-        - v1.4.0
+        - v1.6.0
 
         # Map between K8s and KinD versions.
         # This is attempting to make it a bit clearer what's being tested.
