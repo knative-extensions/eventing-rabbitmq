@@ -87,7 +87,13 @@ github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1
 github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1
 github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1
 github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1
-# github.com/cloudevents/sdk-go/v2 v2.2.0 => github.com/cloudevents/sdk-go/v2 v2.3.1-0.20201008104108-58f826d67d91
+# github.com/cloudevents/conformance v0.2.0
+github.com/cloudevents/conformance/pkg/event
+github.com/cloudevents/conformance/pkg/http
+# github.com/cloudevents/sdk-go/observability/opencensus/v2 v2.4.0
+github.com/cloudevents/sdk-go/observability/opencensus/v2/client
+github.com/cloudevents/sdk-go/observability/opencensus/v2/http
+# github.com/cloudevents/sdk-go/v2 v2.4.0 => github.com/cloudevents/sdk-go/v2 v2.3.1-0.20201008104108-58f826d67d91
 ## explicit
 github.com/cloudevents/sdk-go/v2
 github.com/cloudevents/sdk-go/v2/binding
@@ -1007,7 +1013,7 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/eventing v0.22.1-0.20210407165749-533aeec0b681
+# knative.dev/eventing v0.22.1-0.20210407214954-4a3216ca221e
 ## explicit
 knative.dev/eventing/pkg/adapter/v2
 knative.dev/eventing/pkg/adapter/v2/util/crstatusevent
@@ -1114,7 +1120,7 @@ knative.dev/eventing/test/test_images/print
 # knative.dev/hack v0.0.0-20210325223819-b6ab329907d3
 ## explicit
 knative.dev/hack
-# knative.dev/pkg v0.0.0-20210407160949-9050838f895c
+# knative.dev/pkg v0.0.0-20210409203851-3a2ae6db7097
 ## explicit
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
@@ -1213,7 +1219,7 @@ knative.dev/pkg/webhook/configmaps
 knative.dev/pkg/webhook/resourcesemantics
 knative.dev/pkg/webhook/resourcesemantics/defaulting
 knative.dev/pkg/webhook/resourcesemantics/validation
-# knative.dev/reconciler-test v0.0.0-20210407152849-1103d57c0808
+# knative.dev/reconciler-test v0.0.0-20210408195651-721473fa3c57
 ## explicit
 knative.dev/reconciler-test/cmd/eventshub
 knative.dev/reconciler-test/pkg/environment
