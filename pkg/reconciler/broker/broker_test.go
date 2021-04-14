@@ -174,10 +174,6 @@ func TestReconcile(t *testing.T) {
 					WithInitBrokerConditions,
 					WithBrokerDeletionTimestamp),
 			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "InternalError", `secrets "test-secret" not found`),
-			},
-			WantErr: true,
 		}, {
 			Name: "Broker deleted",
 			Key:  testKey,
