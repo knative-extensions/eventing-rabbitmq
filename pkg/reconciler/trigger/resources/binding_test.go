@@ -78,7 +78,7 @@ func TestBindingDLQDeclaration(t *testing.T) {
 	queueName := "queue-and-a"
 	testrabbit.CreateDurableQueue(t, ctx, rabbitContainer, queueName)
 	brokerName := "some-broker"
-	exchangeName := namespace + "/" + "." + brokerName + ".dlx"
+	exchangeName := namespace + "." + brokerName + ".dlx"
 	testrabbit.CreateExchange(t, ctx, rabbitContainer, exchangeName, "headers")
 
 	err := resources.MakeDLQBinding(nil, &resources.BindingArgs{
