@@ -78,7 +78,7 @@ func TestBindingDLQDeclaration(t *testing.T) {
 	queueName := "queue-and-a"
 	testrabbit.CreateDurableQueue(t, ctx, rabbitContainer, queueName)
 	brokerName := "some-broker"
-	exchangeName := namespace + "/" + "knative-" + brokerName + "/DLX"
+	exchangeName := namespace + "/" + "." + brokerName + ".dlx"
 	testrabbit.CreateExchange(t, ctx, rabbitContainer, exchangeName, "headers")
 
 	err := resources.MakeDLQBinding(nil, &resources.BindingArgs{
@@ -135,8 +135,8 @@ func TestMissingExchangeBindingDeclarationFailure(t *testing.T) {
 		},
 	})
 
-	assert.ErrorContains(t, err, `Failed to declare Binding: Error 404 (not_found): no exchange 'foobar/knative-some-broke-herr' in vhost '/'`)
-	assert.ErrorContains(t, err, fmt.Sprintf("no exchange '%s/knative-%s'", namespace, brokerName))
+	assert.ErrorContains(t, err, `Failed to declare Binding: Error 404 (not_found): no exchange 'foobar.some-broke-herr' in vhost '/'`)
+	assert.ErrorContains(t, err, fmt.Sprintf("no exchange '%s.%s'", namespace, brokerName))
 }
 
 func asMap(t *testing.T, value interface{}) map[string]interface{} {
