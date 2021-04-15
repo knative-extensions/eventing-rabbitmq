@@ -34,7 +34,7 @@ jobs:
         - v1.6.0
 
         rabbitmq-messaging-topology-operator-version:
-        - v0.5.1
+        - v0.6.0
 
         # Map between K8s and KinD versions.
         # This is attempting to make it a bit clearer what's being tested.
