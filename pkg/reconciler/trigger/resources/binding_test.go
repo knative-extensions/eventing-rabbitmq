@@ -36,7 +36,7 @@ func TestBindingDeclaration(t *testing.T) {
 	qualifiedQueueName := namespace + "-" + queueName
 	testrabbit.CreateDurableQueue(t, ctx, rabbitContainer, qualifiedQueueName)
 	brokerName := "some-broker"
-	exchangeName := namespace + "/" + "knative-" + brokerName
+	exchangeName := namespace + "." + brokerName
 	testrabbit.CreateExchange(t, ctx, rabbitContainer, exchangeName, "headers")
 
 	err := resources.MakeBinding(nil, &resources.BindingArgs{
