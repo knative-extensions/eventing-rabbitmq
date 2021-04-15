@@ -17,11 +17,16 @@ limitations under the License.
 package resources
 
 import (
+	"context"
 	"fmt"
 
+	rabbitv1alpha2 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
 	"github.com/streadway/amqp"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/io"
+	"knative.dev/pkg/kmeta"
 
 	"github.com/NeowayLabs/wabbit"
 
@@ -30,10 +35,57 @@ import (
 
 // QueueArgs are the arguments to create a Trigger's RabbitMQ Queue.
 type QueueArgs struct {
-	QueueName   string
-	RabbitmqURL string
+	QueueName       string
+	RabbitmqURL     string
+	RabbitmqCluster string
+	// If the queue is for Trigger, this holds the trigger so we can create a proper Owner Ref
+	Trigger *eventingv1.Trigger
 	// If non-empty, wire the queue into this DLX.
 	DLX string
+}
+
+func NewQueue(ctx context.Context, b *eventingv1.Broker, args *QueueArgs) *rabbitv1alpha2.Queue {
+	var or metav1.OwnerReference
+	if args.Trigger != nil {
+		or = *kmeta.NewControllerRef(args.Trigger)
+	} else {
+		or = *kmeta.NewControllerRef(b)
+	}
+	q := &rabbitv1alpha2.Queue{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace:       b.Namespace,
+			Name:            args.QueueName,
+			OwnerReferences: []metav1.OwnerReference{or},
+			Labels:          QueueLabels(b),
+		},
+		Spec: rabbitv1alpha2.QueueSpec{
+			// Why is the name in the Spec again? Is this different from the ObjectMeta.Name? If not,
+			// maybe it should be removed?
+			Name:       args.QueueName,
+			Durable:    true,
+			AutoDelete: false,
+			// TODO: We had before also internal / nowait set to false. Are these in Arguments,
+			// or do they get sane defaults that we can just work with?
+			// TODO: This one has to exist in the same namespace as this exchange.
+			RabbitmqClusterReference: rabbitv1alpha2.RabbitmqClusterReference{
+				Name: b.Spec.Config.Name,
+			},
+		},
+	}
+	if args.DLX != "" {
+		q.Spec.Arguments = &runtime.RawExtension{
+			Raw: []byte(`{"x-dead-letter-exchange":"` + args.DLX + `"}`),
+		}
+	}
+	return q
+}
+
+// QueueLabels generates the labels present on the Queue linking the Broker / Trigger to the
+// Queue.
+func QueueLabels(b *eventingv1.Broker) map[string]string {
+	return map[string]string{
+		"eventing.knative.dev/broker": b.Name,
+	}
 }
 
 func CreateBrokerDeadLetterQueueName(b *eventingv1.Broker) string {

@@ -44,7 +44,7 @@ type ExchangeArgs struct {
 }
 
 func NewExchange(ctx context.Context, args *ExchangeArgs) *rabbitv1alpha2.Exchange {
-	exchangeName := kmeta.ChildName(ExchangeName(args.Broker, args.DLX), string(args.Broker.GetUID()))
+	exchangeName := ExchangeName(args.Broker, args.DLX)
 	return &rabbitv1alpha2.Exchange{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: args.Broker.Namespace,
@@ -127,12 +127,18 @@ func DeleteExchange(args *ExchangeArgs) error {
 	)
 }
 
-// ExchangeName constructs a name given a Broker and whether this is a DLX or not.
-// Format is broker.Namespace/broker.Name for normal exchanges and
-// broker.Namespace/broker.Name/DLX for DLX exchanges.
+// ExchangeName constructs a name given a Broker.
+// Format is broker.Namespace.broker.Name for normal exchanges and
+// broker.Namespace.broker.Name.DLX for DLX exchanges.
 func ExchangeName(b *eventingv1.Broker, DLX bool) string {
+	var exchangeBase string
 	if DLX {
-		return fmt.Sprintf("%s/knative-%s/DLX", b.Namespace, b.Name)
+		exchangeBase = fmt.Sprintf("%s.%s.dlx", b.Namespace, b.Name)
+	} else {
+		exchangeBase = fmt.Sprintf("%s.%s", b.Namespace, b.Name)
+
 	}
-	return fmt.Sprintf("%s/knative-%s", b.Namespace, b.Name)
+	foo := kmeta.ChildName(exchangeBase, string(b.GetUID()))
+	fmt.Printf("TODO: Fix this and use consistently to avoid collisions, worth doing? %s\n", foo)
+	return exchangeBase
 }

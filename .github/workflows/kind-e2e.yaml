@@ -30,6 +30,9 @@ jobs:
         rabbitmq-operator-version:
         - v1.6.0
 
+        rabbitmq-messaging-topology-operator-version:
+        - v0.6.0
+
         # Map between K8s and KinD versions.
         # This is attempting to make it a bit clearer what's being tested.
         # See: https://github.com/kubernetes-sigs/kind/releases/tag/v0.9.0
@@ -51,6 +54,8 @@ jobs:
       RABBITMQ_SYSTEM_NAMESPACE: rabbitmq-system
       # Where the Rabbitmq source is installed
       RABBITMQ_SOURCE_NAMESPACE: knative-sources
+      # Where the Cert Manager gets installed
+      CERT_MANAGER_NAMESPACE: cert-manager
       KIND_CLUSTER_NAME: kind
 
     steps:
@@ -131,14 +136,21 @@ jobs:
         set -x
 
         kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.2.0/cert-manager.yaml
-        # Sleep for 120 so things come up
-        sleep 120
+
+    - name: Wait for Cert Manager Ready
+      working-directory: ./src/knative.dev/${{ github.event.repository.name }}
+      run: |
+        set -e
+        source ./vendor/knative.dev/hack/infra-library.sh
+        wait_until_pods_running ${CERT_MANAGER_NAMESPACE}
+        # Even though pods are running, seems like every now and then things are not ready in the next step.
+        sleep 15
 
     - name: Install RabbitMQ Messaging Topology Operator
       run: |
         set -x
 
-        kubectl apply -f https://github.com/rabbitmq/messaging-topology-operator/releases/latest/download/messaging-topology-operator-with-certmanager.yaml
+        kubectl apply -f https://github.com/rabbitmq/messaging-topology-operator/releases/download/${{ matrix.rabbitmq-messaging-topology-operator-version }}/messaging-topology-operator-with-certmanager.yaml
 
     - name: Install Knative Eventing
       run: |
@@ -192,7 +204,7 @@ jobs:
         # Run the TestKoPublish e2e test.
         go test -v -race -count=1 -timeout=15m -tags=e2e ./test/e2e/... -run 'TestKoPublish'
 
-      # Run only Broker specific tests due to large resource requirements of rabbitmqcluster
+    # Run only Broker specific tests due to large resource requirements of rabbitmqcluster
     - name: Run Broker e2e Tests
       working-directory: ./src/knative.dev/${{ github.event.repository.name }}
       run: |
@@ -201,7 +213,7 @@ jobs:
         # Run the tests tagged as e2e on the KinD cluster that have Broker in the test name
         go test -v -race -count=1 -timeout=15m -tags=e2e ./test/e2e/... -run 'Test.*Broker.*'
 
-      # Run source test
+    # Run source test
     - name: Run source e2e Tests
       working-directory: ./src/knative.dev/${{ github.event.repository.name }}
       run: |
@@ -224,19 +236,30 @@ jobs:
         echo "===================== RabbitMQClusters ====================="
         kubectl get RabbitMQCluster --all-namespaces=true -oyaml
 
+        echo "===================== RabbitMQ Exchanges ====================="
+        kubectl get exchange.rabbitmq.com --all-namespaces=true -oyaml
+
+        echo "===================== RabbitMQ Queues ====================="
+        kubectl get queue.rabbitmq.com --all-namespaces=true -oyaml
+
+        echo "===================== RabbitMQ Bindings ====================="
+        kubectl get binding.rabbitmq.com --all-namespaces=true -oyaml
+
         echo "===================== K8s Events ==========================="
         kubectl get events --all-namespaces=true -oyaml
 
         echo "===================== Pod Logs ============================="
-        namespace=knative-eventing
-        for pod in $(kubectl get pod -n $namespace | awk '{print $1}'); do
-          for container in $(kubectl get pod "${pod}" -n $namespace -ojsonpath='{.spec.containers[*].name}'); do
-            echo "Namespace, Pod, Container: ${namespace}, ${pod}, ${container}"
-            kubectl logs -n $namespace "${pod}" -c "${container}" || true
-            echo "----------------------------------------------------------"
-            echo "Namespace, Pod, Container (Previous instance): ${namespace}, ${pod}, ${container}"
-            kubectl logs -p -n $namespace "${pod}" -c "${container}" || true
-            echo "============================================================"
+        namespaces=(knative-eventing rabbitmq-system)
+        for namespace in ${namespaces[@]}; do
+          for pod in $(kubectl get pod -n $namespace | awk '{print $1}'); do
+            for container in $(kubectl get pod "${pod}" -n $namespace -ojsonpath='{.spec.containers[*].name}'); do
+              echo "Namespace, Pod, Container: ${namespace}, ${pod}, ${container}"
+              kubectl logs -n $namespace "${pod}" -c "${container}" || true
+              echo "----------------------------------------------------------"
+              echo "Namespace, Pod, Container (Previous instance): ${namespace}, ${pod}, ${container}"
+              kubectl logs -p -n $namespace "${pod}" -c "${container}" || true
+              echo "============================================================"
+            done
           done
         done
 

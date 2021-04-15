@@ -39,7 +39,7 @@ func TestExchangeDeclaration(t *testing.T) {
 	assert.Equal(t, createdExchange["auto_delete"], false)
 	assert.Equal(t, createdExchange["internal"], false)
 	assert.Equal(t, createdExchange["type"], "headers")
-	assert.Equal(t, createdExchange["name"], fmt.Sprintf("%s/knative-%s", namespace, brokerName))
+	assert.Equal(t, createdExchange["name"], fmt.Sprintf("%s.%s", namespace, brokerName))
 }
 
 func TestIncompatibleExchangeDeclarationFailure(t *testing.T) {
@@ -47,7 +47,7 @@ func TestIncompatibleExchangeDeclarationFailure(t *testing.T) {
 	rabbitContainer := testrabbit.AutoStartRabbit(t, ctx)
 	defer testrabbit.TerminateContainer(t, ctx, rabbitContainer)
 	brokerName := "x-change"
-	exchangeName := fmt.Sprintf("%s/knative-%s", namespace, brokerName)
+	exchangeName := fmt.Sprintf("%s.%s", namespace, brokerName)
 	testrabbit.CreateExchange(t, ctx, rabbitContainer, exchangeName, "direct")
 
 	_, err := resources.DeclareExchange(dialer.RealDialer, &resources.ExchangeArgs{
@@ -68,7 +68,7 @@ func TestExchangeDeletion(t *testing.T) {
 	rabbitContainer := testrabbit.AutoStartRabbit(t, ctx)
 	defer testrabbit.TerminateContainer(t, ctx, rabbitContainer)
 	brokerName := "x-change"
-	exchangeName := fmt.Sprintf("%s/knative-%s", namespace, brokerName)
+	exchangeName := fmt.Sprintf("%s.%s", namespace, brokerName)
 	testrabbit.CreateExchange(t, ctx, rabbitContainer, exchangeName, "headers")
 
 	err := resources.DeleteExchange(&resources.ExchangeArgs{

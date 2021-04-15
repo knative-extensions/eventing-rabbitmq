@@ -187,7 +187,7 @@ func TestReconcile(t *testing.T) {
 					WithTriggerSubscriberURI(subscriberURI)),
 			},
 		}, {
-			Name: "Trigger delete fails - with finalizer - no secret",
+			Name: "Trigger delete succeeds - with finalizer - no secret so no undeletable resources",
 			Key:  testKey,
 			Objects: []runtime.Object{
 				broker.NewBroker(brokerName, testNS,
@@ -196,10 +196,12 @@ func TestReconcile(t *testing.T) {
 					broker.WithInitBrokerConditions),
 				triggerWithFinalizerReady(),
 			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "InternalError", `secrets "test-broker-broker-rabbit" not found`),
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchRemoveFinalizers(testNS, triggerName),
 			},
-			WantErr: true,
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
+			},
 		}, {
 			Name: "Trigger deleted - with finalizer and secret",
 			Key:  testKey,

@@ -32,7 +32,9 @@ import (
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 
 	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
+	bindinginformer "knative.dev/eventing-rabbitmq/pkg/client/injection/rabbitmq.com/informers/rabbitmq.com/v1alpha2/binding"
 	exchangeinformer "knative.dev/eventing-rabbitmq/pkg/client/injection/rabbitmq.com/informers/rabbitmq.com/v1alpha2/exchange"
+	queueinformer "knative.dev/eventing-rabbitmq/pkg/client/injection/rabbitmq.com/informers/rabbitmq.com/v1alpha2/queue"
 	brokerinformer "knative.dev/eventing/pkg/client/injection/informers/eventing/v1/broker"
 	brokerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1/broker"
 	"knative.dev/eventing/pkg/duck"
@@ -86,6 +88,8 @@ func NewController(
 	endpointsInformer := endpointsinformer.Get(ctx)
 	rabbitInformer := rabbit.Get(ctx)
 	exchangeInformer := exchangeinformer.Get(ctx)
+	queueInformer := queueinformer.Get(ctx)
+	bindingInformer := bindinginformer.Get(ctx)
 
 	r := &Reconciler{
 		eventingClientSet:         eventingclient.Get(ctx),
@@ -104,6 +108,8 @@ func NewController(
 		dispatcherImage:           env.DispatcherImage,
 		rabbitClientSet:           rabbitmqclient.Get(ctx),
 		exchangeLister:            exchangeInformer.Lister(),
+		queueLister:               queueInformer.Lister(),
+		bindingLister:             bindingInformer.Lister(),
 	}
 
 	impl := brokerreconciler.NewImpl(ctx, r, env.BrokerClass, func(impl *controller.Impl) controller.Options {
@@ -146,5 +152,13 @@ func NewController(
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
+	queueInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.FilterControllerGK(eventingv1.Kind("Broker")),
+		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
+	})
+	bindingInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.FilterControllerGK(eventingv1.Kind("Broker")),
+		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
+	})
 	return impl
 }

@@ -17,7 +17,7 @@ on:
 jobs:
 
   ko-resolve:
-    name: e2e tests
+    name: conformance tests
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false # Keep running if one leg fails.
@@ -28,10 +28,13 @@ jobs:
         - v1.20.0
 
         eventing-version:
-        - v0.21.0
+        - v0.22.0
 
         rabbitmq-operator-version:
-        - v1.4.0
+        - v1.6.0
+
+        rabbitmq-messaging-topology-operator-version:
+        - v0.6.0
 
         # Map between K8s and KinD versions.
         # This is attempting to make it a bit clearer what's being tested.
@@ -54,6 +57,8 @@ jobs:
       RABBITMQ_SYSTEM_NAMESPACE: rabbitmq-system
       # Where the Rabbitmq source is installed
       RABBITMQ_SOURCE_NAMESPACE: knative-sources
+      # Where the Cert Manager gets installed
+      CERT_MANAGER_NAMESPACE: cert-manager
       KIND_CLUSTER_NAME: kind
 
     steps:
@@ -137,14 +142,21 @@ jobs:
         set -x
 
         kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.2.0/cert-manager.yaml
-        # Sleep for 120 so things come up
-        sleep 120
+
+    - name: Wait for Cert Manager Ready
+      working-directory: ./src/knative.dev/${{ github.event.repository.name }}
+      run: |
+        set -e
+        source ./vendor/knative.dev/hack/infra-library.sh
+        wait_until_pods_running ${CERT_MANAGER_NAMESPACE}
+        # Even though pods are running, seems like every now and then things are not ready in the next step.
+        sleep 15
 
     - name: Install RabbitMQ Messaging Topology Operator
       run: |
         set -x
 
-        kubectl apply -f https://github.com/rabbitmq/messaging-topology-operator/releases/latest/download/messaging-topology-operator-with-certmanager.yaml
+        kubectl apply -f https://github.com/rabbitmq/messaging-topology-operator/releases/download/${{ matrix.rabbitmq-messaging-topology-operator-version }}/messaging-topology-operator-with-certmanager.yaml
 
     - name: Install Knative Eventing
       run: |
@@ -197,19 +209,30 @@ jobs:
         echo "===================== RabbitMQClusters ====================="
         kubectl get RabbitMQCluster --all-namespaces=true -oyaml
 
+        echo "===================== RabbitMQ Exchanges ====================="
+        kubectl get exchange.rabbitmq.com --all-namespaces=true -oyaml
+
+        echo "===================== RabbitMQ Queues ====================="
+        kubectl get queue.rabbitmq.com --all-namespaces=true -oyaml
+
+        echo "===================== RabbitMQ Bindings ====================="
+        kubectl get binding.rabbitmq.com --all-namespaces=true -oyaml
+
         echo "===================== K8s Events ==========================="
         kubectl get events --all-namespaces=true -oyaml
 
         echo "===================== Pod Logs ============================="
-        namespace=knative-eventing
-        for pod in $(kubectl get pod -n $namespace | awk '{print $1}'); do
-          for container in $(kubectl get pod "${pod}" -n $namespace -ojsonpath='{.spec.containers[*].name}'); do
-            echo "Namespace, Pod, Container: ${namespace}, ${pod}, ${container}"
-            kubectl logs -n $namespace "${pod}" -c "${container}" || true
-            echo "----------------------------------------------------------"
-            echo "Namespace, Pod, Container (Previous instance): ${namespace}, ${pod}, ${container}"
-            kubectl logs -p -n $namespace "${pod}" -c "${container}" || true
-            echo "============================================================"
+        namespaces=(knative-eventing rabbitmq-system)
+        for namespace in ${namespaces[@]}; do
+          for pod in $(kubectl get pod -n $namespace | awk '{print $1}'); do
+            for container in $(kubectl get pod "${pod}" -n $namespace -ojsonpath='{.spec.containers[*].name}'); do
+              echo "Namespace, Pod, Container: ${namespace}, ${pod}, ${container}"
+              kubectl logs -n $namespace "${pod}" -c "${container}" || true
+              echo "----------------------------------------------------------"
+              echo "Namespace, Pod, Container (Previous instance): ${namespace}, ${pod}, ${container}"
+              kubectl logs -p -n $namespace "${pod}" -c "${container}" || true
+              echo "============================================================"
+            done
           done
         done
 

@@ -174,10 +174,6 @@ func TestReconcile(t *testing.T) {
 					WithInitBrokerConditions,
 					WithBrokerDeletionTimestamp),
 			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "InternalError", `secrets "test-secret" not found`),
-			},
-			WantErr: true,
 		}, {
 			Name: "Broker deleted",
 			Key:  testKey,
@@ -728,6 +724,8 @@ func TestReconcile(t *testing.T) {
 			dispatcherImage:    dispatcherImage,
 			rabbitClientSet:    fakerabbitclient.Get(ctx),
 			exchangeLister:     listers.GetExchangeLister(),
+			queueLister:        listers.GetQueueLister(),
+			bindingLister:      listers.GetBindingLister(),
 			rabbitLister:       rabbitduck.Get(ctx),
 		}
 		return broker.NewReconciler(ctx, logger,
