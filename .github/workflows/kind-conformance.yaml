@@ -33,6 +33,9 @@ jobs:
         rabbitmq-operator-version:
         - v1.6.0
 
+        rabbitmq-messaging-topology-operator-version:
+        - v0.5.2
+
         # Map between K8s and KinD versions.
         # This is attempting to make it a bit clearer what's being tested.
         # See: https://github.com/kubernetes-sigs/kind/releases/tag/v0.9.0
@@ -153,7 +156,7 @@ jobs:
       run: |
         set -x
 
-        kubectl apply -f https://github.com/rabbitmq/messaging-topology-operator/releases/download/v0.5.1/messaging-topology-operator-with-certmanager.yaml
+        kubectl apply -f https://github.com/rabbitmq/messaging-topology-operator/releases/download/${{ matrix.rabbitmq-messaging-topology-operator-version }}}/messaging-topology-operator-with-certmanager.yaml
 
     - name: Install Knative Eventing
       run: |
