@@ -25,8 +25,10 @@ import (
 )
 
 // RabbitmqChannelLister helps list RabbitmqChannels.
+// All objects returned here must be treated as read-only.
 type RabbitmqChannelLister interface {
 	// List lists all RabbitmqChannels in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.RabbitmqChannel, err error)
 	// RabbitmqChannels returns an object that can list and get RabbitmqChannels.
 	RabbitmqChannels(namespace string) RabbitmqChannelNamespaceLister
@@ -57,10 +59,13 @@ func (s *rabbitmqChannelLister) RabbitmqChannels(namespace string) RabbitmqChann
 }
 
 // RabbitmqChannelNamespaceLister helps list and get RabbitmqChannels.
+// All objects returned here must be treated as read-only.
 type RabbitmqChannelNamespaceLister interface {
 	// List lists all RabbitmqChannels in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.RabbitmqChannel, err error)
 	// Get retrieves the RabbitmqChannel from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1beta1.RabbitmqChannel, error)
 	RabbitmqChannelNamespaceListerExpansion
 }

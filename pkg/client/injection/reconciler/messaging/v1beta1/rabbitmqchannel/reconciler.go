@@ -87,13 +87,13 @@ type doReconcile func(ctx context.Context, o *v1beta1.RabbitmqChannel) reconcile
 
 // reconcilerImpl implements controller.Reconciler for v1beta1.RabbitmqChannel resources.
 type reconcilerImpl struct {
-	// LeaderAwareFuncs is inlined to help us implement reconciler.LeaderAware
+	// LeaderAwareFuncs is inlined to help us implement reconciler.LeaderAware.
 	reconciler.LeaderAwareFuncs
 
 	// Client is used to write back status updates.
 	Client versioned.Interface
 
-	// Listers index properties about resources
+	// Listers index properties about resources.
 	Lister messagingv1beta1.RabbitmqChannelLister
 
 	// Recorder is an event recorder for recording Event resources to the
@@ -115,7 +115,7 @@ type reconcilerImpl struct {
 	skipStatusUpdates bool
 }
 
-// Check that our Reconciler implements controller.Reconciler
+// Check that our Reconciler implements controller.Reconciler.
 var _ controller.Reconciler = (*reconcilerImpl)(nil)
 
 // Check that our generated Reconciler is always LeaderAware.
@@ -168,6 +168,9 @@ func NewReconciler(ctx context.Context, logger *zap.SugaredLogger, client versio
 		if opts.SkipStatusUpdates {
 			rec.skipStatusUpdates = true
 		}
+		if opts.DemoteFunc != nil {
+			rec.DemoteFunc = opts.DemoteFunc
+		}
 	}
 
 	return rec
@@ -190,7 +193,7 @@ func (r *reconcilerImpl) Reconcile(ctx context.Context, key string) error {
 	// If we are not the leader, and we don't implement either ReadOnly
 	// observer interfaces, then take a fast-path out.
 	if s.isNotLeaderNorObserver() {
-		return nil
+		return controller.NewSkipKey(key)
 	}
 
 	// If configStore is set, attach the frozen configuration to the context.
@@ -225,9 +228,6 @@ func (r *reconcilerImpl) Reconcile(ctx context.Context, key string) error {
 	logger = logger.With(zap.String("targetMethod", name))
 	switch name {
 	case reconciler.DoReconcileKind:
-		// Append the target method to the logger.
-		logger = logger.With(zap.String("targetMethod", "ReconcileKind"))
-
 		// Set and update the finalizer on resource if r.reconciler
 		// implements Finalizer.
 		if resource, err = r.setFinalizerIfFinalizer(ctx, resource); err != nil {
