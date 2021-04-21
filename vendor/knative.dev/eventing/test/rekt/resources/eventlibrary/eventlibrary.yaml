@@ -1,4 +1,4 @@
-# Copyright 2020 The Knative Authors
+# Copyright 2021 The Knative Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,13 +13,28 @@
 # limitations under the License.
 
 apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ .name }}
+  namespace: {{ .namespace }}
+  labels:
+    app: library-{{ .name }}
+spec:
+  restartPolicy: "Never"
+  containers:
+    - name: library
+      image: ko://knative.dev/eventing/test/test_images/event-library
+      imagePullPolicy: "IfNotPresent"
+
+---
+apiVersion: v1
 kind: Service
 metadata:
   name: {{ .name }}
   namespace: {{ .namespace }}
 spec:
   selector:
-    {{ .selectorKey }}: {{ .selectorValue }}
+    app: library-{{ .name }}
   ports:
     - protocol: TCP
       port: 80
