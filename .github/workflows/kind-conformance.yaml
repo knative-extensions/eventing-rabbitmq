@@ -193,7 +193,7 @@ jobs:
         export BROKER_TEMPLATES=${PWD}/test/conformance/testdata/with-operator
         export BROKER_CLASS=RabbitMQBroker
         
-        SYSTEM_NAMESPACE=knative-eventing go test -v -count=1 -timeout=10m -tags=e2e -run TestBrokerConformance ./test/conformance/...
+        SYSTEM_NAMESPACE=knative-eventing go test -v -count=1 -timeout=20m -tags=e2e -run TestBrokerConformance ./test/conformance/...
 
     - name: Gather Failure Data
       if: ${{ failure() }}
