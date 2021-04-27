@@ -5,7 +5,7 @@ go 1.15
 require (
 	github.com/NeowayLabs/wabbit v0.0.0-20200409220312-12e68ab5b0c6
 	github.com/aws/aws-sdk-go v1.34.11 // indirect
-	github.com/cloudevents/sdk-go/v2 v2.4.0
+	github.com/cloudevents/sdk-go/v2 v2.4.1
 	github.com/containerd/continuity v0.0.0-20200228182428-0f16d7a0959c
 	github.com/docker/docker v1.13.1 // indirect
 	github.com/docker/go-connections v0.4.0
@@ -31,10 +31,10 @@ require (
 	k8s.io/client-go v0.20.5
 	k8s.io/code-generator v0.20.5
 	k8s.io/kube-openapi v0.0.0-20201113171705-d219536bb9fd
-	knative.dev/eventing v0.22.1-0.20210412234459-68afe5441d80
-	knative.dev/hack v0.0.0-20210325223819-b6ab329907d3
-	knative.dev/pkg v0.0.0-20210412173742-b51994e3b312
-	knative.dev/reconciler-test v0.0.0-20210412220859-730c55592c9b
+	knative.dev/eventing v0.22.1-0.20210427115253-e807987c8b0c
+	knative.dev/hack v0.0.0-20210426064739-88c69cd1eca7
+	knative.dev/pkg v0.0.0-20210426180040-cfc1eed82870
+	knative.dev/reconciler-test v0.0.0-20210426151439-cd315b0f06aa
 )
 
 replace (
