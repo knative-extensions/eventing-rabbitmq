@@ -927,12 +927,12 @@ func assertExpectedEvents(prober *eventshub.EventProber, expected map[string]exp
 		for prefix, want := range expected {
 			got := happened(ctx, prober, prefix)
 
-			t.Logf("Expected Events %s; \nGot: %#v\n Want: %#v", prefix, got, want)
+			t.Logf("Expected Events %s; \nGot:  %#v\nWant: %#v", prefix, got, want)
 
 			// Check event acceptance.
 			if len(want.eventSuccess) != 0 && len(got.eventSuccess) != 0 {
 				if diff := cmp.Diff(want.eventSuccess, got.eventSuccess); diff != "" {
-					t.Error("unexpected event acceptance behaviour (-want, +got) =", diff)
+					t.Fatal("unexpected event acceptance behaviour (-want, +got) =", diff)
 				}
 			}
 			// TODO: Check timing.
@@ -952,13 +952,13 @@ func assertExpectedRoutedEvents(prober *eventshub.EventProber, expected map[stri
 
 			t.Logf("Expected Events %s; \nGot: %#v\n Want: %#v", prefix, got, want)
 			if len(want) != len(got) {
-				t.Errorf("Wanted %d events, got %d", len(want), len(got))
+				t.Fatalf("Wanted %d events, got %d", len(want), len(got))
 			}
 
 			// Check event acceptance.
 			if len(want) != 0 && len(got) != 0 {
 				if diff := cmp.Diff(want, got); diff != "" {
-					t.Error("unexpected event routing behaviour (-want, +got) =", diff)
+					t.Fatal("unexpected event routing behaviour (-want, +got) =", diff)
 				}
 			}
 		}
