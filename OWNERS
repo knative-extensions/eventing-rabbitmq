@@ -1,6 +1,6 @@
 # Initial set of approvers taken from eventing WG leads
 approvers:
-- grantr
-- lionelvillard
-- vaikas
-- n3wscott
+- technical-oversight-committee
+- knative-release-leads
+- eventing-writers
+- eventing-rabbitmq-approvers
