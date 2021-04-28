@@ -241,7 +241,13 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		},
 	)
 
-	_, err = r.reconcileDispatcherDeployment(ctx, t, subscriberURI, broker.Spec.Delivery)
+	// If trigger specified delivery, use it.
+	delivery := t.Spec.Delivery
+	if delivery == nil {
+		// If trigger didn't but Broker did, use it instead.
+		delivery = broker.Spec.Delivery
+	}
+	_, err = r.reconcileDispatcherDeployment(ctx, t, subscriberURI, delivery)
 	if err != nil {
 		logging.FromContext(ctx).Error("Problem reconciling dispatcher Deployment", zap.Error(err))
 		t.Status.MarkDependencyFailed("DeploymentFailure", "%v", err)
