@@ -37,4 +37,3 @@ spec:
     backoffDelay: "{{ .delivery.backoffDelay}}"
     {{ end }}
   {{ end }}
-  
