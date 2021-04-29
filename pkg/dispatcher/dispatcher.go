@@ -111,10 +111,14 @@ func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel wabbit.Channe
 			logging.FromContext(ctx).Debugf("Got event as: %+v", event)
 			ctx = cloudevents.ContextWithTarget(ctx, d.subscriberURL)
 
+			// Our dispatcher uses Retries, but cloudevents is the max total tries. So we need
+			// to adjust to initial + retries.
+			// TODO: What happens if I specify 0 to cloudevents. Does it not even retry.
+			retryCount := d.maxRetries
 			if d.backoffPolicy == eventingduckv1.BackoffPolicyLinear {
-				ctx = cloudevents.ContextWithRetriesLinearBackoff(ctx, d.backoffDelay, d.maxRetries)
+				ctx = cloudevents.ContextWithRetriesLinearBackoff(ctx, d.backoffDelay, retryCount)
 			} else {
-				ctx = cloudevents.ContextWithRetriesExponentialBackoff(ctx, d.backoffDelay, d.maxRetries)
+				ctx = cloudevents.ContextWithRetriesExponentialBackoff(ctx, d.backoffDelay, retryCount)
 			}
 
 			response, result := ceClient.Request(ctx, event)

@@ -19,22 +19,31 @@ package broker
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 
+	conformanceevent "github.com/cloudevents/conformance/pkg/event"
+	cetest "github.com/cloudevents/sdk-go/v2/test"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
+	v1 "knative.dev/eventing/pkg/apis/duck/v1"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	eventingclientsetv1 "knative.dev/eventing/pkg/client/clientset/versioned/typed/eventing/v1"
 	eventingclient "knative.dev/eventing/pkg/client/injection/client"
 	"knative.dev/eventing/test/rekt/features/knconf"
 	brokerresources "knative.dev/eventing/test/rekt/resources/broker"
-	"knative.dev/eventing/test/rekt/resources/svc"
 	triggerresources "knative.dev/eventing/test/rekt/resources/trigger"
+	"knative.dev/pkg/apis"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
+	"knative.dev/pkg/injection/clients/dynamicclient"
+	"knative.dev/pkg/ptr"
 	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/state"
+	"knative.dev/reconciler-test/resources/svc"
 )
 
 func ControlPlaneConformance(brokerName string) *feature.FeatureSet {
@@ -47,9 +56,12 @@ func ControlPlaneConformance(brokerName string) *feature.FeatureSet {
 			*ControlPlaneTrigger_WithBrokerLifecycle(),
 			*ControlPlaneTrigger_WithValidFilters(brokerName),
 			*ControlPlaneTrigger_WithInvalidFilters(brokerName),
-			*ControlPlaneDelivery(brokerName),
 		},
 	}
+
+	// Add each feature of event routing and Delivery tests as a new feature
+	addControlPlaneEventRouting(fs)
+	addControlPlaneDelivery(fs)
 	// TODO: This is not a control plane test, or at best it is a blend with data plane.
 	// Must("Events that pass the attributes filter MUST include context or extension attributes that match all key-value pairs exactly.", todo)
 
@@ -88,7 +100,7 @@ func ControlPlaneTrigger_GivenBroker(brokerName string) *feature.Feature {
 
 	triggerName := feature.MakeRandomK8sName("trigger")
 	f.Setup("Create a Trigger", triggerresources.Install(triggerName, brokerName,
-		triggerresources.WithSubscriber(svc.AsRef(subscriberName), ""),
+		triggerresources.WithSubscriber(svc.AsKReference(subscriberName), ""),
 	))
 
 	f.Setup("Set Trigger Name", func(ctx context.Context, t feature.T) {
@@ -117,7 +129,7 @@ func ControlPlaneTrigger_GivenBrokerTriggerReady(brokerName string) *feature.Fea
 
 	triggerName := feature.MakeRandomK8sName("trigger")
 	f.Setup("Create a Trigger", triggerresources.Install(triggerName, brokerName,
-		triggerresources.WithSubscriber(svc.AsRef(subscriberName), ""),
+		triggerresources.WithSubscriber(svc.AsKReference(subscriberName), ""),
 	))
 
 	f.Setup("Set Trigger Name", func(ctx context.Context, t feature.T) {
@@ -143,7 +155,7 @@ func ControlPlaneTrigger_WithBrokerLifecycle() *feature.Feature {
 
 	triggerName := feature.MakeRandomK8sName("trigger")
 	f.Setup("Create a Trigger", triggerresources.Install(triggerName, brokerName,
-		triggerresources.WithSubscriber(svc.AsRef(subscriberName), ""),
+		triggerresources.WithSubscriber(svc.AsKReference(subscriberName), ""),
 	))
 
 	f.Setup("Set Trigger Name", func(ctx context.Context, t feature.T) {
@@ -186,7 +198,7 @@ func ControlPlaneTrigger_WithValidFilters(brokerName string) *feature.Feature {
 
 	triggerName := feature.MakeRandomK8sName("trigger")
 	f.Setup("Create a Trigger", triggerresources.Install(triggerName, brokerName,
-		triggerresources.WithSubscriber(svc.AsRef(subscriberName), ""),
+		triggerresources.WithSubscriber(svc.AsKReference(subscriberName), ""),
 		triggerresources.WithFilter(filters),
 	))
 
@@ -237,7 +249,7 @@ func ControlPlaneTrigger_WithInvalidFilters(brokerName string) *feature.Feature 
 
 	triggerName := feature.MakeRandomK8sName("trigger")
 	f.Setup("Create a Trigger", triggerresources.Install(triggerName, brokerName,
-		triggerresources.WithSubscriber(svc.AsRef(subscriberName), ""),
+		triggerresources.WithSubscriber(svc.AsKReference(subscriberName), ""),
 	))
 
 	f.Setup("Set Trigger Name", func(ctx context.Context, t feature.T) {
@@ -276,20 +288,258 @@ func ControlPlaneTrigger_WithInvalidFilters(brokerName string) *feature.Feature 
 	return f
 }
 
-func ControlPlaneDelivery(brokerName string) *feature.Feature {
-	f := feature.NewFeatureNamed("Delivery Spec")
+func addControlPlaneDelivery(fs *feature.FeatureSet) {
+	for i, tt := range []struct {
+		name     string
+		brokerDS *v1.DeliverySpec
+		// Trigger 1 Delivery spec
+		t1DS *v1.DeliverySpec
+		// How many events to fail before succeeding
+		t1FailCount uint
+		// Trigger 2 Delivery spec
+		t2DS *v1.DeliverySpec
+		// How many events to fail before succeeding
+		t2FailCount uint
+	}{{
+		name: "When `BrokerSpec.Delivery` and `TriggerSpec.Delivery` are both not configured, no delivery spec SHOULD be used.",
+	}, {
+		name: "When `BrokerSpec.Delivery` is configured, but not the specific `TriggerSpec.Delivery`, then the `BrokerSpec.Delivery` SHOULD be used. (Retry)",
+		brokerDS: &v1.DeliverySpec{
+			DeadLetterSink: new(duckv1.Destination),
+			Retry:          ptr.Int32(3),
+		},
+		t1FailCount: 3, // Should get event.
+		t2FailCount: 4, // Should end up in DLQ.
+	}, {
+		name: "When `TriggerSpec.Delivery` is configured, then `TriggerSpec.Delivery` SHOULD be used. (Retry)",
+		t1DS: &v1.DeliverySpec{
+			DeadLetterSink: new(duckv1.Destination),
+			Retry:          ptr.Int32(3),
+		},
+		t1FailCount: 3, // Should get event.
+		t2FailCount: 1, // Should be dropped.
+	}, {
+		name: "When both `BrokerSpec.Delivery` and `TriggerSpec.Delivery` is configured, then `TriggerSpec.Delivery` SHOULD be used. (Retry)",
+		brokerDS: &v1.DeliverySpec{
+			DeadLetterSink: new(duckv1.Destination),
+			Retry:          ptr.Int32(1),
+		},
+		t1DS: &v1.DeliverySpec{
+			DeadLetterSink: new(duckv1.Destination),
+			Retry:          ptr.Int32(3),
+		},
+		t1FailCount: 3, // Should get event.
+		t2FailCount: 2, // Should end up in DLQ.
+	}} {
+		// TODO: Each of these creates quite a few resources. We need to figure out a way
+		// to delete the resources for each Feature once the test completes. Today it's
+		// not easy (if at all possible) to do this, since Environment contains the References
+		// to created resources, but it's not granular enough.
+		brokerName := fmt.Sprintf("dlq-test-%d", i)
+		f := feature.NewFeatureNamed(fmt.Sprintf("Delivery Spec - %s", brokerName))
+		cfg := []triggerCfg{{
+			delivery:  tt.t1DS,
+			failCount: tt.t1FailCount,
+		}, {
+			delivery:  tt.t2DS,
+			failCount: tt.t2FailCount,
+		}}
+		prober := createBrokerTriggerTopology(f, brokerName, tt.brokerDS, cfg)
 
-	f.Setup("Set Broker Name", setBrokerName(brokerName))
+		// Send an event into the matrix and hope for the best
+		prober.SenderFullEvents(1)
+		f.Setup("install source", prober.SenderInstall("source"))
+		f.Requirement("sender is finished", prober.SenderDone("source"))
 
-	f.Stable("Conformance").
-		Should("When `BrokerSpec.Delivery` and `TriggerSpec.Delivery` are both not configured, no delivery spec SHOULD be used.",
-			todo).
-		Should("When `BrokerSpec.Delivery` is configured, but not the specific `TriggerSpec.Delivery`, then the `BrokerSpec.Delivery` SHOULD be used.",
-			todo).
-		Should("When `TriggerSpec.Delivery` is configured, then `TriggerSpec.Delivery` SHOULD be used.",
-			todo)
+		// All events have been sent, time to look at the specs and confirm we got them.
+		expectedEvents := createExpectedEventPatterns(tt.brokerDS, cfg)
 
-	return f
+		f.Requirement("wait until done", func(ctx context.Context, t feature.T) {
+			interval, timeout := environment.PollTimingsFromContext(ctx)
+			err := wait.PollImmediate(interval, timeout, func() (bool, error) {
+				gtg := true
+				for prefix, want := range expectedEvents {
+					events := prober.ReceivedOrRejectedBy(ctx, prefix)
+					if len(events) != len(want.Success) {
+						gtg = false
+					}
+				}
+				return gtg, nil
+			})
+			if err != nil {
+				t.Failed()
+			}
+		})
+		f.Stable("Conformance").Should(tt.name, knconf.AssertEventPatterns(prober, expectedEvents))
+		f.Teardown("Delete feature resources", deleteFeatureResources())
+		fs.Features = append(fs.Features, *f)
+	}
+}
+
+func deleteFeatureResources() feature.StepFn {
+	return func(ctx context.Context, t feature.T) {
+		dc := dynamicclient.Get(ctx)
+		f := feature.FromContext(ctx)
+		for _, ref := range f.References() {
+			gv, err := schema.ParseGroupVersion(ref.APIVersion)
+			if err != nil {
+				t.Errorf("Could not parse GroupVersion for %+v", ref.APIVersion)
+			} else {
+				resource := apis.KindToResource(gv.WithKind(ref.Kind))
+				t.Logf("Deleting %s/%s of GVR: %+v", ref.Namespace, ref.Name, resource)
+				if err := dc.Resource(resource).Namespace(ref.Namespace).Delete(ctx, ref.Name, *metav1.NewDeleteOptions(0)); err != nil {
+					t.Logf("Failed to delete during cleanup %s/%s of GVR: %+v", ref.Namespace, ref.Name, resource)
+				}
+			}
+		}
+	}
+}
+
+func addControlPlaneEventRouting(fs *feature.FeatureSet) {
+
+	fullEvent := cetest.FullEvent()
+	replyEvent := cetest.FullEvent()
+	replyEvent.SetType("com.example.ReplyEvent")
+
+	for i, tt := range []struct {
+		name     string
+		config   []triggerCfg
+		inEvents []conformanceevent.Event
+	}{{
+		name:     "One trigger, no filter, gets event",
+		config:   []triggerCfg{{}},
+		inEvents: []conformanceevent.Event{knconf.EventToEvent(&fullEvent)},
+	}, {
+		name: "One trigger, with filter, does not get event",
+		config: []triggerCfg{
+			{
+				filter: &eventingv1.TriggerFilter{
+					Attributes: eventingv1.TriggerFilterAttributes{
+						"type": "mytype",
+					},
+				},
+			},
+		},
+		inEvents: []conformanceevent.Event{
+			{
+				Attributes: conformanceevent.ContextAttributes{
+					Type: "notmytype",
+				},
+			},
+		},
+	}, {
+		name: "One trigger, with filter, gets the event",
+		config: []triggerCfg{
+			{
+				filter: &eventingv1.TriggerFilter{
+					Attributes: eventingv1.TriggerFilterAttributes{
+						"type": "com.example.FullEvent",
+					},
+				},
+			},
+		},
+		inEvents: []conformanceevent.Event{knconf.EventToEvent(&fullEvent)},
+	}, {
+		// name: "Two triggers, with filter, both get the event",
+		config: []triggerCfg{
+			{
+				filter: &eventingv1.TriggerFilter{
+					Attributes: eventingv1.TriggerFilterAttributes{
+						"type": "com.example.FullEvent",
+					},
+				},
+			}, {
+				filter: &eventingv1.TriggerFilter{
+					Attributes: eventingv1.TriggerFilterAttributes{
+						"type": "com.example.FullEvent",
+					},
+				},
+			},
+		},
+		inEvents: []conformanceevent.Event{knconf.EventToEvent(&fullEvent)},
+	}, {
+		name: "Two triggers, with filter, only matching one gets the event",
+		config: []triggerCfg{
+			{
+				filter: &eventingv1.TriggerFilter{
+					Attributes: eventingv1.TriggerFilterAttributes{
+						"type": "notmytype",
+					},
+				},
+			}, {
+				filter: &eventingv1.TriggerFilter{
+					Attributes: eventingv1.TriggerFilterAttributes{
+						"type": "com.example.FullEvent",
+					},
+				},
+			},
+		},
+		inEvents: []conformanceevent.Event{knconf.EventToEvent(&fullEvent)},
+	}, {
+		name: "Two triggers, with filter, first one matches incoming event, creates reply, which matches the second one",
+		config: []triggerCfg{
+			{
+				filter: &eventingv1.TriggerFilter{
+					Attributes: eventingv1.TriggerFilterAttributes{
+						"type": "com.example.FullEvent",
+					},
+				},
+				reply: func() *conformanceevent.Event {
+					reply := knconf.EventToEvent(&replyEvent)
+					reply.Attributes.DataContentType = "application/json" // EventsHub defaults all data to this.
+					return &reply
+				}(),
+			}, {
+				filter: &eventingv1.TriggerFilter{
+					Attributes: eventingv1.TriggerFilterAttributes{
+						"type": "com.example.ReplyEvent",
+					},
+				},
+			},
+		},
+		inEvents: []conformanceevent.Event{knconf.EventToEvent(&fullEvent)},
+	}, {
+		name:     "Two triggers, with no filters, both get the event",
+		config:   []triggerCfg{{}, {}},
+		inEvents: []conformanceevent.Event{knconf.EventToEvent(&fullEvent)},
+	}} {
+		brokerName := fmt.Sprintf("routing-test-%d", i)
+		f := feature.NewFeatureNamed(fmt.Sprintf("Event Routing Spec - %s", brokerName))
+		f.Setup("Set Broker Name", setBrokerName(brokerName))
+		prober := createBrokerTriggerTopology(f, brokerName, nil, tt.config)
+
+		// Send an event into the matrix and hope for the best
+		// TODO: We need to do some work to get the event types into the Prober.
+		// All the events generated are currently hardcoded into the com.example.FullEvent
+		// so once prober supports more configuration, wire it up here.
+		prober.SenderFullEvents(1)
+		f.Setup("install source", prober.SenderInstall("source"))
+		f.Requirement("sender is finished", prober.SenderDone("source"))
+
+		// All events have been sent, time to look at the specs and confirm we got them.
+		expectedEvents := createExpectedEventRoutingMap(tt.config, tt.inEvents)
+
+		f.Requirement("wait until done", func(ctx context.Context, t feature.T) {
+			interval, timeout := environment.PollTimingsFromContext(ctx)
+			err := wait.PollImmediate(interval, timeout, func() (bool, error) {
+				gtg := true
+				for prefix, want := range expectedEvents {
+					events := prober.ReceivedOrRejectedBy(ctx, prefix)
+					if len(events) != len(want) {
+						gtg = false
+					}
+				}
+				return gtg, nil
+			})
+			if err != nil {
+				t.Failed()
+			}
+		})
+
+		f.Stable("Conformance").Should(tt.name, assertExpectedRoutedEvents(prober, expectedEvents))
+		f.Teardown("Delete feature resources", deleteFeatureResources())
+		fs.Features = append(fs.Features, *f)
+	}
 }
 
 type EventingClient struct {
