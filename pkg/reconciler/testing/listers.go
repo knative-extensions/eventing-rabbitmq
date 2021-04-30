@@ -44,9 +44,9 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/reconciler/testing"
 
-	rabbitv1alpha2 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
+	rabbitv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	fakerabbitclientset "github.com/rabbitmq/messaging-topology-operator/pkg/generated/clientset/versioned/fake"
-	rabbitlisters "github.com/rabbitmq/messaging-topology-operator/pkg/generated/listers/rabbitmq.com/v1alpha2"
+	rabbitlisters "github.com/rabbitmq/messaging-topology-operator/pkg/generated/listers/rabbitmq.com/v1beta1"
 )
 
 var subscriberAddToScheme = func(scheme *runtime.Scheme) error {
@@ -207,11 +207,11 @@ func (l *Listers) GetRabbitObjects() []runtime.Object {
 }
 
 func (l *Listers) GetExchangeLister() rabbitlisters.ExchangeLister {
-	return rabbitlisters.NewExchangeLister(l.indexerFor(&rabbitv1alpha2.Exchange{}))
+	return rabbitlisters.NewExchangeLister(l.indexerFor(&rabbitv1beta1.Exchange{}))
 }
 func (l *Listers) GetQueueLister() rabbitlisters.QueueLister {
-	return rabbitlisters.NewQueueLister(l.indexerFor(&rabbitv1alpha2.Queue{}))
+	return rabbitlisters.NewQueueLister(l.indexerFor(&rabbitv1beta1.Queue{}))
 }
 func (l *Listers) GetBindingLister() rabbitlisters.BindingLister {
-	return rabbitlisters.NewBindingLister(l.indexerFor(&rabbitv1alpha2.Binding{}))
+	return rabbitlisters.NewBindingLister(l.indexerFor(&rabbitv1beta1.Binding{}))
 }

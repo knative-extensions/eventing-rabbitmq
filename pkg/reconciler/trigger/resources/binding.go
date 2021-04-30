@@ -26,7 +26,7 @@ import (
 	"net/url"
 	"reflect"
 
-	rabbitv1alpha2 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
+	rabbitv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"knative.dev/pkg/kmeta"
@@ -55,7 +55,7 @@ type BindingArgs struct {
 	QueueName              string // only for DLQ
 }
 
-func NewBinding(ctx context.Context, broker *eventingv1.Broker, args *BindingArgs) (*rabbitv1alpha2.Binding, error) {
+func NewBinding(ctx context.Context, broker *eventingv1.Broker, args *BindingArgs) (*rabbitv1beta1.Binding, error) {
 	var or metav1.OwnerReference
 	if args.Trigger != nil {
 		or = *kmeta.NewControllerRef(args.Trigger)
@@ -76,14 +76,14 @@ func NewBinding(ctx context.Context, broker *eventingv1.Broker, args *BindingArg
 		return nil, fmt.Errorf("failed to encode binding arguments %+v : %s", argumentsJson, err)
 	}
 
-	binding := &rabbitv1alpha2.Binding{
+	binding := &rabbitv1beta1.Binding{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:       broker.Namespace,
 			Name:            args.BindingName,
 			OwnerReferences: []metav1.OwnerReference{or},
 			Labels:          BindingLabels(broker),
 		},
-		Spec: rabbitv1alpha2.BindingSpec{
+		Spec: rabbitv1beta1.BindingSpec{
 			Vhost:           "/",
 			Source:          args.SourceName,
 			Destination:     args.QueueName,
@@ -96,7 +96,7 @@ func NewBinding(ctx context.Context, broker *eventingv1.Broker, args *BindingArg
 			// TODO: We had before also internal / nowait set to false. Are these in Arguments,
 			// or do they get sane defaults that we can just work with?
 			// TODO: This one has to exist in the same namespace as this exchange.
-			RabbitmqClusterReference: rabbitv1alpha2.RabbitmqClusterReference{
+			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
 				Name: broker.Spec.Config.Name,
 			},
 		},

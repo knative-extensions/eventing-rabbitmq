@@ -18,18 +18,14 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-export GO111MODULE=on
+source $(dirname $0)/../vendor/knative.dev/hack/codegen-library.sh
 
-source $(dirname $0)/../vendor/knative.dev/hack/library.sh
+# If we run with -mod=vendor here, then generate-groups.sh looks for vendor files in the wrong place.
+export GOFLAGS=-mod=
 
-CODEGEN_PKG=${CODEGEN_PKG:-$(cd ${REPO_ROOT_DIR}; ls -d -1 $(dirname $0)/../vendor/k8s.io/code-generator 2>/dev/null || echo ../../../k8s.io/code-generator)}
+echo "=== Update Codegen for $MODULE_NAME"
 
-KNATIVE_CODEGEN_PKG=${KNATIVE_CODEGEN_PKG:-$(cd ${REPO_ROOT_DIR}; ls -d -1 $(dirname $0)/../vendor/knative.dev/pkg 2>/dev/null || echo ../pkg)}
-
-chmod +x ${CODEGEN_PKG}/generate-groups.sh
-chmod +x ${KNATIVE_CODEGEN_PKG}/hack/generate-knative.sh
-
-group "Knative Codegen"
+group "Kubernetes Codegen"
 
 # generate the code with:
 # --output-base    because this script should also be able to run inside the vendor dir of
@@ -41,11 +37,12 @@ ${CODEGEN_PKG}/generate-groups.sh "deepcopy,client,informer,lister" \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
 
 # Only deepcopy the Duck types, as they are not real resources.
-chmod +x ${CODEGEN_PKG}/generate-groups.sh
 ${CODEGEN_PKG}/generate-groups.sh "deepcopy" \
   knative.dev/eventing-rabbitmq/pkg/client knative.dev/eventing-rabbitmq/pkg/apis \
   "duck:v1beta1" \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
+
+group "Knative Codegen"
 
 # Knative Injection
 ${KNATIVE_CODEGEN_PKG}/hack/generate-knative.sh "injection" \
@@ -56,13 +53,13 @@ ${KNATIVE_CODEGEN_PKG}/hack/generate-knative.sh "injection" \
 group "RabbitMQ Codegen"
 
 # RabbitMQ uses Kubebuilder
-# Kubebuilder project layout has API under 'api/v1alpha2', ie. 'github.com/rabbitmq/messaging-topology-operator/api/v1alpha2'
-# client-go codegen expects group name (rabbitmq.com) in the path, ie. 'github.com/rabbitmq/messaging-topology-operator/api/rabbitmq.com/v1alpha2'
+# Kubebuilder project layout has API under 'api/v1beta1', ie. 'github.com/rabbitmq/messaging-topology-operator/api/v1beta1'
+# client-go codegen expects group name (rabbitmq.com) in the path, ie. 'github.com/rabbitmq/messaging-topology-operator/api/rabbitmq.com/v1beta1'
 # Because there's no way how to modify any of these settings, to enable client codegen,
-# we need to hack things a little bit (in vendor move temporarily api directory in 'api/rabbitmq.com/v1alpha2')
+# we need to hack things a little bit (in vendor move temporarily api directory in 'api/rabbitmq.com/v1beta1')
 rm -rf ${REPO_ROOT_DIR}/vendor/github.com/rabbitmq/messaging-topology-operator/api/rabbitmq.com
 mkdir ${REPO_ROOT_DIR}/vendor/github.com/rabbitmq/messaging-topology-operator/api/rabbitmq.com
-cp -R "${REPO_ROOT_DIR}/vendor/github.com/rabbitmq/messaging-topology-operator/api/v1alpha2/" ${REPO_ROOT_DIR}/vendor/github.com/rabbitmq/messaging-topology-operator/api/rabbitmq.com/v1alpha2
+cp -R "${REPO_ROOT_DIR}/vendor/github.com/rabbitmq/messaging-topology-operator/api/v1beta1/" ${REPO_ROOT_DIR}/vendor/github.com/rabbitmq/messaging-topology-operator/api/rabbitmq.com/v1beta1
 
 OUTPUT_PKG="knative.dev/eventing-rabbitmq/pkg/client/injection/rabbitmq.com" \
 VERSIONED_CLIENTSET_PKG="github.com/rabbitmq/messaging-topology-operator/pkg/generated/clientset/versioned" \
@@ -70,11 +67,13 @@ EXTERNAL_INFORMER_PKG="github.com/rabbitmq/messaging-topology-operator/pkg/gener
   ${KNATIVE_CODEGEN_PKG}/hack/generate-knative.sh "injection" \
     github.com/rabbitmq/messaging-topology-operator/rabbitmq.com \
     github.com/rabbitmq/messaging-topology-operator/api \
-    "rabbitmq.com:v1alpha2" \
+    "rabbitmq.com:v1beta1" \
     --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt \
 
-mv ${REPO_ROOT_DIR}/vendor/github.com/rabbitmq/messaging-topology-operator/api/rabbitmq.com/v1alpha2 ${REPO_ROOT_DIR}/vendor/github.com/rabbitmq/messaging-topology-operator/api/v1alpha2
+mv ${REPO_ROOT_DIR}/vendor/github.com/rabbitmq/messaging-topology-operator/api/rabbitmq.com/v1beta1 ${REPO_ROOT_DIR}/vendor/github.com/rabbitmq/messaging-topology-operator/api/v1beta1
 rm -rf ${REPO_ROOT_DIR}/vendor/github.com/rabbitmq/messaging-topology-operator/api/rabbitmq.com
+
+group "Update deps post-codegen"
 
 # Make sure our dependencies are up-to-date
 ${REPO_ROOT_DIR}/hack/update-deps.sh

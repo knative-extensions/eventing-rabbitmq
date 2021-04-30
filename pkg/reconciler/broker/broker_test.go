@@ -906,7 +906,7 @@ func createDispatcherDeployment() *appsv1.Deployment {
 
 // TODO: Uncomment this in a followup when adding tests.
 /*
-func createExchange(dlx bool) *rabbitv1alpha2.Exchange {
+func createExchange(dlx bool) *rabbitv1beta1.Exchange {
 	broker := &eventingv1.Broker{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      brokerName,
@@ -915,7 +915,7 @@ func createExchange(dlx bool) *rabbitv1alpha2.Exchange {
 		},
 	}
 	exchangeName := kmeta.ChildName(resources.ExchangeName(broker, dlx), string(broker.GetUID()))
-	return &rabbitv1alpha2.Exchange{
+	return &rabbitv1beta1.Exchange{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: testNS,
 			Name:      exchangeName,
@@ -925,7 +925,7 @@ func createExchange(dlx bool) *rabbitv1alpha2.Exchange {
 			},
 			Labels: resources.ExchangeLabels(broker),
 		},
-		Spec: rabbitv1alpha2.ExchangeSpec{
+		Spec: rabbitv1beta1.ExchangeSpec{
 			// Why is the name in the Spec again? Is this different from the ObjectMeta.Name? If not,
 			// maybe it should be removed?
 			Name:       exchangeName,
@@ -935,7 +935,7 @@ func createExchange(dlx bool) *rabbitv1alpha2.Exchange {
 			// TODO: We had before also internal / nowait set to false. Are these in Arguments,
 			// or do they get sane defaults that we can just work with?
 			// TODO: This one has to exist in the same namespace as this exchange.
-			RabbitmqClusterReference: rabbitv1alpha2.RabbitmqClusterReference{
+			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
 				Name: rabbitMQBrokerName,
 			},
 		},

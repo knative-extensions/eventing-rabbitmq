@@ -21,9 +21,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
+	"github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"go.uber.org/zap"
-
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -38,7 +37,7 @@ import (
 	"knative.dev/pkg/logging"
 
 	rabbitclientset "github.com/rabbitmq/messaging-topology-operator/pkg/generated/clientset/versioned"
-	rabbitlisters "github.com/rabbitmq/messaging-topology-operator/pkg/generated/listers/rabbitmq.com/v1alpha2"
+	rabbitlisters "github.com/rabbitmq/messaging-topology-operator/pkg/generated/listers/rabbitmq.com/v1beta1"
 	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
@@ -420,7 +419,7 @@ func (r *Reconciler) rabbitmqURL(ctx context.Context, t *eventingv1.Trigger) (st
 	return string(val), nil
 }
 
-func (r *Reconciler) reconcileQueue(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger) (*v1alpha2.Queue, error) {
+func (r *Reconciler) reconcileQueue(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger) (*v1beta1.Queue, error) {
 	queueName := resources.CreateTriggerQueueName(t)
 	args := &resources.QueueArgs{
 		QueueName: queueName,
@@ -433,19 +432,19 @@ func (r *Reconciler) reconcileQueue(ctx context.Context, b *eventingv1.Broker, t
 	current, err := r.queueLister.Queues(b.Namespace).Get(queueName)
 	if apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Debugw("Creating rabbitmq exchange", zap.String("queue name", want.Name))
-		return r.rabbitClientSet.RabbitmqV1alpha2().Queues(b.Namespace).Create(ctx, want, metav1.CreateOptions{})
+		return r.rabbitClientSet.RabbitmqV1beta1().Queues(b.Namespace).Create(ctx, want, metav1.CreateOptions{})
 	} else if err != nil {
 		return nil, err
 	} else if !equality.Semantic.DeepDerivative(want.Spec, current.Spec) {
 		// Don't modify the informers copy.
 		desired := current.DeepCopy()
 		desired.Spec = want.Spec
-		return r.rabbitClientSet.RabbitmqV1alpha2().Queues(b.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
+		return r.rabbitClientSet.RabbitmqV1beta1().Queues(b.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
 	}
 	return current, nil
 }
 
-func (r *Reconciler) reconcileBinding(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger) (*v1alpha2.Binding, error) {
+func (r *Reconciler) reconcileBinding(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger) (*v1beta1.Binding, error) {
 	// We can use the same name for queue / binding to keep things simpler
 	bindingName := resources.CreateTriggerQueueName(t)
 
@@ -466,19 +465,19 @@ func (r *Reconciler) reconcileBinding(ctx context.Context, b *eventingv1.Broker,
 	current, err := r.bindingLister.Bindings(b.Namespace).Get(bindingName)
 	if apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Infow("Creating rabbitmq binding", zap.String("binding name", want.Name))
-		return r.rabbitClientSet.RabbitmqV1alpha2().Bindings(b.Namespace).Create(ctx, want, metav1.CreateOptions{})
+		return r.rabbitClientSet.RabbitmqV1beta1().Bindings(b.Namespace).Create(ctx, want, metav1.CreateOptions{})
 	} else if err != nil {
 		return nil, err
 	} else if !equality.Semantic.DeepDerivative(want.Spec, current.Spec) {
 		// Don't modify the informers copy.
 		desired := current.DeepCopy()
 		desired.Spec = want.Spec
-		return r.rabbitClientSet.RabbitmqV1alpha2().Bindings(b.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
+		return r.rabbitClientSet.RabbitmqV1beta1().Bindings(b.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
 	}
 	return current, nil
 }
 
-func isReady(conditions []v1alpha2.Condition) bool {
+func isReady(conditions []v1beta1.Condition) bool {
 	numConditions := len(conditions)
 	// If there are no conditions at all, the resource probably hasn't been reconciled yet => not ready
 	if numConditions == 0 {

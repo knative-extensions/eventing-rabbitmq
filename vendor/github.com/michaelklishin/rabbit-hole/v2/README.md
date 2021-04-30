@@ -4,17 +4,21 @@ This library is a [RabbitMQ HTTP API](https://raw.githack.com/rabbitmq/rabbitmq-
 
 ## Supported Go Versions
 
-Rabbit Hole supports the last 2 stable Go versions, as well as the version in development (a.k.a. master).
+Rabbit Hole targets two latests stable Go versions available at the time of the library release.
+Older versions may work but this is not guaranteed.
 
 
 ## Supported RabbitMQ Versions
 
- * [RabbitMQ `3.8.x`](https://www.rabbitmq.com/changelog.html) is the primary target series
- * Almost all API endpoints work against RabbitMQ `3.7.x` nodes but some metrics and stats may be missing
- * RabbitMQ `3.7.x` is [out of general support](https://www.rabbitmq.com/versions.html)
+ * [RabbitMQ `3.8.x`](https://www.rabbitmq.com/changelog.html) will be the only supported release series starting with Rabbit Hole 3.0
+ * Almost all API operations work against RabbitMQ `3.7.x` nodes. Some metrics and stats may be missing.
+ * RabbitMQ `3.7.x` and older versions have [reached end of life](https://www.rabbitmq.com/versions.html)
 
 All versions require [RabbitMQ Management UI plugin](https://www.rabbitmq.com/management.html) to be installed and enabled.
 
+## Build Status
+
+[![Tests](https://github.com/michaelklishin/rabbit-hole/actions/workflows/tests.yml/badge.svg)](https://github.com/michaelklishin/rabbit-hole/actions/workflows/tests.yml)
 
 ## Project Maturity
 
@@ -82,8 +86,9 @@ RabbitMQ HTTP API has to be [configured to use TLS](http://www.rabbitmq.com/mana
 ### Getting Overview
 
 ``` go
-res, err := rmqc.Overview()
+resp, err := rmqc.Overview()
 ```
+
 
 ### Node and Cluster Status
 
@@ -406,6 +411,27 @@ resp, err := rmqc.DeleteFederationUpstream("/", "name")
 
 ```
 
+### Managing Global Parameters
+``` go
+// list all global parameters
+params, err := rmqc.ListGlobalParameters()
+// => []GlobalRuntimeParameter, error
+
+// get a global parameter
+p, err := rmqc.GetGlobalParameter("name")
+// => *GlobalRuntimeParameter, error
+
+// declare or update a global parameter
+resp, err := rmqc.PutGlobalParameter("name", map[string]interface{
+    endpoints: "amqp://server-name",
+})
+// => *http.Response, error
+
+// delete a global parameter
+resp, err := rmqc.DeleteGlobalParameter("name")
+// => *http.Response, error
+```
+
 ### Operations on cluster name
 ``` go
 // Get cluster name
@@ -441,11 +467,6 @@ rmqc.SetTransport(transport)
 ```
 
 
-## CI Status
-
-[![Build Status](https://travis-ci.org/michaelklishin/rabbit-hole.svg?branch=master)](https://travis-ci.org/michaelklishin/rabbit-hole)
-
-
 ## Contributing
 
 See [CONTRIBUTING.md](https://github.com/michaelklishin/rabbit-hole/blob/master/CONTRIBUTING.md)
@@ -455,4 +476,4 @@ See [CONTRIBUTING.md](https://github.com/michaelklishin/rabbit-hole/blob/master/
 
 2-clause BSD license.
 
-(c) Michael S. Klishin and contributors, 2013-2020.
+(c) Michael S. Klishin and contributors, 2013-2021.

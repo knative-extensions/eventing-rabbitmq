@@ -7,16 +7,30 @@ import (
 	"strconv"
 )
 
-// ShovelInfo contains the configuration of a shovel
+// ShovelInfo contains the configuration of a dynamic Shovel
 type ShovelInfo struct {
+	// Shovel name
+	Name string `json:"name"`
+	// Virtual host this Shovel belongs to
+	Vhost string `json:"vhost"`
+	// Runtime component of the Shovel
+	Component string `json:"component"`
+	// Details the configuration values of the Shovel
+	Definition ShovelDefinition `json:"value"`
+}
+
+// ShovelStatus represents the status of a Shovel
+type ShovelStatus struct {
 	// Shovel name
 	Name string `json:"name"`
 	// Virtual host this shovel belongs to
 	Vhost string `json:"vhost"`
-	// Component shovels belong to
-	Component string `json:"component"`
-	// Details the configuration values of the shovel
-	Definition ShovelDefinition `json:"value"`
+	// Type of this shovel
+	Type string `json:"type"`
+	// State of this shovel
+	State string `json:"state"`
+	// Timestamp is the moment when this Shovel last reported its state change (e.g. was started)
+	Timestamp string `json:"timestamp"`
 }
 
 // DeleteAfter after can hold a delete-after value which may be a string (eg. "never") or an integer
@@ -52,8 +66,38 @@ func (d *DeleteAfter) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// ShovelURISet represents a set of URIs used by Shovel.
+// The URIs from this set are tried until one of them succeeds
+// (Shovel successfully connects and authenticates with it)
+type ShovelURISet []string
+
+// UnmarshalJSON can unmarshal a single URI string or a list of
+// URI strings
+func (s *ShovelURISet) UnmarshalJSON(b []byte) error {
+	// the value is a single URI, a string
+	if b[0] == '"' {
+		var uri string
+		if err := json.Unmarshal(b, &uri); err != nil {
+			return err
+		}
+		*s = ShovelURISet([]string{uri})
+		return nil
+	}
+
+	// the value is a list
+	var uris []string
+	if err := json.Unmarshal(b, &uris); err != nil {
+		return err
+	}
+	*s = ShovelURISet(uris)
+	return nil
+}
+
 // ShovelDefinition contains the details of the shovel configuration
 type ShovelDefinition struct {
+	DestinationURI ShovelURISet `json:"dest-uri"`
+	SourceURI      ShovelURISet `json:"src-uri"`
+
 	AckMode                          string      `json:"ack-mode,omitempty"`
 	AddForwardHeaders                bool        `json:"add-forward-headers,omitempty"`
 	DeleteAfter                      DeleteAfter `json:"delete-after,omitempty"`
@@ -67,7 +111,6 @@ type ShovelDefinition struct {
 	DestinationProtocol              string      `json:"dest-protocol,omitempty"`
 	DestinationPublishProperties     string      `json:"dest-publish-properties,omitempty"`
 	DestinationQueue                 string      `json:"dest-queue,omitempty"`
-	DestinationURI                   string      `json:"dest-uri"`
 	PrefetchCount                    int         `json:"prefetch-count,omitempty"`
 	ReconnectDelay                   int         `json:"reconnect-delay,omitempty"`
 	SourceAddress                    string      `json:"src-address,omitempty"`
@@ -77,7 +120,6 @@ type ShovelDefinition struct {
 	SourcePrefetchCount              int         `json:"src-prefetch-count,omitempty"`
 	SourceProtocol                   string      `json:"src-protocol,omitempty"`
 	SourceQueue                      string      `json:"src-queue,omitempty"`
-	SourceURI                        string      `json:"src-uri"`
 }
 
 // ShovelDefinitionDTO provides a data transfer object
@@ -181,4 +223,22 @@ func (c *Client) DeleteShovel(vhost, shovel string) (res *http.Response, err err
 	}
 
 	return res, nil
+}
+
+//
+// GET /api/shovels/{vhost}
+//
+
+// ListShovelStatus returns status of all shovels in a vhost
+func (c *Client) ListShovelStatus(vhost string) (rec []ShovelStatus, err error) {
+	req, err := newGETRequest(c, "shovels/"+url.PathEscape(vhost))
+	if err != nil {
+		return []ShovelStatus{}, err
+	}
+
+	if err = executeAndParseRequest(c, req, &rec); err != nil {
+		return []ShovelStatus{}, err
+	}
+
+	return rec, nil
 }
