@@ -20,7 +20,7 @@ package policy
 import (
 	context "context"
 
-	v1alpha2 "github.com/rabbitmq/messaging-topology-operator/pkg/generated/informers/externalversions/rabbitmq.com/v1beta1"
+	v1beta1 "github.com/rabbitmq/messaging-topology-operator/pkg/generated/informers/externalversions/rabbitmq.com/v1beta1"
 	factory "knative.dev/eventing-rabbitmq/pkg/client/injection/rabbitmq.com/informers/factory"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
@@ -41,11 +41,11 @@ func withInformer(ctx context.Context) (context.Context, controller.Informer) {
 }
 
 // Get extracts the typed informer from the context.
-func Get(ctx context.Context) v1alpha2.PolicyInformer {
+func Get(ctx context.Context) v1beta1.PolicyInformer {
 	untyped := ctx.Value(Key{})
 	if untyped == nil {
 		logging.FromContext(ctx).Panic(
 			"Unable to fetch github.com/rabbitmq/messaging-topology-operator/pkg/generated/informers/externalversions/rabbitmq.com/v1beta1.PolicyInformer from context.")
 	}
-	return untyped.(v1alpha2.PolicyInformer)
+	return untyped.(v1beta1.PolicyInformer)
 }

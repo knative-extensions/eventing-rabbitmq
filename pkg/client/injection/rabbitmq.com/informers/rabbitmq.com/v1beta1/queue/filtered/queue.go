@@ -20,7 +20,7 @@ package filtered
 import (
 	context "context"
 
-	v1alpha2 "github.com/rabbitmq/messaging-topology-operator/pkg/generated/informers/externalversions/rabbitmq.com/v1beta1"
+	v1beta1 "github.com/rabbitmq/messaging-topology-operator/pkg/generated/informers/externalversions/rabbitmq.com/v1beta1"
 	filtered "knative.dev/eventing-rabbitmq/pkg/client/injection/rabbitmq.com/informers/factory/filtered"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
@@ -54,11 +54,11 @@ func withInformer(ctx context.Context) (context.Context, []controller.Informer) 
 }
 
 // Get extracts the typed informer from the context.
-func Get(ctx context.Context, selector string) v1alpha2.QueueInformer {
+func Get(ctx context.Context, selector string) v1beta1.QueueInformer {
 	untyped := ctx.Value(Key{Selector: selector})
 	if untyped == nil {
 		logging.FromContext(ctx).Panicf(
 			"Unable to fetch github.com/rabbitmq/messaging-topology-operator/pkg/generated/informers/externalversions/rabbitmq.com/v1beta1.QueueInformer with selector %s from context.", selector)
 	}
-	return untyped.(v1alpha2.QueueInformer)
+	return untyped.(v1beta1.QueueInformer)
 }

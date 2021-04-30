@@ -46,7 +46,7 @@ func withInformer(ctx context.Context) (context.Context, []controller.Informer) 
 	infs := []controller.Informer{}
 	for _, selector := range labelSelectors {
 		f := filtered.Get(ctx, selector)
-		inf := f.Rabbitmq().V1beta1().Vhosts()
+		inf := f.Rabbitmq().V1beta1().SchemaReplications()
 		ctx = context.WithValue(ctx, Key{Selector: selector}, inf)
 		infs = append(infs, inf.Informer())
 	}
@@ -54,11 +54,11 @@ func withInformer(ctx context.Context) (context.Context, []controller.Informer) 
 }
 
 // Get extracts the typed informer from the context.
-func Get(ctx context.Context, selector string) v1beta1.VhostInformer {
+func Get(ctx context.Context, selector string) v1beta1.SchemaReplicationInformer {
 	untyped := ctx.Value(Key{Selector: selector})
 	if untyped == nil {
 		logging.FromContext(ctx).Panicf(
-			"Unable to fetch github.com/rabbitmq/messaging-topology-operator/pkg/generated/informers/externalversions/rabbitmq.com/v1beta1.VhostInformer with selector %s from context.", selector)
+			"Unable to fetch github.com/rabbitmq/messaging-topology-operator/pkg/generated/informers/externalversions/rabbitmq.com/v1beta1.SchemaReplicationInformer with selector %s from context.", selector)
 	}
-	return untyped.(v1beta1.VhostInformer)
+	return untyped.(v1beta1.SchemaReplicationInformer)
 }
