@@ -26,7 +26,7 @@ import (
 	"knative.dev/pkg/kmeta"
 
 	"github.com/NeowayLabs/wabbit"
-	rabbitv1alpha2 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
+	rabbitv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/streadway/amqp"
 	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/io"
@@ -43,9 +43,9 @@ type ExchangeArgs struct {
 	DLX bool
 }
 
-func NewExchange(ctx context.Context, args *ExchangeArgs) *rabbitv1alpha2.Exchange {
+func NewExchange(ctx context.Context, args *ExchangeArgs) *rabbitv1beta1.Exchange {
 	exchangeName := ExchangeName(args.Broker, args.DLX)
-	return &rabbitv1alpha2.Exchange{
+	return &rabbitv1beta1.Exchange{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: args.Broker.Namespace,
 			Name:      exchangeName,
@@ -55,7 +55,7 @@ func NewExchange(ctx context.Context, args *ExchangeArgs) *rabbitv1alpha2.Exchan
 			},
 			Labels: ExchangeLabels(args.Broker),
 		},
-		Spec: rabbitv1alpha2.ExchangeSpec{
+		Spec: rabbitv1beta1.ExchangeSpec{
 			// Why is the name in the Spec again? Is this different from the ObjectMeta.Name? If not,
 			// maybe it should be removed?
 			Name:       exchangeName,
@@ -65,7 +65,7 @@ func NewExchange(ctx context.Context, args *ExchangeArgs) *rabbitv1alpha2.Exchan
 			// TODO: We had before also internal / nowait set to false. Are these in Arguments,
 			// or do they get sane defaults that we can just work with?
 			// TODO: This one has to exist in the same namespace as this exchange.
-			RabbitmqClusterReference: rabbitv1alpha2.RabbitmqClusterReference{
+			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
 				Name: args.RabbitMQCluster,
 			},
 		},

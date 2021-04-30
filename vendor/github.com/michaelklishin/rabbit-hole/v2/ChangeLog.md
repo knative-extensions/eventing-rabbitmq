@@ -1,6 +1,134 @@
-## Changes Between 2.6.0 and 2.7.0 (under development)
+## Changes Between 2.8.0 and 2.9.0 (in development)
 
 No changes yet.
+
+## Changes Between 2.7.0 and 2.8.0 (Apr 12, 2021)
+
+### Global Runtime Parameters
+
+The library now supports global runtime parameters:
+
+``` go
+// list all global parameters
+params, err := rmqc.ListGlobalParameters()
+// => []GlobalRuntimeParameter, error
+// get a global parameter
+p, err := rmqc.GetGlobalParameter("name")
+// => *GlobalRuntimeParameter, error
+// declare or update a global parameter
+resp, err := rmqc.PutGlobalParameter("name", map[string]interface{
+    endpoints: "amqp://server-name",
+})
+// => *http.Response, error
+// delete a global parameter
+resp, err := rmqc.DeleteGlobalParameter("name")
+// => *http.Response, error
+```
+
+Contributed by @ChunyiLyu.
+
+GitHub issue: [#180](https://github.com/michaelklishin/rabbit-hole/pull/180)
+
+## Changes Between 2.6.0 and 2.7.0 (Mar 30, 2021)
+
+This release contains **minor breaking public API changes**
+and targets RabbitMQ 3.8.x (the only [supported version at the time of writing](https://www.rabbitmq.com/versions.html))
+exclusively.
+
+### Support for Modern Health Check Endpoints
+
+The client now supports [modern health check endpoints](https://www.rabbitmq.com/monitoring.html#health-checks)
+(same checks as provided by `rabbitmq-diagnostics`):
+
+``` go
+import (
+       "github.com/michaelklishin/rabbit-hole/v2"
+)
+
+rmqc, _ = NewClient("http://127.0.0.1:15672", "username", "$3KrEƮ")
+
+res1, err1 := rmqc.HealthCheckAlarms()
+
+res2, err2 := rmqc.HealthCheckLocalAlarms()
+
+res3, err3 := rmqc.HealthCheckCertificateExpiration(1, DAYS)
+
+res4, err4 := rmqc.HealthCheckPortListener(5672)
+
+res5, err5 := rmqc.HealthCheckProtocolListener(AMQP091)
+
+res6, err6 := rmqc.HealthCheckVirtualHosts()
+
+res7, err7 := rmqc.HealthCheckNodeIsMirrorSyncCritical()
+
+res8, err8 := rmqc.HealthCheckNodeIsQuorumCritical()
+```
+
+Contributed by Martin @mkrueger-sabio Krueger.
+
+GitHub issue: [#173](https://github.com/michaelklishin/rabbit-hole/pull/173)
+
+### Support for Inspecting Shovel Status
+
+`ListShovelStatus` is a new function that returns a list of
+Shovel status reports for a virtual host:
+
+``` go
+res, err := rmqc.ListShovelStatus("a-virtual-host")
+```
+
+Contributed by Martin @mkrueger-sabio Krueger.
+
+GitHub issue: [#178](https://github.com/michaelklishin/rabbit-hole/pull/178)
+
+### Support for Lists of Shovel URIs
+
+Shovel definition now uses a dedicated type, `ShovelURISet`, to represent
+a set of URIs that will be tried sequentially until the Shovel
+can successfully connect and authenticate:
+
+``` go
+sDef := ShovelDefinition{
+            SourceURI:         ShovelURISet([]string{"amqp://host2/%2f", "amqp://host3/%2f"}),
+            SourceQueue:       "mySourceQueue",
+            DestinationURI:    ShovelURISet([]string{"amqp://host1/%2f"}),
+            DestinationQueue:  "myDestQueue",
+            AddForwardHeaders: true,
+            AckMode:           "on-confirm",
+            DeleteAfter:       "never",
+        }
+```
+
+Source and destination URI sets are only supported by the Shovel plugin in
+RabbitMQ 3.8.x.
+
+Originally suggested by @pathcl in #172.
+
+### Definition Export
+
+`rabbithole.ListDefinitions` is a new function that retuns
+[exported definitions from a cluster](https://www.rabbitmq.com/definitions.html)
+as a typed Go data structure.
+
+Contributed by @pathcl.
+
+GitHub issue: [#170](https://github.com/michaelklishin/rabbit-hole/pull/170)
+
+### User Tags as Array
+
+For forward compatibility with RabbitMQ 3.9, as of this
+version the list of user tags is returned as an array
+intead of a comma-separated string.
+
+Compatibility with earlier RabbitMQ HTTP API versions, such as 3.8,
+has been preserved.
+
+### Optional Federation Parameters are Now Marked with `omitempty`
+
+Contributed by Michał @michalkurzeja Kurzeja.
+
+GitHub issue: [#177](https://github.com/michaelklishin/rabbit-hole/pull/177)
+
 
 ## Changes Between 2.5.0 and 2.6.0 (Nov 25, 2020)
 

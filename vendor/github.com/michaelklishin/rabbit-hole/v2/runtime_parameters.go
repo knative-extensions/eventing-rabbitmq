@@ -6,7 +6,7 @@ import (
 	"net/url"
 )
 
-// RuntimeParameter represents a vhost-scoped parameter.
+// RuntimeParameter represents a vhost-scoped runtime parameter.
 // Value is interface{} to support creating parameters directly from types such as
 // FederationUpstream and ShovelInfo.
 type RuntimeParameter struct {

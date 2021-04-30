@@ -17,9 +17,9 @@ require (
 	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/influxdata/tdigest v0.0.1 // indirect
 	github.com/kelseyhightower/envconfig v1.4.0
-	github.com/michaelklishin/rabbit-hole/v2 v2.6.0
+	github.com/michaelklishin/rabbit-hole/v2 v2.8.0
 	github.com/pkg/errors v0.9.1
-	github.com/rabbitmq/messaging-topology-operator v0.5.1-0.20210331091604-2ca407681b86
+	github.com/rabbitmq/messaging-topology-operator v0.8.0
 	github.com/streadway/amqp v1.0.0
 	github.com/testcontainers/testcontainers-go v0.7.0
 	github.com/tiago4orion/conjure v0.0.0-20150908101743-93cb30b9d218 // indirect
@@ -29,8 +29,8 @@ require (
 	k8s.io/apiextensions-apiserver v0.20.2
 	k8s.io/apimachinery v0.20.5
 	k8s.io/client-go v0.20.5
-	k8s.io/code-generator v0.20.5
-	k8s.io/kube-openapi v0.0.0-20201113171705-d219536bb9fd
+	k8s.io/code-generator v0.21.0
+	k8s.io/kube-openapi v0.0.0-20210305001622-591a79e4bda7
 	knative.dev/eventing v0.22.1-0.20210428214954-ed14ec818cc1
 	knative.dev/hack v0.0.0-20210428122153-93ad9129c268
 	knative.dev/pkg v0.0.0-20210428141353-878c85083565

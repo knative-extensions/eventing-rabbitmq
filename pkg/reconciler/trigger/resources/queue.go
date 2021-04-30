@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 
-	rabbitv1alpha2 "github.com/rabbitmq/messaging-topology-operator/api/v1alpha2"
+	rabbitv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"github.com/streadway/amqp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -44,21 +44,21 @@ type QueueArgs struct {
 	DLX string
 }
 
-func NewQueue(ctx context.Context, b *eventingv1.Broker, args *QueueArgs) *rabbitv1alpha2.Queue {
+func NewQueue(ctx context.Context, b *eventingv1.Broker, args *QueueArgs) *rabbitv1beta1.Queue {
 	var or metav1.OwnerReference
 	if args.Trigger != nil {
 		or = *kmeta.NewControllerRef(args.Trigger)
 	} else {
 		or = *kmeta.NewControllerRef(b)
 	}
-	q := &rabbitv1alpha2.Queue{
+	q := &rabbitv1beta1.Queue{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:       b.Namespace,
 			Name:            args.QueueName,
 			OwnerReferences: []metav1.OwnerReference{or},
 			Labels:          QueueLabels(b),
 		},
-		Spec: rabbitv1alpha2.QueueSpec{
+		Spec: rabbitv1beta1.QueueSpec{
 			// Why is the name in the Spec again? Is this different from the ObjectMeta.Name? If not,
 			// maybe it should be removed?
 			Name:       args.QueueName,
@@ -67,7 +67,7 @@ func NewQueue(ctx context.Context, b *eventingv1.Broker, args *QueueArgs) *rabbi
 			// TODO: We had before also internal / nowait set to false. Are these in Arguments,
 			// or do they get sane defaults that we can just work with?
 			// TODO: This one has to exist in the same namespace as this exchange.
-			RabbitmqClusterReference: rabbitv1alpha2.RabbitmqClusterReference{
+			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
 				Name: b.Spec.Config.Name,
 			},
 		},
