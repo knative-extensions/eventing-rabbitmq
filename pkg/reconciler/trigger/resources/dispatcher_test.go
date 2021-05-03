@@ -124,7 +124,7 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 							Value: brokerIngressURL,
 						}, {
 							Name:  "REQUEUE",
-							Value: "true",
+							Value: "false",
 						}},
 					}},
 				},

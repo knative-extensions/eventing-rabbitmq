@@ -135,9 +135,10 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 		}
 	} else {
 		d.Spec.Template.Spec.Containers[0].Env = append(d.Spec.Template.Spec.Containers[0].Env,
+			// TODO: We should remove REQUEUE, it is not used.
 			corev1.EnvVar{
 				Name:  "REQUEUE",
-				Value: "true",
+				Value: "false",
 			})
 	}
 	return d
