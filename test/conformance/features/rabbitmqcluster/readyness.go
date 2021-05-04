@@ -32,7 +32,7 @@ func GoesReady(name string, cfg ...manifest.CfgFn) *feature.Feature {
 
 	f.Setup(fmt.Sprintf("install rabbitmqcluster %q", name), rabbitmqcluster.Install(name, cfg...))
 
-	f.Requirement("Broker is ready", rabbitmqcluster.IsReady(name))
+	f.Requirement("RabbitmqCluster is ready", rabbitmqcluster.IsReady(name))
 
 	return f
 }

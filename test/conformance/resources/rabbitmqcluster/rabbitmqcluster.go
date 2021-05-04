@@ -30,7 +30,7 @@ func GVR() schema.GroupVersionResource {
 	return schema.GroupVersionResource{Group: "rabbitmq.com", Version: "v1beta1", Resource: "rabbitmqclusters"}
 }
 
-// Install will create a Broker resource, augmented with the config fn options.
+// Install will create a RabbitmqCluster resource, augmented with the config fn options.
 func Install(name string, opts ...manifest.CfgFn) feature.StepFn {
 	cfg := map[string]interface{}{
 		"name": name,
