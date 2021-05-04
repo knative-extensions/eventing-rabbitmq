@@ -19,62 +19,132 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
-	"os"
+	"net/http"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
+	"github.com/cloudevents/sdk-go/v2/binding"
+	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
+	"github.com/kelseyhightower/envconfig"
 	"github.com/streadway/amqp"
+	"go.uber.org/zap"
+	"knative.dev/eventing/pkg/kncloudevents"
+	"knative.dev/pkg/logging"
 )
 
-var (
-	brokerURL    = os.Getenv("BROKER_URL")
-	exchangeName = os.Getenv("EXCHANGE_NAME")
+const (
+	defaultMaxIdleConnections        = 1000
+	defaultMaxIdleConnectionsPerHost = 1000
 )
+
+type envConfig struct {
+	Port         int    `envconfig:"PORT" default:"8080"`
+	BrokerURL    string `envconfig:"BROKER_URL" required:"true"`
+	ExchangeName string `envconfig:"EXCHANGE_NAME" required:"true"`
+
+	channel *amqp.Channel
+	logger  *zap.SugaredLogger
+}
 
 func main() {
-	conn, err := amqp.Dial(brokerURL)
+	var env envConfig
+	if err := envconfig.Process("", &env); err != nil {
+		log.Fatal("Failed to process env var", zap.Error(err))
+	}
+
+	conn, err := amqp.Dial(env.BrokerURL)
 	if err != nil {
 		log.Fatalf("failed to connect to RabbitMQ: %s", err)
 	}
 	defer conn.Close()
 
-	channel, err := conn.Channel()
+	env.channel, err = conn.Channel()
 	if err != nil {
 		log.Fatalf("failed to open a channel: %s", err)
 	}
-	defer channel.Close()
+	defer env.channel.Close()
 
-	c, err := cloudevents.NewDefaultClient()
-	if err != nil {
-		log.Fatalf("failed to create cloudevents client, %v", err)
+	env.logger = logging.FromContext(context.Background())
+
+	connectionArgs := kncloudevents.ConnectionArgs{
+		MaxIdleConns:        defaultMaxIdleConnections,
+		MaxIdleConnsPerHost: defaultMaxIdleConnectionsPerHost,
+	}
+	kncloudevents.ConfigureConnectionArgs(&connectionArgs)
+
+	receiver := kncloudevents.NewHTTPMessageReceiver(env.Port)
+
+	if err := receiver.StartListen(context.Background(), &env); err != nil {
+		log.Fatalf("failed to start listen, %v", err)
+	}
+}
+
+func (env *envConfig) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
+	// validate request method
+	if request.Method != http.MethodPost {
+		env.logger.Warn("unexpected request method", zap.String("method", request.Method))
+		writer.WriteHeader(http.StatusMethodNotAllowed)
+		return
 	}
 
-	log.Fatal(c.StartReceiver(context.Background(), func(event cloudevents.Event) {
-		log.Printf("received: %s", event)
-		bytes, err := json.Marshal(event)
-		if err != nil {
-			log.Fatalf("failed to marshal event, %v", err)
-		}
-		headers := amqp.Table{
-			"type":    event.Type(),
-			"source":  event.Source(),
-			"subject": event.Subject(),
-		}
-		for key, val := range event.Extensions() {
-			headers[key] = val
-		}
-		err = channel.Publish(
-			exchangeName,
-			"",    // routing key
-			false, // mandatory
-			false, // immediate
-			amqp.Publishing{
-				Headers:     headers,
-				ContentType: "application/json",
-				Body:        bytes,
-			})
-		if err != nil {
-			log.Fatal("failed to publish message")
-		}
-	}))
+	// validate request URI
+	if request.RequestURI != "/" {
+		writer.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	ctx := request.Context()
+
+	message := cehttp.NewMessageFromHttpRequest(request)
+	defer message.Finish(nil)
+
+	event, err := binding.ToEvent(ctx, message)
+	if err != nil {
+		env.logger.Warn("failed to extract event from request", zap.Error(err))
+		writer.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// run validation for the extracted event
+	validationErr := event.Validate()
+	if validationErr != nil {
+		env.logger.Warn("failed to validate extracted event", zap.Error(validationErr))
+		writer.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	statusCode, err := env.send(event)
+	if err != nil {
+		env.logger.Error("failed to send event,", err)
+	}
+	writer.WriteHeader(statusCode)
+}
+
+func (env *envConfig) send(event *cloudevents.Event) (int, error) {
+	bytes, err := json.Marshal(event)
+	if err != nil {
+		return http.StatusBadRequest, fmt.Errorf("failed to marshal event, %w", err)
+	}
+	headers := amqp.Table{
+		"type":    event.Type(),
+		"source":  event.Source(),
+		"subject": event.Subject(),
+	}
+	for key, val := range event.Extensions() {
+		headers[key] = val
+	}
+	if err := env.channel.Publish(
+		env.ExchangeName,
+		"",    // routing key
+		false, // mandatory
+		false, // immediate
+		amqp.Publishing{
+			Headers:     headers,
+			ContentType: "application/json",
+			Body:        bytes,
+		}); err != nil {
+		return http.StatusInternalServerError, fmt.Errorf("failed to publish message")
+	}
+	return http.StatusAccepted, nil
 }
