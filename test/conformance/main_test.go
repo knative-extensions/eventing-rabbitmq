@@ -23,6 +23,7 @@ import (
 	"log"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
@@ -70,6 +71,10 @@ func TestMain(m *testing.M) {
 	// context passed in the features.
 	ctx, startInformers := injection.EnableInjectionOrDie(nil, nil) //nolint
 	startInformers()
+
+	// Increase the timeout for polling, rabbit brokers take a while to go
+	// ready sometimes (due to PVC).
+	ctx = environment.ContextWithPollTimings(ctx, time.Second*5, time.Minute*5)
 
 	// global is used to make instances of Environments, NewGlobalEnvironment
 	// is passing and saving the client injection enabled context for use later.
