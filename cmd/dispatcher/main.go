@@ -82,7 +82,7 @@ func main() {
 	}
 	defer func() {
 		err = conn.Close()
-		if err != nil {
+		if err != nil && !errors.Is(err, amqperr.ErrClosed) {
 			logging.FromContext(ctx).Warn("Failed to close connection: ", err)
 		}
 	}()
