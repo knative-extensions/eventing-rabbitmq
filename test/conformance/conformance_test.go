@@ -27,6 +27,7 @@ import (
 	"knative.dev/pkg/system"
 	_ "knative.dev/pkg/system/testing"
 
+	"knative.dev/eventing-rabbitmq/test/conformance/features/rabbitmqcluster"
 	"knative.dev/eventing/test/rekt/features/broker"
 	b "knative.dev/eventing/test/rekt/resources/broker"
 	"knative.dev/reconciler-test/pkg/environment"
@@ -44,6 +45,7 @@ func TestBrokerConformance(t *testing.T) {
 		environment.Managed(t),
 	)
 
+	env.Prerequisite(ctx, t, rabbitmqcluster.GoesReady("rabbitbroker", b.WithEnvConfig()...))
 	// Install and wait for a Ready Broker.
 	env.Prerequisite(ctx, t, broker.GoesReady("default", b.WithEnvConfig()...))
 
