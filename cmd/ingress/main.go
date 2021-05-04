@@ -39,12 +39,12 @@ const (
 )
 
 type envConfig struct {
-	Port          int    `envconfig:"PORT" default:"8080"`
-	BrokerURL string `envconfig:"BROKER_URL" required:"true"`
+	Port         int    `envconfig:"PORT" default:"8080"`
+	BrokerURL    string `envconfig:"BROKER_URL" required:"true"`
 	ExchangeName string `envconfig:"EXCHANGE_NAME" required:"true"`
 
 	channel *amqp.Channel
-	logger *zap.SugaredLogger
+	logger  *zap.SugaredLogger
 }
 
 func main() {
