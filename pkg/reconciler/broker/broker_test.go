@@ -18,6 +18,7 @@ package broker
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -290,7 +291,7 @@ func TestReconcile(t *testing.T) {
 			},
 			WantErr: true,
 		}, {
-			Name: "Exchange create, creates Exchange CRD",
+			Name: "Exchange create, creates Exchange CRD, not ready",
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
@@ -317,6 +318,139 @@ func TestReconcile(t *testing.T) {
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
+			},
+		}, {
+			Name: "Exchange exists, creates DLX exchange CRD",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBroker(brokerName, testNS,
+					WithBrokerUID("uid-for-test"),
+					WithBrokerClass(brokerClass),
+					WithBrokerConfig(configForRabbitOperator()),
+					WithInitBrokerConditions),
+				createExchangeSecretForRabbitmqCluster(),
+				createRabbitMQCluster(),
+				createReadyExchange(false),
+			},
+			WantCreates: []runtime.Object{
+				createExchange(true),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBroker(brokerName, testNS,
+					WithBrokerUID("uid-for-test"),
+					WithBrokerClass(brokerClass),
+					WithInitBrokerConditions,
+					WithBrokerConfig(configForRabbitOperator()),
+					WithExchangeFailed("ExchangeFailure", `DLX exchange "test-namespace.test-broker.dlx" is not ready`)),
+			}},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, brokerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
+			},
+		}, {
+			Name: "Both exchanges exist, creates queue CRD",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBroker(brokerName, testNS,
+					WithBrokerUID("uid-for-test"),
+					WithBrokerClass(brokerClass),
+					WithBrokerConfig(configForRabbitOperator()),
+					WithInitBrokerConditions),
+				createExchangeSecretForRabbitmqCluster(),
+				createRabbitMQCluster(),
+				createReadyExchange(false),
+				createReadyExchange(true),
+			},
+			WantCreates: []runtime.Object{
+				createQueue(true),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBroker(brokerName, testNS,
+					WithBrokerUID("uid-for-test"),
+					WithBrokerClass(brokerClass),
+					WithInitBrokerConditions,
+					WithBrokerConfig(configForRabbitOperator()),
+					WithExchangeReady(),
+					WithDLXFailed("QueueFailure", `Dead Letter Queue "test-namespace.test-broker.dlq" is not ready`)),
+			}},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, brokerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
+			},
+		}, {
+			Name: "Both exchanges exist, queue exists, creates binding CRD",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBroker(brokerName, testNS,
+					WithBrokerUID("uid-for-test"),
+					WithBrokerClass(brokerClass),
+					WithBrokerConfig(configForRabbitOperator()),
+					WithInitBrokerConditions),
+				createExchangeSecretForRabbitmqCluster(),
+				createRabbitMQCluster(),
+				createReadyExchange(false),
+				createReadyExchange(true),
+				createReadyQueue(true),
+			},
+			WantCreates: []runtime.Object{
+				createBinding(true),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBroker(brokerName, testNS,
+					WithBrokerUID("uid-for-test"),
+					WithBrokerClass(brokerClass),
+					WithInitBrokerConditions,
+					WithBrokerConfig(configForRabbitOperator()),
+					WithExchangeReady(),
+					WithDLXReady(),
+					WithDeadLetterSinkFailed("DLQ binding", `DLQ binding "test-namespace.test-broker.dlq" is not ready`)),
+			}},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, brokerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
+			},
+		}, {
+			Name: "Both exchanges exist, queue exists, binding ready, creates deployment",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerClass),
+					WithBrokerConfig(configForRabbitOperator()),
+					WithInitBrokerConditions),
+				createExchangeSecretForRabbitmqCluster(),
+				createRabbitMQCluster(),
+				createReadyExchange(false),
+				createReadyExchange(true),
+				createReadyQueue(true),
+				createReadyBinding(true),
+			},
+			WantCreates: []runtime.Object{
+				createIngressDeployment(),
+				createIngressService(),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerClass),
+					WithInitBrokerConditions,
+					WithBrokerConfig(configForRabbitOperator()),
+					WithIngressFailed("ServiceFailure", `Failed to reconcile service: endpoints "test-broker-broker-ingress" not found`),
+					WithSecretReady(),
+					WithExchangeReady(),
+					WithDLXReady(),
+					WithDeadLetterSinkReady()),
+			}},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, brokerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
+				Eventf(corev1.EventTypeWarning, "InternalError", `endpoints "test-broker-broker-ingress" not found`),
 			},
 		}, {
 			Name: "Secret create fails",
@@ -929,7 +1063,13 @@ func createExchange(dlx bool) *rabbitv1beta1.Exchange {
 			UID:       "uid-for-test",
 		},
 	}
-	exchangeName := fmt.Sprintf("%s.%s", testNS, brokerName)
+	var exchangeName string
+	if dlx {
+		exchangeName = fmt.Sprintf("%s.%s.dlx", testNS, brokerName)
+	} else {
+		exchangeName = fmt.Sprintf("%s.%s", testNS, brokerName)
+	}
+
 	return &rabbitv1beta1.Exchange{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: testNS,
@@ -954,6 +1094,123 @@ func createExchange(dlx bool) *rabbitv1beta1.Exchange {
 			},
 		},
 	}
+}
+
+func createReadyExchange(dlx bool) *rabbitv1beta1.Exchange {
+	e := createExchange(dlx)
+	e.Status = rabbitv1beta1.ExchangeStatus{
+		Conditions: []rabbitv1beta1.Condition{
+			{
+				Status: corev1.ConditionTrue,
+			},
+		},
+	}
+	return e
+}
+
+func createQueue(dlx bool) *rabbitv1beta1.Queue {
+	broker := &eventingv1.Broker{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      brokerName,
+			Namespace: testNS,
+			UID:       "uid-for-test",
+		},
+	}
+	var queueName string
+	if dlx {
+		queueName = fmt.Sprintf("%s.%s.dlq", testNS, brokerName)
+	} else {
+		queueName = fmt.Sprintf("%s.%s", testNS, brokerName)
+	}
+
+	return &rabbitv1beta1.Queue{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: testNS,
+			Name:      queueName,
+			OwnerReferences: []metav1.OwnerReference{
+				*kmeta.NewControllerRef(broker),
+			},
+			Labels: resources.ExchangeLabels(broker),
+		},
+		Spec: rabbitv1beta1.QueueSpec{
+			// Why is the name in the Spec again? Is this different from the ObjectMeta.Name? If not,
+			// maybe it should be removed?
+			Name:       queueName,
+			Durable:    true,
+			AutoDelete: false,
+			// TODO: We had before also internal / nowait set to false. Are these in Arguments,
+			// or do they get sane defaults that we can just work with?
+			// TODO: This one has to exist in the same namespace as this exchange.
+			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
+				Name: rabbitMQBrokerName,
+			},
+		},
+	}
+}
+
+func createReadyQueue(dlx bool) *rabbitv1beta1.Queue {
+	q := createQueue(dlx)
+	q.Status = rabbitv1beta1.QueueStatus{
+		Conditions: []rabbitv1beta1.Condition{
+			{
+				Status: corev1.ConditionTrue,
+			},
+		},
+	}
+	return q
+}
+
+func createBinding(dlx bool) *rabbitv1beta1.Binding {
+	broker := &eventingv1.Broker{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      brokerName,
+			Namespace: testNS,
+			UID:       "uid-for-test",
+		},
+	}
+	var bindingName string
+	if dlx {
+		bindingName = fmt.Sprintf("%s.%s.dlq", testNS, brokerName)
+	} else {
+		bindingName = fmt.Sprintf("%s.%s", testNS, brokerName)
+	}
+
+	return &rabbitv1beta1.Binding{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: testNS,
+			Name:      bindingName,
+			OwnerReferences: []metav1.OwnerReference{
+				*kmeta.NewControllerRef(broker),
+			},
+			Labels: resources.ExchangeLabels(broker),
+		},
+		Spec: rabbitv1beta1.BindingSpec{
+			Vhost:           "/",
+			DestinationType: "queue",
+			Destination:     bindingName,
+			Source:          "test-namespace.test-broker.dlx",
+
+			// TODO: We had before also internal / nowait set to false. Are these in Arguments,
+			// or do they get sane defaults that we can just work with?
+			// TODO: This one has to exist in the same namespace as this exchange.
+			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
+				Name: rabbitMQBrokerName,
+			},
+			Arguments: getBrokerArguments(),
+		},
+	}
+}
+
+func createReadyBinding(dlx bool) *rabbitv1beta1.Binding {
+	b := createBinding(dlx)
+	b.Status = rabbitv1beta1.BindingStatus{
+		Conditions: []rabbitv1beta1.Condition{
+			{
+				Status: corev1.ConditionTrue,
+			},
+		},
+	}
+	return b
 }
 
 func createRabbitMQCluster() *unstructured.Unstructured {
@@ -1003,5 +1260,19 @@ func createRabbitMQCluster() *unstructured.Unstructured {
 				},
 			},
 		},
+	}
+}
+
+func getBrokerArguments() *runtime.RawExtension {
+	arguments := map[string]string{
+		"x-match":           "all",
+		"x-knative-trigger": brokerName,
+	}
+	argumentsJson, err := json.Marshal(arguments)
+	if err != nil {
+		panic("Failed to marshal json for test, no go.")
+	}
+	return &runtime.RawExtension{
+		Raw: argumentsJson,
 	}
 }

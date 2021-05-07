@@ -430,7 +430,7 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 	if queue != nil {
 		if !isReady(queue.Status.Conditions) {
 			logging.FromContext(ctx).Warnf("Queue %q is not ready", queue.Name)
-			MarkDLXFailed(&b.Status, "QueueFailure", "Dead Letter Queue is not ready")
+			MarkDLXFailed(&b.Status, "QueueFailure", fmt.Sprintf("Dead Letter Queue %q is not ready", queue.Name))
 			return nil
 		}
 	}
@@ -446,7 +446,7 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 	if binding != nil {
 		if !isReady(binding.Status.Conditions) {
 			logging.FromContext(ctx).Warnf("Binding %q is not ready", binding.Name)
-			MarkDeadLetterSinkFailed(&b.Status, "DLQ binding", "DLQ binding is not ready")
+			MarkDeadLetterSinkFailed(&b.Status, "DLQ binding", fmt.Sprintf("DLQ binding %q is not ready", binding.Name))
 			return nil
 		}
 	}
