@@ -49,7 +49,6 @@ func NewExchange(ctx context.Context, args *ExchangeArgs) *rabbitv1beta1.Exchang
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: args.Broker.Namespace,
 			Name:      exchangeName,
-			//				fmt.Sprintf("%s-", args.Broker.Name), string(args.Broker.GetUID())),
 			OwnerReferences: []metav1.OwnerReference{
 				*kmeta.NewControllerRef(args.Broker),
 			},
@@ -129,7 +128,7 @@ func DeleteExchange(args *ExchangeArgs) error {
 
 // ExchangeName constructs a name given a Broker.
 // Format is broker.Namespace.broker.Name for normal exchanges and
-// broker.Namespace.broker.Name.DLX for DLX exchanges.
+// broker.Namespace.broker.Name.dlx for DLX exchanges.
 func ExchangeName(b *eventingv1.Broker, DLX bool) string {
 	var exchangeBase string
 	if DLX {

@@ -25,6 +25,7 @@ import (
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 
+	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/network"
 
 	"github.com/NeowayLabs/wabbit/amqptest/server"
@@ -36,10 +37,15 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 
+	rabbitv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	clientgotesting "k8s.io/client-go/testing"
 	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
+	rabbitduck "knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
+	fakerabbitclient "knative.dev/eventing-rabbitmq/pkg/client/injection/rabbitmq.com/client/fake"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker"
+	brokerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
+	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	sourcesv1beta2 "knative.dev/eventing/pkg/apis/sources/v1beta2"
 	fakeeventingclient "knative.dev/eventing/pkg/client/injection/client/fake"
@@ -58,6 +64,7 @@ import (
 	logtesting "knative.dev/pkg/logging/testing"
 	"knative.dev/pkg/resolver"
 
+	rtlisters "knative.dev/eventing-rabbitmq/pkg/reconciler/testing"
 	_ "knative.dev/eventing/pkg/client/injection/informers/eventing/v1/trigger/fake"
 	. "knative.dev/eventing/pkg/reconciler/testing/v1"
 	rtv1beta2 "knative.dev/eventing/pkg/reconciler/testing/v1beta2"
@@ -71,13 +78,14 @@ const (
 	brokerClass = "RabbitMQBroker"
 	brokerName  = "test-broker"
 
-	rabbitSecretName = "test-broker-broker-rabbit"
+	rabbitSecretName   = "test-broker-broker-rabbit"
+	rabbitMQBrokerName = "rabbitbrokerhere"
 
 	triggerName = "test-trigger"
 	triggerUID  = "test-trigger-uid"
 
 	rabbitURL = "amqp://localhost:5672/%2f"
-	queueName = "test-namespace-test-trigger"
+	queueName = "test-namespace.test-trigger"
 
 	dispatcherImage = "dispatcherimage"
 
@@ -318,6 +326,26 @@ func TestReconcile(t *testing.T) {
 				Object: triggerWithFilterReady(),
 			}},
 		}, {
+			Name: "Creates queue ok with CRD",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				ReadyBrokerWithRabbitBroker(),
+				triggerWithFilter(),
+				createSecret(rabbitURL),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, triggerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
+			},
+			WantCreates: []runtime.Object{
+				createQueue(),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: triggerWithQueueNotReady(),
+			}},
+		}, {
 			Name: "Creates everything with ref",
 			Key:  testKey,
 			Objects: []runtime.Object{
@@ -390,7 +418,7 @@ func TestReconcile(t *testing.T) {
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
-				Eventf(corev1.EventTypeWarning, "InternalError", "Secret missing key brokerURL"),
+				Eventf(corev1.EventTypeWarning, "InternalError", "secret missing key brokerURL"),
 			},
 			WantErr: true,
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
@@ -399,7 +427,7 @@ func TestReconcile(t *testing.T) {
 					WithTriggerSubscriberURI(subscriberURI),
 					WithInitTriggerConditions,
 					WithTriggerBrokerReady(),
-					WithTriggerDependencyFailed("SecretFailure", "Secret missing key brokerURL")),
+					WithTriggerDependencyFailed("SecretFailure", "secret missing key brokerURL")),
 			}},
 		}, {
 			Name: "Deployment creation fails",
@@ -689,11 +717,12 @@ func TestReconcile(t *testing.T) {
 	}
 
 	logger := logtesting.TestLogger(t)
-	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
+	table.Test(t, rtlisters.MakeFactory(func(ctx context.Context, listers *rtlisters.Listers, cmw configmap.Watcher) controller.Reconciler {
 		ctx = v1a1addr.WithDuck(ctx)
 		ctx = v1b1addr.WithDuck(ctx)
 		ctx = v1addr.WithDuck(ctx)
 		ctx = source.WithDuck(ctx)
+		ctx = rabbitduck.WithDuck(ctx)
 		fakeServer := server.NewServer(rabbitURL)
 		fakeServer.Start()
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -715,6 +744,9 @@ func TestReconcile(t *testing.T) {
 			transport:          ts.Client().Transport,
 			adminURL:           ts.URL,
 			dispatcherImage:    dispatcherImage,
+			rabbitClientSet:    fakerabbitclient.Get(ctx),
+			queueLister:        listers.GetQueueLister(),
+			bindingLister:      listers.GetBindingLister(),
 		}
 		return trigger.NewReconciler(ctx, logger,
 			fakeeventingclient.Get(ctx), listers.GetTriggerLister(),
@@ -735,6 +767,15 @@ func config() *duckv1.KReference {
 		Namespace:  testNS,
 		Kind:       "Secret",
 		APIVersion: "v1",
+	}
+}
+
+func configForRabbitOperator() *duckv1.KReference {
+	return &duckv1.KReference{
+		Name:       rabbitMQBrokerName,
+		Namespace:  testNS,
+		Kind:       "RabbitmqCluster",
+		APIVersion: "rabbitmq.com/v1beta1",
 	}
 }
 
@@ -779,6 +820,20 @@ func ReadyBroker() *eventingv1.Broker {
 		broker.WithBrokerClass(brokerClass),
 		broker.WithInitBrokerConditions,
 		broker.WithBrokerConfig(config()),
+		broker.WithIngressAvailable(),
+		broker.WithSecretReady(),
+		broker.WithBrokerAddressURI(brokerAddress),
+		broker.WithDLXReady(),
+		broker.WithDeadLetterSinkReady(),
+		broker.WithExchangeReady())
+}
+
+// Create Ready Broker with proper annotations using the RabbitmqCluster
+func ReadyBrokerWithRabbitBroker() *eventingv1.Broker {
+	return broker.NewBroker(brokerName, testNS,
+		broker.WithBrokerClass(brokerClass),
+		broker.WithInitBrokerConditions,
+		broker.WithBrokerConfig(configForRabbitOperator()),
 		broker.WithIngressAvailable(),
 		broker.WithSecretReady(),
 		broker.WithBrokerAddressURI(brokerAddress),
@@ -844,6 +899,21 @@ func triggerWithFinalizerReady() *eventingv1.Trigger {
 		Attributes: eventingv1.TriggerFilterAttributes(map[string]string{"type": "dev.knative.sources.ping"}),
 	}
 	t.Finalizers = []string{finalizerName}
+	return t
+}
+
+func triggerWithQueueNotReady() *eventingv1.Trigger {
+	t := NewTrigger(triggerName, testNS, brokerName,
+		WithTriggerUID(triggerUID),
+		WithInitTriggerConditions,
+		WithTriggerSubscriberURI(subscriberURI),
+		WithTriggerBrokerReady(),
+		WithTriggerDependencyReady(),
+		WithTriggerDependencyFailed("QueueFailure", `Queue "test-namespace.test-trigger" is not ready`))
+
+	t.Spec.Filter = &eventingv1.TriggerFilter{
+		Attributes: eventingv1.TriggerFilterAttributes(map[string]string{"type": "dev.knative.sources.ping"}),
+	}
 	return t
 }
 
@@ -941,6 +1011,35 @@ func makeSubscriberNotAddressableAsUnstructured() *unstructured.Unstructured {
 			"metadata": map[string]interface{}{
 				"namespace": testNS,
 				"name":      subscriberName,
+			},
+		},
+	}
+}
+
+func createQueue() *rabbitv1beta1.Queue {
+	labels := map[string]string{
+		eventing.BrokerLabelKey:   brokerName,
+		resources.TriggerLabelKey: triggerName,
+	}
+	b := ReadyBrokerWithRabbitBroker()
+	t := triggerWithFilter()
+	return &rabbitv1beta1.Queue{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      queueName,
+			Namespace: testNS,
+			OwnerReferences: []metav1.OwnerReference{
+				*kmeta.NewControllerRef(t),
+			},
+			Labels: labels,
+		},
+		Spec: rabbitv1beta1.QueueSpec{
+			Name:    queueName,
+			Durable: true,
+			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
+				Name: rabbitMQBrokerName,
+			},
+			Arguments: &runtime.RawExtension{
+				Raw: []byte(`{"x-dead-letter-exchange":"` + brokerresources.ExchangeName(b, true) + `"}`),
 			},
 		},
 	}

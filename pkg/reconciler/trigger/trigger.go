@@ -172,6 +172,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		logging.FromContext(ctx).Info("Created rabbitmq queue", zap.Any("queue", queue))
 
 		err = resources.MakeBinding(r.transport, &resources.BindingArgs{
+			Broker:     broker,
 			Trigger:    t,
 			RoutingKey: "",
 			BrokerURL:  rabbitmqURL,
@@ -299,7 +300,7 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, t *eventingv1.Trigger) pk
 		RabbitmqURL: rabbitmqURL,
 	})
 	if err != nil {
-		return fmt.Errorf("Trigger finalize failed: %v", err)
+		return fmt.Errorf("trigger finalize failed: %v", err)
 	}
 	return nil
 }
@@ -414,20 +415,14 @@ func (r *Reconciler) rabbitmqURL(ctx context.Context, t *eventingv1.Trigger) (st
 	}
 	val := s.Data[brokerresources.BrokerURLSecretKey]
 	if val == nil {
-		return "", fmt.Errorf("Secret missing key %s", brokerresources.BrokerURLSecretKey)
+		return "", fmt.Errorf("secret missing key %s", brokerresources.BrokerURLSecretKey)
 	}
 	return string(val), nil
 }
 
 func (r *Reconciler) reconcileQueue(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger) (*v1beta1.Queue, error) {
 	queueName := resources.CreateTriggerQueueName(t)
-	args := &resources.QueueArgs{
-		QueueName: queueName,
-		DLX:       brokerresources.ExchangeName(b, true),
-		Trigger:   t,
-	}
-
-	want := resources.NewQueue(ctx, b, args)
+	want := resources.NewQueue(ctx, b, t)
 	logging.FromContext(ctx).Infow("WANT QUEUE", zap.Any("queue", want))
 	current, err := r.queueLister.Queues(b.Namespace).Get(queueName)
 	if apierrs.IsNotFound(err) {
@@ -448,17 +443,7 @@ func (r *Reconciler) reconcileBinding(ctx context.Context, b *eventingv1.Broker,
 	// We can use the same name for queue / binding to keep things simpler
 	bindingName := resources.CreateTriggerQueueName(t)
 
-	bindingArgs := &resources.BindingArgs{
-		Broker:      b,
-		Trigger:     t,
-		BindingName: bindingName,
-		BindingKey:  t.Name,
-		RoutingKey:  "",
-		SourceName:  brokerresources.ExchangeName(b, false),
-		QueueName:   bindingName,
-	}
-
-	want, err := resources.NewBinding(ctx, b, bindingArgs)
+	want, err := resources.NewBinding(ctx, b, t)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create the binding spec: %w", err)
 	}
