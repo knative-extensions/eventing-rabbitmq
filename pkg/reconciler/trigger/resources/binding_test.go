@@ -196,7 +196,7 @@ func TestBindingDeclaration(t *testing.T) {
 	rabbitContainer := testrabbit.AutoStartRabbit(t, ctx)
 	defer testrabbit.TerminateContainer(t, ctx, rabbitContainer)
 	queueName := "queue-and-a"
-	qualifiedQueueName := namespace + "-" + queueName
+	qualifiedQueueName := namespace + "." + queueName
 	testrabbit.CreateDurableQueue(t, ctx, rabbitContainer, qualifiedQueueName)
 	brokerName := "some-broker"
 	exchangeName := namespace + "." + brokerName
