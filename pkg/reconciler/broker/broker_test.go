@@ -929,6 +929,7 @@ func createExchange(dlx bool) *rabbitv1beta1.Exchange {
 			UID:       "uid-for-test",
 		},
 	}
+	//	exchangeName := kmeta.ChildName(resources.ExchangeName(broker, dlx), string(broker.GetUID()))
 	exchangeName := fmt.Sprintf("%s.%s", testNS, brokerName)
 	return &rabbitv1beta1.Exchange{
 		ObjectMeta: metav1.ObjectMeta{
