@@ -39,7 +39,6 @@ const (
 )
 
 func TestNewBinding(t *testing.T) {
-
 	for _, tt := range []struct {
 		name    string
 		broker  *eventingv1.Broker
@@ -207,6 +206,12 @@ func TestBindingDeclaration(t *testing.T) {
 		RoutingKey:             "some-key",
 		BrokerURL:              testrabbit.BrokerUrl(t, ctx, rabbitContainer).String(),
 		RabbitmqManagementPort: testrabbit.ManagementPort(t, ctx, rabbitContainer),
+		Broker: &eventingv1.Broker{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      brokerName,
+				Namespace: namespace,
+			},
+		},
 		Trigger: &eventingv1.Trigger{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      queueName,
@@ -285,6 +290,12 @@ func TestMissingExchangeBindingDeclarationFailure(t *testing.T) {
 		RoutingKey:             "some-key",
 		BrokerURL:              brokerURL,
 		RabbitmqManagementPort: testrabbit.ManagementPort(t, ctx, rabbitContainer),
+		Broker: &eventingv1.Broker{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      brokerName,
+				Namespace: namespace,
+			},
+		},
 		Trigger: &eventingv1.Trigger{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      queueName,
@@ -299,7 +310,7 @@ func TestMissingExchangeBindingDeclarationFailure(t *testing.T) {
 		},
 	})
 
-	assert.ErrorContains(t, err, `Failed to declare Binding: Error 404 (not_found): no exchange 'foobar.some-broke-herr' in vhost '/'`)
+	assert.ErrorContains(t, err, `failed to declare Binding: Error 404 (not_found): no exchange 'foobar.some-broke-herr' in vhost '/'`)
 	assert.ErrorContains(t, err, fmt.Sprintf("no exchange '%s.%s'", namespace, brokerName))
 }
 
