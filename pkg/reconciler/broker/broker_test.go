@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 
+	rabbitv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	clientgotesting "k8s.io/client-go/testing"
 	rabbitmqduck "knative.dev/eventing-rabbitmq/pkg/apis/duck/v1beta1"
 	rabbitduck "knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
@@ -52,6 +53,7 @@ import (
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	fakedynamicclient "knative.dev/pkg/injection/clients/dynamicclient/fake"
+	"knative.dev/pkg/kmeta"
 	logtesting "knative.dev/pkg/logging/testing"
 	"knative.dev/pkg/network"
 	"knative.dev/pkg/resolver"
@@ -288,39 +290,34 @@ func TestReconcile(t *testing.T) {
 			},
 			WantErr: true,
 		}, {
-			/*
-				TODO: vaikas: Enable...
-				Name: "Exchange create, creates Exchange CRD",
-				Key:  testKey,
-				Objects: []runtime.Object{
-					NewBroker(brokerName, testNS,
-						WithBrokerUID("uid-for-test"),
-						WithBrokerClass(brokerClass),
-						WithBrokerConfig(configForRabbitOperator()),
-						WithInitBrokerConditions),
-					createSecret("invalid data"),
-					createRabbitMQCluster(),
-				},
-				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-					Object: NewBroker(brokerName, testNS,
-						WithBrokerUID("uid-for-test"),
-						WithBrokerClass(brokerClass),
-						WithInitBrokerConditions,
-						WithBrokerConfig(configForRabbitOperator()),
-						WithExchangeFailed("ExchangeFailure", `Failed to create exchange: Network unreachable`)),
-				}},
-				WantCreates: []runtime.Object{
-					createExchange(false),
-				},
-				WantPatches: []clientgotesting.PatchActionImpl{
-					patchFinalizers(testNS, brokerName),
-				},
-				WantEvents: []string{
-					Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
-					Eventf(corev1.EventTypeWarning, "InternalError", `Network unreachable`),
-				},
-				WantErr: true,
-			*/
+			Name: "Exchange create, creates Exchange CRD",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBroker(brokerName, testNS,
+					WithBrokerUID("uid-for-test"),
+					WithBrokerClass(brokerClass),
+					WithBrokerConfig(configForRabbitOperator()),
+					WithInitBrokerConditions),
+				createExchangeSecretForRabbitmqCluster(),
+				createRabbitMQCluster(),
+			},
+			WantCreates: []runtime.Object{
+				createExchange(false),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBroker(brokerName, testNS,
+					WithBrokerUID("uid-for-test"),
+					WithBrokerClass(brokerClass),
+					WithInitBrokerConditions,
+					WithBrokerConfig(configForRabbitOperator()),
+					WithExchangeFailed("ExchangeFailure", `exchange "test-namespace.test-broker" is not ready`)),
+			}},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, brokerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
+			},
 		}, {
 			Name: "Secret create fails",
 			Key:  testKey,
@@ -794,6 +791,29 @@ func createDifferentExchangeSecret() *corev1.Secret {
 	}
 }
 
+// This is the secret that Broker creates for each broker with RabbitmqCluster, format
+// for it is different, has password / username fields instead of brokerURL.
+func createExchangeSecretForRabbitmqCluster() *corev1.Secret {
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: testNS,
+			Name:      rabbitBrokerSecretName,
+			Labels:    map[string]string{"eventing.knative.dev/broker": "test-broker"},
+			OwnerReferences: []metav1.OwnerReference{{
+				APIVersion:         "eventing.knative.dev/v1",
+				Kind:               "Broker",
+				Name:               brokerName,
+				Controller:         &TrueValue,
+				BlockOwnerDeletion: &TrueValue,
+			}},
+		},
+		Data: map[string][]byte{
+			"password": []byte("mypassword"),
+			"username": []byte("myusername"),
+		},
+	}
+}
+
 func createIngressDeployment() *appsv1.Deployment {
 	args := &resources.IngressArgs{
 		Broker:             &eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: testNS}},
@@ -833,8 +853,6 @@ func config() *duckv1.KReference {
 	}
 }
 
-// TODO: vaikas uncomment
-/*
 func configForRabbitOperator() *duckv1.KReference {
 	return &duckv1.KReference{
 		Name:       rabbitMQBrokerName,
@@ -843,7 +861,6 @@ func configForRabbitOperator() *duckv1.KReference {
 		APIVersion: "rabbitmq.com/v1beta1",
 	}
 }
-*/
 
 // FilterLabels generates the labels present on all resources representing the filter of the given
 // Broker.
@@ -896,7 +913,7 @@ func createDispatcherDeployment() *appsv1.Deployment {
 		Broker:             broker,
 		Image:              dispatcherImage,
 		RabbitMQSecretName: rabbitBrokerSecretName,
-		QueueName:          "test-namespace-test-broker-dlq",
+		QueueName:          "test-namespace.test-broker.dlq",
 		BrokerUrlSecretKey: "brokerURL",
 		BrokerIngressURL:   brokerAddress,
 		Subscriber:         deadLetterSinkAddress,
@@ -904,8 +921,6 @@ func createDispatcherDeployment() *appsv1.Deployment {
 	return resources.MakeDispatcherDeployment(args)
 }
 
-// TODO: Uncomment this in a followup when adding tests.
-/*
 func createExchange(dlx bool) *rabbitv1beta1.Exchange {
 	broker := &eventingv1.Broker{
 		ObjectMeta: metav1.ObjectMeta{
@@ -914,12 +929,11 @@ func createExchange(dlx bool) *rabbitv1beta1.Exchange {
 			UID:       "uid-for-test",
 		},
 	}
-	exchangeName := kmeta.ChildName(resources.ExchangeName(broker, dlx), string(broker.GetUID()))
+	exchangeName := fmt.Sprintf("%s.%s", testNS, brokerName)
 	return &rabbitv1beta1.Exchange{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: testNS,
 			Name:      exchangeName,
-			//				fmt.Sprintf("%s-", args.Broker.Name), string(args.Broker.GetUID())),
 			OwnerReferences: []metav1.OwnerReference{
 				*kmeta.NewControllerRef(broker),
 			},
@@ -941,7 +955,6 @@ func createExchange(dlx bool) *rabbitv1beta1.Exchange {
 		},
 	}
 }
-*/
 
 func createRabbitMQCluster() *unstructured.Unstructured {
 	labels := map[string]interface{}{
@@ -970,7 +983,7 @@ func createRabbitMQCluster() *unstructured.Unstructured {
 							"password": "password",
 							"username": "username",
 						},
-						"name":      "test-cluster-operator",
+						"name":      rabbitBrokerSecretName,
 						"namespace": testNS,
 					},
 					"serviceReference": map[string]interface{}{

@@ -29,9 +29,11 @@ import (
 	rabbitv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	brokerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
 	"knative.dev/pkg/kmeta"
 
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
+	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 )
 
@@ -55,22 +57,36 @@ type BindingArgs struct {
 	QueueName              string // only for DLQ
 }
 
-func NewBinding(ctx context.Context, broker *eventingv1.Broker, args *BindingArgs) (*rabbitv1beta1.Binding, error) {
+func NewBinding(ctx context.Context, broker *eventingv1.Broker, trigger *eventingv1.Trigger) (*rabbitv1beta1.Binding, error) {
 	var or metav1.OwnerReference
-	if args.Trigger != nil {
-		or = *kmeta.NewControllerRef(args.Trigger)
+	var bindingName string
+	var bindingKey string
+	var sourceName string
+
+	arguments := map[string]string{
+		"x-match": "all",
+	}
+	// Depending on if we have a Broker & Trigger we need to rejigger some of the names and
+	// configurations little differently, so do that up front before actually creating the resource
+	// that we're returning.
+	if trigger != nil {
+		or = *kmeta.NewControllerRef(trigger)
+		bindingName = CreateTriggerQueueName(trigger)
+		bindingKey = trigger.Name
+		sourceName = brokerresources.ExchangeName(broker, false)
+		if trigger.Spec.Filter != nil && trigger.Spec.Filter.Attributes != nil {
+			for key, val := range trigger.Spec.Filter.Attributes {
+				arguments[key] = val
+			}
+		}
 	} else {
 		or = *kmeta.NewControllerRef(broker)
+		bindingName = CreateBrokerDeadLetterQueueName(broker)
+		bindingKey = broker.Name
+		sourceName = brokerresources.ExchangeName(broker, true)
 	}
-	arguments := map[string]string{
-		"x-match":  "all",
-		BindingKey: args.BindingKey,
-	}
-	if args.Trigger != nil && args.Trigger.Spec.Filter != nil {
-		for key, val := range args.Trigger.Spec.Filter.Attributes {
-			arguments[key] = val
-		}
-	}
+	arguments[BindingKey] = bindingKey
+
 	argumentsJson, err := json.Marshal(arguments)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode binding arguments %+v : %s", argumentsJson, err)
@@ -79,16 +95,16 @@ func NewBinding(ctx context.Context, broker *eventingv1.Broker, args *BindingArg
 	binding := &rabbitv1beta1.Binding{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:       broker.Namespace,
-			Name:            args.BindingName,
+			Name:            bindingName,
 			OwnerReferences: []metav1.OwnerReference{or},
-			Labels:          BindingLabels(broker),
+			Labels:          BindingLabels(broker, trigger),
 		},
 		Spec: rabbitv1beta1.BindingSpec{
 			Vhost:           "/",
-			Source:          args.SourceName,
-			Destination:     args.QueueName,
+			Source:          sourceName,
+			Destination:     bindingName,
 			DestinationType: "queue",
-			RoutingKey:      args.RoutingKey,
+			RoutingKey:      "",
 			Arguments: &runtime.RawExtension{
 				Raw: argumentsJson,
 			},
@@ -106,9 +122,16 @@ func NewBinding(ctx context.Context, broker *eventingv1.Broker, args *BindingArg
 
 // BindingLabels generates the labels present on the Queue linking the Broker / Trigger to the
 // Binding.
-func BindingLabels(b *eventingv1.Broker) map[string]string {
-	return map[string]string{
-		"eventing.knative.dev/broker": b.Name,
+func BindingLabels(b *eventingv1.Broker, t *eventingv1.Trigger) map[string]string {
+	if t == nil {
+		return map[string]string{
+			eventing.BrokerLabelKey: b.Name,
+		}
+	} else {
+		return map[string]string{
+			eventing.BrokerLabelKey: b.Name,
+			TriggerLabelKey:         t.Name,
+		}
 	}
 }
 
@@ -131,7 +154,7 @@ func MakeBinding(transport http.RoundTripper, args *BindingArgs) error {
 	p, _ := uri.User.Password()
 	c, err := rabbithole.NewClient(adminURL, uri.User.Username(), p)
 	if err != nil {
-		return fmt.Errorf("Failed to create RabbitMQ Admin Client: %v", err)
+		return fmt.Errorf("failed to create RabbitMQ Admin Client: %v", err)
 	}
 	if transport != nil {
 		c.SetTransport(transport)
@@ -163,23 +186,23 @@ func MakeBinding(transport http.RoundTripper, args *BindingArgs) error {
 	if existing == nil || !reflect.DeepEqual(existing.Arguments, arguments) {
 		response, err := c.DeclareBinding("/", rabbithole.BindingInfo{
 			Vhost:           "/",
-			Source:          ExchangeName(args.Trigger.Namespace, args.Trigger.Spec.Broker, false),
+			Source:          brokerresources.ExchangeName(args.Broker, false),
 			Destination:     queueName,
 			DestinationType: "queue",
 			RoutingKey:      args.RoutingKey,
 			Arguments:       arguments,
 		})
 		if err != nil {
-			return fmt.Errorf("Failed to declare Binding: %v", err)
+			return fmt.Errorf("failed to declare Binding: %v", err)
 		}
 		if response.StatusCode != 201 {
 			responseBody, _ := ioutil.ReadAll(response.Body)
-			return fmt.Errorf("Failed to declare Binding. Expected 201 response, but got: %d.\n%s", response.StatusCode, string(responseBody))
+			return fmt.Errorf("failed to declare Binding. Expected 201 response, but got: %d.\n%s", response.StatusCode, string(responseBody))
 		}
 		if existing != nil {
 			_, err = c.DeleteBinding(existing.Vhost, *existing)
 			if err != nil {
-				return fmt.Errorf("Failed to delete existing Binding: %v", err)
+				return fmt.Errorf("failed to delete existing Binding: %v", err)
 			}
 		}
 	}
@@ -205,7 +228,7 @@ func MakeDLQBinding(transport http.RoundTripper, args *BindingArgs) error {
 	p, _ := uri.User.Password()
 	c, err := rabbithole.NewClient(adminURL, uri.User.Username(), p)
 	if err != nil {
-		return fmt.Errorf("Failed to create RabbitMQ Admin Client: %v", err)
+		return fmt.Errorf("failed to create RabbitMQ Admin Client: %v", err)
 	}
 	if transport != nil {
 		c.SetTransport(transport)
@@ -233,23 +256,23 @@ func MakeDLQBinding(transport http.RoundTripper, args *BindingArgs) error {
 	if existing == nil || !reflect.DeepEqual(existing.Arguments, arguments) {
 		response, err := c.DeclareBinding("/", rabbithole.BindingInfo{
 			Vhost:           "/",
-			Source:          ExchangeName(args.Broker.Namespace, args.Broker.Name, true),
+			Source:          brokerresources.ExchangeName(args.Broker, true),
 			Destination:     args.QueueName,
 			DestinationType: "queue",
 			RoutingKey:      args.RoutingKey,
 			Arguments:       arguments,
 		})
 		if err != nil {
-			return fmt.Errorf("Failed to declare DLQ Binding: %v", err)
+			return fmt.Errorf("failed to declare DLQ Binding: %v", err)
 		}
 		if response.StatusCode != 201 {
 			responseBody, _ := ioutil.ReadAll(response.Body)
-			return fmt.Errorf("Failed to declare Binding. Expected 201 response, but got: %d.\n%s", response.StatusCode, string(responseBody))
+			return fmt.Errorf("failed to declare Binding. Expected 201 response, but got: %d.\n%s", response.StatusCode, string(responseBody))
 		}
 		if existing != nil {
 			_, err = c.DeleteBinding(existing.Vhost, *existing)
 			if err != nil {
-				return fmt.Errorf("Failed to delete existing Binding: %v", err)
+				return fmt.Errorf("failed to delete existing Binding: %v", err)
 			}
 		}
 	}
@@ -262,11 +285,4 @@ func managementPort(args *BindingArgs) int {
 		return configuredPort
 	}
 	return DefaultManagementPort
-}
-
-func ExchangeName(namespace, brokerName string, DLX bool) string {
-	if DLX {
-		return fmt.Sprintf("%s.%s.dlx", namespace, brokerName)
-	}
-	return fmt.Sprintf("%s.%s", namespace, brokerName)
 }

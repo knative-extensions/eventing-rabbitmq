@@ -351,12 +351,7 @@ func (r *Reconciler) reconcileExchange(ctx context.Context, args *resources.Exch
 
 func (r *Reconciler) reconcileQueue(ctx context.Context, b *eventingv1.Broker) (*v1beta1.Queue, error) {
 	queueName := triggerresources.CreateBrokerDeadLetterQueueName(b)
-	// Create a Queue for the DLX
-	args := &triggerresources.QueueArgs{
-		QueueName: queueName,
-	}
-
-	want := triggerresources.NewQueue(ctx, b, args)
+	want := triggerresources.NewQueue(ctx, b, nil)
 	current, err := r.queueLister.Queues(b.Namespace).Get(queueName)
 	if apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Debugw("Creating rabbitmq exchange", zap.String("queue name", want.Name))
@@ -376,16 +371,7 @@ func (r *Reconciler) reconcileBinding(ctx context.Context, b *eventingv1.Broker)
 	// We can use the same name for queue / binding to keep things simpler
 	bindingName := triggerresources.CreateBrokerDeadLetterQueueName(b)
 
-	bindingArgs := &triggerresources.BindingArgs{
-		Broker:      b,
-		BindingName: bindingName,
-		BindingKey:  b.Name,
-		RoutingKey:  "",
-		SourceName:  resources.ExchangeName(b, true),
-		QueueName:   triggerresources.CreateBrokerDeadLetterQueueName(b),
-	}
-
-	want, err := triggerresources.NewBinding(ctx, b, bindingArgs)
+	want, err := triggerresources.NewBinding(ctx, b, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create the binding spec: %w", err)
 	}
@@ -408,12 +394,13 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 	logging.FromContext(ctx).Info("Reconciling exchange")
 	exchange, err := r.reconcileExchange(ctx, args)
 	if err != nil {
-		MarkExchangeFailed(&b.Status, "ExchangeFailure", "Failed to reconcile exchange: %s", err)
+		MarkExchangeFailed(&b.Status, "ExchangeFailure", fmt.Sprintf("Failed to reconcile exchange %q: %s", resources.ExchangeName(args.Broker, false), err))
 		return err
 	}
 	if exchange != nil {
 		if !isReady(exchange.Status.Conditions) {
 			logging.FromContext(ctx).Warnf("Exchange %q is not ready", exchange.Name)
+			MarkExchangeFailed(&b.Status, "ExchangeFailure", fmt.Sprintf("exchange %q is not ready", exchange.Name))
 			return nil
 		}
 	}
@@ -422,13 +409,13 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 	logging.FromContext(ctx).Info("Reconciling DLX exchange")
 	dlxExchange, err := r.reconcileExchange(ctx, args)
 	if err != nil {
-		MarkExchangeFailed(&b.Status, "ExchangeFailure", "Failed to reconcile DLX exchange: %s", err)
+		MarkExchangeFailed(&b.Status, "ExchangeFailure", fmt.Sprintf("Failed to reconcile DLX exchange %q: %s", resources.ExchangeName(args.Broker, true), err))
 		return err
 	}
 	if dlxExchange != nil {
 		if !isReady(dlxExchange.Status.Conditions) {
 			logging.FromContext(ctx).Warnf("DLX exchange %q is not ready", dlxExchange.Name)
-			MarkExchangeFailed(&b.Status, "ExchangeFailure", "DLX exchange is not ready")
+			MarkExchangeFailed(&b.Status, "ExchangeFailure", fmt.Sprintf("DLX exchange %q is not ready", dlxExchange.Name))
 			return nil
 		}
 	}
