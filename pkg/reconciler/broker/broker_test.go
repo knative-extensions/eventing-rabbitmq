@@ -75,11 +75,13 @@ const (
 	testNS      = "test-namespace"
 	brokerName  = "test-broker"
 
-	rabbitSecretName       = "test-secret"
-	rabbitBrokerSecretName = "test-broker-broker-rabbit"
-	rabbitURL              = "amqp://localhost:5672/%2f"
-	rabbitMQBrokerName     = "rabbitbrokerhere"
-	ingressImage           = "ingressimage"
+	rabbitSecretName          = "test-secret"
+	rabbitBrokerSecretName    = "test-broker-broker-rabbit"
+	rabbitmqClusterSecretName = "rabbitmqclustersecret"
+	rabbitURL                 = "amqp://localhost:5672/%2f"
+	rabbitmqClusterURL        = "amqp://myusername:mypassword@rabbitmqsvc.test-namespace.svc.cluster.local:5672"
+	rabbitMQBrokerName        = "rabbitbrokerhere"
+	ingressImage              = "ingressimage"
 
 	deadLetterSinkKind       = "Service"
 	deadLetterSinkName       = "badsink"
@@ -299,7 +301,7 @@ func TestReconcile(t *testing.T) {
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(configForRabbitOperator()),
 					WithInitBrokerConditions),
-				createExchangeSecretForRabbitmqCluster(),
+				createSecretForRabbitmqCluster(),
 				createRabbitMQCluster(),
 			},
 			WantCreates: []runtime.Object{
@@ -328,7 +330,7 @@ func TestReconcile(t *testing.T) {
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(configForRabbitOperator()),
 					WithInitBrokerConditions),
-				createExchangeSecretForRabbitmqCluster(),
+				createSecretForRabbitmqCluster(),
 				createRabbitMQCluster(),
 				createReadyExchange(false),
 			},
@@ -358,7 +360,7 @@ func TestReconcile(t *testing.T) {
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(configForRabbitOperator()),
 					WithInitBrokerConditions),
-				createExchangeSecretForRabbitmqCluster(),
+				createSecretForRabbitmqCluster(),
 				createRabbitMQCluster(),
 				createReadyExchange(false),
 				createReadyExchange(true),
@@ -390,7 +392,7 @@ func TestReconcile(t *testing.T) {
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(configForRabbitOperator()),
 					WithInitBrokerConditions),
-				createExchangeSecretForRabbitmqCluster(),
+				createSecretForRabbitmqCluster(),
 				createRabbitMQCluster(),
 				createReadyExchange(false),
 				createReadyExchange(true),
@@ -416,14 +418,14 @@ func TestReconcile(t *testing.T) {
 				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
 			},
 		}, {
-			Name: "Both exchanges exist, queue exists, binding ready, creates deployment",
+			Name: "Both exchanges exist, queue exists, binding ready, creates secret, deployment, and service, endpoints not ready",
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(configForRabbitOperator()),
 					WithInitBrokerConditions),
-				createExchangeSecretForRabbitmqCluster(),
+				createSecretForRabbitmqCluster(),
 				createRabbitMQCluster(),
 				createReadyExchange(false),
 				createReadyExchange(true),
@@ -431,6 +433,7 @@ func TestReconcile(t *testing.T) {
 				createReadyBinding(true),
 			},
 			WantCreates: []runtime.Object{
+				createBrokerSecretFromRabbitmqCluster(),
 				createIngressDeployment(),
 				createIngressService(),
 			},
@@ -451,6 +454,48 @@ func TestReconcile(t *testing.T) {
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
 				Eventf(corev1.EventTypeWarning, "InternalError", `endpoints "test-broker-broker-ingress" not found`),
+			},
+			WantErr: true,
+		}, {
+			Name: "Both exchanges exist, queue exists, binding ready, creates secret, deployment, and service, endpoints ready",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerClass),
+					WithBrokerConfig(configForRabbitOperator()),
+					WithInitBrokerConditions),
+				createSecretForRabbitmqCluster(),
+				createRabbitMQCluster(),
+				createReadyExchange(false),
+				createReadyExchange(true),
+				createReadyQueue(true),
+				createReadyBinding(true),
+				rt.NewEndpoints(ingressServiceName, testNS,
+					rt.WithEndpointsLabels(IngressLabels()),
+					rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
+			},
+			WantCreates: []runtime.Object{
+				createBrokerSecretFromRabbitmqCluster(),
+				createIngressDeployment(),
+				createIngressService(),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerClass),
+					WithInitBrokerConditions,
+					WithBrokerConfig(configForRabbitOperator()),
+					WithBrokerAddressURI(brokerAddress),
+					WithIngressAvailable(),
+					WithSecretReady(),
+					WithExchangeReady(),
+					WithDLXReady(),
+					WithDeadLetterSinkReady()),
+			}},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, brokerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
 			},
 		}, {
 			Name: "Secret create fails",
@@ -885,7 +930,7 @@ func createSecret(data string) *corev1.Secret {
 }
 
 // This is the secret that Broker creates for each broker.
-func createExchangeSecret() *corev1.Secret {
+func createBrokerSecret(data string) *corev1.Secret {
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: testNS,
@@ -900,38 +945,31 @@ func createExchangeSecret() *corev1.Secret {
 			}},
 		},
 		StringData: map[string]string{
-			"brokerURL": rabbitURL,
+			"brokerURL": data,
 		},
 	}
+
+}
+
+func createExchangeSecret() *corev1.Secret {
+	return createBrokerSecret(rabbitURL)
 }
 
 func createDifferentExchangeSecret() *corev1.Secret {
-	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: testNS,
-			Name:      rabbitBrokerSecretName,
-			Labels:    map[string]string{"eventing.knative.dev/broker": "test-broker"},
-			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "eventing.knative.dev/v1",
-				Kind:               "Broker",
-				Name:               brokerName,
-				Controller:         &TrueValue,
-				BlockOwnerDeletion: &TrueValue,
-			}},
-		},
-		StringData: map[string]string{
-			"brokerURL": "different stuff",
-		},
-	}
+	return createBrokerSecret("different stuff")
 }
 
-// This is the secret that Broker creates for each broker with RabbitmqCluster, format
-// for it is different, has password / username fields instead of brokerURL.
-func createExchangeSecretForRabbitmqCluster() *corev1.Secret {
+// Create Broker Secret that's derived from the rabbitmq cluster status.
+func createBrokerSecretFromRabbitmqCluster() *corev1.Secret {
+	return createBrokerSecret(rabbitmqClusterURL)
+}
+
+// This is the secret that RabbitmqClusters creates.
+func createSecretForRabbitmqCluster() *corev1.Secret {
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: testNS,
-			Name:      rabbitBrokerSecretName,
+			Name:      rabbitmqClusterSecretName,
 			Labels:    map[string]string{"eventing.knative.dev/broker": "test-broker"},
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         "eventing.knative.dev/v1",
@@ -1080,8 +1118,6 @@ func createExchange(dlx bool) *rabbitv1beta1.Exchange {
 			Labels: resources.ExchangeLabels(broker),
 		},
 		Spec: rabbitv1beta1.ExchangeSpec{
-			// Why is the name in the Spec again? Is this different from the ObjectMeta.Name? If not,
-			// maybe it should be removed?
 			Name:       exchangeName,
 			Type:       "headers",
 			Durable:    true,
@@ -1133,14 +1169,9 @@ func createQueue(dlx bool) *rabbitv1beta1.Queue {
 			Labels: resources.ExchangeLabels(broker),
 		},
 		Spec: rabbitv1beta1.QueueSpec{
-			// Why is the name in the Spec again? Is this different from the ObjectMeta.Name? If not,
-			// maybe it should be removed?
 			Name:       queueName,
 			Durable:    true,
 			AutoDelete: false,
-			// TODO: We had before also internal / nowait set to false. Are these in Arguments,
-			// or do they get sane defaults that we can just work with?
-			// TODO: This one has to exist in the same namespace as this exchange.
 			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
 				Name: rabbitMQBrokerName,
 			},
@@ -1189,10 +1220,6 @@ func createBinding(dlx bool) *rabbitv1beta1.Binding {
 			DestinationType: "queue",
 			Destination:     bindingName,
 			Source:          "test-namespace.test-broker.dlx",
-
-			// TODO: We had before also internal / nowait set to false. Are these in Arguments,
-			// or do they get sane defaults that we can just work with?
-			// TODO: This one has to exist in the same namespace as this exchange.
 			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
 				Name: rabbitMQBrokerName,
 			},
@@ -1240,7 +1267,7 @@ func createRabbitMQCluster() *unstructured.Unstructured {
 							"password": "password",
 							"username": "username",
 						},
-						"name":      rabbitBrokerSecretName,
+						"name":      rabbitmqClusterSecretName,
 						"namespace": testNS,
 					},
 					"serviceReference": map[string]interface{}{
