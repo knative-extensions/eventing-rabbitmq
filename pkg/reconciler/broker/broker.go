@@ -454,58 +454,7 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 
 	// TODO: These are copy & paste, we should hoist them out.
 	s := resources.MakeSecret(args)
-	if err := r.reconcileSecret(ctx, s); err != nil {
-		logging.FromContext(ctx).Errorw("Problem reconciling Secret", zap.Error(err))
-		MarkSecretFailed(&b.Status, "SecretFailure", "Failed to reconcile secret: %s", err)
-		return err
-	}
-	MarkSecretReady(&b.Status)
-
-	if err := r.reconcileIngressDeployment(ctx, b); err != nil {
-		logging.FromContext(ctx).Errorw("Problem reconciling ingress Deployment", zap.Error(err))
-		MarkIngressFailed(&b.Status, "DeploymentFailure", "Failed to reconcile deployment: %s", err)
-		return err
-	}
-
-	ingressEndpoints, err := r.reconcileIngressService(ctx, b)
-	if err != nil {
-		logging.FromContext(ctx).Errorw("Problem reconciling ingress Service", zap.Error(err))
-		MarkIngressFailed(&b.Status, "ServiceFailure", "Failed to reconcile service: %s", err)
-		return err
-	}
-	PropagateIngressAvailability(&b.Status, ingressEndpoints)
-
-	SetAddress(&b.Status, &apis.URL{
-		Scheme: "http",
-		Host:   network.GetServiceHostname(ingressEndpoints.GetName(), ingressEndpoints.GetNamespace()),
-	})
-
-	// If there's a Dead Letter Sink, then create a dispatcher for it. Note that this is for
-	// the whole broker, unlike for the Trigger, where we create one dispatcher per Trigger.
-	var dlsURI *apis.URL
-	if b.Spec.Delivery != nil && b.Spec.Delivery.DeadLetterSink != nil {
-		dlsURI, err = r.uriResolver.URIFromDestinationV1(ctx, *b.Spec.Delivery.DeadLetterSink, b)
-		if err != nil {
-			logging.FromContext(ctx).Error("Unable to get the DeadLetterSink URI", zap.Error(err))
-			MarkDeadLetterSinkFailed(&b.Status, "Unable to get the DeadLetterSink's URI", "%v", err)
-			return err
-		}
-
-		// TODO(vaikas): Set the custom annotation for resolved URI?...
-		// TODO(vaikas): Should this be a first level BrokerStatus field?
-	}
-
-	// Note that if we didn't actually resolve the URI above, as in it's left as nil it's ok to pass here
-	// it deals with it properly.
-	if err := r.reconcileDLXDispatchercherDeployment(ctx, b, dlsURI); err != nil {
-		logging.FromContext(ctx).Error("Problem reconciling DLX dispatcher Deployment", zap.Error(err))
-		MarkDeadLetterSinkFailed(&b.Status, "DeploymentFailure", "%v", err)
-		return err
-	}
-
-	// So, at this point the Broker is ready and everything should be solid
-	// for the triggers to act upon.
-	return nil
+	return r.reconcileCommonIngressResources(ctx, s, b)
 }
 
 func (r *Reconciler) reconcileUsingLibraries(ctx context.Context, b *eventingv1.Broker, args *resources.ExchangeArgs) error {
@@ -549,6 +498,25 @@ func (r *Reconciler) reconcileUsingLibraries(ctx context.Context, b *eventingv1.
 	}
 	MarkDeadLetterSinkReady(&b.Status)
 
+	return r.reconcileCommonIngressResources(ctx, s, b)
+}
+
+func isReady(conditions []v1beta1.Condition) bool {
+	numConditions := len(conditions)
+	// If there are no conditions at all, the resource probably hasn't been reconciled yet => not ready
+	if numConditions == 0 {
+		return false
+	}
+	for _, c := range conditions {
+		if c.Status == corev1.ConditionTrue {
+			numConditions--
+		}
+	}
+	return numConditions == 0
+}
+
+// reconcileCommonIngressResources that are shared between implementations using CRDs or libraries.
+func (r *Reconciler) reconcileCommonIngressResources(ctx context.Context, s *corev1.Secret, b *eventingv1.Broker) error {
 	if err := r.reconcileSecret(ctx, s); err != nil {
 		logging.FromContext(ctx).Errorw("Problem reconciling Secret", zap.Error(err))
 		MarkSecretFailed(&b.Status, "SecretFailure", "Failed to reconcile secret: %s", err)
@@ -597,22 +565,5 @@ func (r *Reconciler) reconcileUsingLibraries(ctx context.Context, b *eventingv1.
 		MarkDeadLetterSinkFailed(&b.Status, "DeploymentFailure", "%v", err)
 		return err
 	}
-
-	// So, at this point the Broker is ready and everything should be solid
-	// for the triggers to act upon.
 	return nil
-}
-
-func isReady(conditions []v1beta1.Condition) bool {
-	numConditions := len(conditions)
-	// If there are no conditions at all, the resource probably hasn't been reconciled yet => not ready
-	if numConditions == 0 {
-		return false
-	}
-	for _, c := range conditions {
-		if c.Status == corev1.ConditionTrue {
-			numConditions--
-		}
-	}
-	return numConditions == 0
 }
