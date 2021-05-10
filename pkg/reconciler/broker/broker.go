@@ -147,19 +147,10 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *eventingv1.Broker) pk
 
 	if isUsingOperator(b) {
 		args.RabbitMQCluster = b.Spec.Config.Name
-		err := r.reconcileUsingCRD(ctx, b, args)
-		if err != nil {
-			return err
-		}
+		return r.reconcileUsingCRD(ctx, b, args)
 	} else {
-		err := r.reconcileUsingLibraries(ctx, b, args)
-		if err != nil {
-			return err
-		}
+		return r.reconcileUsingLibraries(ctx, b, args)
 	}
-	// TODO: vaikas. Pull some of the common things (deployments, etc.) from reconcileUsingLibraries into here
-	// that need to be done regardless of whether we're doing a CRD or library based approach.
-	return nil
 }
 
 func (r *Reconciler) FinalizeKind(ctx context.Context, b *eventingv1.Broker) pkgreconciler.Event {
@@ -283,8 +274,8 @@ func (r *Reconciler) reconcileIngressService(ctx context.Context, b *eventingv1.
 	return r.reconcileService(ctx, expected)
 }
 
-//reconcileDispatcherDeployment reconciles Trigger's dispatcher deployment.
-func (r *Reconciler) reconcileDLXDispatchercherDeployment(ctx context.Context, b *eventingv1.Broker, sub *apis.URL) error {
+// reconcileDLXDispatcherDeployment reconciles Brokers DLX dispatcher deployment.
+func (r *Reconciler) reconcileDLXDispatcherDeployment(ctx context.Context, b *eventingv1.Broker, sub *apis.URL) error {
 	// If there's a sub, then reconcile the deployment as usual.
 	if sub != nil {
 		expected := resources.MakeDispatcherDeployment(&resources.DispatcherArgs{
@@ -430,7 +421,7 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 	if queue != nil {
 		if !isReady(queue.Status.Conditions) {
 			logging.FromContext(ctx).Warnf("Queue %q is not ready", queue.Name)
-			MarkDLXFailed(&b.Status, "QueueFailure", "Dead Letter Queue is not ready")
+			MarkDLXFailed(&b.Status, "QueueFailure", fmt.Sprintf("Dead Letter Queue %q is not ready", queue.Name))
 			return nil
 		}
 	}
@@ -446,66 +437,13 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 	if binding != nil {
 		if !isReady(binding.Status.Conditions) {
 			logging.FromContext(ctx).Warnf("Binding %q is not ready", binding.Name)
-			MarkDeadLetterSinkFailed(&b.Status, "DLQ binding", "DLQ binding is not ready")
+			MarkDeadLetterSinkFailed(&b.Status, "DLQ binding", fmt.Sprintf("DLQ binding %q is not ready", binding.Name))
 			return nil
 		}
 	}
 	MarkDeadLetterSinkReady(&b.Status)
 
-	// TODO: These are copy & paste, we should hoist them out.
-	s := resources.MakeSecret(args)
-	if err := r.reconcileSecret(ctx, s); err != nil {
-		logging.FromContext(ctx).Errorw("Problem reconciling Secret", zap.Error(err))
-		MarkSecretFailed(&b.Status, "SecretFailure", "Failed to reconcile secret: %s", err)
-		return err
-	}
-	MarkSecretReady(&b.Status)
-
-	if err := r.reconcileIngressDeployment(ctx, b); err != nil {
-		logging.FromContext(ctx).Errorw("Problem reconciling ingress Deployment", zap.Error(err))
-		MarkIngressFailed(&b.Status, "DeploymentFailure", "Failed to reconcile deployment: %s", err)
-		return err
-	}
-
-	ingressEndpoints, err := r.reconcileIngressService(ctx, b)
-	if err != nil {
-		logging.FromContext(ctx).Errorw("Problem reconciling ingress Service", zap.Error(err))
-		MarkIngressFailed(&b.Status, "ServiceFailure", "Failed to reconcile service: %s", err)
-		return err
-	}
-	PropagateIngressAvailability(&b.Status, ingressEndpoints)
-
-	SetAddress(&b.Status, &apis.URL{
-		Scheme: "http",
-		Host:   network.GetServiceHostname(ingressEndpoints.GetName(), ingressEndpoints.GetNamespace()),
-	})
-
-	// If there's a Dead Letter Sink, then create a dispatcher for it. Note that this is for
-	// the whole broker, unlike for the Trigger, where we create one dispatcher per Trigger.
-	var dlsURI *apis.URL
-	if b.Spec.Delivery != nil && b.Spec.Delivery.DeadLetterSink != nil {
-		dlsURI, err = r.uriResolver.URIFromDestinationV1(ctx, *b.Spec.Delivery.DeadLetterSink, b)
-		if err != nil {
-			logging.FromContext(ctx).Error("Unable to get the DeadLetterSink URI", zap.Error(err))
-			MarkDeadLetterSinkFailed(&b.Status, "Unable to get the DeadLetterSink's URI", "%v", err)
-			return err
-		}
-
-		// TODO(vaikas): Set the custom annotation for resolved URI?...
-		// TODO(vaikas): Should this be a first level BrokerStatus field?
-	}
-
-	// Note that if we didn't actually resolve the URI above, as in it's left as nil it's ok to pass here
-	// it deals with it properly.
-	if err := r.reconcileDLXDispatchercherDeployment(ctx, b, dlsURI); err != nil {
-		logging.FromContext(ctx).Error("Problem reconciling DLX dispatcher Deployment", zap.Error(err))
-		MarkDeadLetterSinkFailed(&b.Status, "DeploymentFailure", "%v", err)
-		return err
-	}
-
-	// So, at this point the Broker is ready and everything should be solid
-	// for the triggers to act upon.
-	return nil
+	return r.reconcileCommonIngressResources(ctx, resources.MakeSecret(args), b)
 }
 
 func (r *Reconciler) reconcileUsingLibraries(ctx context.Context, b *eventingv1.Broker, args *resources.ExchangeArgs) error {
@@ -549,6 +487,25 @@ func (r *Reconciler) reconcileUsingLibraries(ctx context.Context, b *eventingv1.
 	}
 	MarkDeadLetterSinkReady(&b.Status)
 
+	return r.reconcileCommonIngressResources(ctx, s, b)
+}
+
+func isReady(conditions []v1beta1.Condition) bool {
+	numConditions := len(conditions)
+	// If there are no conditions at all, the resource probably hasn't been reconciled yet => not ready
+	if numConditions == 0 {
+		return false
+	}
+	for _, c := range conditions {
+		if c.Status == corev1.ConditionTrue {
+			numConditions--
+		}
+	}
+	return numConditions == 0
+}
+
+// reconcileCommonIngressResources that are shared between implementations using CRDs or libraries.
+func (r *Reconciler) reconcileCommonIngressResources(ctx context.Context, s *corev1.Secret, b *eventingv1.Broker) error {
 	if err := r.reconcileSecret(ctx, s); err != nil {
 		logging.FromContext(ctx).Errorw("Problem reconciling Secret", zap.Error(err))
 		MarkSecretFailed(&b.Status, "SecretFailure", "Failed to reconcile secret: %s", err)
@@ -592,27 +549,10 @@ func (r *Reconciler) reconcileUsingLibraries(ctx context.Context, b *eventingv1.
 
 	// Note that if we didn't actually resolve the URI above, as in it's left as nil it's ok to pass here
 	// it deals with it properly.
-	if err := r.reconcileDLXDispatchercherDeployment(ctx, b, dlsURI); err != nil {
+	if err := r.reconcileDLXDispatcherDeployment(ctx, b, dlsURI); err != nil {
 		logging.FromContext(ctx).Error("Problem reconciling DLX dispatcher Deployment", zap.Error(err))
 		MarkDeadLetterSinkFailed(&b.Status, "DeploymentFailure", "%v", err)
 		return err
 	}
-
-	// So, at this point the Broker is ready and everything should be solid
-	// for the triggers to act upon.
 	return nil
-}
-
-func isReady(conditions []v1beta1.Condition) bool {
-	numConditions := len(conditions)
-	// If there are no conditions at all, the resource probably hasn't been reconciled yet => not ready
-	if numConditions == 0 {
-		return false
-	}
-	for _, c := range conditions {
-		if c.Status == corev1.ConditionTrue {
-			numConditions--
-		}
-	}
-	return numConditions == 0
 }

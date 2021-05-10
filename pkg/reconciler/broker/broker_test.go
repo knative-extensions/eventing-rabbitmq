@@ -18,6 +18,7 @@ package broker
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -74,11 +75,13 @@ const (
 	testNS      = "test-namespace"
 	brokerName  = "test-broker"
 
-	rabbitSecretName       = "test-secret"
-	rabbitBrokerSecretName = "test-broker-broker-rabbit"
-	rabbitURL              = "amqp://localhost:5672/%2f"
-	rabbitMQBrokerName     = "rabbitbrokerhere"
-	ingressImage           = "ingressimage"
+	rabbitSecretName          = "test-secret"
+	rabbitBrokerSecretName    = "test-broker-broker-rabbit"
+	rabbitmqClusterSecretName = "rabbitmqclustersecret"
+	rabbitURL                 = "amqp://localhost:5672/%2f"
+	rabbitmqClusterURL        = "amqp://myusername:mypassword@rabbitmqsvc.test-namespace.svc.cluster.local:5672"
+	rabbitMQBrokerName        = "rabbitbrokerhere"
+	ingressImage              = "ingressimage"
 
 	deadLetterSinkKind       = "Service"
 	deadLetterSinkName       = "badsink"
@@ -290,7 +293,7 @@ func TestReconcile(t *testing.T) {
 			},
 			WantErr: true,
 		}, {
-			Name: "Exchange create, creates Exchange CRD",
+			Name: "Exchange create, creates Exchange CRD, not ready",
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
@@ -298,7 +301,7 @@ func TestReconcile(t *testing.T) {
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(configForRabbitOperator()),
 					WithInitBrokerConditions),
-				createExchangeSecretForRabbitmqCluster(),
+				createSecretForRabbitmqCluster(),
 				createRabbitMQCluster(),
 			},
 			WantCreates: []runtime.Object{
@@ -311,6 +314,182 @@ func TestReconcile(t *testing.T) {
 					WithInitBrokerConditions,
 					WithBrokerConfig(configForRabbitOperator()),
 					WithExchangeFailed("ExchangeFailure", `exchange "test-namespace.test-broker" is not ready`)),
+			}},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, brokerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
+			},
+		}, {
+			Name: "Exchange exists, creates DLX exchange CRD",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBroker(brokerName, testNS,
+					WithBrokerUID("uid-for-test"),
+					WithBrokerClass(brokerClass),
+					WithBrokerConfig(configForRabbitOperator()),
+					WithInitBrokerConditions),
+				createSecretForRabbitmqCluster(),
+				createRabbitMQCluster(),
+				createReadyExchange(false),
+			},
+			WantCreates: []runtime.Object{
+				createExchange(true),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBroker(brokerName, testNS,
+					WithBrokerUID("uid-for-test"),
+					WithBrokerClass(brokerClass),
+					WithInitBrokerConditions,
+					WithBrokerConfig(configForRabbitOperator()),
+					WithExchangeFailed("ExchangeFailure", `DLX exchange "test-namespace.test-broker.dlx" is not ready`)),
+			}},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, brokerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
+			},
+		}, {
+			Name: "Both exchanges exist, creates queue CRD",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBroker(brokerName, testNS,
+					WithBrokerUID("uid-for-test"),
+					WithBrokerClass(brokerClass),
+					WithBrokerConfig(configForRabbitOperator()),
+					WithInitBrokerConditions),
+				createSecretForRabbitmqCluster(),
+				createRabbitMQCluster(),
+				createReadyExchange(false),
+				createReadyExchange(true),
+			},
+			WantCreates: []runtime.Object{
+				createQueue(true),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBroker(brokerName, testNS,
+					WithBrokerUID("uid-for-test"),
+					WithBrokerClass(brokerClass),
+					WithInitBrokerConditions,
+					WithBrokerConfig(configForRabbitOperator()),
+					WithExchangeReady(),
+					WithDLXFailed("QueueFailure", `Dead Letter Queue "test-namespace.test-broker.dlq" is not ready`)),
+			}},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, brokerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
+			},
+		}, {
+			Name: "Both exchanges exist, queue exists, creates binding CRD",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBroker(brokerName, testNS,
+					WithBrokerUID("uid-for-test"),
+					WithBrokerClass(brokerClass),
+					WithBrokerConfig(configForRabbitOperator()),
+					WithInitBrokerConditions),
+				createSecretForRabbitmqCluster(),
+				createRabbitMQCluster(),
+				createReadyExchange(false),
+				createReadyExchange(true),
+				createReadyQueue(true),
+			},
+			WantCreates: []runtime.Object{
+				createBinding(true),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBroker(brokerName, testNS,
+					WithBrokerUID("uid-for-test"),
+					WithBrokerClass(brokerClass),
+					WithInitBrokerConditions,
+					WithBrokerConfig(configForRabbitOperator()),
+					WithExchangeReady(),
+					WithDLXReady(),
+					WithDeadLetterSinkFailed("DLQ binding", `DLQ binding "test-namespace.test-broker.dlq" is not ready`)),
+			}},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, brokerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
+			},
+		}, {
+			Name: "Both exchanges exist, queue exists, binding ready, creates secret, deployment, and service, endpoints not ready",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerClass),
+					WithBrokerConfig(configForRabbitOperator()),
+					WithInitBrokerConditions),
+				createSecretForRabbitmqCluster(),
+				createRabbitMQCluster(),
+				createReadyExchange(false),
+				createReadyExchange(true),
+				createReadyQueue(true),
+				createReadyBinding(true),
+			},
+			WantCreates: []runtime.Object{
+				createBrokerSecretFromRabbitmqCluster(),
+				createIngressDeployment(),
+				createIngressService(),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerClass),
+					WithInitBrokerConditions,
+					WithBrokerConfig(configForRabbitOperator()),
+					WithIngressFailed("ServiceFailure", `Failed to reconcile service: endpoints "test-broker-broker-ingress" not found`),
+					WithSecretReady(),
+					WithExchangeReady(),
+					WithDLXReady(),
+					WithDeadLetterSinkReady()),
+			}},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, brokerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
+				Eventf(corev1.EventTypeWarning, "InternalError", `endpoints "test-broker-broker-ingress" not found`),
+			},
+			WantErr: true,
+		}, {
+			Name: "Both exchanges exist, queue exists, binding ready, creates secret, deployment, and service, endpoints ready",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerClass),
+					WithBrokerConfig(configForRabbitOperator()),
+					WithInitBrokerConditions),
+				createSecretForRabbitmqCluster(),
+				createRabbitMQCluster(),
+				createReadyExchange(false),
+				createReadyExchange(true),
+				createReadyQueue(true),
+				createReadyBinding(true),
+				rt.NewEndpoints(ingressServiceName, testNS,
+					rt.WithEndpointsLabels(IngressLabels()),
+					rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
+			},
+			WantCreates: []runtime.Object{
+				createBrokerSecretFromRabbitmqCluster(),
+				createIngressDeployment(),
+				createIngressService(),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerClass),
+					WithInitBrokerConditions,
+					WithBrokerConfig(configForRabbitOperator()),
+					WithBrokerAddressURI(brokerAddress),
+					WithIngressAvailable(),
+					WithSecretReady(),
+					WithExchangeReady(),
+					WithDLXReady(),
+					WithDeadLetterSinkReady()),
 			}},
 			WantPatches: []clientgotesting.PatchActionImpl{
 				patchFinalizers(testNS, brokerName),
@@ -751,7 +930,7 @@ func createSecret(data string) *corev1.Secret {
 }
 
 // This is the secret that Broker creates for each broker.
-func createExchangeSecret() *corev1.Secret {
+func createBrokerSecret(data string) *corev1.Secret {
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: testNS,
@@ -766,38 +945,31 @@ func createExchangeSecret() *corev1.Secret {
 			}},
 		},
 		StringData: map[string]string{
-			"brokerURL": rabbitURL,
+			"brokerURL": data,
 		},
 	}
+
+}
+
+func createExchangeSecret() *corev1.Secret {
+	return createBrokerSecret(rabbitURL)
 }
 
 func createDifferentExchangeSecret() *corev1.Secret {
-	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: testNS,
-			Name:      rabbitBrokerSecretName,
-			Labels:    map[string]string{"eventing.knative.dev/broker": "test-broker"},
-			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "eventing.knative.dev/v1",
-				Kind:               "Broker",
-				Name:               brokerName,
-				Controller:         &TrueValue,
-				BlockOwnerDeletion: &TrueValue,
-			}},
-		},
-		StringData: map[string]string{
-			"brokerURL": "different stuff",
-		},
-	}
+	return createBrokerSecret("different stuff")
 }
 
-// This is the secret that Broker creates for each broker with RabbitmqCluster, format
-// for it is different, has password / username fields instead of brokerURL.
-func createExchangeSecretForRabbitmqCluster() *corev1.Secret {
+// Create Broker Secret that's derived from the rabbitmq cluster status.
+func createBrokerSecretFromRabbitmqCluster() *corev1.Secret {
+	return createBrokerSecret(rabbitmqClusterURL)
+}
+
+// This is the secret that RabbitmqClusters creates.
+func createSecretForRabbitmqCluster() *corev1.Secret {
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: testNS,
-			Name:      rabbitBrokerSecretName,
+			Name:      rabbitmqClusterSecretName,
 			Labels:    map[string]string{"eventing.knative.dev/broker": "test-broker"},
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         "eventing.knative.dev/v1",
@@ -929,7 +1101,13 @@ func createExchange(dlx bool) *rabbitv1beta1.Exchange {
 			UID:       "uid-for-test",
 		},
 	}
-	exchangeName := fmt.Sprintf("%s.%s", testNS, brokerName)
+	var exchangeName string
+	if dlx {
+		exchangeName = fmt.Sprintf("%s.%s.dlx", testNS, brokerName)
+	} else {
+		exchangeName = fmt.Sprintf("%s.%s", testNS, brokerName)
+	}
+
 	return &rabbitv1beta1.Exchange{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: testNS,
@@ -940,8 +1118,6 @@ func createExchange(dlx bool) *rabbitv1beta1.Exchange {
 			Labels: resources.ExchangeLabels(broker),
 		},
 		Spec: rabbitv1beta1.ExchangeSpec{
-			// Why is the name in the Spec again? Is this different from the ObjectMeta.Name? If not,
-			// maybe it should be removed?
 			Name:       exchangeName,
 			Type:       "headers",
 			Durable:    true,
@@ -954,6 +1130,114 @@ func createExchange(dlx bool) *rabbitv1beta1.Exchange {
 			},
 		},
 	}
+}
+
+func createReadyExchange(dlx bool) *rabbitv1beta1.Exchange {
+	e := createExchange(dlx)
+	e.Status = rabbitv1beta1.ExchangeStatus{
+		Conditions: []rabbitv1beta1.Condition{
+			{
+				Status: corev1.ConditionTrue,
+			},
+		},
+	}
+	return e
+}
+
+func createQueue(dlx bool) *rabbitv1beta1.Queue {
+	broker := &eventingv1.Broker{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      brokerName,
+			Namespace: testNS,
+			UID:       "uid-for-test",
+		},
+	}
+	var queueName string
+	if dlx {
+		queueName = fmt.Sprintf("%s.%s.dlq", testNS, brokerName)
+	} else {
+		queueName = fmt.Sprintf("%s.%s", testNS, brokerName)
+	}
+
+	return &rabbitv1beta1.Queue{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: testNS,
+			Name:      queueName,
+			OwnerReferences: []metav1.OwnerReference{
+				*kmeta.NewControllerRef(broker),
+			},
+			Labels: resources.ExchangeLabels(broker),
+		},
+		Spec: rabbitv1beta1.QueueSpec{
+			Name:       queueName,
+			Durable:    true,
+			AutoDelete: false,
+			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
+				Name: rabbitMQBrokerName,
+			},
+		},
+	}
+}
+
+func createReadyQueue(dlx bool) *rabbitv1beta1.Queue {
+	q := createQueue(dlx)
+	q.Status = rabbitv1beta1.QueueStatus{
+		Conditions: []rabbitv1beta1.Condition{
+			{
+				Status: corev1.ConditionTrue,
+			},
+		},
+	}
+	return q
+}
+
+func createBinding(dlx bool) *rabbitv1beta1.Binding {
+	broker := &eventingv1.Broker{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      brokerName,
+			Namespace: testNS,
+			UID:       "uid-for-test",
+		},
+	}
+	var bindingName string
+	if dlx {
+		bindingName = fmt.Sprintf("%s.%s.dlq", testNS, brokerName)
+	} else {
+		bindingName = fmt.Sprintf("%s.%s", testNS, brokerName)
+	}
+
+	return &rabbitv1beta1.Binding{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: testNS,
+			Name:      bindingName,
+			OwnerReferences: []metav1.OwnerReference{
+				*kmeta.NewControllerRef(broker),
+			},
+			Labels: resources.ExchangeLabels(broker),
+		},
+		Spec: rabbitv1beta1.BindingSpec{
+			Vhost:           "/",
+			DestinationType: "queue",
+			Destination:     bindingName,
+			Source:          "test-namespace.test-broker.dlx",
+			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
+				Name: rabbitMQBrokerName,
+			},
+			Arguments: getBrokerArguments(),
+		},
+	}
+}
+
+func createReadyBinding(dlx bool) *rabbitv1beta1.Binding {
+	b := createBinding(dlx)
+	b.Status = rabbitv1beta1.BindingStatus{
+		Conditions: []rabbitv1beta1.Condition{
+			{
+				Status: corev1.ConditionTrue,
+			},
+		},
+	}
+	return b
 }
 
 func createRabbitMQCluster() *unstructured.Unstructured {
@@ -983,7 +1267,7 @@ func createRabbitMQCluster() *unstructured.Unstructured {
 							"password": "password",
 							"username": "username",
 						},
-						"name":      rabbitBrokerSecretName,
+						"name":      rabbitmqClusterSecretName,
 						"namespace": testNS,
 					},
 					"serviceReference": map[string]interface{}{
@@ -1003,5 +1287,19 @@ func createRabbitMQCluster() *unstructured.Unstructured {
 				},
 			},
 		},
+	}
+}
+
+func getBrokerArguments() *runtime.RawExtension {
+	arguments := map[string]string{
+		"x-match":           "all",
+		"x-knative-trigger": brokerName,
+	}
+	argumentsJson, err := json.Marshal(arguments)
+	if err != nil {
+		panic("Failed to marshal json for test, no go.")
+	}
+	return &runtime.RawExtension{
+		Raw: argumentsJson,
 	}
 }
