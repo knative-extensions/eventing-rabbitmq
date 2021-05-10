@@ -53,7 +53,7 @@ func (r *Reconciler) getExchangeArgs(ctx context.Context, b *eventingv1.Broker) 
 func (r *Reconciler) rabbitmqURL(ctx context.Context, b *eventingv1.Broker) (*url.URL, error) {
 	if b.Spec.Config != nil {
 		if b.Spec.Config.Namespace == "" || b.Spec.Config.Name == "" {
-			return nil, errors.New("broker.spec.config.[name, namespace] are required") // TODO: throwing an error here is wrong. This should set a custom condition.
+			return nil, errors.New("broker.spec.config.[name, namespace] are required")
 		}
 
 		gvk := fmt.Sprintf("%s.%s", b.Spec.Config.Kind, b.Spec.Config.APIVersion)
@@ -64,18 +64,18 @@ func (r *Reconciler) rabbitmqURL(ctx context.Context, b *eventingv1.Broker) (*ur
 			if err != nil {
 				logging.FromContext(ctx).Errorw("Unable to load RabbitMQ Broker URL from Broker.Spec.Config as v1:Secret.", zap.Error(err))
 			}
-			return u, err // TODO: throwing an error here is wrong. This should set a custom condition.
+			return u, err
 		case "RabbitmqCluster.rabbitmq.com/v1beta1":
 			u, err := r.rabbitmqURLFromRabbit(ctx, b.Spec.Config)
 			if err != nil {
 				logging.FromContext(ctx).Errorw("Unable to load RabbitMQ Broker URL from Broker.Spec.Config as rabbitmq.com/v1beta1:RabbitmqCluster.", zap.Error(err))
 			}
-			return u, err // TODO: throwing an error here is wrong. This should set a custom condition.
+			return u, err
 		default:
 			return nil, errors.New("Broker.Spec.Config configuration not supported, only [kind: Secret, apiVersion: v1 or kind: RabbitmqCluster, apiVersion: rabbitmq.com/v1beta1]") // TODO: throwing an error here is wrong. This should set a custom condition.
 		}
 	}
-	return nil, errors.New("Broker.Spec.Config is required") // TODO: throwing an error here is wrong. This should set a custom condition.
+	return nil, errors.New("Broker.Spec.Config is required")
 }
 
 func (r *Reconciler) rabbitmqURLFromSecret(ctx context.Context, ref *duckv1.KReference) (*url.URL, error) {

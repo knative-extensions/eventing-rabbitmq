@@ -147,19 +147,10 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *eventingv1.Broker) pk
 
 	if isUsingOperator(b) {
 		args.RabbitMQCluster = b.Spec.Config.Name
-		err := r.reconcileUsingCRD(ctx, b, args)
-		if err != nil {
-			return err
-		}
+		return r.reconcileUsingCRD(ctx, b, args)
 	} else {
-		err := r.reconcileUsingLibraries(ctx, b, args)
-		if err != nil {
-			return err
-		}
+		return r.reconcileUsingLibraries(ctx, b, args)
 	}
-	// TODO: vaikas. Pull some of the common things (deployments, etc.) from reconcileUsingLibraries into here
-	// that need to be done regardless of whether we're doing a CRD or library based approach.
-	return nil
 }
 
 func (r *Reconciler) FinalizeKind(ctx context.Context, b *eventingv1.Broker) pkgreconciler.Event {
@@ -283,8 +274,8 @@ func (r *Reconciler) reconcileIngressService(ctx context.Context, b *eventingv1.
 	return r.reconcileService(ctx, expected)
 }
 
-//reconcileDispatcherDeployment reconciles Trigger's dispatcher deployment.
-func (r *Reconciler) reconcileDLXDispatchercherDeployment(ctx context.Context, b *eventingv1.Broker, sub *apis.URL) error {
+// reconcileDLXDispatcherDeployment reconciles Brokers DLX dispatcher deployment.
+func (r *Reconciler) reconcileDLXDispatcherDeployment(ctx context.Context, b *eventingv1.Broker, sub *apis.URL) error {
 	// If there's a sub, then reconcile the deployment as usual.
 	if sub != nil {
 		expected := resources.MakeDispatcherDeployment(&resources.DispatcherArgs{
@@ -452,9 +443,7 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 	}
 	MarkDeadLetterSinkReady(&b.Status)
 
-	// TODO: These are copy & paste, we should hoist them out.
-	s := resources.MakeSecret(args)
-	return r.reconcileCommonIngressResources(ctx, s, b)
+	return r.reconcileCommonIngressResources(ctx, resources.MakeSecret(args), b)
 }
 
 func (r *Reconciler) reconcileUsingLibraries(ctx context.Context, b *eventingv1.Broker, args *resources.ExchangeArgs) error {
@@ -560,7 +549,7 @@ func (r *Reconciler) reconcileCommonIngressResources(ctx context.Context, s *cor
 
 	// Note that if we didn't actually resolve the URI above, as in it's left as nil it's ok to pass here
 	// it deals with it properly.
-	if err := r.reconcileDLXDispatchercherDeployment(ctx, b, dlsURI); err != nil {
+	if err := r.reconcileDLXDispatcherDeployment(ctx, b, dlsURI); err != nil {
 		logging.FromContext(ctx).Error("Problem reconciling DLX dispatcher Deployment", zap.Error(err))
 		MarkDeadLetterSinkFailed(&b.Status, "DeploymentFailure", "%v", err)
 		return err
