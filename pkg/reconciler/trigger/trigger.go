@@ -423,7 +423,6 @@ func (r *Reconciler) rabbitmqURL(ctx context.Context, t *eventingv1.Trigger) (st
 func (r *Reconciler) reconcileQueue(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger) (*v1beta1.Queue, error) {
 	queueName := resources.CreateTriggerQueueName(t)
 	want := resources.NewQueue(ctx, b, t)
-	logging.FromContext(ctx).Infow("WANT QUEUE", zap.Any("queue", want))
 	current, err := r.queueLister.Queues(b.Namespace).Get(queueName)
 	if apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Debugw("Creating rabbitmq exchange", zap.String("queue name", want.Name))
