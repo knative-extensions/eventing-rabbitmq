@@ -415,7 +415,7 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 	logging.FromContext(ctx).Info("Reconciling queue")
 	queue, err := r.reconcileQueue(ctx, b)
 	if err != nil {
-		MarkDLXFailed(&b.Status, "QueueFailure", "Failed to reconcile Dead Letter Queue: %s", err)
+		MarkDLXFailed(&b.Status, "QueueFailure", fmt.Sprintf("Failed to reconcile Dead Letter Queue %q : %s", triggerresources.CreateBrokerDeadLetterQueueName(b), err))
 		return err
 	}
 	if queue != nil {
@@ -431,7 +431,8 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 	logging.FromContext(ctx).Info("Reconciling binding")
 	binding, err := r.reconcileBinding(ctx, b)
 	if err != nil {
-		MarkDeadLetterSinkFailed(&b.Status, "DLQ binding", "%v", err)
+		// NB, binding has the same name as the queue.
+		MarkDeadLetterSinkFailed(&b.Status, "DLQ binding", fmt.Sprintf("Failed to reconcile DLQ binding %q : %s", triggerresources.CreateBrokerDeadLetterQueueName(b), err))
 		return err
 	}
 	if binding != nil {
