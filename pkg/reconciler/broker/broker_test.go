@@ -354,7 +354,6 @@ func TestReconcile(t *testing.T) {
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(configForRabbitOperator()),
 					WithInitBrokerConditions),
-				createSecretForRabbitmqCluster(),
 				createRabbitMQClusterMissingServiceRef(),
 			},
 			WantErr: true,
@@ -372,6 +371,89 @@ func TestReconcile(t *testing.T) {
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
 				Eventf(corev1.EventTypeWarning, "InternalError", `rabbit "test-namespace/rabbitbrokerhere" not ready`),
+			},
+		}, {
+			Name: "Broker ready, no secret",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBroker(brokerName, testNS,
+					WithBrokerUID("uid-for-test"),
+					WithBrokerClass(brokerClass),
+					WithBrokerConfig(configForRabbitOperator()),
+					WithInitBrokerConditions),
+				createRabbitMQCluster(),
+			},
+			WantErr: true,
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBroker(brokerName, testNS,
+					WithBrokerUID("uid-for-test"),
+					WithBrokerClass(brokerClass),
+					WithInitBrokerConditions,
+					WithBrokerConfig(configForRabbitOperator()),
+					WithExchangeFailed("ExchangeCredentialsUnavailable", `Failed to get arguments for creating exchange: secrets "rabbitmqclustersecret" not found`)),
+			}},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, brokerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
+				Eventf(corev1.EventTypeWarning, "InternalError", `secrets "rabbitmqclustersecret" not found`),
+			},
+		}, {
+			Name: "Broker ready, secret missing username",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBroker(brokerName, testNS,
+					WithBrokerUID("uid-for-test"),
+					WithBrokerClass(brokerClass),
+					WithBrokerConfig(configForRabbitOperator()),
+					WithInitBrokerConditions),
+				createSecretForRabbitmqClusterNoUser(),
+				createRabbitMQCluster(),
+			},
+			WantErr: true,
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBroker(brokerName, testNS,
+					WithBrokerUID("uid-for-test"),
+					WithBrokerClass(brokerClass),
+					WithInitBrokerConditions,
+					WithBrokerConfig(configForRabbitOperator()),
+					WithExchangeFailed("ExchangeCredentialsUnavailable", `Failed to get arguments for creating exchange: rabbit Secret missing key username`)),
+			}},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, brokerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
+				Eventf(corev1.EventTypeWarning, "InternalError", `rabbit Secret missing key username`),
+			},
+		}, {
+			Name: "Broker ready, secret missing password",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBroker(brokerName, testNS,
+					WithBrokerUID("uid-for-test"),
+					WithBrokerClass(brokerClass),
+					WithBrokerConfig(configForRabbitOperator()),
+					WithInitBrokerConditions),
+				createSecretForRabbitmqClusterNoPassword(),
+				createRabbitMQCluster(),
+			},
+			WantErr: true,
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBroker(brokerName, testNS,
+					WithBrokerUID("uid-for-test"),
+					WithBrokerClass(brokerClass),
+					WithInitBrokerConditions,
+					WithBrokerConfig(configForRabbitOperator()),
+					WithExchangeFailed("ExchangeCredentialsUnavailable", `Failed to get arguments for creating exchange: rabbit Secret missing key password`)),
+			}},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, brokerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
+				Eventf(corev1.EventTypeWarning, "InternalError", `rabbit Secret missing key password`),
 			},
 		}, {
 			Name: "Exchange CRD create fails",
@@ -1207,6 +1289,48 @@ func createSecretForRabbitmqCluster() *corev1.Secret {
 		},
 		Data: map[string][]byte{
 			"password": []byte("mypassword"),
+			"username": []byte("myusername"),
+		},
+	}
+}
+
+// This is the secret that RabbitmqClusters creates that's missing username.
+func createSecretForRabbitmqClusterNoUser() *corev1.Secret {
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: testNS,
+			Name:      rabbitmqClusterSecretName,
+			Labels:    map[string]string{"eventing.knative.dev/broker": "test-broker"},
+			OwnerReferences: []metav1.OwnerReference{{
+				APIVersion:         "eventing.knative.dev/v1",
+				Kind:               "Broker",
+				Name:               brokerName,
+				Controller:         &TrueValue,
+				BlockOwnerDeletion: &TrueValue,
+			}},
+		},
+		Data: map[string][]byte{
+			"password": []byte("mypassword"),
+		},
+	}
+}
+
+// This is the secret that RabbitmqClusters creates that's missing password.
+func createSecretForRabbitmqClusterNoPassword() *corev1.Secret {
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: testNS,
+			Name:      rabbitmqClusterSecretName,
+			Labels:    map[string]string{"eventing.knative.dev/broker": "test-broker"},
+			OwnerReferences: []metav1.OwnerReference{{
+				APIVersion:         "eventing.knative.dev/v1",
+				Kind:               "Broker",
+				Name:               brokerName,
+				Controller:         &TrueValue,
+				BlockOwnerDeletion: &TrueValue,
+			}},
+		},
+		Data: map[string][]byte{
 			"username": []byte("myusername"),
 		},
 	}
