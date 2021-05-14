@@ -43,10 +43,10 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v2
 
-    - id: go_mod
-      uses: andstor/file-existence-action@v1
-      with:
-        files: go.mod
+      - id: go_mod
+        uses: andstor/file-existence-action@v1
+        with:
+          files: go.mod
 
       - name: Build
         if: ${{ steps.go_mod.outputs.files_exists == 'true' }}
@@ -61,4 +61,4 @@ jobs:
                 tr '\n' ' ')"
 
           echo "Building with tags: ${tags}"
-          go test -vet=off -tags "${tags}" -run=^$ ./...
+          go test -vet=off -tags "${tags}" -exec echo ./...
