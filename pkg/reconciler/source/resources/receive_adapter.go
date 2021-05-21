@@ -61,6 +61,10 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 			},
 		},
 		{
+			Name:  "RABBITMQ_VHOST",
+			Value: args.Source.Spec.Vhost,
+		},
+		{
 			Name:  "RABBITMQ_ROUTING_KEY",
 			Value: args.Source.Spec.QueueConfig.RoutingKey,
 		},
