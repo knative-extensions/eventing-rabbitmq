@@ -219,10 +219,11 @@ github.com/google/go-querystring/query
 # github.com/google/gofuzz v1.2.0
 github.com/google/gofuzz
 github.com/google/gofuzz/bytesource
-# github.com/google/licenseclassifier v0.0.0-20200708223521-3d09a0ea2f39
+# github.com/google/licenseclassifier v0.0.0-20210325184830-bb04aff29e72
 ## explicit
 github.com/google/licenseclassifier
 github.com/google/licenseclassifier/internal/sets
+github.com/google/licenseclassifier/licenses
 github.com/google/licenseclassifier/stringclassifier
 github.com/google/licenseclassifier/stringclassifier/internal/pq
 github.com/google/licenseclassifier/stringclassifier/searchset
