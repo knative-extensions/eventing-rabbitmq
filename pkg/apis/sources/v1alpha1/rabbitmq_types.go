@@ -136,7 +136,7 @@ type RabbitmqSourceSpec struct {
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 	// VHost is the name of the VHost that will be used to set up our sources
 	// +optional
-	Vhost string `json:vhost,omitempty`
+	Vhost string `json:"vhost,omitempty"`
 }
 
 // SecretValueFromSource represents the source of a secret value

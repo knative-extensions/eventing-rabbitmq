@@ -13,7 +13,7 @@ require (
 	github.com/go-openapi/spec v0.19.7 // indirect
 	github.com/go-redis/redis v6.15.9+incompatible // indirect
 	github.com/google/go-cmp v0.5.5
-	github.com/google/licenseclassifier v0.0.0-20200708223521-3d09a0ea2f39
+	github.com/google/licenseclassifier v0.0.0-20210325184830-bb04aff29e72
 	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/influxdata/tdigest v0.0.1 // indirect
 	github.com/kelseyhightower/envconfig v1.4.0
