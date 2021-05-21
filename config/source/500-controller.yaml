@@ -32,7 +32,7 @@ spec:
       serviceAccountName: rabbitmq-controller-manager
       containers:
         - name: manager
-          image: ko://knative.dev/eventing-rabbitmq/cmd/controller/source
+          image: ko://github.com/gabo1208/eventing-rabbitmq/cmd/controller/source
           imagePullPolicy: IfNotPresent
           env:
             - name: SYSTEM_NAMESPACE
@@ -44,7 +44,7 @@ spec:
             - name: CONFIG_OBSERVABILITY_NAME
               value: config-observability
             - name: RABBITMQ_RA_IMAGE
-              value: ko://knative.dev/eventing-rabbitmq/cmd/receive_adapter
+              value: ko://github.com/gabo1208/eventing-rabbitmq/cmd/receive_adapter
           volumeMounts:
           resources:
             limits:
