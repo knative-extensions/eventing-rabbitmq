@@ -12,13 +12,8 @@ require (
 	github.com/fsouza/go-dockerclient v1.6.5 // indirect
 	github.com/go-openapi/spec v0.19.7 // indirect
 	github.com/go-redis/redis v6.15.9+incompatible // indirect
-<<<<<<< HEAD
 	github.com/google/go-cmp v0.5.6
 	github.com/google/licenseclassifier v0.0.0-20200708223521-3d09a0ea2f39
-=======
-	github.com/google/go-cmp v0.5.5
-	github.com/google/licenseclassifier v0.0.0-20210325184830-bb04aff29e72
->>>>>>> c6ce18da (feat: added vhost capability and trying to test the build)
 	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/influxdata/tdigest v0.0.1 // indirect
 	github.com/kelseyhightower/envconfig v1.4.0
