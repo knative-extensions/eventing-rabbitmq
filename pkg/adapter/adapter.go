@@ -71,6 +71,7 @@ type adapterConfig struct {
 	Topic          string `envconfig:"RABBITMQ_TOPIC" required:"true"`
 	User           string `envconfig:"RABBITMQ_USER" required:"false"`
 	Password       string `envconfig:"RABBITMQ_PASSWORD" required:"false"`
+	Vhost          string `envconfig:"RABBITMQ_VHOST" required:"false"`
 	ChannelConfig  ChannelConfig
 	ExchangeConfig ExchangeConfig
 	QueueConfig    QueueConfig
@@ -106,7 +107,7 @@ func NewAdapter(ctx context.Context, processed adapter.EnvConfigAccessor, httpMe
 
 func (a *Adapter) CreateConn(User string, Password string, logger *zap.Logger) (*amqp.Conn, error) {
 	if User != "" && Password != "" {
-		a.config.Brokers = fmt.Sprintf("amqp://%s:%s@%s", a.config.User, a.config.Password, a.config.Brokers)
+		a.config.Brokers = fmt.Sprintf("amqp://%s:%s@%s/%s", a.config.User, a.config.Password, a.config.Brokers, a.config.Vhost)
 	}
 	conn, err := amqp.Dial(a.config.Brokers)
 	if err != nil {
