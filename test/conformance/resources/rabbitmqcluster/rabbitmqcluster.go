@@ -18,12 +18,23 @@ package rabbitmqcluster
 
 import (
 	"context"
+	"fmt"
+	"net/url"
 	"time"
 
-	"k8s.io/apimachinery/pkg/runtime/schema"
+	"knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
+	kubeclient "knative.dev/pkg/client/injection/kube/client"
+
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/k8s"
 	"knative.dev/reconciler-test/pkg/manifest"
+
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	duckv1beta1 "knative.dev/eventing-rabbitmq/pkg/apis/duck/v1beta1"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"knative.dev/pkg/network"
 )
 
 func GVR() schema.GroupVersionResource {
@@ -49,4 +60,44 @@ func Install(name string, opts ...manifest.CfgFn) feature.StepFn {
 // IsReady tests to see if a RabbitmqCluster becomes ready within the time given.
 func IsReady(name string, timing ...time.Duration) feature.StepFn {
 	return k8s.IsReady(GVR(), name, timing...)
+}
+
+func RabbitmqURLFromRabbit(ctx context.Context, namespace, name string) (*url.URL, error) {
+	// TODO: make this better.
+	_, lister, err := rabbit.Get(ctx).Get(ctx, GVR())
+	if err != nil {
+		return nil, err
+	}
+
+	o, err := lister.ByNamespace(namespace).Get(name)
+	if err != nil {
+		return nil, err
+	}
+
+	rab := o.(*duckv1beta1.Rabbit)
+
+	if rab.Status.DefaultUser == nil || rab.Status.DefaultUser.SecretReference == nil || rab.Status.DefaultUser.ServiceReference == nil {
+		return nil, fmt.Errorf("rabbit \"%s/%s\" not ready", namespace, name)
+	}
+
+	_ = rab.Status.DefaultUser.SecretReference
+
+	s, err := kubeclient.Get(ctx).CoreV1().Secrets(rab.Status.DefaultUser.SecretReference.Namespace).Get(ctx, rab.Status.DefaultUser.SecretReference.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	password, ok := s.Data[rab.Status.DefaultUser.SecretReference.Keys["password"]]
+	if !ok {
+		return nil, fmt.Errorf("rabbit Secret missing key %s", rab.Status.DefaultUser.SecretReference.Keys["password"])
+	}
+
+	username, ok := s.Data[rab.Status.DefaultUser.SecretReference.Keys["username"]]
+	if !ok {
+		return nil, fmt.Errorf("rabbit Secret missing key %s", rab.Status.DefaultUser.SecretReference.Keys["username"])
+	}
+
+	host := network.GetServiceHostname(rab.Status.DefaultUser.ServiceReference.Name, rab.Status.DefaultUser.ServiceReference.Namespace)
+
+	return url.Parse(fmt.Sprintf("amqp://%s:%s@%s:%d", username, password, host, 5672))
 }

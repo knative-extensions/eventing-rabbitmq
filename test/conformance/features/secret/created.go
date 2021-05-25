@@ -17,20 +17,19 @@ limitations under the License.
 package secret
 
 import (
+	"context"
 	"fmt"
 
 	"knative.dev/reconciler-test/pkg/feature"
+	"knative.dev/reconciler-test/pkg/manifest"
 
 	"knative.dev/eventing-rabbitmq/test/conformance/resources/secret"
 )
 
-// GetsCreated returns a feature that will create a secret from a RabbitmqCluster.
-func GetsCreated(name string, brokerURL string) *feature.Feature {
+// Created returns a feature that will create a RabbitmqCluster
+// and confirm it becomes ready
+func Created(name, rabbitmqCluster string, ctx context.Context, cfg ...manifest.CfgFn) *feature.Feature {
 	f := new(feature.Feature)
-	cfg := map[string]interface{}{
-		"name":      name,
-		"brokerUrl": brokerURL,
-	}
-	f.Setup(fmt.Sprintf("install secret %q", name), secret.Install(name, cfg...))
+	f.Setup(fmt.Sprintf("install rabbitmqcluster %q", name), secret.Install(name, rabbitmqCluster, ctx, cfg...))
 	return f
 }

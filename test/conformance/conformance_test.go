@@ -47,7 +47,8 @@ func TestBrokerConformance(t *testing.T) {
 	)
 
 	env.Prerequisite(ctx, t, rabbitmqcluster.GoesReady("rabbitbroker", b.WithEnvConfig()...))
-	env.Prerequisite(ctx, t, secret.GetsCreated("rabbitbrokersecret", rabbitmqcluster.GetBrokerURL("rabbitbroker, b.WithEnvConfig()...")))
+	//	env.Prerequisite(ctx, t, secret.Install("rabbitbrokersecret", "rabbitbroker", ctx, b.WithEnvConfig()...))
+	env.Prerequisite(ctx, t, secret.Created("rabbitbroker-secret", "rabbitbroker", ctx, b.WithEnvConfig()...))
 	// Install and wait for a Ready Broker.
 	env.Prerequisite(ctx, t, broker.GoesReady("default", b.WithEnvConfig()...))
 
