@@ -19,7 +19,6 @@ package broker
 import (
 	"context"
 	"fmt"
-	"net/http"
 
 	"go.uber.org/zap"
 	v1 "k8s.io/api/apps/v1"
@@ -39,7 +38,6 @@ import (
 	"github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	rabbitclientset "github.com/rabbitmq/messaging-topology-operator/pkg/generated/clientset/versioned"
 	rabbitlisters "github.com/rabbitmq/messaging-topology-operator/pkg/generated/listers/rabbitmq.com/v1beta1"
-	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
 	triggerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
@@ -84,21 +82,12 @@ type Reconciler struct {
 	// If specified, only reconcile brokers with these labels
 	brokerClass string
 
-	// Which dialer to use.
-	dialerFunc dialer.DialerFunc
-
 	// Image to use for the DeadLetterSink dispatcher
 	dispatcherImage string
-
-	// Which HTTP transport to use
-	transport http.RoundTripper
-	// For testing...
-	adminURL string
 }
 
 // Check that our Reconciler implements Interface
 var _ brokerreconciler.Interface = (*Reconciler)(nil)
-var _ brokerreconciler.Finalizer = (*Reconciler)(nil)
 
 // ReconcilerArgs are the arguments needed to create a broker.Reconciler.
 type ReconcilerArgs struct {
@@ -145,45 +134,12 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *eventingv1.Broker) pk
 		return err
 	}
 
-	if isUsingOperator(b) {
-		args.RabbitMQCluster = b.Spec.Config.Name
-		return r.reconcileUsingCRD(ctx, b, args)
-	} else {
-		return r.reconcileUsingLibraries(ctx, b, args)
+	if !isUsingOperator(b) {
+		// TODO: We need to flag this as an error. Or, maybe it comes from above (getExchangeArgs)
+		// TODO: MARK ERROR
 	}
-}
-
-func (r *Reconciler) FinalizeKind(ctx context.Context, b *eventingv1.Broker) pkgreconciler.Event {
-	if isUsingOperator(b) {
-		// Everything gets cleaned up by garbage collection in this case.
-		return nil
-	}
-	args, err := r.getExchangeArgs(ctx, b)
-	if err != nil {
-		// TODO: Problem here is that depending on the kind of error we get back, say there's no
-		// RabbitMQ cluster anymore would mean that we couldn't necessarily delete underlying Rabbit
-		// resources. But leaving the Broker around seems worse because the user would have to manually
-		// remove the finalizer. So, log it and allow the removal of the resource.
-		logging.FromContext(ctx).Errorw("Failed to get Exchange args, there might be leaked rabbit resources", zap.Error(err))
-		return nil
-	}
-	if err := resources.DeleteExchange(args); err != nil {
-		logging.FromContext(ctx).Errorw("Problem deleting exchange", zap.Error(err))
-	}
-	args.DLX = true
-	err = resources.DeleteExchange(args)
-	if err != nil {
-		logging.FromContext(ctx).Errorw("Problem deleting DLX exchange", zap.Error(err))
-	}
-	queueArgs := &triggerresources.QueueArgs{
-		QueueName:   triggerresources.CreateBrokerDeadLetterQueueName(b),
-		RabbitmqURL: args.RabbitMQURL.String(),
-	}
-	err = triggerresources.DeleteQueue(r.dialerFunc, queueArgs)
-	if err != nil {
-		logging.FromContext(ctx).Errorw("Problem deleting DLX queue", zap.Error(err))
-	}
-	return nil
+	args.RabbitMQCluster = b.Spec.Config.Name
+	return r.reconcileUsingCRD(ctx, b, args)
 }
 
 // reconcileSecret reconciles the K8s Secret 's'.
@@ -301,26 +257,6 @@ func (r *Reconciler) reconcileDLXDispatcherDeployment(ctx context.Context, b *ev
 	}
 	// It's there but it shouldn't, so delete.
 	return r.kubeClientSet.AppsV1().Deployments(b.Namespace).Delete(ctx, dispatcherName, metav1.DeleteOptions{})
-}
-
-func (r *Reconciler) reconcileDLQBinding(ctx context.Context, b *eventingv1.Broker) error {
-	args, err := r.getExchangeArgs(ctx, b)
-	if err != nil {
-		return err
-	}
-
-	err = triggerresources.MakeDLQBinding(r.transport, &triggerresources.BindingArgs{
-		Broker:     b,
-		RoutingKey: "",
-		BrokerURL:  args.RabbitMQURL.String(),
-		AdminURL:   r.adminURL,
-		QueueName:  triggerresources.CreateBrokerDeadLetterQueueName(b),
-	})
-	if err != nil {
-		logging.FromContext(ctx).Error("Problem declaring Broker DLQ Binding", zap.Error(err))
-		return err
-	}
-	return nil
 }
 
 func (r *Reconciler) reconcileExchange(ctx context.Context, args *resources.ExchangeArgs) (*v1beta1.Exchange, error) {
@@ -445,50 +381,6 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 	MarkDeadLetterSinkReady(&b.Status)
 
 	return r.reconcileCommonIngressResources(ctx, resources.MakeSecret(args), b)
-}
-
-func (r *Reconciler) reconcileUsingLibraries(ctx context.Context, b *eventingv1.Broker, args *resources.ExchangeArgs) error {
-	// 1. RabbitMQ Exchange
-	// 2. Ingress Deployment
-	// 3. K8s Service that points to the Ingress Deployment
-	s, err := resources.DeclareExchange(r.dialerFunc, args)
-	if err != nil {
-		logging.FromContext(ctx).Errorw("Problem creating RabbitMQ Exchange", zap.Error(err))
-		MarkExchangeFailed(&b.Status, "ExchangeFailure", "Failed to create exchange: %s", err)
-		return err
-	}
-	MarkExchangeReady(&b.Status)
-	// Always just create the DLX, if we want to only create if there's a delivery spec to save
-	// resources, revisit as in if it hogs up resources too much even if it's not being used for
-	// example.
-	args.DLX = true
-	_, err = resources.DeclareExchange(r.dialerFunc, args)
-	if err != nil {
-		logging.FromContext(ctx).Errorw("Problem creating RabbitMQ DLX", zap.Error(err))
-		MarkDLXFailed(&b.Status, "ExchangeFailure", "Failed to create DLX: %s", err)
-		return err
-	}
-
-	queueArgs := &triggerresources.QueueArgs{
-		QueueName:   triggerresources.CreateBrokerDeadLetterQueueName(b),
-		RabbitmqURL: args.RabbitMQURL.String(),
-	}
-	_, err = triggerresources.DeclareQueue(r.dialerFunc, queueArgs)
-	if err != nil {
-		logging.FromContext(ctx).Errorw("Problem creating RabbitMQ Dead Letter Queue", zap.Error(err))
-		MarkDLXFailed(&b.Status, "QueueFailure", "Failed to create Dead Letter Queue: %s", err)
-		return err
-	}
-	MarkDLXReady(&b.Status)
-
-	if err := r.reconcileDLQBinding(ctx, b); err != nil {
-		logging.FromContext(ctx).Error("Problem reconciling DLX Binding", zap.Error(err))
-		MarkDeadLetterSinkFailed(&b.Status, "DLQ binding", "%v", err)
-		return err
-	}
-	MarkDeadLetterSinkReady(&b.Status)
-
-	return r.reconcileCommonIngressResources(ctx, s, b)
 }
 
 func isReady(conditions []v1beta1.Condition) bool {

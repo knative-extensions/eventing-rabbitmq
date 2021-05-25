@@ -39,7 +39,7 @@ import (
 	rabbitclientset "github.com/rabbitmq/messaging-topology-operator/pkg/generated/clientset/versioned"
 	rabbitlisters "github.com/rabbitmq/messaging-topology-operator/pkg/generated/listers/rabbitmq.com/v1beta1"
 	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
-	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
+	"knative.dev/eventing-rabbitmq/pkg/reconciler/triggerstandalone/resources"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
@@ -51,7 +51,7 @@ import (
 	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/resolver"
 
-	brokerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
+	brokerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/brokerstandalone/resources"
 )
 
 type Reconciler struct {

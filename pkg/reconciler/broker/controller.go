@@ -31,7 +31,6 @@ import (
 	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 
-	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
 	bindinginformer "knative.dev/eventing-rabbitmq/pkg/client/injection/rabbitmq.com/informers/rabbitmq.com/v1beta1/binding"
 	exchangeinformer "knative.dev/eventing-rabbitmq/pkg/client/injection/rabbitmq.com/informers/rabbitmq.com/v1beta1/exchange"
 	queueinformer "knative.dev/eventing-rabbitmq/pkg/client/injection/rabbitmq.com/informers/rabbitmq.com/v1beta1/queue"
@@ -53,8 +52,6 @@ import (
 	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/resolver"
 )
-
-const finalizerName = "rabbitmq.eventing.knative.dev"
 
 type envConfig struct {
 	IngressImage          string `envconfig:"BROKER_INGRESS_IMAGE" required:"true"`
@@ -104,7 +101,6 @@ func NewController(
 		ingressImage:              env.IngressImage,
 		ingressServiceAccountName: env.IngressServiceAccount,
 		brokerClass:               env.BrokerClass,
-		dialerFunc:                dialer.RealDialer,
 		dispatcherImage:           env.DispatcherImage,
 		rabbitClientSet:           rabbitmqclient.Get(ctx),
 		exchangeLister:            exchangeInformer.Lister(),
@@ -112,9 +108,7 @@ func NewController(
 		bindingLister:             bindingInformer.Lister(),
 	}
 
-	impl := brokerreconciler.NewImpl(ctx, r, env.BrokerClass, func(impl *controller.Impl) controller.Options {
-		return controller.Options{FinalizerName: finalizerName}
-	})
+	impl := brokerreconciler.NewImpl(ctx, r, env.BrokerClass)
 
 	logging.FromContext(ctx).Info("Setting up event handlers")
 

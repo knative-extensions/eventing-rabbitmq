@@ -28,7 +28,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/testrabbit"
-	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
+	"knative.dev/eventing-rabbitmq/pkg/reconciler/triggerstandalone/resources"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	v1 "knative.dev/pkg/apis/duck/v1"
 )

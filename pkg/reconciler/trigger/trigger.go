@@ -19,7 +19,6 @@ package trigger
 import (
 	"context"
 	"fmt"
-	"net/http"
 
 	"github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"go.uber.org/zap"
@@ -28,7 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	sets "k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
@@ -38,7 +36,6 @@ import (
 
 	rabbitclientset "github.com/rabbitmq/messaging-topology-operator/pkg/generated/clientset/versioned"
 	rabbitlisters "github.com/rabbitmq/messaging-topology-operator/pkg/generated/listers/rabbitmq.com/v1beta1"
-	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/eventing/pkg/apis/eventing"
@@ -78,19 +75,10 @@ type Reconciler struct {
 	// Dynamic tracker to track AddressableTypes. In particular, it tracks Trigger subscribers.
 	addressableTracker duck.ListableTracker
 	uriResolver        *resolver.URIResolver
-
-	// Which dialer to use.
-	dialerFunc dialer.DialerFunc
-
-	// Which HTTP transport to use
-	transport http.RoundTripper
-	// For testing...
-	adminURL string
 }
 
 // Check that our Reconciler implements Interface
 var _ triggerreconciler.Interface = (*Reconciler)(nil)
-var _ triggerreconciler.Finalizer = (*Reconciler)(nil)
 
 // isUsingOperator checks the Spec for a Broker and determines if we should be using the
 // messaging-topology-operator or the libraries.
@@ -118,16 +106,8 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 	}
 
 	// If it's not my brokerclass, ignore
-	// However, if for some reason it has my finalizer, remove it.
-	// This is a bug in genreconciler because it slaps the finalizer in before we
-	// know whether it is actually ours.
 	if broker.Annotations[eventing.BrokerClassKey] != r.brokerClass {
 		logging.FromContext(ctx).Infof("Ignoring trigger %s/%s", t.Namespace, t.Name)
-		finalizers := sets.NewString(t.Finalizers...)
-		if finalizers.Has(finalizerName) {
-			finalizers.Delete(finalizerName)
-			t.Finalizers = finalizers.List()
-		}
 		return nil
 	}
 
@@ -144,45 +124,11 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		return err
 	}
 
-	// 1. RabbitMQ Queue
-	// 2. RabbitMQ Binding
-	// 3. Dispatcher Deployment for Subscriber
-	rabbitmqURL, err := r.rabbitmqURL(ctx, t)
-	if err != nil {
-		t.Status.MarkDependencyFailed("SecretFailure", "%v", err)
-		return err
-	}
-
 	// Note that we always create DLX with this queue because you can't
 	// change them later.
 	// Note we use the same name for queue & binding for consistency.
-	queueName := resources.CreateTriggerQueueName(t)
-	queueArgs := &resources.QueueArgs{
-		QueueName:   queueName,
-		RabbitmqURL: rabbitmqURL,
-		DLX:         brokerresources.ExchangeName(broker, true),
-	}
 	if !isUsingOperator(broker) {
-		queue, err := resources.DeclareQueue(r.dialerFunc, queueArgs)
-		if err != nil {
-			logging.FromContext(ctx).Error("Problem declaring Trigger Queue", zap.Error(err))
-			t.Status.MarkDependencyFailed("QueueFailure", "%v", err)
-			return err
-		}
-		logging.FromContext(ctx).Info("Created rabbitmq queue", zap.Any("queue", queue))
-
-		err = resources.MakeBinding(r.transport, &resources.BindingArgs{
-			Broker:     broker,
-			Trigger:    t,
-			RoutingKey: "",
-			BrokerURL:  rabbitmqURL,
-			AdminURL:   r.adminURL,
-		})
-		if err != nil {
-			logging.FromContext(ctx).Error("Problem declaring Trigger Queue Binding", zap.Error(err))
-			t.Status.MarkDependencyFailed("BindingFailure", "%v", err)
-			return err
-		}
+		// TODO: Mark as an error since we can't reconcile these...
 	} else {
 		queue, err := r.reconcileQueue(ctx, broker, t)
 		if err != nil {
@@ -254,54 +200,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		return err
 	}
 
-	return nil
-}
-
-func (r *Reconciler) FinalizeKind(ctx context.Context, t *eventingv1.Trigger) pkgreconciler.Event {
-	broker, err := r.brokerLister.Brokers(t.Namespace).Get(t.Spec.Broker)
-	if err != nil {
-		if apierrs.IsNotFound(err) {
-			// Ok to return nil here. There's nothing for us to do.
-			return nil
-		}
-		return fmt.Errorf("retrieving broker: %v", err)
-	}
-
-	// If it's not my brokerclass, ignore
-	// However, if for some reason it has my finalizer, remove it.
-	// This is a bug in genreconciler because it slaps the finalizer in before we
-	// know whether it is actually ours.
-	if broker.Annotations[eventing.BrokerClassKey] != r.brokerClass {
-		logging.FromContext(ctx).Infof("Ignoring trigger %s/%s", t.Namespace, t.Name)
-		finalizers := sets.NewString(t.Finalizers...)
-		if finalizers.Has(finalizerName) {
-			finalizers.Delete(finalizerName)
-			t.Finalizers = finalizers.List()
-		}
-		return nil
-	}
-
-	if isUsingOperator(broker) {
-		// Everything gets cleaned up by garbage collection in this case.
-		return nil
-	}
-
-	rabbitmqURL, err := r.rabbitmqURL(ctx, t)
-	// If there's no secret, we can't delete the queue. Deleting an object should not require creation
-	// of a secret, and for example if the namespace is being deleted, there's nothing we can do.
-	// For now, return nil rather than leave the Trigger around.
-	if err != nil {
-		logging.FromContext(ctx).Errorf("Failed to fetch rabbitmq secret while finalizing, leaking a queue %s/%s", t.Namespace, t.Name)
-		return nil
-	}
-
-	err = resources.DeleteQueue(r.dialerFunc, &resources.QueueArgs{
-		QueueName:   resources.CreateTriggerQueueName(t),
-		RabbitmqURL: rabbitmqURL,
-	})
-	if err != nil {
-		return fmt.Errorf("trigger finalize failed: %v", err)
-	}
 	return nil
 }
 
@@ -406,18 +304,6 @@ func (r *Reconciler) propagateDependencyReadiness(ctx context.Context, t *eventi
 
 func (r *Reconciler) getRabbitmqSecret(ctx context.Context, t *eventingv1.Trigger) (*corev1.Secret, error) {
 	return r.kubeClientSet.CoreV1().Secrets(t.Namespace).Get(ctx, brokerresources.SecretName(t.Spec.Broker), metav1.GetOptions{})
-}
-
-func (r *Reconciler) rabbitmqURL(ctx context.Context, t *eventingv1.Trigger) (string, error) {
-	s, err := r.getRabbitmqSecret(ctx, t)
-	if err != nil {
-		return "", err
-	}
-	val := s.Data[brokerresources.BrokerURLSecretKey]
-	if val == nil {
-		return "", fmt.Errorf("secret missing key %s", brokerresources.BrokerURLSecretKey)
-	}
-	return string(val), nil
 }
 
 func (r *Reconciler) reconcileQueue(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger) (*v1beta1.Queue, error) {

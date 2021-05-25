@@ -20,8 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -65,9 +63,6 @@ import (
 	_ "knative.dev/pkg/client/injection/ducks/duck/v1/addressable/fake"
 
 	. "knative.dev/pkg/reconciler/testing"
-
-	"github.com/NeowayLabs/wabbit/amqptest/server"
-	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
 )
 
 const (
@@ -88,24 +83,6 @@ const (
 	deadLetterSinkAPIVersion = "serving.knative.dev/v1"
 
 	dispatcherImage = "dispatcherimage"
-
-	bindingList = `
-[
-  {
-    "source": "knative-test-broker",
-    "vhost": "/",
-    "destination": "test-namespace-test-broker",
-    "destination_type": "queue",
-    "routing_key": "test-namespace-test-broker",
-    "arguments": {
-      "x-match":  "all",
-      "x-knative-trigger": "test-trigger",
-      "type": "dev.knative.sources.ping"
-    },
-    "properties_key": "test-namespace-test-broker"
-  }
-]
-`
 )
 
 var (
@@ -180,19 +157,6 @@ func TestReconcile(t *testing.T) {
 					WithBrokerDeletionTimestamp),
 			},
 		}, {
-			Name: "Broker deleted",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				brokerWithFinalizer(),
-				createSecret(rabbitURL),
-			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
-			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchRemoveFinalizers(testNS, brokerName),
-			},
-		}, {
 			Name: "nil config",
 			Key:  testKey,
 			Objects: []runtime.Object{
@@ -201,11 +165,7 @@ func TestReconcile(t *testing.T) {
 					WithInitBrokerConditions),
 			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
 				Eventf(corev1.EventTypeWarning, "InternalError", `Broker.Spec.Config is required`),
-			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerName),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
@@ -225,11 +185,7 @@ func TestReconcile(t *testing.T) {
 					WithInitBrokerConditions),
 			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
 				Eventf(corev1.EventTypeWarning, "UpdateFailed", `Failed to update status for "test-broker": missing field(s): spec.config.name`),
-			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerName),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
@@ -239,58 +195,6 @@ func TestReconcile(t *testing.T) {
 					WithExchangeFailed("ExchangeCredentialsUnavailable", "Failed to get arguments for creating exchange: broker.spec.config.[name, namespace] are required")),
 			}},
 			// This returns an internal error, so it emits an Error
-			WantErr: true,
-		}, {
-			Name: "Secret not found",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				NewBroker(brokerName, testNS,
-					WithBrokerClass(brokerClass),
-					WithBrokerConfig(config()),
-					WithInitBrokerConditions),
-			},
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewBroker(brokerName, testNS,
-					WithBrokerClass(brokerClass),
-					WithInitBrokerConditions,
-					WithBrokerConfig(config()),
-					WithExchangeFailed("ExchangeCredentialsUnavailable", `Failed to get arguments for creating exchange: secrets "test-secret" not found`)),
-			}},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerName),
-			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
-				Eventf(corev1.EventTypeWarning, "InternalError", `secrets "test-secret" not found`),
-			},
-			WantErr: true,
-		}, {
-			Name: "Exchange create fails - malformed uri",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				NewBroker(brokerName, testNS,
-					WithBrokerUID("uid-for-test"),
-					WithBrokerClass(brokerClass),
-					WithBrokerConfig(config()),
-					WithInitBrokerConditions),
-				createSecret("invalid data"),
-				createRabbitMQCluster(),
-			},
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewBroker(brokerName, testNS,
-					WithBrokerUID("uid-for-test"),
-					WithBrokerClass(brokerClass),
-					WithInitBrokerConditions,
-					WithBrokerConfig(config()),
-					WithExchangeFailed("ExchangeFailure", `Failed to create exchange: Network unreachable`)),
-			}},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerName),
-			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
-				Eventf(corev1.EventTypeWarning, "InternalError", `Network unreachable`),
-			},
 			WantErr: true,
 		}, {
 			Name: "Invalid spec",
@@ -311,11 +215,7 @@ func TestReconcile(t *testing.T) {
 					WithBrokerConfig(invalidConfigForRabbitOperator()),
 					WithExchangeFailed("ExchangeCredentialsUnavailable", `Failed to get arguments for creating exchange: Broker.Spec.Config configuration not supported, only [kind: Secret, apiVersion: v1 or kind: RabbitmqCluster, apiVersion: rabbitmq.com/v1beta1]`)),
 			}},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerName),
-			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
 				Eventf(corev1.EventTypeWarning, "InternalError", `Broker.Spec.Config configuration not supported, only [kind: Secret, apiVersion: v1 or kind: RabbitmqCluster, apiVersion: rabbitmq.com/v1beta1]`),
 			},
 		}, {
@@ -325,7 +225,7 @@ func TestReconcile(t *testing.T) {
 				NewBroker(brokerName, testNS,
 					WithBrokerUID("uid-for-test"),
 					WithBrokerClass(brokerClass),
-					WithBrokerConfig(configForRabbitOperator()),
+					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
 				createSecretForRabbitmqCluster(),
 			},
@@ -335,14 +235,10 @@ func TestReconcile(t *testing.T) {
 					WithBrokerUID("uid-for-test"),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
-					WithBrokerConfig(configForRabbitOperator()),
+					WithBrokerConfig(config()),
 					WithExchangeFailed("ExchangeCredentialsUnavailable", `Failed to get arguments for creating exchange: rabbitmqclusters.rabbitmq.com "rabbitbrokerhere" not found`)),
 			}},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerName),
-			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
 				Eventf(corev1.EventTypeWarning, "InternalError", `rabbitmqclusters.rabbitmq.com "rabbitbrokerhere" not found`),
 			},
 		}, {
@@ -352,7 +248,7 @@ func TestReconcile(t *testing.T) {
 				NewBroker(brokerName, testNS,
 					WithBrokerUID("uid-for-test"),
 					WithBrokerClass(brokerClass),
-					WithBrokerConfig(configForRabbitOperator()),
+					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
 				createRabbitMQClusterMissingServiceRef(),
 			},
@@ -362,14 +258,10 @@ func TestReconcile(t *testing.T) {
 					WithBrokerUID("uid-for-test"),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
-					WithBrokerConfig(configForRabbitOperator()),
+					WithBrokerConfig(config()),
 					WithExchangeFailed("ExchangeCredentialsUnavailable", `Failed to get arguments for creating exchange: rabbit "test-namespace/rabbitbrokerhere" not ready`)),
 			}},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerName),
-			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
 				Eventf(corev1.EventTypeWarning, "InternalError", `rabbit "test-namespace/rabbitbrokerhere" not ready`),
 			},
 		}, {
@@ -379,7 +271,7 @@ func TestReconcile(t *testing.T) {
 				NewBroker(brokerName, testNS,
 					WithBrokerUID("uid-for-test"),
 					WithBrokerClass(brokerClass),
-					WithBrokerConfig(configForRabbitOperator()),
+					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
 				createRabbitMQCluster(),
 			},
@@ -389,14 +281,10 @@ func TestReconcile(t *testing.T) {
 					WithBrokerUID("uid-for-test"),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
-					WithBrokerConfig(configForRabbitOperator()),
+					WithBrokerConfig(config()),
 					WithExchangeFailed("ExchangeCredentialsUnavailable", `Failed to get arguments for creating exchange: secrets "rabbitmqclustersecret" not found`)),
 			}},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerName),
-			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
 				Eventf(corev1.EventTypeWarning, "InternalError", `secrets "rabbitmqclustersecret" not found`),
 			},
 		}, {
@@ -406,7 +294,7 @@ func TestReconcile(t *testing.T) {
 				NewBroker(brokerName, testNS,
 					WithBrokerUID("uid-for-test"),
 					WithBrokerClass(brokerClass),
-					WithBrokerConfig(configForRabbitOperator()),
+					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
 				createSecretForRabbitmqClusterNoUser(),
 				createRabbitMQCluster(),
@@ -417,14 +305,10 @@ func TestReconcile(t *testing.T) {
 					WithBrokerUID("uid-for-test"),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
-					WithBrokerConfig(configForRabbitOperator()),
+					WithBrokerConfig(config()),
 					WithExchangeFailed("ExchangeCredentialsUnavailable", `Failed to get arguments for creating exchange: rabbit Secret missing key username`)),
 			}},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerName),
-			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
 				Eventf(corev1.EventTypeWarning, "InternalError", `rabbit Secret missing key username`),
 			},
 		}, {
@@ -434,7 +318,7 @@ func TestReconcile(t *testing.T) {
 				NewBroker(brokerName, testNS,
 					WithBrokerUID("uid-for-test"),
 					WithBrokerClass(brokerClass),
-					WithBrokerConfig(configForRabbitOperator()),
+					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
 				createSecretForRabbitmqClusterNoPassword(),
 				createRabbitMQCluster(),
@@ -445,14 +329,10 @@ func TestReconcile(t *testing.T) {
 					WithBrokerUID("uid-for-test"),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
-					WithBrokerConfig(configForRabbitOperator()),
+					WithBrokerConfig(config()),
 					WithExchangeFailed("ExchangeCredentialsUnavailable", `Failed to get arguments for creating exchange: rabbit Secret missing key password`)),
 			}},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerName),
-			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
 				Eventf(corev1.EventTypeWarning, "InternalError", `rabbit Secret missing key password`),
 			},
 		}, {
@@ -462,7 +342,7 @@ func TestReconcile(t *testing.T) {
 				NewBroker(brokerName, testNS,
 					WithBrokerUID("uid-for-test"),
 					WithBrokerClass(brokerClass),
-					WithBrokerConfig(configForRabbitOperator()),
+					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
 				createSecretForRabbitmqCluster(),
 				createRabbitMQCluster(),
@@ -479,14 +359,10 @@ func TestReconcile(t *testing.T) {
 					WithBrokerUID("uid-for-test"),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
-					WithBrokerConfig(configForRabbitOperator()),
+					WithBrokerConfig(config()),
 					WithExchangeFailed("ExchangeFailure", `Failed to reconcile exchange "test-namespace.test-broker": inducing failure for create exchanges`)),
 			}},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerName),
-			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
 				Eventf(corev1.EventTypeWarning, "InternalError", `inducing failure for create exchanges`),
 			},
 		}, {
@@ -496,7 +372,7 @@ func TestReconcile(t *testing.T) {
 				NewBroker(brokerName, testNS,
 					WithBrokerUID("uid-for-test"),
 					WithBrokerClass(brokerClass),
-					WithBrokerConfig(configForRabbitOperator()),
+					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
 				createSecretForRabbitmqCluster(),
 				createRabbitMQCluster(),
@@ -509,15 +385,9 @@ func TestReconcile(t *testing.T) {
 					WithBrokerUID("uid-for-test"),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
-					WithBrokerConfig(configForRabbitOperator()),
+					WithBrokerConfig(config()),
 					WithExchangeFailed("ExchangeFailure", `exchange "test-namespace.test-broker" is not ready`)),
 			}},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerName),
-			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
-			},
 		}, {
 			Name: "Exchange exists, create DLX CRD, not ready",
 			Key:  testKey,
@@ -525,7 +395,7 @@ func TestReconcile(t *testing.T) {
 				NewBroker(brokerName, testNS,
 					WithBrokerUID("uid-for-test"),
 					WithBrokerClass(brokerClass),
-					WithBrokerConfig(configForRabbitOperator()),
+					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
 				createSecretForRabbitmqCluster(),
 				createRabbitMQCluster(),
@@ -539,15 +409,9 @@ func TestReconcile(t *testing.T) {
 					WithBrokerUID("uid-for-test"),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
-					WithBrokerConfig(configForRabbitOperator()),
+					WithBrokerConfig(config()),
 					WithExchangeFailed("ExchangeFailure", `DLX exchange "test-namespace.test-broker.dlx" is not ready`)),
 			}},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerName),
-			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
-			},
 		}, {
 			Name: "Exchange exists, create DLX exchange fails",
 			Key:  testKey,
@@ -555,7 +419,7 @@ func TestReconcile(t *testing.T) {
 				NewBroker(brokerName, testNS,
 					WithBrokerUID("uid-for-test"),
 					WithBrokerClass(brokerClass),
-					WithBrokerConfig(configForRabbitOperator()),
+					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
 				createSecretForRabbitmqCluster(),
 				createRabbitMQCluster(),
@@ -573,14 +437,10 @@ func TestReconcile(t *testing.T) {
 					WithBrokerUID("uid-for-test"),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
-					WithBrokerConfig(configForRabbitOperator()),
+					WithBrokerConfig(config()),
 					WithExchangeFailed("ExchangeFailure", `Failed to reconcile DLX exchange "test-namespace.test-broker.dlx": inducing failure for create exchanges`)),
 			}},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerName),
-			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
 				Eventf(corev1.EventTypeWarning, "InternalError", `inducing failure for create exchanges`),
 			},
 		}, {
@@ -590,7 +450,7 @@ func TestReconcile(t *testing.T) {
 				NewBroker(brokerName, testNS,
 					WithBrokerUID("uid-for-test"),
 					WithBrokerClass(brokerClass),
-					WithBrokerConfig(configForRabbitOperator()),
+					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
 				createSecretForRabbitmqCluster(),
 				createRabbitMQCluster(),
@@ -609,15 +469,11 @@ func TestReconcile(t *testing.T) {
 					WithBrokerUID("uid-for-test"),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
-					WithBrokerConfig(configForRabbitOperator()),
+					WithBrokerConfig(config()),
 					WithExchangeReady(),
 					WithDLXFailed("QueueFailure", `Failed to reconcile Dead Letter Queue "test-namespace.test-broker.dlq" : inducing failure for create queues`)),
 			}},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerName),
-			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
 				Eventf(corev1.EventTypeWarning, "InternalError", `inducing failure for create queues`),
 			},
 		}, {
@@ -627,7 +483,7 @@ func TestReconcile(t *testing.T) {
 				NewBroker(brokerName, testNS,
 					WithBrokerUID("uid-for-test"),
 					WithBrokerClass(brokerClass),
-					WithBrokerConfig(configForRabbitOperator()),
+					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
 				createSecretForRabbitmqCluster(),
 				createRabbitMQCluster(),
@@ -642,16 +498,10 @@ func TestReconcile(t *testing.T) {
 					WithBrokerUID("uid-for-test"),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
-					WithBrokerConfig(configForRabbitOperator()),
+					WithBrokerConfig(config()),
 					WithExchangeReady(),
 					WithDLXFailed("QueueFailure", `Dead Letter Queue "test-namespace.test-broker.dlq" is not ready`)),
 			}},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerName),
-			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
-			},
 		}, {
 			Name: "Both exchanges exist, queue exists, creates binding CRD",
 			Key:  testKey,
@@ -659,7 +509,7 @@ func TestReconcile(t *testing.T) {
 				NewBroker(brokerName, testNS,
 					WithBrokerUID("uid-for-test"),
 					WithBrokerClass(brokerClass),
-					WithBrokerConfig(configForRabbitOperator()),
+					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
 				createSecretForRabbitmqCluster(),
 				createRabbitMQCluster(),
@@ -675,17 +525,11 @@ func TestReconcile(t *testing.T) {
 					WithBrokerUID("uid-for-test"),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
-					WithBrokerConfig(configForRabbitOperator()),
+					WithBrokerConfig(config()),
 					WithExchangeReady(),
 					WithDLXReady(),
 					WithDeadLetterSinkFailed("DLQ binding", `DLQ binding "test-namespace.test-broker.dlq" is not ready`)),
 			}},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerName),
-			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
-			},
 		}, {
 			Name: "Both exchanges exist, queue exists, create binding CRD fails",
 			Key:  testKey,
@@ -693,7 +537,7 @@ func TestReconcile(t *testing.T) {
 				NewBroker(brokerName, testNS,
 					WithBrokerUID("uid-for-test"),
 					WithBrokerClass(brokerClass),
-					WithBrokerConfig(configForRabbitOperator()),
+					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
 				createSecretForRabbitmqCluster(),
 				createRabbitMQCluster(),
@@ -713,16 +557,12 @@ func TestReconcile(t *testing.T) {
 					WithBrokerUID("uid-for-test"),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
-					WithBrokerConfig(configForRabbitOperator()),
+					WithBrokerConfig(config()),
 					WithExchangeReady(),
 					WithDLXReady(),
 					WithDeadLetterSinkFailed("DLQ binding", `Failed to reconcile DLQ binding "test-namespace.test-broker.dlq" : inducing failure for create bindings`)),
 			}},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerName),
-			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
 				Eventf(corev1.EventTypeWarning, "InternalError", `inducing failure for create bindings`),
 			},
 		}, {
@@ -731,7 +571,7 @@ func TestReconcile(t *testing.T) {
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
 					WithBrokerClass(brokerClass),
-					WithBrokerConfig(configForRabbitOperator()),
+					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
 				createSecretForRabbitmqCluster(),
 				createRabbitMQCluster(),
@@ -749,18 +589,14 @@ func TestReconcile(t *testing.T) {
 				Object: NewBroker(brokerName, testNS,
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
-					WithBrokerConfig(configForRabbitOperator()),
+					WithBrokerConfig(config()),
 					WithIngressFailed("ServiceFailure", `Failed to reconcile service: endpoints "test-broker-broker-ingress" not found`),
 					WithSecretReady(),
 					WithExchangeReady(),
 					WithDLXReady(),
 					WithDeadLetterSinkReady()),
 			}},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerName),
-			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
 				Eventf(corev1.EventTypeWarning, "InternalError", `endpoints "test-broker-broker-ingress" not found`),
 			},
 			WantErr: true,
@@ -770,7 +606,7 @@ func TestReconcile(t *testing.T) {
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
 					WithBrokerClass(brokerClass),
-					WithBrokerConfig(configForRabbitOperator()),
+					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
 				createSecretForRabbitmqCluster(),
 				createRabbitMQCluster(),
@@ -791,7 +627,7 @@ func TestReconcile(t *testing.T) {
 				Object: NewBroker(brokerName, testNS,
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
-					WithBrokerConfig(configForRabbitOperator()),
+					WithBrokerConfig(config()),
 					WithBrokerAddressURI(brokerAddress),
 					WithIngressAvailable(),
 					WithSecretReady(),
@@ -799,12 +635,6 @@ func TestReconcile(t *testing.T) {
 					WithDLXReady(),
 					WithDeadLetterSinkReady()),
 			}},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerName),
-			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
-			},
 		}, {
 			Name: "Secret create fails",
 			Key:  testKey,
@@ -813,7 +643,15 @@ func TestReconcile(t *testing.T) {
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
-				createSecret(rabbitURL),
+				createSecretForRabbitmqCluster(),
+				createRabbitMQCluster(),
+				createReadyExchange(false),
+				createReadyExchange(true),
+				createReadyQueue(true),
+				createReadyBinding(true),
+				rt.NewEndpoints(ingressServiceName, testNS,
+					rt.WithEndpointsLabels(IngressLabels()),
+					rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
 			},
 			WithReactors: []clientgotesting.ReactionFunc{
 				InduceFailure("create", "secrets"),
@@ -831,11 +669,7 @@ func TestReconcile(t *testing.T) {
 			WantCreates: []runtime.Object{
 				createExchangeSecret(),
 			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerName),
-			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
 				Eventf(corev1.EventTypeWarning, "InternalError", `inducing failure for create secrets`),
 			},
 			WantErr: true,
@@ -847,7 +681,15 @@ func TestReconcile(t *testing.T) {
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
-				createSecret(rabbitURL),
+				createSecretForRabbitmqCluster(),
+				createRabbitMQCluster(),
+				createReadyExchange(false),
+				createReadyExchange(true),
+				createReadyQueue(true),
+				createReadyBinding(true),
+				rt.NewEndpoints(ingressServiceName, testNS,
+					rt.WithEndpointsLabels(IngressLabels()),
+					rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
 				createDifferentExchangeSecret(),
 			},
 			WithReactors: []clientgotesting.ReactionFunc{
@@ -866,11 +708,7 @@ func TestReconcile(t *testing.T) {
 			WantUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: createExchangeSecret(),
 			}},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerName),
-			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
 				Eventf(corev1.EventTypeWarning, "InternalError", `inducing failure for update secrets`),
 			},
 			WantErr: true,
@@ -882,6 +720,15 @@ func TestReconcile(t *testing.T) {
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
+				createSecretForRabbitmqCluster(),
+				createRabbitMQCluster(),
+				createReadyExchange(false),
+				createReadyExchange(true),
+				createReadyQueue(true),
+				createReadyBinding(true),
+				rt.NewEndpoints(ingressServiceName, testNS,
+					rt.WithEndpointsLabels(IngressLabels()),
+					rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
 				createSecret(rabbitURL),
 				createExchangeSecret(),
 			},
@@ -902,11 +749,7 @@ func TestReconcile(t *testing.T) {
 			WantCreates: []runtime.Object{
 				createIngressDeployment(),
 			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerName),
-			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
 				Eventf(corev1.EventTypeWarning, "InternalError", `inducing failure for create deployments`),
 			},
 			WantErr: true,
@@ -918,7 +761,15 @@ func TestReconcile(t *testing.T) {
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
-				createSecret(rabbitURL),
+				createSecretForRabbitmqCluster(),
+				createRabbitMQCluster(),
+				createReadyExchange(false),
+				createReadyExchange(true),
+				createReadyQueue(true),
+				createReadyBinding(true),
+				rt.NewEndpoints(ingressServiceName, testNS,
+					rt.WithEndpointsLabels(IngressLabels()),
+					rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
 				createExchangeSecret(),
 				createDifferentIngressDeployment(),
 			},
@@ -939,11 +790,7 @@ func TestReconcile(t *testing.T) {
 			WantUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: createIngressDeployment(),
 			}},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerName),
-			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
 				Eventf(corev1.EventTypeWarning, "InternalError", `inducing failure for update deployments`),
 			},
 			WantErr: true,
@@ -955,7 +802,15 @@ func TestReconcile(t *testing.T) {
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
-				createSecret(rabbitURL),
+				createSecretForRabbitmqCluster(),
+				createRabbitMQCluster(),
+				createReadyExchange(false),
+				createReadyExchange(true),
+				createReadyQueue(true),
+				createReadyBinding(true),
+				rt.NewEndpoints(ingressServiceName, testNS,
+					rt.WithEndpointsLabels(IngressLabels()),
+					rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
 				createExchangeSecret(),
 				createIngressDeployment(),
 			},
@@ -976,11 +831,7 @@ func TestReconcile(t *testing.T) {
 			WantCreates: []runtime.Object{
 				createIngressService(),
 			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerName),
-			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
 				Eventf(corev1.EventTypeWarning, "InternalError", `inducing failure for create services`),
 			},
 			WantErr: true,
@@ -992,7 +843,15 @@ func TestReconcile(t *testing.T) {
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
-				createSecret(rabbitURL),
+				createSecretForRabbitmqCluster(),
+				createRabbitMQCluster(),
+				createReadyExchange(false),
+				createReadyExchange(true),
+				createReadyQueue(true),
+				createReadyBinding(true),
+				rt.NewEndpoints(ingressServiceName, testNS,
+					rt.WithEndpointsLabels(IngressLabels()),
+					rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
 				createExchangeSecret(),
 				createIngressDeployment(),
 				createDifferentIngressService(),
@@ -1014,85 +873,10 @@ func TestReconcile(t *testing.T) {
 			WantUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: createIngressService(),
 			}},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerName),
-			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
 				Eventf(corev1.EventTypeWarning, "InternalError", `inducing failure for update services`),
 			},
 			WantErr: true,
-		}, {
-			Name: "Exchange created - endpoints not ready",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				NewBroker(brokerName, testNS,
-					WithBrokerClass(brokerClass),
-					WithBrokerConfig(config()),
-					WithInitBrokerConditions),
-				createSecret(rabbitURL),
-			},
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewBroker(brokerName, testNS,
-					WithBrokerClass(brokerClass),
-					WithInitBrokerConditions,
-					WithBrokerConfig(config()),
-					WithIngressFailed("ServiceFailure", `Failed to reconcile service: endpoints "test-broker-broker-ingress" not found`),
-					WithDLXReady(),
-					WithDeadLetterSinkReady(),
-					WithSecretReady(),
-					WithExchangeReady()),
-			}},
-			WantCreates: []runtime.Object{
-				createExchangeSecret(),
-				createIngressDeployment(),
-				createIngressService(),
-			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerName),
-			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
-				Eventf(corev1.EventTypeWarning, "InternalError", `endpoints "test-broker-broker-ingress" not found`),
-			},
-			WantErr: true,
-		}, {
-			Name: "Exchange created - endpoints ready",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				NewBroker(brokerName, testNS,
-					WithBrokerClass(brokerClass),
-					WithBrokerConfig(config()),
-					WithInitBrokerConditions),
-				createSecret(rabbitURL),
-				rt.NewEndpoints(ingressServiceName, testNS,
-					rt.WithEndpointsLabels(IngressLabels()),
-					rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
-			},
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewBroker(brokerName, testNS,
-					WithBrokerClass(brokerClass),
-					WithInitBrokerConditions,
-					WithBrokerConfig(config()),
-					WithIngressAvailable(),
-					WithDLXReady(),
-					WithDeadLetterSinkReady(),
-					WithSecretReady(),
-					WithBrokerAddressURI(brokerAddress),
-					WithExchangeReady()),
-			}},
-			WantCreates: []runtime.Object{
-				createExchangeSecret(),
-				createIngressDeployment(),
-				createIngressService(),
-			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerName),
-			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
-			},
-			WantErr: false,
 		}, {
 			Name: "Exchange created with DLQ dispatcher created",
 			Key:  testKey,
@@ -1102,10 +886,17 @@ func TestReconcile(t *testing.T) {
 					WithBrokerConfig(config()),
 					WithBrokerDelivery(delivery),
 					WithInitBrokerConditions),
-				createSecret(rabbitURL),
+				createSecretForRabbitmqCluster(),
+				createRabbitMQCluster(),
+				createReadyExchange(false),
+				createReadyExchange(true),
+				createReadyQueue(true),
+				createReadyBinding(true),
 				rt.NewEndpoints(ingressServiceName, testNS,
 					rt.WithEndpointsLabels(IngressLabels()),
 					rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
+				createExchangeSecret(),
+				createIngressDeployment(),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
@@ -1121,16 +912,8 @@ func TestReconcile(t *testing.T) {
 					WithExchangeReady()),
 			}},
 			WantCreates: []runtime.Object{
-				createExchangeSecret(),
-				createIngressDeployment(),
 				createIngressService(),
 				createDispatcherDeployment(),
-			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerName),
-			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
 			},
 			WantErr: false,
 		}, {
@@ -1142,10 +925,18 @@ func TestReconcile(t *testing.T) {
 					WithBrokerConfig(config()),
 					WithBrokerDelivery(deliveryUnresolvableDeadLetterSink),
 					WithInitBrokerConditions),
-				createSecret(rabbitURL),
+				createSecretForRabbitmqCluster(),
+				createRabbitMQCluster(),
+				createReadyExchange(false),
+				createReadyExchange(true),
+				createReadyQueue(true),
+				createReadyBinding(true),
 				rt.NewEndpoints(ingressServiceName, testNS,
 					rt.WithEndpointsLabels(IngressLabels()),
 					rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
+				createExchangeSecret(),
+				createIngressDeployment(),
+				createIngressService(),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
@@ -1160,16 +951,7 @@ func TestReconcile(t *testing.T) {
 					WithBrokerAddressURI(brokerAddress),
 					WithExchangeReady()),
 			}},
-			WantCreates: []runtime.Object{
-				createExchangeSecret(),
-				createIngressDeployment(),
-				createIngressService(),
-			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerName),
-			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
 				Eventf(corev1.EventTypeWarning, "InternalError", `services.serving.knative.dev "badsink" not found`),
 			},
 			WantErr: true,
@@ -1184,12 +966,6 @@ func TestReconcile(t *testing.T) {
 		ctx = conditions.WithDuck(ctx)
 		ctx = rabbitduck.WithDuck(ctx)
 		eventingv1.RegisterAlternateBrokerConditionSet(rabbitBrokerCondSet)
-		fakeServer := server.NewServer(rabbitURL)
-		fakeServer.Start()
-		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusCreated)
-			fmt.Fprintln(w, bindingList)
-		}))
 		r := &Reconciler{
 			eventingClientSet:  fakeeventingclient.Get(ctx),
 			dynamicClientSet:   fakedynamicclient.Get(ctx),
@@ -1202,8 +978,6 @@ func TestReconcile(t *testing.T) {
 			addressableTracker: duck.NewListableTracker(ctx, v1a1addr.Get, func(types.NamespacedName) {}, 0),
 			uriResolver:        resolver.NewURIResolver(ctx, func(types.NamespacedName) {}),
 			brokerClass:        "RabbitMQBroker",
-			dialerFunc:         dialer.TestDialer,
-			adminURL:           ts.URL,
 			ingressImage:       ingressImage,
 			dispatcherImage:    dispatcherImage,
 			rabbitClientSet:    fakerabbitclient.Get(ctx),
@@ -1216,7 +990,6 @@ func TestReconcile(t *testing.T) {
 			fakeeventingclient.Get(ctx), listers.GetBrokerLister(),
 			controller.GetEventRecorder(ctx),
 			r, "RabbitMQBroker",
-			controller.Options{FinalizerName: finalizerName},
 		)
 
 	},
@@ -1260,7 +1033,7 @@ func createBrokerSecret(data string) *corev1.Secret {
 }
 
 func createExchangeSecret() *corev1.Secret {
-	return createBrokerSecret(rabbitURL)
+	return createBrokerSecret(rabbitmqClusterURL)
 }
 
 func createDifferentExchangeSecret() *corev1.Secret {
@@ -1368,15 +1141,6 @@ func createDifferentIngressService() *corev1.Service {
 
 func config() *duckv1.KReference {
 	return &duckv1.KReference{
-		Name:       rabbitSecretName,
-		Namespace:  testNS,
-		Kind:       "Secret",
-		APIVersion: "v1",
-	}
-}
-
-func configForRabbitOperator() *duckv1.KReference {
-	return &duckv1.KReference{
 		Name:       rabbitMQBrokerName,
 		Namespace:  testNS,
 		Kind:       "RabbitmqCluster",
@@ -1399,34 +1163,6 @@ func IngressLabels() map[string]string {
 	return map[string]string{
 		"eventing.knative.dev/brokerRole": "ingress",
 	}
-}
-
-func brokerWithFinalizer() *eventingv1.Broker {
-	b := NewBroker(brokerName, testNS,
-		WithBrokerClass(brokerClass),
-		WithBrokerConfig(config()),
-		WithInitBrokerConditions,
-		WithBrokerDeletionTimestamp)
-	b.Finalizers = []string{finalizerName}
-	return b
-}
-
-func patchFinalizers(namespace, name string) clientgotesting.PatchActionImpl {
-	action := clientgotesting.PatchActionImpl{}
-	action.Name = name
-	action.Namespace = namespace
-	patch := `{"metadata":{"finalizers":["` + finalizerName + `"],"resourceVersion":""}}`
-	action.Patch = []byte(patch)
-	return action
-}
-
-func patchRemoveFinalizers(namespace, name string) clientgotesting.PatchActionImpl {
-	action := clientgotesting.PatchActionImpl{}
-	action.Name = name
-	action.Namespace = namespace
-	patch := `{"metadata":{"finalizers":[],"resourceVersion":""}}`
-	action.Patch = []byte(patch)
-	return action
 }
 
 func createDispatcherDeployment() *appsv1.Deployment {

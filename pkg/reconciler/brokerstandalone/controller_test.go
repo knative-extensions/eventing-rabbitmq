@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package broker
+package brokerstandalone
 
 import (
 	"os"
@@ -25,10 +25,6 @@ import (
 
 	// Fake injection informers
 	_ "knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit/fake"
-	_ "knative.dev/eventing-rabbitmq/pkg/client/injection/rabbitmq.com/client/fake"
-	_ "knative.dev/eventing-rabbitmq/pkg/client/injection/rabbitmq.com/informers/rabbitmq.com/v1beta1/binding/fake"
-	_ "knative.dev/eventing-rabbitmq/pkg/client/injection/rabbitmq.com/informers/rabbitmq.com/v1beta1/exchange/fake"
-	_ "knative.dev/eventing-rabbitmq/pkg/client/injection/rabbitmq.com/informers/rabbitmq.com/v1beta1/queue/fake"
 	_ "knative.dev/eventing/pkg/client/injection/informers/eventing/v1/broker/fake"
 	_ "knative.dev/pkg/client/injection/ducks/duck/v1/addressable/fake"
 	_ "knative.dev/pkg/client/injection/ducks/duck/v1/conditions/fake"

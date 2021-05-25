@@ -21,15 +21,10 @@ import (
 	"fmt"
 	"net/url"
 
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/kmeta"
 
-	"github.com/NeowayLabs/wabbit"
 	rabbitv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
-	"github.com/streadway/amqp"
-	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
-	"knative.dev/eventing-rabbitmq/pkg/reconciler/io"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 )
 
@@ -77,53 +72,6 @@ func ExchangeLabels(b *eventingv1.Broker) map[string]string {
 	return map[string]string{
 		"eventing.knative.dev/broker": b.Name,
 	}
-}
-
-// DeclareExchange declares the Exchange for a Broker.
-func DeclareExchange(dialerFunc dialer.DialerFunc, args *ExchangeArgs) (*corev1.Secret, error) {
-	conn, err := dialerFunc(args.RabbitMQURL.String())
-	if err != nil {
-		return nil, err
-	}
-	defer io.CloseAmqpResourceAndExitOnError(conn)
-
-	channel, err := conn.Channel()
-	if err != nil {
-		return nil, err
-	}
-	defer io.CloseAmqpResourceAndExitOnError(channel)
-
-	return MakeSecret(args), channel.ExchangeDeclare(
-		ExchangeName(args.Broker, args.DLX),
-		"headers", // kind
-		wabbit.Option{
-			"durable":    true,
-			"autoDelete": false,
-			"internal":   false,
-			"noWait":     false,
-		},
-	)
-}
-
-// DeleteExchange deletes the Exchange for a Broker.
-func DeleteExchange(args *ExchangeArgs) error {
-	conn, err := amqp.Dial(args.RabbitMQURL.String())
-	if err != nil {
-		return err
-	}
-	defer io.CloseAmqpResourceAndExitOnError(conn)
-
-	channel, err := conn.Channel()
-	if err != nil {
-		return err
-	}
-	defer io.CloseAmqpResourceAndExitOnError(channel)
-
-	return channel.ExchangeDelete(
-		ExchangeName(args.Broker, args.DLX),
-		false, // if-unused
-		false, // nowait
-	)
 }
 
 // ExchangeName constructs a name given a Broker.

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package broker
+package brokerstandalone
 
 import (
 	corev1 "k8s.io/api/core/v1"

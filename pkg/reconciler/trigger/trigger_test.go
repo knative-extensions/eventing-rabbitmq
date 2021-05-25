@@ -20,8 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
@@ -29,7 +27,6 @@ import (
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/network"
 
-	"github.com/NeowayLabs/wabbit/amqptest/server"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,7 +37,6 @@ import (
 
 	rabbitv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	clientgotesting "k8s.io/client-go/testing"
-	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
 	rabbitduck "knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
 	fakerabbitclient "knative.dev/eventing-rabbitmq/pkg/client/injection/rabbitmq.com/client/fake"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker"
@@ -105,24 +101,6 @@ const (
 	subscriberName    = "subscriber-name"
 	subscriberGroup   = "serving.knative.dev"
 	subscriberVersion = "v1"
-
-	bindingList = `
-[
-  {
-    "source": "knative-test-broker",
-    "vhost": "/",
-    "destination": "test-namespace-test-broker",
-    "destination_type": "queue",
-    "routing_key": "test-namespace-test-broker",
-    "arguments": {
-      "x-match":  "all",
-      "x-knative-trigger": "test-trigger",
-      "type": "dev.knative.sources.ping"
-    },
-    "properties_key": "test-namespace-test-broker"
-  }
-]
-`
 )
 
 var (
@@ -196,39 +174,6 @@ func TestReconcile(t *testing.T) {
 					WithTriggerSubscriberURI(subscriberURI)),
 			},
 		}, {
-			Name: "Trigger delete succeeds - with finalizer - no secret so no undeletable resources",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				broker.NewBroker(brokerName, testNS,
-					broker.WithBrokerClass(brokerClass),
-					broker.WithBrokerConfig(config()),
-					broker.WithInitBrokerConditions),
-				triggerWithFinalizerReady(),
-			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchRemoveFinalizers(testNS, triggerName),
-			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
-			},
-		}, {
-			Name: "Trigger deleted - with finalizer and secret",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				broker.NewBroker(brokerName, testNS,
-					broker.WithBrokerClass(brokerClass),
-					broker.WithBrokerConfig(config()),
-					broker.WithInitBrokerConditions),
-				createSecret(rabbitURL),
-				triggerWithFinalizerReady(),
-			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchRemoveFinalizers(testNS, triggerName),
-			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
-			},
-		}, {
 			Name: "Broker does not exist",
 			Key:  testKey,
 			Objects: []runtime.Object{
@@ -242,12 +187,6 @@ func TestReconcile(t *testing.T) {
 					WithInitTriggerConditions,
 					WithTriggerBrokerFailed("BrokerDoesNotExist", `Broker "test-broker" does not exist`)),
 			}},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
-			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, triggerName),
-			},
 		}, {
 			Name: "Not my broker class - no status updates",
 			Key:  testKey,
@@ -260,14 +199,6 @@ func TestReconcile(t *testing.T) {
 					WithInitTriggerConditions,
 					WithTriggerSubscriberURI(subscriberURI)),
 			},
-			// BUG. We should not be setting finalizers on objects that we do not own.
-			// https://github.com/knative/pkg/issues/1734
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, triggerName),
-			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
-			},
 		}, {
 			Name: "Broker not reconciled yet",
 			Key:  testKey,
@@ -279,12 +210,6 @@ func TestReconcile(t *testing.T) {
 					WithInitTriggerConditions,
 					WithTriggerSubscriberURI(subscriberURI),
 					WithTriggerBrokerNotConfigured()),
-			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, triggerName),
-			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
 			},
 		}, {
 			Name: "Broker not ready yet",
@@ -300,12 +225,6 @@ func TestReconcile(t *testing.T) {
 					WithTriggerSubscriberURI(subscriberURI),
 					WithTriggerBrokerFailed("noexchange", "NoExchange")),
 			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, triggerName),
-			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
-			},
 		}, {
 			Name: "Creates everything ok",
 			Key:  testKey,
@@ -313,12 +232,6 @@ func TestReconcile(t *testing.T) {
 				ReadyBroker(),
 				triggerWithFilter(),
 				createSecret(rabbitURL),
-			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, triggerName),
-			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
 			},
 			WantCreates: []runtime.Object{
 				createDispatcherDeployment(),
@@ -334,12 +247,6 @@ func TestReconcile(t *testing.T) {
 				triggerWithFilter(),
 				createSecret(rabbitURL),
 			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, triggerName),
-			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
-			},
 			WantCreates: []runtime.Object{
 				createQueue(),
 			},
@@ -354,15 +261,11 @@ func TestReconcile(t *testing.T) {
 				triggerWithFilter(),
 				createSecret(rabbitURL),
 			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, triggerName),
-			},
 			WithReactors: []clientgotesting.ReactionFunc{
 				InduceFailure("create", "queues"),
 			},
 			WantErr: true,
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
 				Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for create queues"),
 			},
 			WantCreates: []runtime.Object{
@@ -379,12 +282,6 @@ func TestReconcile(t *testing.T) {
 				triggerWithFilter(),
 				createSecret(rabbitURL),
 				createReadyQueue(),
-			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, triggerName),
-			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
 			},
 			WantCreates: []runtime.Object{
 				createBinding(),
@@ -405,11 +302,7 @@ func TestReconcile(t *testing.T) {
 				InduceFailure("create", "bindings"),
 			},
 			WantErr: true,
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, triggerName),
-			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
 				Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for create bindings"),
 			},
 			WantCreates: []runtime.Object{
@@ -428,12 +321,6 @@ func TestReconcile(t *testing.T) {
 				createReadyQueue(),
 				createReadyBinding(),
 			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, triggerName),
-			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
-			},
 			WantCreates: []runtime.Object{
 				createDispatcherDeployment(),
 			},
@@ -450,12 +337,6 @@ func TestReconcile(t *testing.T) {
 					WithTriggerUID(triggerUID),
 					WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS)),
 				createSecret(rabbitURL),
-			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, triggerName),
-			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
 			},
 			WantCreates: []runtime.Object{
 				createDispatcherDeployment(),
@@ -481,11 +362,7 @@ func TestReconcile(t *testing.T) {
 					WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS)),
 				createSecret(rabbitURL),
 			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, triggerName),
-			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
 				Eventf(corev1.EventTypeWarning, "InternalError", `address not set for &ObjectReference{Kind:Service,Namespace:test-namespace,Name:subscriber-name,UID:,APIVersion:serving.knative.dev/v1,ResourceVersion:,FieldPath:,}`),
 			},
 			WantErr: true,
@@ -497,32 +374,6 @@ func TestReconcile(t *testing.T) {
 					WithTriggerBrokerReady(),
 					WithTriggerDependencyReady(),
 					WithTriggerSubscriberResolvedFailed("Unable to get the Subscriber's URI", `address not set for &ObjectReference{Kind:Service,Namespace:test-namespace,Name:subscriber-name,UID:,APIVersion:serving.knative.dev/v1,ResourceVersion:,FieldPath:,}`)),
-			}},
-		}, {
-			Name: "Invalid secret - missing key",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				ReadyBroker(),
-				NewTrigger(triggerName, testNS, brokerName,
-					WithTriggerUID(triggerUID),
-					WithTriggerSubscriberURI(subscriberURI)),
-				createInvalidSecret(rabbitURL),
-			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, triggerName),
-			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
-				Eventf(corev1.EventTypeWarning, "InternalError", "secret missing key brokerURL"),
-			},
-			WantErr: true,
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewTrigger(triggerName, testNS, brokerName,
-					WithTriggerUID(triggerUID),
-					WithTriggerSubscriberURI(subscriberURI),
-					WithInitTriggerConditions,
-					WithTriggerBrokerReady(),
-					WithTriggerDependencyFailed("SecretFailure", "secret missing key brokerURL")),
 			}},
 		}, {
 			Name: "Deployment creation fails",
@@ -537,11 +388,7 @@ func TestReconcile(t *testing.T) {
 			WithReactors: []clientgotesting.ReactionFunc{
 				InduceFailure("create", "deployments"),
 			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, triggerName),
-			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
 				Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for create deployments"),
 			},
 			WantErr: true,
@@ -573,11 +420,7 @@ func TestReconcile(t *testing.T) {
 			WithReactors: []clientgotesting.ReactionFunc{
 				InduceFailure("update", "deployments"),
 			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, triggerName),
-			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
 				Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for update deployments"),
 			},
 			WantErr: true,
@@ -605,12 +448,6 @@ func TestReconcile(t *testing.T) {
 					WithTriggerSubscriberURI(subscriberURI)),
 				createSecret(rabbitURL),
 			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, triggerName),
-			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
-			},
 			WantCreates: []runtime.Object{
 				createDispatcherDeployment(),
 			},
@@ -636,11 +473,7 @@ func TestReconcile(t *testing.T) {
 					WithDependencyAnnotation(dependencyAnnotation),
 				),
 			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, triggerName),
-			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
 				Eventf(corev1.EventTypeWarning, "InternalError", "propagating dependency readiness: getting the dependency: pingsources.sources.knative.dev \"test-ping-source\" not found"),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
@@ -671,12 +504,6 @@ func TestReconcile(t *testing.T) {
 			},
 			WantCreates: []runtime.Object{
 				createDispatcherDeployment(),
-			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, triggerName),
-			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
 			},
 			WantErr: false,
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
@@ -711,12 +538,6 @@ func TestReconcile(t *testing.T) {
 			WantCreates: []runtime.Object{
 				createDispatcherDeployment(),
 			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, triggerName),
-			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
-			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewTrigger(triggerName, testNS, brokerName,
 					WithTriggerUID(triggerUID),
@@ -750,12 +571,6 @@ func TestReconcile(t *testing.T) {
 			WantCreates: []runtime.Object{
 				createDispatcherDeployment(),
 			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, triggerName),
-			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
-			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewTrigger(triggerName, testNS, brokerName,
 					WithTriggerUID(triggerUID),
@@ -788,12 +603,6 @@ func TestReconcile(t *testing.T) {
 			WantCreates: []runtime.Object{
 				createDispatcherDeployment(),
 			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, triggerName),
-			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
-			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewTrigger(triggerName, testNS, brokerName,
 					WithTriggerUID(triggerUID),
@@ -818,12 +627,6 @@ func TestReconcile(t *testing.T) {
 		ctx = v1addr.WithDuck(ctx)
 		ctx = source.WithDuck(ctx)
 		ctx = rabbitduck.WithDuck(ctx)
-		fakeServer := server.NewServer(rabbitURL)
-		fakeServer.Start()
-		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusCreated)
-			fmt.Fprintln(w, bindingList)
-		}))
 		r := &Reconciler{
 			eventingClientSet:  fakeeventingclient.Get(ctx),
 			dynamicClientSet:   fakedynamicclient.Get(ctx),
@@ -835,9 +638,6 @@ func TestReconcile(t *testing.T) {
 			addressableTracker: duck.NewListableTracker(ctx, v1addr.Get, func(types.NamespacedName) {}, 0),
 			uriResolver:        resolver.NewURIResolver(ctx, func(types.NamespacedName) {}),
 			brokerClass:        "RabbitMQBroker",
-			dialerFunc:         dialer.TestDialer,
-			transport:          ts.Client().Transport,
-			adminURL:           ts.URL,
 			dispatcherImage:    dispatcherImage,
 			rabbitClientSet:    fakerabbitclient.Get(ctx),
 			queueLister:        listers.GetQueueLister(),
@@ -847,7 +647,6 @@ func TestReconcile(t *testing.T) {
 			fakeeventingclient.Get(ctx), listers.GetTriggerLister(),
 			controller.GetEventRecorder(ctx),
 			r,
-			controller.Options{FinalizerName: finalizerName},
 		)
 
 	},
@@ -937,24 +736,6 @@ func ReadyBrokerWithRabbitBroker() *eventingv1.Broker {
 		broker.WithExchangeReady())
 }
 
-func patchFinalizers(namespace, name string) clientgotesting.PatchActionImpl {
-	action := clientgotesting.PatchActionImpl{}
-	action.Name = name
-	action.Namespace = namespace
-	patch := `{"metadata":{"finalizers":["` + finalizerName + `"],"resourceVersion":""}}`
-	action.Patch = []byte(patch)
-	return action
-}
-
-func patchRemoveFinalizers(namespace, name string) clientgotesting.PatchActionImpl {
-	action := clientgotesting.PatchActionImpl{}
-	action.Name = name
-	action.Namespace = namespace
-	patch := `{"metadata":{"finalizers":[],"resourceVersion":""}}`
-	action.Patch = []byte(patch)
-	return action
-}
-
 func triggerWithFilter() *eventingv1.Trigger {
 	t := NewTrigger(triggerName, testNS, brokerName,
 		WithTriggerUID(triggerUID),
@@ -977,23 +758,6 @@ func triggerWithFilterReady() *eventingv1.Trigger {
 	t.Spec.Filter = &eventingv1.TriggerFilter{
 		Attributes: eventingv1.TriggerFilterAttributes(map[string]string{"type": "dev.knative.sources.ping"}),
 	}
-	return t
-}
-
-func triggerWithFinalizerReady() *eventingv1.Trigger {
-	t := NewTrigger(triggerName, testNS, brokerName,
-		WithTriggerUID(triggerUID),
-		WithTriggerSubscriberURI(subscriberURI),
-		WithTriggerBrokerReady(),
-		WithTriggerDeleted,
-		WithTriggerDependencyReady(),
-		WithTriggerSubscribed(),
-		WithTriggerSubscriberResolvedSucceeded(),
-		WithTriggerStatusSubscriberURI(subscriberURI))
-	t.Spec.Filter = &eventingv1.TriggerFilter{
-		Attributes: eventingv1.TriggerFilterAttributes(map[string]string{"type": "dev.knative.sources.ping"}),
-	}
-	t.Finalizers = []string{finalizerName}
 	return t
 }
 

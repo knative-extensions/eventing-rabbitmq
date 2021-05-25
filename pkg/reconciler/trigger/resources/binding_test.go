@@ -19,15 +19,12 @@ package resources_test
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"testing"
 
 	rabbitv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
-	"gotest.tools/assert"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"knative.dev/eventing-rabbitmq/pkg/reconciler/testrabbit"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	v1 "knative.dev/pkg/apis/duck/v1"
@@ -189,135 +186,6 @@ func createTriggerWithFilter() *eventingv1.Trigger {
 			},
 		},
 	}
-}
-
-func TestBindingDeclaration(t *testing.T) {
-	ctx := context.Background()
-	rabbitContainer := testrabbit.AutoStartRabbit(t, ctx)
-	defer testrabbit.TerminateContainer(t, ctx, rabbitContainer)
-	queueName := "queue-and-a"
-	qualifiedQueueName := namespace + "." + queueName
-	testrabbit.CreateDurableQueue(t, ctx, rabbitContainer, qualifiedQueueName)
-	brokerName := "some-broker"
-	exchangeName := namespace + "." + brokerName
-	testrabbit.CreateExchange(t, ctx, rabbitContainer, exchangeName, "headers")
-
-	err := resources.MakeBinding(nil, &resources.BindingArgs{
-		RoutingKey:             "some-key",
-		BrokerURL:              testrabbit.BrokerUrl(t, ctx, rabbitContainer).String(),
-		RabbitmqManagementPort: testrabbit.ManagementPort(t, ctx, rabbitContainer),
-		Broker: &eventingv1.Broker{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      brokerName,
-				Namespace: namespace,
-			},
-		},
-		Trigger: &eventingv1.Trigger{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      queueName,
-				Namespace: namespace,
-			},
-			Spec: eventingv1.TriggerSpec{
-				Broker: brokerName,
-				Filter: &eventingv1.TriggerFilter{
-					Attributes: map[string]string{},
-				},
-			},
-		},
-	})
-
-	assert.NilError(t, err)
-	createdBindings := testrabbit.FindBindings(t, ctx, rabbitContainer)
-	assert.Equal(t, len(createdBindings), 2, "Expected 2 bindings: default + requested one")
-	defaultBinding := createdBindings[0]
-	assert.Equal(t, defaultBinding["source"], "", "Expected binding to default exchange")
-	assert.Equal(t, defaultBinding["destination_type"], "queue")
-	assert.Equal(t, defaultBinding["destination"], qualifiedQueueName)
-	explicitBinding := createdBindings[1]
-	assert.Equal(t, explicitBinding["source"], exchangeName)
-	assert.Equal(t, explicitBinding["destination_type"], "queue")
-	assert.Equal(t, explicitBinding["destination"], qualifiedQueueName)
-	assert.Equal(t, asMap(t, explicitBinding["arguments"])[resources.BindingKey], queueName)
-}
-
-func TestBindingDLQDeclaration(t *testing.T) {
-	ctx := context.Background()
-	rabbitContainer := testrabbit.AutoStartRabbit(t, ctx)
-	defer testrabbit.TerminateContainer(t, ctx, rabbitContainer)
-	queueName := "queue-and-a"
-	testrabbit.CreateDurableQueue(t, ctx, rabbitContainer, queueName)
-	brokerName := "some-broker"
-	exchangeName := namespace + "." + brokerName + ".dlx"
-	testrabbit.CreateExchange(t, ctx, rabbitContainer, exchangeName, "headers")
-
-	err := resources.MakeDLQBinding(nil, &resources.BindingArgs{
-		RoutingKey:             "some-key",
-		BrokerURL:              testrabbit.BrokerUrl(t, ctx, rabbitContainer).String(),
-		RabbitmqManagementPort: testrabbit.ManagementPort(t, ctx, rabbitContainer),
-		Broker: &eventingv1.Broker{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      brokerName,
-				Namespace: namespace,
-			},
-		},
-		QueueName: queueName,
-	})
-
-	assert.NilError(t, err)
-	createdBindings := testrabbit.FindBindings(t, ctx, rabbitContainer)
-	assert.Equal(t, len(createdBindings), 2, "Expected 2 bindings: default + requested one")
-	defaultBinding := createdBindings[0]
-	assert.Equal(t, defaultBinding["source"], "", "Expected binding to default exchange")
-	assert.Equal(t, defaultBinding["destination_type"], "queue")
-	assert.Equal(t, defaultBinding["destination"], queueName)
-	explicitBinding := createdBindings[1]
-	assert.Equal(t, explicitBinding["source"], exchangeName)
-	assert.Equal(t, explicitBinding["destination_type"], "queue")
-	assert.Equal(t, explicitBinding["destination"], queueName)
-	assert.Equal(t, asMap(t, explicitBinding["arguments"])[resources.BindingKey], brokerName)
-}
-
-func TestMissingExchangeBindingDeclarationFailure(t *testing.T) {
-	ctx := context.Background()
-	rabbitContainer := testrabbit.AutoStartRabbit(t, ctx)
-	defer testrabbit.TerminateContainer(t, ctx, rabbitContainer)
-	queueName := "queue-te"
-	brokerName := "some-broke-herr"
-
-	brokerURL := testrabbit.BrokerUrl(t, ctx, rabbitContainer).String()
-
-	err := resources.MakeBinding(nil, &resources.BindingArgs{
-		RoutingKey:             "some-key",
-		BrokerURL:              brokerURL,
-		RabbitmqManagementPort: testrabbit.ManagementPort(t, ctx, rabbitContainer),
-		Broker: &eventingv1.Broker{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      brokerName,
-				Namespace: namespace,
-			},
-		},
-		Trigger: &eventingv1.Trigger{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      queueName,
-				Namespace: namespace,
-			},
-			Spec: eventingv1.TriggerSpec{
-				Broker: brokerName,
-				Filter: &eventingv1.TriggerFilter{
-					Attributes: map[string]string{},
-				},
-			},
-		},
-	})
-
-	assert.ErrorContains(t, err, `failed to declare Binding: Error 404 (not_found): no exchange 'foobar.some-broke-herr' in vhost '/'`)
-	assert.ErrorContains(t, err, fmt.Sprintf("no exchange '%s.%s'", namespace, brokerName))
-}
-
-func asMap(t *testing.T, value interface{}) map[string]interface{} {
-	result, ok := value.(map[string]interface{})
-	assert.Equal(t, ok, true)
-	return result
 }
 
 func getBrokerArguments() *runtime.RawExtension {

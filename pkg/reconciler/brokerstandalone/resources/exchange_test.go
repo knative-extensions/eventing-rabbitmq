@@ -10,7 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
-	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
+	"knative.dev/eventing-rabbitmq/pkg/reconciler/brokerstandalone/resources"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/testrabbit"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 )

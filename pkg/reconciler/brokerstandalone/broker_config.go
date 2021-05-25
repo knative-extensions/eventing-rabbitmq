@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package broker
+package brokerstandalone
 
 import (
 	"context"
@@ -34,7 +34,7 @@ import (
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/network"
 
-	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
+	"knative.dev/eventing-rabbitmq/pkg/reconciler/brokerstandalone/resources"
 )
 
 // This file contains the logic dealing with how to handle Broker.Spec.Config.
