@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -36,8 +35,6 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/logging"
 
-	rabbitclientset "github.com/rabbitmq/messaging-topology-operator/pkg/generated/clientset/versioned"
-	rabbitlisters "github.com/rabbitmq/messaging-topology-operator/pkg/generated/listers/rabbitmq.com/v1beta1"
 	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/triggerstandalone/resources"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
@@ -58,14 +55,11 @@ type Reconciler struct {
 	eventingClientSet clientset.Interface
 	dynamicClientSet  dynamic.Interface
 	kubeClientSet     kubernetes.Interface
-	rabbitClientSet   rabbitclientset.Interface
 
 	// listers index properties about resources
 	deploymentLister appsv1listers.DeploymentLister
 	brokerLister     eventinglisters.BrokerLister
 	triggerLister    eventinglisters.TriggerLister
-	queueLister      rabbitlisters.QueueLister
-	bindingLister    rabbitlisters.BindingLister
 
 	dispatcherImage              string
 	dispatcherServiceAccountName string
@@ -162,60 +156,28 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		RabbitmqURL: rabbitmqURL,
 		DLX:         brokerresources.ExchangeName(broker, true),
 	}
-	if !isUsingOperator(broker) {
-		queue, err := resources.DeclareQueue(r.dialerFunc, queueArgs)
-		if err != nil {
-			logging.FromContext(ctx).Error("Problem declaring Trigger Queue", zap.Error(err))
-			t.Status.MarkDependencyFailed("QueueFailure", "%v", err)
-			return err
-		}
-		logging.FromContext(ctx).Info("Created rabbitmq queue", zap.Any("queue", queue))
+	if isUsingOperator(broker) {
+		return fmt.Errorf("WON'T GO")
+	}
+	queue, err := resources.DeclareQueue(r.dialerFunc, queueArgs)
+	if err != nil {
+		logging.FromContext(ctx).Error("Problem declaring Trigger Queue", zap.Error(err))
+		t.Status.MarkDependencyFailed("QueueFailure", "%v", err)
+		return err
+	}
+	logging.FromContext(ctx).Info("Created rabbitmq queue", zap.Any("queue", queue))
 
-		err = resources.MakeBinding(r.transport, &resources.BindingArgs{
-			Broker:     broker,
-			Trigger:    t,
-			RoutingKey: "",
-			BrokerURL:  rabbitmqURL,
-			AdminURL:   r.adminURL,
-		})
-		if err != nil {
-			logging.FromContext(ctx).Error("Problem declaring Trigger Queue Binding", zap.Error(err))
-			t.Status.MarkDependencyFailed("BindingFailure", "%v", err)
-			return err
-		}
-	} else {
-		queue, err := r.reconcileQueue(ctx, broker, t)
-		if err != nil {
-			logging.FromContext(ctx).Error("Problem reconciling Trigger Queue", zap.Error(err))
-			t.Status.MarkDependencyFailed("QueueFailure", "%v", err)
-			return err
-		}
-		if queue != nil {
-			if !isReady(queue.Status.Conditions) {
-				logging.FromContext(ctx).Warnf("Queue %q is not ready", queue.Name)
-				t.Status.MarkDependencyFailed("QueueFailure", "Queue %q is not ready", queue.Name)
-				return nil
-			}
-		}
-
-		logging.FromContext(ctx).Info("Reconciled rabbitmq queue", zap.Any("queue", queue))
-
-		binding, err := r.reconcileBinding(ctx, broker, t)
-		if err != nil {
-			logging.FromContext(ctx).Error("Problem reconciling Trigger Queue Binding", zap.Error(err))
-			t.Status.MarkDependencyFailed("BindingFailure", "%v", err)
-			return err
-		}
-		if binding != nil {
-			if !isReady(binding.Status.Conditions) {
-				logging.FromContext(ctx).Warnf("Binding %q is not ready", binding.Name)
-				t.Status.MarkDependencyFailed("BindingFailure", "Binding %q is not ready", binding.Name)
-				return nil
-			}
-
-		}
-		logging.FromContext(ctx).Info("Reconciled rabbitmq binding", zap.Any("binding", binding))
-		t.Status.MarkDependencySucceeded()
+	err = resources.MakeBinding(r.transport, &resources.BindingArgs{
+		Broker:     broker,
+		Trigger:    t,
+		RoutingKey: "",
+		BrokerURL:  rabbitmqURL,
+		AdminURL:   r.adminURL,
+	})
+	if err != nil {
+		logging.FromContext(ctx).Error("Problem declaring Trigger Queue Binding", zap.Error(err))
+		t.Status.MarkDependencyFailed("BindingFailure", "%v", err)
+		return err
 	}
 	if t.Spec.Subscriber.Ref != nil {
 		// To call URIFromDestination(dest apisv1alpha1.Destination, parent interface{}), dest.Ref must have a Namespace
@@ -418,59 +380,4 @@ func (r *Reconciler) rabbitmqURL(ctx context.Context, t *eventingv1.Trigger) (st
 		return "", fmt.Errorf("secret missing key %s", brokerresources.BrokerURLSecretKey)
 	}
 	return string(val), nil
-}
-
-func (r *Reconciler) reconcileQueue(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger) (*v1beta1.Queue, error) {
-	queueName := resources.CreateTriggerQueueName(t)
-	want := resources.NewQueue(ctx, b, t)
-	current, err := r.queueLister.Queues(b.Namespace).Get(queueName)
-	if apierrs.IsNotFound(err) {
-		logging.FromContext(ctx).Debugw("Creating rabbitmq exchange", zap.String("queue name", want.Name))
-		return r.rabbitClientSet.RabbitmqV1beta1().Queues(b.Namespace).Create(ctx, want, metav1.CreateOptions{})
-	} else if err != nil {
-		return nil, err
-	} else if !equality.Semantic.DeepDerivative(want.Spec, current.Spec) {
-		// Don't modify the informers copy.
-		desired := current.DeepCopy()
-		desired.Spec = want.Spec
-		return r.rabbitClientSet.RabbitmqV1beta1().Queues(b.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
-	}
-	return current, nil
-}
-
-func (r *Reconciler) reconcileBinding(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger) (*v1beta1.Binding, error) {
-	// We can use the same name for queue / binding to keep things simpler
-	bindingName := resources.CreateTriggerQueueName(t)
-
-	want, err := resources.NewBinding(ctx, b, t)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create the binding spec: %w", err)
-	}
-	current, err := r.bindingLister.Bindings(b.Namespace).Get(bindingName)
-	if apierrs.IsNotFound(err) {
-		logging.FromContext(ctx).Infow("Creating rabbitmq binding", zap.String("binding name", want.Name))
-		return r.rabbitClientSet.RabbitmqV1beta1().Bindings(b.Namespace).Create(ctx, want, metav1.CreateOptions{})
-	} else if err != nil {
-		return nil, err
-	} else if !equality.Semantic.DeepDerivative(want.Spec, current.Spec) {
-		// Don't modify the informers copy.
-		desired := current.DeepCopy()
-		desired.Spec = want.Spec
-		return r.rabbitClientSet.RabbitmqV1beta1().Bindings(b.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
-	}
-	return current, nil
-}
-
-func isReady(conditions []v1beta1.Condition) bool {
-	numConditions := len(conditions)
-	// If there are no conditions at all, the resource probably hasn't been reconciled yet => not ready
-	if numConditions == 0 {
-		return false
-	}
-	for _, c := range conditions {
-		if c.Status == corev1.ConditionTrue {
-			numConditions--
-		}
-	}
-	return numConditions == 0
 }
