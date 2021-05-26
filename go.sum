@@ -779,6 +779,7 @@ github.com/quasilyte/go-consistent v0.0.0-20190521200055-c6f3937de18c/go.mod h1:
 github.com/rabbitmq/cluster-operator v1.6.0/go.mod h1:n3k4uzzInXaq4r16Xq3DtC/ihZ5ppl5psndF7p4KDNU=
 github.com/rabbitmq/messaging-topology-operator v0.8.0 h1:48HF2y7x63BnlR/8BxIymjcUiLbJuP5RtrIgPngIuQM=
 github.com/rabbitmq/messaging-topology-operator v0.8.0/go.mod h1:6V+iWlnqndOdwp254Q5JWWRBTpdc7/xdwBR0OX5N/+U=
+github.com/rabbitmq/messaging-topology-operator v0.8.1 h1:CXuNgVqL882dTrsd0QtmP4BDkHSFLsW4QdAfpjHDgDg=
 github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=
 github.com/rickb777/date v1.13.0 h1:+8AmwLuY1d/rldzdqvqTEg7107bZ8clW37x4nsdG3Hs=
 github.com/rickb777/date v1.13.0/go.mod h1:GZf3LoGnxPWjX+/1TXOuzHefZFDovTyNLHDMd3qH70k=
