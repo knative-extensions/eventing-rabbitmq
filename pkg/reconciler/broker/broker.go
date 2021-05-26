@@ -135,8 +135,8 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *eventingv1.Broker) pk
 	}
 
 	if !isUsingOperator(b) {
-		// TODO: We need to flag this as an error. Or, maybe it comes from above (getExchangeArgs)
-		// TODO: MARK ERROR
+		MarkExchangeFailed(&b.Status, "ReconcileFailure", "using secret is not supported with this controller")
+		return nil
 	}
 	args.RabbitMQCluster = b.Spec.Config.Name
 	return r.reconcileUsingCRD(ctx, b, args)

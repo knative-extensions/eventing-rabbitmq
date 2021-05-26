@@ -75,7 +75,6 @@ const (
 	rabbitBrokerSecretName    = "test-broker-broker-rabbit"
 	rabbitmqClusterSecretName = "rabbitmqclustersecret"
 	rabbitURL                 = "amqp://localhost:5672/%2f"
-	rabbitmqClusterURL        = "amqp://myusername:mypassword@rabbitmqsvc.test-namespace.svc.cluster.local:5672"
 	rabbitMQBrokerName        = "rabbitbrokerhere"
 	ingressImage              = "ingressimage"
 

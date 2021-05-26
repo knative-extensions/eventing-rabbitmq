@@ -30,9 +30,8 @@ import (
 )
 
 const (
-	brokerName      = "testbroker"
-	namespace       = "foobar"
-	rabbitmqcluster = "testrabbitmqcluster"
+	brokerName = "testbroker"
+	namespace  = "foobar"
 )
 
 func TestExchangeName(t *testing.T) {

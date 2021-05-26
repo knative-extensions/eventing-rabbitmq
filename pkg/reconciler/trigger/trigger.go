@@ -124,11 +124,18 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		return err
 	}
 
+	// Just because there's no error, the dependency might not be ready, so check it.
+	if ts := t.Status.GetCondition(eventingv1.TriggerConditionDependency); ts.Status != corev1.ConditionTrue {
+		logging.FromContext(ctx).Info("Dependency is not ready")
+		return nil
+	}
+
 	// Note that we always create DLX with this queue because you can't
 	// change them later.
 	// Note we use the same name for queue & binding for consistency.
 	if !isUsingOperator(broker) {
-		// TODO: Mark as an error since we can't reconcile these...
+		t.Status.MarkDependencyFailed("ReconcileFailure", "using secret is not supported with this controller")
+		return nil
 	} else {
 		queue, err := r.reconcileQueue(ctx, broker, t)
 		if err != nil {
@@ -339,10 +346,7 @@ func (r *Reconciler) reconcileBinding(ctx context.Context, b *eventingv1.Broker,
 	} else if err != nil {
 		return nil, err
 	} else if !equality.Semantic.DeepDerivative(want.Spec, current.Spec) {
-		// Don't modify the informers copy.
-		desired := current.DeepCopy()
-		desired.Spec = want.Spec
-		return r.rabbitClientSet.RabbitmqV1beta1().Bindings(b.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
+		return nil, fmt.Errorf("binding spec differs and it's immutable")
 	}
 	return current, nil
 }
