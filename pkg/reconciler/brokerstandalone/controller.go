@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Knative Authors
+Copyright 2021 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,17 +20,16 @@ import (
 	"context"
 	"log"
 
-	"knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
 	eventingclient "knative.dev/eventing/pkg/client/injection/client"
 
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	"k8s.io/client-go/tools/cache"
 
+	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
+	"knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
 	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
-
-	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
 	brokerinformer "knative.dev/eventing/pkg/client/injection/informers/eventing/v1/broker"
 	brokerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1/broker"
 	"knative.dev/eventing/pkg/duck"
@@ -41,7 +40,6 @@ import (
 	endpointsinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/endpoints"
 	secretinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/secret"
 	serviceinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/service"
-
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/injection/clients/dynamicclient"

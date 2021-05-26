@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Knative Authors
+Copyright 2021 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -38,9 +38,8 @@ const (
 // DispatcherArgs are the arguments to create a Broker's Dispatcher Deployment that handles
 // DeadLetterSink deliveries.
 type DispatcherArgs struct {
-	Broker *eventingv1.Broker
-	Image  string
-	//ServiceAccountName string
+	Broker             *eventingv1.Broker
+	Image              string
 	RabbitMQHost       string
 	RabbitMQSecretName string
 	QueueName          string

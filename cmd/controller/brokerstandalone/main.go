@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Knative Authors
+Copyright 2021 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"knative.dev/pkg/injection/sharedmain"
 
-	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker"
-	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger"
+	broker "knative.dev/eventing-rabbitmq/pkg/reconciler/brokerstandalone"
+	trigger "knative.dev/eventing-rabbitmq/pkg/reconciler/triggerstandalone"
 )
 
 func main() {
