@@ -23,7 +23,7 @@ spec:
   template:
     spec:
       containers:
-        - image: ko.local/knative.dev/eventing-rabbitmq/cmd/failer:8f96f843f69bb5a8f448e5b6b13fd928facea4e119c308b33903c0d019e36bdc
+        - image: ko://knative.dev/eventing-rabbitmq/cmd/failer:8f96f843f69bb5a8f448e5b6b13fd928facea4e119c308b33903c0d019e36bdc
           env:
             - name: DEFAULT_RESPONSE_CODE
               value: "200"
