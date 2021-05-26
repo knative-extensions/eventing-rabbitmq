@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Knative Authors
+Copyright 2021 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,26 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package broker
+package brokerstandalone
 
 import (
 	"context"
 	"log"
 
-	"knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
-	rabbitmqclient "knative.dev/eventing-rabbitmq/pkg/client/injection/rabbitmq.com/client"
 	eventingclient "knative.dev/eventing/pkg/client/injection/client"
 
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	"k8s.io/client-go/tools/cache"
 
+	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
+	"knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
 	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
-
-	bindinginformer "knative.dev/eventing-rabbitmq/pkg/client/injection/rabbitmq.com/informers/rabbitmq.com/v1beta1/binding"
-	exchangeinformer "knative.dev/eventing-rabbitmq/pkg/client/injection/rabbitmq.com/informers/rabbitmq.com/v1beta1/exchange"
-	queueinformer "knative.dev/eventing-rabbitmq/pkg/client/injection/rabbitmq.com/informers/rabbitmq.com/v1beta1/queue"
 	brokerinformer "knative.dev/eventing/pkg/client/injection/informers/eventing/v1/broker"
 	brokerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1/broker"
 	"knative.dev/eventing/pkg/duck"
@@ -44,7 +40,6 @@ import (
 	endpointsinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/endpoints"
 	secretinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/secret"
 	serviceinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/service"
-
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/injection/clients/dynamicclient"
@@ -52,6 +47,8 @@ import (
 	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/resolver"
 )
+
+const finalizerName = "rabbitmq.eventing.knative.dev"
 
 type envConfig struct {
 	IngressImage          string `envconfig:"BROKER_INGRESS_IMAGE" required:"true"`
@@ -84,9 +81,6 @@ func NewController(
 	serviceInformer := serviceinformer.Get(ctx)
 	endpointsInformer := endpointsinformer.Get(ctx)
 	rabbitInformer := rabbit.Get(ctx)
-	exchangeInformer := exchangeinformer.Get(ctx)
-	queueInformer := queueinformer.Get(ctx)
-	bindingInformer := bindinginformer.Get(ctx)
 
 	r := &Reconciler{
 		eventingClientSet:         eventingclient.Get(ctx),
@@ -101,14 +95,13 @@ func NewController(
 		ingressImage:              env.IngressImage,
 		ingressServiceAccountName: env.IngressServiceAccount,
 		brokerClass:               env.BrokerClass,
+		dialerFunc:                dialer.RealDialer,
 		dispatcherImage:           env.DispatcherImage,
-		rabbitClientSet:           rabbitmqclient.Get(ctx),
-		exchangeLister:            exchangeInformer.Lister(),
-		queueLister:               queueInformer.Lister(),
-		bindingLister:             bindingInformer.Lister(),
 	}
 
-	impl := brokerreconciler.NewImpl(ctx, r, env.BrokerClass)
+	impl := brokerreconciler.NewImpl(ctx, r, env.BrokerClass, func(impl *controller.Impl) controller.Options {
+		return controller.Options{FinalizerName: finalizerName}
+	})
 
 	logging.FromContext(ctx).Info("Setting up event handlers")
 
@@ -137,20 +130,6 @@ func NewController(
 	})
 
 	deploymentInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterControllerGK(eventingv1.Kind("Broker")),
-		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
-	})
-
-	exchangeInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterControllerGK(eventingv1.Kind("Broker")),
-		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
-	})
-
-	queueInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterControllerGK(eventingv1.Kind("Broker")),
-		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
-	})
-	bindingInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.FilterControllerGK(eventingv1.Kind("Broker")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})

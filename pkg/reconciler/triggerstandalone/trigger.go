@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Knative Authors
+Copyright 2021 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,19 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package trigger
+package triggerstandalone
 
 import (
 	"context"
 	"fmt"
+	"net/http"
 
-	"github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	sets "k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
@@ -34,9 +35,8 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/logging"
 
-	rabbitclientset "github.com/rabbitmq/messaging-topology-operator/pkg/generated/clientset/versioned"
-	rabbitlisters "github.com/rabbitmq/messaging-topology-operator/pkg/generated/listers/rabbitmq.com/v1beta1"
-	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
+	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
+	"knative.dev/eventing-rabbitmq/pkg/reconciler/triggerstandalone/resources"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
@@ -48,21 +48,18 @@ import (
 	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/resolver"
 
-	brokerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
+	brokerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/brokerstandalone/resources"
 )
 
 type Reconciler struct {
 	eventingClientSet clientset.Interface
 	dynamicClientSet  dynamic.Interface
 	kubeClientSet     kubernetes.Interface
-	rabbitClientSet   rabbitclientset.Interface
 
 	// listers index properties about resources
 	deploymentLister appsv1listers.DeploymentLister
 	brokerLister     eventinglisters.BrokerLister
 	triggerLister    eventinglisters.TriggerLister
-	queueLister      rabbitlisters.QueueLister
-	bindingLister    rabbitlisters.BindingLister
 
 	dispatcherImage              string
 	dispatcherServiceAccountName string
@@ -75,10 +72,19 @@ type Reconciler struct {
 	// Dynamic tracker to track AddressableTypes. In particular, it tracks Trigger subscribers.
 	addressableTracker duck.ListableTracker
 	uriResolver        *resolver.URIResolver
+
+	// Which dialer to use.
+	dialerFunc dialer.DialerFunc
+
+	// Which HTTP transport to use
+	transport http.RoundTripper
+	// For testing...
+	adminURL string
 }
 
 // Check that our Reconciler implements Interface
 var _ triggerreconciler.Interface = (*Reconciler)(nil)
+var _ triggerreconciler.Finalizer = (*Reconciler)(nil)
 
 // isUsingOperator checks the Spec for a Broker and determines if we should be using the
 // messaging-topology-operator or the libraries.
@@ -106,8 +112,16 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 	}
 
 	// If it's not my brokerclass, ignore
+	// However, if for some reason it has my finalizer, remove it.
+	// This is a bug in genreconciler because it slaps the finalizer in before we
+	// know whether it is actually ours.
 	if broker.Annotations[eventing.BrokerClassKey] != r.brokerClass {
 		logging.FromContext(ctx).Infof("Ignoring trigger %s/%s", t.Namespace, t.Name)
+		finalizers := sets.NewString(t.Finalizers...)
+		if finalizers.Has(finalizerName) {
+			finalizers.Delete(finalizerName)
+			t.Finalizers = finalizers.List()
+		}
 		return nil
 	}
 
@@ -124,51 +138,46 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		return err
 	}
 
-	// Just because there's no error, the dependency might not be ready, so check it.
-	if ts := t.Status.GetCondition(eventingv1.TriggerConditionDependency); ts.Status != corev1.ConditionTrue {
-		logging.FromContext(ctx).Info("Dependency is not ready")
-		return nil
+	// 1. RabbitMQ Queue
+	// 2. RabbitMQ Binding
+	// 3. Dispatcher Deployment for Subscriber
+	rabbitmqURL, err := r.rabbitmqURL(ctx, t)
+	if err != nil {
+		t.Status.MarkDependencyFailed("SecretFailure", "%v", err)
+		return err
 	}
 
 	// Note that we always create DLX with this queue because you can't
 	// change them later.
 	// Note we use the same name for queue & binding for consistency.
-	if !isUsingOperator(broker) {
-		t.Status.MarkDependencyFailed("ReconcileFailure", "using secret is not supported with this controller")
-		return nil
-	} else {
-		queue, err := r.reconcileQueue(ctx, broker, t)
-		if err != nil {
-			logging.FromContext(ctx).Error("Problem reconciling Trigger Queue", zap.Error(err))
-			t.Status.MarkDependencyFailed("QueueFailure", "%v", err)
-			return err
-		}
-		if queue != nil {
-			if !isReady(queue.Status.Conditions) {
-				logging.FromContext(ctx).Warnf("Queue %q is not ready", queue.Name)
-				t.Status.MarkDependencyFailed("QueueFailure", "Queue %q is not ready", queue.Name)
-				return nil
-			}
-		}
+	queueName := resources.CreateTriggerQueueName(t)
+	queueArgs := &resources.QueueArgs{
+		QueueName:   queueName,
+		RabbitmqURL: rabbitmqURL,
+		DLX:         brokerresources.ExchangeName(broker, true),
+	}
+	if isUsingOperator(broker) {
+		return fmt.Errorf("WON'T GO")
+	}
+	queue, err := resources.DeclareQueue(r.dialerFunc, queueArgs)
+	if err != nil {
+		logging.FromContext(ctx).Error("Problem declaring Trigger Queue", zap.Error(err))
+		t.Status.MarkDependencyFailed("QueueFailure", "%v", err)
+		return err
+	}
+	logging.FromContext(ctx).Info("Created rabbitmq queue", zap.Any("queue", queue))
 
-		logging.FromContext(ctx).Info("Reconciled rabbitmq queue", zap.Any("queue", queue))
-
-		binding, err := r.reconcileBinding(ctx, broker, t)
-		if err != nil {
-			logging.FromContext(ctx).Error("Problem reconciling Trigger Queue Binding", zap.Error(err))
-			t.Status.MarkDependencyFailed("BindingFailure", "%v", err)
-			return err
-		}
-		if binding != nil {
-			if !isReady(binding.Status.Conditions) {
-				logging.FromContext(ctx).Warnf("Binding %q is not ready", binding.Name)
-				t.Status.MarkDependencyFailed("BindingFailure", "Binding %q is not ready", binding.Name)
-				return nil
-			}
-
-		}
-		logging.FromContext(ctx).Info("Reconciled rabbitmq binding", zap.Any("binding", binding))
-		t.Status.MarkDependencySucceeded()
+	err = resources.MakeBinding(r.transport, &resources.BindingArgs{
+		Broker:     broker,
+		Trigger:    t,
+		RoutingKey: "",
+		BrokerURL:  rabbitmqURL,
+		AdminURL:   r.adminURL,
+	})
+	if err != nil {
+		logging.FromContext(ctx).Error("Problem declaring Trigger Queue Binding", zap.Error(err))
+		t.Status.MarkDependencyFailed("BindingFailure", "%v", err)
+		return err
 	}
 	if t.Spec.Subscriber.Ref != nil {
 		// To call URIFromDestination(dest apisv1alpha1.Destination, parent interface{}), dest.Ref must have a Namespace
@@ -207,6 +216,54 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		return err
 	}
 
+	return nil
+}
+
+func (r *Reconciler) FinalizeKind(ctx context.Context, t *eventingv1.Trigger) pkgreconciler.Event {
+	broker, err := r.brokerLister.Brokers(t.Namespace).Get(t.Spec.Broker)
+	if err != nil {
+		if apierrs.IsNotFound(err) {
+			// Ok to return nil here. There's nothing for us to do.
+			return nil
+		}
+		return fmt.Errorf("retrieving broker: %v", err)
+	}
+
+	// If it's not my brokerclass, ignore
+	// However, if for some reason it has my finalizer, remove it.
+	// This is a bug in genreconciler because it slaps the finalizer in before we
+	// know whether it is actually ours.
+	if broker.Annotations[eventing.BrokerClassKey] != r.brokerClass {
+		logging.FromContext(ctx).Infof("Ignoring trigger %s/%s", t.Namespace, t.Name)
+		finalizers := sets.NewString(t.Finalizers...)
+		if finalizers.Has(finalizerName) {
+			finalizers.Delete(finalizerName)
+			t.Finalizers = finalizers.List()
+		}
+		return nil
+	}
+
+	if isUsingOperator(broker) {
+		// Everything gets cleaned up by garbage collection in this case.
+		return nil
+	}
+
+	rabbitmqURL, err := r.rabbitmqURL(ctx, t)
+	// If there's no secret, we can't delete the queue. Deleting an object should not require creation
+	// of a secret, and for example if the namespace is being deleted, there's nothing we can do.
+	// For now, return nil rather than leave the Trigger around.
+	if err != nil {
+		logging.FromContext(ctx).Errorf("Failed to fetch rabbitmq secret while finalizing, leaking a queue %s/%s", t.Namespace, t.Name)
+		return nil
+	}
+
+	err = resources.DeleteQueue(r.dialerFunc, &resources.QueueArgs{
+		QueueName:   resources.CreateTriggerQueueName(t),
+		RabbitmqURL: rabbitmqURL,
+	})
+	if err != nil {
+		return fmt.Errorf("trigger finalize failed: %v", err)
+	}
 	return nil
 }
 
@@ -313,54 +370,14 @@ func (r *Reconciler) getRabbitmqSecret(ctx context.Context, t *eventingv1.Trigge
 	return r.kubeClientSet.CoreV1().Secrets(t.Namespace).Get(ctx, brokerresources.SecretName(t.Spec.Broker), metav1.GetOptions{})
 }
 
-func (r *Reconciler) reconcileQueue(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger) (*v1beta1.Queue, error) {
-	queueName := resources.CreateTriggerQueueName(t)
-	want := resources.NewQueue(ctx, b, t)
-	current, err := r.queueLister.Queues(b.Namespace).Get(queueName)
-	if apierrs.IsNotFound(err) {
-		logging.FromContext(ctx).Debugw("Creating rabbitmq exchange", zap.String("queue name", want.Name))
-		return r.rabbitClientSet.RabbitmqV1beta1().Queues(b.Namespace).Create(ctx, want, metav1.CreateOptions{})
-	} else if err != nil {
-		return nil, err
-	} else if !equality.Semantic.DeepDerivative(want.Spec, current.Spec) {
-		// Don't modify the informers copy.
-		desired := current.DeepCopy()
-		desired.Spec = want.Spec
-		return r.rabbitClientSet.RabbitmqV1beta1().Queues(b.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
-	}
-	return current, nil
-}
-
-func (r *Reconciler) reconcileBinding(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger) (*v1beta1.Binding, error) {
-	// We can use the same name for queue / binding to keep things simpler
-	bindingName := resources.CreateTriggerQueueName(t)
-
-	want, err := resources.NewBinding(ctx, b, t)
+func (r *Reconciler) rabbitmqURL(ctx context.Context, t *eventingv1.Trigger) (string, error) {
+	s, err := r.getRabbitmqSecret(ctx, t)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create the binding spec: %w", err)
+		return "", err
 	}
-	current, err := r.bindingLister.Bindings(b.Namespace).Get(bindingName)
-	if apierrs.IsNotFound(err) {
-		logging.FromContext(ctx).Infow("Creating rabbitmq binding", zap.String("binding name", want.Name))
-		return r.rabbitClientSet.RabbitmqV1beta1().Bindings(b.Namespace).Create(ctx, want, metav1.CreateOptions{})
-	} else if err != nil {
-		return nil, err
-	} else if !equality.Semantic.DeepDerivative(want.Spec, current.Spec) {
-		return nil, fmt.Errorf("binding spec differs and it's immutable")
+	val := s.Data[brokerresources.BrokerURLSecretKey]
+	if val == nil {
+		return "", fmt.Errorf("secret missing key %s", brokerresources.BrokerURLSecretKey)
 	}
-	return current, nil
-}
-
-func isReady(conditions []v1beta1.Condition) bool {
-	numConditions := len(conditions)
-	// If there are no conditions at all, the resource probably hasn't been reconciled yet => not ready
-	if numConditions == 0 {
-		return false
-	}
-	for _, c := range conditions {
-		if c.Status == corev1.ConditionTrue {
-			numConditions--
-		}
-	}
-	return numConditions == 0
+	return string(val), nil
 }

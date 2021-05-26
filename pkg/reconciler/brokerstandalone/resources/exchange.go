@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Knative Authors
+Copyright 2021 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,14 +17,16 @@ limitations under the License.
 package resources
 
 import (
-	"context"
 	"fmt"
 	"net/url"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/kmeta"
 
-	rabbitv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
+	"github.com/NeowayLabs/wabbit"
+	"github.com/streadway/amqp"
+	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
+	"knative.dev/eventing-rabbitmq/pkg/reconciler/io"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 )
 
@@ -38,40 +40,59 @@ type ExchangeArgs struct {
 	DLX bool
 }
 
-func NewExchange(ctx context.Context, args *ExchangeArgs) *rabbitv1beta1.Exchange {
-	exchangeName := ExchangeName(args.Broker, args.DLX)
-	return &rabbitv1beta1.Exchange{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: args.Broker.Namespace,
-			Name:      exchangeName,
-			OwnerReferences: []metav1.OwnerReference{
-				*kmeta.NewControllerRef(args.Broker),
-			},
-			Labels: ExchangeLabels(args.Broker),
-		},
-		Spec: rabbitv1beta1.ExchangeSpec{
-			// Why is the name in the Spec again? Is this different from the ObjectMeta.Name? If not,
-			// maybe it should be removed?
-			Name:       exchangeName,
-			Type:       "headers",
-			Durable:    true,
-			AutoDelete: false,
-			// TODO: We had before also internal / nowait set to false. Are these in Arguments,
-			// or do they get sane defaults that we can just work with?
-			// TODO: This one has to exist in the same namespace as this exchange.
-			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
-				Name: args.RabbitMQCluster,
-			},
-		},
-	}
-}
-
 // ExchangeLabels generates the labels present on the Exchange linking the Broker to the
 // Exchange.
 func ExchangeLabels(b *eventingv1.Broker) map[string]string {
 	return map[string]string{
 		"eventing.knative.dev/broker": b.Name,
 	}
+}
+
+// DeclareExchange declares the Exchange for a Broker.
+func DeclareExchange(dialerFunc dialer.DialerFunc, args *ExchangeArgs) (*corev1.Secret, error) {
+	conn, err := dialerFunc(args.RabbitMQURL.String())
+	if err != nil {
+		return nil, err
+	}
+	defer io.CloseAmqpResourceAndExitOnError(conn)
+
+	channel, err := conn.Channel()
+	if err != nil {
+		return nil, err
+	}
+	defer io.CloseAmqpResourceAndExitOnError(channel)
+
+	return MakeSecret(args), channel.ExchangeDeclare(
+		ExchangeName(args.Broker, args.DLX),
+		"headers", // kind
+		wabbit.Option{
+			"durable":    true,
+			"autoDelete": false,
+			"internal":   false,
+			"noWait":     false,
+		},
+	)
+}
+
+// DeleteExchange deletes the Exchange for a Broker.
+func DeleteExchange(args *ExchangeArgs) error {
+	conn, err := amqp.Dial(args.RabbitMQURL.String())
+	if err != nil {
+		return err
+	}
+	defer io.CloseAmqpResourceAndExitOnError(conn)
+
+	channel, err := conn.Channel()
+	if err != nil {
+		return err
+	}
+	defer io.CloseAmqpResourceAndExitOnError(channel)
+
+	return channel.ExchangeDelete(
+		ExchangeName(args.Broker, args.DLX),
+		false, // if-unused
+		false, // nowait
+	)
 }
 
 // ExchangeName constructs a name given a Broker.

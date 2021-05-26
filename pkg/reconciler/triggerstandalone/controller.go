@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Knative Authors
+Copyright 2021 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,13 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package trigger
+package triggerstandalone
 
 import (
 	"context"
 	"log"
 
-	rabbitmqclient "knative.dev/eventing-rabbitmq/pkg/client/injection/rabbitmq.com/client"
 	eventingclient "knative.dev/eventing/pkg/client/injection/client"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/injection/clients/dynamicclient"
@@ -32,7 +31,7 @@ import (
 
 	v1 "knative.dev/eventing/pkg/apis/eventing/v1"
 
-	bindinginformer "knative.dev/eventing-rabbitmq/pkg/client/injection/rabbitmq.com/informers/rabbitmq.com/v1beta1/binding"
+	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
 	brokerinformer "knative.dev/eventing/pkg/client/injection/informers/eventing/v1/broker"
 	triggerinformer "knative.dev/eventing/pkg/client/injection/informers/eventing/v1/trigger"
 	brokerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1/broker"
@@ -42,13 +41,13 @@ import (
 	"knative.dev/pkg/client/injection/ducks/duck/v1/source"
 	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
 
-	queueinformer "knative.dev/eventing-rabbitmq/pkg/client/injection/rabbitmq.com/informers/rabbitmq.com/v1beta1/queue"
-
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/resolver"
 )
+
+const finalizerName = "rabbitmq.eventing.knative.dev"
 
 type envConfig struct {
 	DispatcherImage          string `envconfig:"BROKER_DISPATCHER_IMAGE" required:"true"`
@@ -73,8 +72,6 @@ func NewController(
 	brokerInformer := brokerinformer.Get(ctx)
 	deploymentInformer := deploymentinformer.Get(ctx)
 	triggerInformer := triggerinformer.Get(ctx)
-	queueInformer := queueinformer.Get(ctx)
-	bindingInformer := bindinginformer.Get(ctx)
 
 	r := &Reconciler{
 		eventingClientSet:            eventingclient.Get(ctx),
@@ -86,12 +83,12 @@ func NewController(
 		dispatcherImage:              env.DispatcherImage,
 		dispatcherServiceAccountName: env.DispatcherServiceAccount,
 		brokerClass:                  env.BrokerClass,
-		queueLister:                  queueInformer.Lister(),
-		bindingLister:                bindingInformer.Lister(),
-		rabbitClientSet:              rabbitmqclient.Get(ctx),
+		dialerFunc:                   dialer.RealDialer,
 	}
 
-	impl := triggerreconciler.NewImpl(ctx, r)
+	impl := triggerreconciler.NewImpl(ctx, r, func(impl *controller.Impl) controller.Options {
+		return controller.Options{FinalizerName: finalizerName}
+	})
 
 	logging.FromContext(ctx).Info("Setting up event handlers")
 
@@ -100,14 +97,6 @@ func NewController(
 	r.uriResolver = resolver.NewURIResolver(ctx, impl.EnqueueKey)
 
 	deploymentInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterControllerGK(v1.Kind("Trigger")),
-		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
-	})
-	queueInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterControllerGK(v1.Kind("Trigger")),
-		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
-	})
-	bindingInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.FilterControllerGK(v1.Kind("Trigger")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})

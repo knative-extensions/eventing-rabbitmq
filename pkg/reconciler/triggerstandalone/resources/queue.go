@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Knative Authors
+Copyright 2021 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,15 +17,14 @@ limitations under the License.
 package resources
 
 import (
-	"context"
 	"fmt"
 
-	rabbitv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	brokerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
+	"github.com/streadway/amqp"
+	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
+	"knative.dev/eventing-rabbitmq/pkg/reconciler/io"
 	"knative.dev/eventing/pkg/apis/eventing"
-	"knative.dev/pkg/kmeta"
+
+	"github.com/NeowayLabs/wabbit"
 
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 )
@@ -41,45 +40,6 @@ type QueueArgs struct {
 	Trigger *eventingv1.Trigger
 	// If non-empty, wire the queue into this DLX.
 	DLX string
-}
-
-func NewQueue(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger) *rabbitv1beta1.Queue {
-	var or metav1.OwnerReference
-	var queueName string
-	if t != nil {
-		or = *kmeta.NewControllerRef(t)
-		queueName = CreateTriggerQueueName(t)
-	} else {
-		or = *kmeta.NewControllerRef(b)
-		queueName = CreateBrokerDeadLetterQueueName(b)
-	}
-	q := &rabbitv1beta1.Queue{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace:       b.Namespace,
-			Name:            queueName,
-			OwnerReferences: []metav1.OwnerReference{or},
-			Labels:          QueueLabels(b, t),
-		},
-		Spec: rabbitv1beta1.QueueSpec{
-			// Why is the name in the Spec again? Is this different from the ObjectMeta.Name? If not,
-			// maybe it should be removed?
-			Name:       queueName,
-			Durable:    true,
-			AutoDelete: false,
-			// TODO: We had before also internal / nowait set to false. Are these in Arguments,
-			// or do they get sane defaults that we can just work with?
-			// TODO: This one has to exist in the same namespace as this exchange.
-			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
-				Name: b.Spec.Config.Name,
-			},
-		},
-	}
-	if t != nil {
-		q.Spec.Arguments = &runtime.RawExtension{
-			Raw: []byte(`{"x-dead-letter-exchange":"` + brokerresources.ExchangeName(b, true) + `"}`),
-		}
-	}
-	return q
 }
 
 // QueueLabels generates the labels present on the Queue linking the Broker / Trigger to the
@@ -107,4 +67,65 @@ func CreateTriggerQueueName(t *eventingv1.Trigger) string {
 	// TODO(vaikas): https://github.com/knative-sandbox/eventing-rabbitmq/issues/61
 	// return fmt.Sprintf("%s/%s", t.Namespace, t.Name)
 	return fmt.Sprintf("%s.%s", t.Namespace, t.Name)
+}
+
+// DeclareQueue declares the Trigger's Queue.
+func DeclareQueue(dialerFunc dialer.DialerFunc, args *QueueArgs) (wabbit.Queue, error) {
+	conn, err := dialerFunc(args.RabbitmqURL)
+	if err != nil {
+		return nil, err
+	}
+	defer io.CloseAmqpResourceAndExitOnError(conn)
+
+	channel, err := conn.Channel()
+	if err != nil {
+		return nil, err
+	}
+	defer io.CloseAmqpResourceAndExitOnError(channel)
+
+	options := wabbit.Option{
+		"durable":    true,
+		"autoDelete": false,
+		"exclusive":  false,
+		"noWait":     false,
+	}
+	if args.DLX != "" {
+		rabbitArgs := make(map[string]interface{}, 1)
+		rabbitArgs["x-dead-letter-exchange"] = interface{}(args.DLX)
+		options["args"] = amqp.Table(rabbitArgs)
+	}
+
+	queue, err := channel.QueueDeclare(
+		args.QueueName,
+		options,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return queue, nil
+}
+
+// DeleteQueue deletes the Trigger's Queue.
+func DeleteQueue(dialerFunc dialer.DialerFunc, args *QueueArgs) error {
+	conn, err := dialerFunc(args.RabbitmqURL)
+	if err != nil {
+		return err
+	}
+	defer io.CloseAmqpResourceAndExitOnError(conn)
+
+	channel, err := conn.Channel()
+	if err != nil {
+		return err
+	}
+	defer io.CloseAmqpResourceAndExitOnError(channel)
+
+	_, err = channel.QueueDelete(
+		args.QueueName,
+		wabbit.Option{
+			"ifUnused": false,
+			"ifEmpty":  false,
+			"noWait":   false,
+		},
+	)
+	return err
 }

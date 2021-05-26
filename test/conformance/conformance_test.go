@@ -28,6 +28,7 @@ import (
 	_ "knative.dev/pkg/system/testing"
 
 	"knative.dev/eventing-rabbitmq/test/conformance/features/rabbitmqcluster"
+	"knative.dev/eventing-rabbitmq/test/conformance/features/secret"
 	"knative.dev/eventing/test/rekt/features/broker"
 	b "knative.dev/eventing/test/rekt/resources/broker"
 	"knative.dev/reconciler-test/pkg/environment"
@@ -46,6 +47,8 @@ func TestBrokerConformance(t *testing.T) {
 	)
 
 	env.Prerequisite(ctx, t, rabbitmqcluster.GoesReady("rabbitbroker", b.WithEnvConfig()...))
+	//	env.Prerequisite(ctx, t, secret.Install("rabbitbrokersecret", "rabbitbroker", ctx, b.WithEnvConfig()...))
+	env.Prerequisite(ctx, t, secret.Created("rabbitbroker-secret", "rabbitbroker", ctx, b.WithEnvConfig()...))
 	// Install and wait for a Ready Broker.
 	env.Prerequisite(ctx, t, broker.GoesReady("default", b.WithEnvConfig()...))
 

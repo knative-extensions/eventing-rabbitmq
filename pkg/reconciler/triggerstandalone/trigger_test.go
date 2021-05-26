@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Knative Authors
+Copyright 2021 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,19 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package trigger
+package triggerstandalone
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 
-	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/network"
 
+	"github.com/NeowayLabs/wabbit/amqptest/server"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,14 +36,11 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 
-	rabbitv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	clientgotesting "k8s.io/client-go/testing"
+	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
 	rabbitduck "knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
-	fakerabbitclient "knative.dev/eventing-rabbitmq/pkg/client/injection/rabbitmq.com/client/fake"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker"
-	brokerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
-	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	sourcesv1beta2 "knative.dev/eventing/pkg/apis/sources/v1beta2"
 	fakeeventingclient "knative.dev/eventing/pkg/client/injection/client/fake"
@@ -101,6 +99,24 @@ const (
 	subscriberName    = "subscriber-name"
 	subscriberGroup   = "serving.knative.dev"
 	subscriberVersion = "v1"
+
+	bindingList = `
+[
+  {
+    "source": "knative-test-broker",
+    "vhost": "/",
+    "destination": "test-namespace-test-broker",
+    "destination_type": "queue",
+    "routing_key": "test-namespace-test-broker",
+    "arguments": {
+      "x-match":  "all",
+      "x-knative-trigger": "test-trigger",
+      "type": "dev.knative.sources.ping"
+    },
+    "properties_key": "test-namespace-test-broker"
+  }
+]
+`
 )
 
 var (
@@ -174,6 +190,39 @@ func TestReconcile(t *testing.T) {
 					WithTriggerSubscriberURI(subscriberURI)),
 			},
 		}, {
+			Name: "Trigger delete succeeds - with finalizer - no secret so no undeletable resources",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				broker.NewBroker(brokerName, testNS,
+					broker.WithBrokerClass(brokerClass),
+					broker.WithBrokerConfig(config()),
+					broker.WithInitBrokerConditions),
+				triggerWithFinalizerReady(),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchRemoveFinalizers(testNS, triggerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
+			},
+		}, {
+			Name: "Trigger deleted - with finalizer and secret",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				broker.NewBroker(brokerName, testNS,
+					broker.WithBrokerClass(brokerClass),
+					broker.WithBrokerConfig(config()),
+					broker.WithInitBrokerConditions),
+				createSecret(rabbitURL),
+				triggerWithFinalizerReady(),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchRemoveFinalizers(testNS, triggerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
+			},
+		}, {
 			Name: "Broker does not exist",
 			Key:  testKey,
 			Objects: []runtime.Object{
@@ -187,6 +236,12 @@ func TestReconcile(t *testing.T) {
 					WithInitTriggerConditions,
 					WithTriggerBrokerFailed("BrokerDoesNotExist", `Broker "test-broker" does not exist`)),
 			}},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, triggerName),
+			},
 		}, {
 			Name: "Not my broker class - no status updates",
 			Key:  testKey,
@@ -199,6 +254,14 @@ func TestReconcile(t *testing.T) {
 					WithInitTriggerConditions,
 					WithTriggerSubscriberURI(subscriberURI)),
 			},
+			// BUG. We should not be setting finalizers on objects that we do not own.
+			// https://github.com/knative/pkg/issues/1734
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, triggerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
+			},
 		}, {
 			Name: "Broker not reconciled yet",
 			Key:  testKey,
@@ -210,6 +273,12 @@ func TestReconcile(t *testing.T) {
 					WithInitTriggerConditions,
 					WithTriggerSubscriberURI(subscriberURI),
 					WithTriggerBrokerNotConfigured()),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, triggerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
 			},
 		}, {
 			Name: "Broker not ready yet",
@@ -225,6 +294,12 @@ func TestReconcile(t *testing.T) {
 					WithTriggerSubscriberURI(subscriberURI),
 					WithTriggerBrokerFailed("noexchange", "NoExchange")),
 			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, triggerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
+			},
 		}, {
 			Name: "Creates everything ok",
 			Key:  testKey,
@@ -232,96 +307,12 @@ func TestReconcile(t *testing.T) {
 				ReadyBroker(),
 				triggerWithFilter(),
 				createSecret(rabbitURL),
-				createReadyQueue(),
-				createReadyBinding(true),
 			},
-			WantCreates: []runtime.Object{
-				createDispatcherDeployment(),
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, triggerName),
 			},
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: triggerWithFilterReady(),
-			}},
-		}, {
-			Name: "Creates queue ok with CRD",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				ReadyBrokerWithRabbitBroker(),
-				triggerWithFilter(),
-				createSecret(rabbitURL),
-			},
-			WantCreates: []runtime.Object{
-				createQueue(),
-			},
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: triggerWithQueueNotReady(),
-			}},
-		}, {
-			Name: "Create queue fails with CRD",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				ReadyBrokerWithRabbitBroker(),
-				triggerWithFilter(),
-				createSecret(rabbitURL),
-			},
-			WithReactors: []clientgotesting.ReactionFunc{
-				InduceFailure("create", "queues"),
-			},
-			WantErr: true,
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for create queues"),
-			},
-			WantCreates: []runtime.Object{
-				createQueue(),
-			},
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: triggerWithQueueCreateFailure(),
-			}},
-		}, {
-			Name: "Queue exists, creates binding ok with CRD",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				ReadyBrokerWithRabbitBroker(),
-				triggerWithFilter(),
-				createSecret(rabbitURL),
-				createReadyQueue(),
-			},
-			WantCreates: []runtime.Object{
-				createBinding(true),
-			},
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: triggerWithBindingNotReady(),
-			}},
-		}, {
-			Name: "Queue exists, create binding fails with CRD",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				ReadyBrokerWithRabbitBroker(),
-				triggerWithFilter(),
-				createSecret(rabbitURL),
-				createReadyQueue(),
-			},
-			WithReactors: []clientgotesting.ReactionFunc{
-				InduceFailure("create", "bindings"),
-			},
-			WantErr: true,
-			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for create bindings"),
-			},
-			WantCreates: []runtime.Object{
-				createBinding(true),
-			},
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: triggerWithBindingCreateFailure(),
-			}},
-		}, {
-			Name: "Queue, binding exist, creates dispatcher deployment",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				ReadyBrokerWithRabbitBroker(),
-				triggerWithFilter(),
-				createSecret(rabbitURL),
-				createReadyQueue(),
-				createReadyBinding(true),
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
 			},
 			WantCreates: []runtime.Object{
 				createDispatcherDeployment(),
@@ -335,12 +326,16 @@ func TestReconcile(t *testing.T) {
 			Objects: []runtime.Object{
 				ReadyBroker(),
 				makeSubscriberAddressableAsUnstructured(),
-				createReadyQueue(),
-				createReadyBinding(false),
 				NewTrigger(triggerName, testNS, brokerName,
 					WithTriggerUID(triggerUID),
 					WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS)),
 				createSecret(rabbitURL),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, triggerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
 			},
 			WantCreates: []runtime.Object{
 				createDispatcherDeployment(),
@@ -361,14 +356,16 @@ func TestReconcile(t *testing.T) {
 			Objects: []runtime.Object{
 				ReadyBroker(),
 				makeSubscriberNotAddressableAsUnstructured(),
-				createReadyQueue(),
-				createReadyBinding(false),
 				NewTrigger(triggerName, testNS, brokerName,
 					WithTriggerUID(triggerUID),
 					WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS)),
 				createSecret(rabbitURL),
 			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, triggerName),
+			},
 			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
 				Eventf(corev1.EventTypeWarning, "InternalError", `address not set for &ObjectReference{Kind:Service,Namespace:test-namespace,Name:subscriber-name,UID:,APIVersion:serving.knative.dev/v1,ResourceVersion:,FieldPath:,}`),
 			},
 			WantErr: true,
@@ -382,6 +379,32 @@ func TestReconcile(t *testing.T) {
 					WithTriggerSubscriberResolvedFailed("Unable to get the Subscriber's URI", `address not set for &ObjectReference{Kind:Service,Namespace:test-namespace,Name:subscriber-name,UID:,APIVersion:serving.knative.dev/v1,ResourceVersion:,FieldPath:,}`)),
 			}},
 		}, {
+			Name: "Invalid secret - missing key",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				ReadyBroker(),
+				NewTrigger(triggerName, testNS, brokerName,
+					WithTriggerUID(triggerUID),
+					WithTriggerSubscriberURI(subscriberURI)),
+				createInvalidSecret(rabbitURL),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, triggerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
+				Eventf(corev1.EventTypeWarning, "InternalError", "secret missing key brokerURL"),
+			},
+			WantErr: true,
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewTrigger(triggerName, testNS, brokerName,
+					WithTriggerUID(triggerUID),
+					WithTriggerSubscriberURI(subscriberURI),
+					WithInitTriggerConditions,
+					WithTriggerBrokerReady(),
+					WithTriggerDependencyFailed("SecretFailure", "secret missing key brokerURL")),
+			}},
+		}, {
 			Name: "Deployment creation fails",
 			Key:  testKey,
 			Objects: []runtime.Object{
@@ -390,13 +413,15 @@ func TestReconcile(t *testing.T) {
 					WithTriggerUID(triggerUID),
 					WithTriggerSubscriberURI(subscriberURI)),
 				createSecret(rabbitURL),
-				createReadyQueue(),
-				createReadyBinding(false),
 			},
 			WithReactors: []clientgotesting.ReactionFunc{
 				InduceFailure("create", "deployments"),
 			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, triggerName),
+			},
 			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
 				Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for create deployments"),
 			},
 			WantErr: true,
@@ -415,7 +440,7 @@ func TestReconcile(t *testing.T) {
 					WithTriggerDependencyFailed("DeploymentFailure", "inducing failure for create deployments")),
 			}},
 		}, {
-			Name: "Deployment update fails",
+			Name: "Deployment creation fails",
 			Key:  testKey,
 			Objects: []runtime.Object{
 				ReadyBroker(),
@@ -424,13 +449,15 @@ func TestReconcile(t *testing.T) {
 					WithTriggerSubscriberURI(subscriberURI)),
 				createSecret(rabbitURL),
 				createDifferentDispatcherDeployment(),
-				createReadyQueue(),
-				createReadyBinding(false),
 			},
 			WithReactors: []clientgotesting.ReactionFunc{
 				InduceFailure("update", "deployments"),
 			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, triggerName),
+			},
 			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
 				Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for update deployments"),
 			},
 			WantErr: true,
@@ -449,7 +476,7 @@ func TestReconcile(t *testing.T) {
 					WithTriggerDependencyFailed("DeploymentFailure", "inducing failure for update deployments")),
 			}},
 		}, {
-			Name: "Everything ready, nop",
+			Name: "Fail binding",
 			Key:  testKey,
 			Objects: []runtime.Object{
 				ReadyBroker(),
@@ -457,34 +484,25 @@ func TestReconcile(t *testing.T) {
 					WithTriggerUID(triggerUID),
 					WithTriggerSubscriberURI(subscriberURI)),
 				createSecret(rabbitURL),
-				createReadyQueue(),
-				createReadyBinding(false),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, triggerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
+			},
+			WantCreates: []runtime.Object{
 				createDispatcherDeployment(),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewTrigger(triggerName, testNS, brokerName,
 					WithTriggerUID(triggerUID),
 					WithTriggerSubscriberURI(subscriberURI),
-					WithInitTriggerConditions,
 					WithTriggerBrokerReady(),
-					WithTriggerSubscribed(),
 					WithTriggerDependencyReady(),
+					WithTriggerSubscribed(),
 					WithTriggerSubscriberResolvedSucceeded(),
 					WithTriggerStatusSubscriberURI(subscriberURI)),
-			}},
-		}, {
-			Name: "Everything ready with filter, nop",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				ReadyBroker(),
-				triggerWithFilter(),
-				createSecret(rabbitURL),
-				createReadyQueue(),
-				createReadyBinding(true),
-				createDispatcherDeployment(),
-			},
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: triggerWithFilterReady(),
 			}},
 		}, {
 			Name: "Dependency doesn't exist",
@@ -497,10 +515,12 @@ func TestReconcile(t *testing.T) {
 					WithInitTriggerConditions,
 					WithDependencyAnnotation(dependencyAnnotation),
 				),
-				createReadyQueue(),
-				createReadyBinding(false),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, triggerName),
 			},
 			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
 				Eventf(corev1.EventTypeWarning, "InternalError", "propagating dependency readiness: getting the dependency: pingsources.sources.knative.dev \"test-ping-source\" not found"),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
@@ -528,18 +548,28 @@ func TestReconcile(t *testing.T) {
 					WithDependencyAnnotation(dependencyAnnotation),
 				),
 				createSecret(rabbitURL),
-				createReadyQueue(),
-				createReadyBinding(false),
+			},
+			WantCreates: []runtime.Object{
+				createDispatcherDeployment(),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, triggerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
 			},
 			WantErr: false,
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewTrigger(triggerName, testNS, brokerName,
 					WithTriggerUID(triggerUID),
+					WithTriggerSubscribed(),
+					WithTriggerSubscriberResolvedSucceeded(),
 					// The first reconciliation will initialize the status conditions.
 					WithInitTriggerConditions,
 					WithTriggerSubscriberURI(subscriberURI),
 					WithDependencyAnnotation(dependencyAnnotation),
 					WithTriggerBrokerReady(),
+					WithTriggerStatusSubscriberURI(subscriberURI),
 					WithTriggerDependencyFailed("NotFound", ""),
 				),
 			}},
@@ -556,10 +586,17 @@ func TestReconcile(t *testing.T) {
 					WithDependencyAnnotation(dependencyAnnotation),
 				),
 				createSecret(rabbitURL),
-				createReadyQueue(),
-				createReadyBinding(false),
 			},
 			WantErr: false,
+			WantCreates: []runtime.Object{
+				createDispatcherDeployment(),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, triggerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
+			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewTrigger(triggerName, testNS, brokerName,
 					WithTriggerUID(triggerUID),
@@ -568,6 +605,9 @@ func TestReconcile(t *testing.T) {
 					WithInitTriggerConditions,
 					WithDependencyAnnotation(dependencyAnnotation),
 					WithTriggerBrokerReady(),
+					WithTriggerSubscribed(),
+					WithTriggerStatusSubscriberURI(subscriberURI),
+					WithTriggerSubscriberResolvedSucceeded(),
 					WithTriggerDependencyUnknown("", ""),
 				),
 			}},
@@ -585,10 +625,17 @@ func TestReconcile(t *testing.T) {
 					WithDependencyAnnotation(dependencyAnnotation),
 				),
 				createSecret(rabbitURL),
-				createReadyQueue(),
-				createReadyBinding(false),
 			},
 			WantErr: false,
+			WantCreates: []runtime.Object{
+				createDispatcherDeployment(),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, triggerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
+			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewTrigger(triggerName, testNS, brokerName,
 					WithTriggerUID(triggerUID),
@@ -597,6 +644,9 @@ func TestReconcile(t *testing.T) {
 					WithInitTriggerConditions,
 					WithDependencyAnnotation(dependencyAnnotation),
 					WithTriggerBrokerReady(),
+					WithTriggerSubscribed(),
+					WithTriggerStatusSubscriberURI(subscriberURI),
+					WithTriggerSubscriberResolvedSucceeded(),
 					WithTriggerDependencyUnknown("GenerationNotEqual", fmt.Sprintf("The dependency's metadata.generation, %q, is not equal to its status.observedGeneration, %q.", currentGeneration, outdatedGeneration))),
 			}},
 		},
@@ -613,12 +663,16 @@ func TestReconcile(t *testing.T) {
 					WithDependencyAnnotation(dependencyAnnotation),
 				),
 				createSecret(rabbitURL),
-				createReadyQueue(),
-				createReadyBinding(false),
 			},
 			WantErr: false,
 			WantCreates: []runtime.Object{
 				createDispatcherDeployment(),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, triggerName),
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-trigger" finalizers`),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewTrigger(triggerName, testNS, brokerName,
@@ -644,6 +698,12 @@ func TestReconcile(t *testing.T) {
 		ctx = v1addr.WithDuck(ctx)
 		ctx = source.WithDuck(ctx)
 		ctx = rabbitduck.WithDuck(ctx)
+		fakeServer := server.NewServer(rabbitURL)
+		fakeServer.Start()
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprintln(w, bindingList)
+		}))
 		r := &Reconciler{
 			eventingClientSet:  fakeeventingclient.Get(ctx),
 			dynamicClientSet:   fakedynamicclient.Get(ctx),
@@ -655,15 +715,16 @@ func TestReconcile(t *testing.T) {
 			addressableTracker: duck.NewListableTracker(ctx, v1addr.Get, func(types.NamespacedName) {}, 0),
 			uriResolver:        resolver.NewURIResolver(ctx, func(types.NamespacedName) {}),
 			brokerClass:        "RabbitMQBroker",
+			dialerFunc:         dialer.TestDialer,
+			transport:          ts.Client().Transport,
+			adminURL:           ts.URL,
 			dispatcherImage:    dispatcherImage,
-			rabbitClientSet:    fakerabbitclient.Get(ctx),
-			queueLister:        listers.GetQueueLister(),
-			bindingLister:      listers.GetBindingLister(),
 		}
 		return trigger.NewReconciler(ctx, logger,
 			fakeeventingclient.Get(ctx), listers.GetTriggerLister(),
 			controller.GetEventRecorder(ctx),
 			r,
+			controller.Options{FinalizerName: finalizerName},
 		)
 
 	},
@@ -672,7 +733,7 @@ func TestReconcile(t *testing.T) {
 	))
 }
 
-func configWithSecret() *duckv1.KReference {
+func config() *duckv1.KReference {
 	return &duckv1.KReference{
 		Name:       rabbitSecretName,
 		Namespace:  testNS,
@@ -681,7 +742,7 @@ func configWithSecret() *duckv1.KReference {
 	}
 }
 
-func config() *duckv1.KReference {
+func configForRabbitOperator() *duckv1.KReference {
 	return &duckv1.KReference{
 		Name:       rabbitMQBrokerName,
 		Namespace:  testNS,
@@ -744,13 +805,31 @@ func ReadyBrokerWithRabbitBroker() *eventingv1.Broker {
 	return broker.NewBroker(brokerName, testNS,
 		broker.WithBrokerClass(brokerClass),
 		broker.WithInitBrokerConditions,
-		broker.WithBrokerConfig(config()),
+		broker.WithBrokerConfig(configForRabbitOperator()),
 		broker.WithIngressAvailable(),
 		broker.WithSecretReady(),
 		broker.WithBrokerAddressURI(brokerAddress),
 		broker.WithDLXReady(),
 		broker.WithDeadLetterSinkReady(),
 		broker.WithExchangeReady())
+}
+
+func patchFinalizers(namespace, name string) clientgotesting.PatchActionImpl {
+	action := clientgotesting.PatchActionImpl{}
+	action.Name = name
+	action.Namespace = namespace
+	patch := `{"metadata":{"finalizers":["` + finalizerName + `"],"resourceVersion":""}}`
+	action.Patch = []byte(patch)
+	return action
+}
+
+func patchRemoveFinalizers(namespace, name string) clientgotesting.PatchActionImpl {
+	action := clientgotesting.PatchActionImpl{}
+	action.Name = name
+	action.Namespace = namespace
+	patch := `{"metadata":{"finalizers":[],"resourceVersion":""}}`
+	action.Patch = []byte(patch)
+	return action
 }
 
 func triggerWithFilter() *eventingv1.Trigger {
@@ -778,63 +857,20 @@ func triggerWithFilterReady() *eventingv1.Trigger {
 	return t
 }
 
-func triggerWithQueueCreateFailure() *eventingv1.Trigger {
+func triggerWithFinalizerReady() *eventingv1.Trigger {
 	t := NewTrigger(triggerName, testNS, brokerName,
 		WithTriggerUID(triggerUID),
-		WithInitTriggerConditions,
 		WithTriggerSubscriberURI(subscriberURI),
 		WithTriggerBrokerReady(),
+		WithTriggerDeleted,
 		WithTriggerDependencyReady(),
-		WithTriggerDependencyFailed("QueueFailure", `inducing failure for create queues`))
-
+		WithTriggerSubscribed(),
+		WithTriggerSubscriberResolvedSucceeded(),
+		WithTriggerStatusSubscriberURI(subscriberURI))
 	t.Spec.Filter = &eventingv1.TriggerFilter{
 		Attributes: eventingv1.TriggerFilterAttributes(map[string]string{"type": "dev.knative.sources.ping"}),
 	}
-	return t
-}
-
-func triggerWithBindingCreateFailure() *eventingv1.Trigger {
-	t := NewTrigger(triggerName, testNS, brokerName,
-		WithTriggerUID(triggerUID),
-		WithInitTriggerConditions,
-		WithTriggerSubscriberURI(subscriberURI),
-		WithTriggerBrokerReady(),
-		WithTriggerDependencyReady(),
-		WithTriggerDependencyFailed("BindingFailure", `inducing failure for create bindings`))
-
-	t.Spec.Filter = &eventingv1.TriggerFilter{
-		Attributes: eventingv1.TriggerFilterAttributes(map[string]string{"type": "dev.knative.sources.ping"}),
-	}
-	return t
-}
-
-func triggerWithQueueNotReady() *eventingv1.Trigger {
-	t := NewTrigger(triggerName, testNS, brokerName,
-		WithTriggerUID(triggerUID),
-		WithInitTriggerConditions,
-		WithTriggerSubscriberURI(subscriberURI),
-		WithTriggerBrokerReady(),
-		WithTriggerDependencyReady(),
-		WithTriggerDependencyFailed("QueueFailure", `Queue "test-namespace.test-trigger" is not ready`))
-
-	t.Spec.Filter = &eventingv1.TriggerFilter{
-		Attributes: eventingv1.TriggerFilterAttributes(map[string]string{"type": "dev.knative.sources.ping"}),
-	}
-	return t
-}
-
-func triggerWithBindingNotReady() *eventingv1.Trigger {
-	t := NewTrigger(triggerName, testNS, brokerName,
-		WithTriggerUID(triggerUID),
-		WithInitTriggerConditions,
-		WithTriggerSubscriberURI(subscriberURI),
-		WithTriggerBrokerReady(),
-		WithTriggerDependencyReady(),
-		WithTriggerDependencyFailed("BindingFailure", `Binding "test-namespace.test-trigger" is not ready`))
-
-	t.Spec.Filter = &eventingv1.TriggerFilter{
-		Attributes: eventingv1.TriggerFilterAttributes(map[string]string{"type": "dev.knative.sources.ping"}),
-	}
+	t.Finalizers = []string{finalizerName}
 	return t
 }
 
@@ -846,6 +882,18 @@ func createSecret(data string) *corev1.Secret {
 		},
 		Data: map[string][]byte{
 			"brokerURL": []byte(data),
+		},
+	}
+}
+
+func createInvalidSecret(data string) *corev1.Secret {
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: testNS,
+			Name:      rabbitSecretName,
+		},
+		Data: map[string][]byte{
+			"randokey": []byte(data),
 		},
 	}
 }
@@ -922,107 +970,5 @@ func makeSubscriberNotAddressableAsUnstructured() *unstructured.Unstructured {
 				"name":      subscriberName,
 			},
 		},
-	}
-}
-
-func createQueue() *rabbitv1beta1.Queue {
-	labels := map[string]string{
-		eventing.BrokerLabelKey:   brokerName,
-		resources.TriggerLabelKey: triggerName,
-	}
-	b := ReadyBrokerWithRabbitBroker()
-	t := triggerWithFilter()
-	return &rabbitv1beta1.Queue{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      queueName,
-			Namespace: testNS,
-			OwnerReferences: []metav1.OwnerReference{
-				*kmeta.NewControllerRef(t),
-			},
-			Labels: labels,
-		},
-		Spec: rabbitv1beta1.QueueSpec{
-			Name:    queueName,
-			Durable: true,
-			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
-				Name: rabbitMQBrokerName,
-			},
-			Arguments: &runtime.RawExtension{
-				Raw: []byte(`{"x-dead-letter-exchange":"` + brokerresources.ExchangeName(b, true) + `"}`),
-			},
-		},
-	}
-}
-
-func createReadyQueue() *rabbitv1beta1.Queue {
-	q := createQueue()
-	q.Status = rabbitv1beta1.QueueStatus{
-		Conditions: []rabbitv1beta1.Condition{
-			{
-				Status: corev1.ConditionTrue,
-			},
-		},
-	}
-	return q
-}
-
-func createBinding(withFilter bool) *rabbitv1beta1.Binding {
-	bindingName := fmt.Sprintf("%s.%s", testNS, triggerName)
-
-	labels := map[string]string{
-		eventing.BrokerLabelKey:   brokerName,
-		resources.TriggerLabelKey: triggerName,
-	}
-	trigger := triggerWithFilter()
-	return &rabbitv1beta1.Binding{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: testNS,
-			Name:      bindingName,
-			OwnerReferences: []metav1.OwnerReference{
-				*kmeta.NewControllerRef(trigger),
-			},
-			Labels: labels,
-		},
-		Spec: rabbitv1beta1.BindingSpec{
-			Vhost:           "/",
-			DestinationType: "queue",
-			Destination:     bindingName,
-			Source:          "test-namespace.test-broker",
-			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
-				Name: rabbitMQBrokerName,
-			},
-			// We need to know if we need to include the filter in the
-			Arguments: getTriggerArguments(withFilter),
-		},
-	}
-}
-
-func createReadyBinding(withFilter bool) *rabbitv1beta1.Binding {
-	b := createBinding(withFilter)
-	b.Status = rabbitv1beta1.BindingStatus{
-		Conditions: []rabbitv1beta1.Condition{
-			{
-				Status: corev1.ConditionTrue,
-			},
-		},
-	}
-	return b
-
-}
-
-func getTriggerArguments(withFilter bool) *runtime.RawExtension {
-	arguments := map[string]string{
-		"x-knative-trigger": triggerName,
-		"x-match":           "all",
-	}
-	if withFilter {
-		arguments["type"] = "dev.knative.sources.ping"
-	}
-	argumentsJson, err := json.Marshal(arguments)
-	if err != nil {
-		panic("Failed to marshal json for test, no go.")
-	}
-	return &runtime.RawExtension{
-		Raw: argumentsJson,
 	}
 }
