@@ -451,7 +451,7 @@ spec:
             - name: CONFIG_OBSERVABILITY_NAME
               value: config-observability
             - name: RABBITMQ_RA_IMAGE
-              value: ko.local/knative.dev/eventing-rabbitmq/cmd/receive_adapter:d2810fdfe8b7dab0ac261082e261518594b92705530321c86a3f036c57e40072
+              value: ko://knative.dev/eventing-rabbitmq/cmd/receive_adapter:d2810fdfe8b7dab0ac261082e261518594b92705530321c86a3f036c57e40072
           volumeMounts:
           resources:
             limits:
@@ -668,7 +668,7 @@ spec:
           terminationMessagePolicy: FallbackToLogsOnError
           # This is the Go import path for the binary that is containerized
           # and substituted here.
-          image: ko.local/knative.dev/eventing-rabbitmq/cmd/webhook:bc7bf1f728c271e53b9ed45f1ef17da39c7df53c39f659b94961d5eb0707a523
+          image: ko://knative.dev/eventing-rabbitmq/cmd/webhook:bc7bf1f728c271e53b9ed45f1ef17da39c7df53c39f659b94961d5eb0707a523
           resources:
             requests:
               # taken from serving.
