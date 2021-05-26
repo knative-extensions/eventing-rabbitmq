@@ -48,7 +48,7 @@ spec:
 
         # This is the Go import path for the binary that is containerized
         # and substituted here.
-        image: ko://knative.dev/eventing-rabbitmq/cmd/webhook
+        image: ko://github.com/gabo1208/eventing-rabbitmq/cmd/webhook
 
         resources:
           requests:

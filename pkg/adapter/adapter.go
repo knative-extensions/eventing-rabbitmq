@@ -108,6 +108,7 @@ func (a *Adapter) CreateConn(User string, Password string, logger *zap.Logger) (
 	if User != "" && Password != "" {
 		a.config.Brokers = fmt.Sprintf("amqp://%s:%s@%s", a.config.User, a.config.Password, a.config.Brokers)
 	}
+
 	conn, err := amqp.Dial(a.config.Brokers)
 	if err != nil {
 		logger.Error(err.Error())
