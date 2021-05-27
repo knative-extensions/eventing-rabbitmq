@@ -33,7 +33,7 @@ install
 
 ### Create a Broker
 
-Depending on which version of the controller you are running, create a broker either for [standalone](./standalone.md#creating-knative-eventing-broker) or [operator based](./operator-based#creating-knative-eventing-broker).
+Depending on which version of the controller you are running, create a broker either for [standalone](./standalone.md#creating-knative-eventing-broker) or [operator based](./operator-based.md#creating-knative-eventing-broker).
 
 ### Create a Knative Trigger
 

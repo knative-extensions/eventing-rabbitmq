@@ -21,7 +21,7 @@
     ```
     kubectl apply -f https://github.com/rabbitmq/messaging-topology-operator/releases/download/v0.8.0/messaging-topology-operator-with-certmanager.yaml
     ```
-    
+
     If you already have Cert Manager installed, or want more control over the certs used, etc. You can follow the [quickstart here](https://github.com/rabbitmq/messaging-topology-operator#quickstart) but instead of installing the latest version, install version 0.8.0.
 
 ## Installation
@@ -47,4 +47,38 @@ Or if you want to run the latest version from this repo, you can use
 
 ```
 ko apply -f config/broker/
+```
+
+## Creating Knative Eventing Broker
+
+First create a RabbitMQ Cluster with the operator:
+
+```shell
+kubectl apply -f - << EOF
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata:
+  name: rokn
+  namespace: default
+spec:
+  replicas: 1
+EOF
+```
+
+Then create Knative RabbitMQ Broker by executing the following command:
+
+```shell
+kubectl apply -f - << EOF
+  apiVersion: eventing.knative.dev/v1
+  kind: Broker
+  metadata:
+    name: default
+    annotations:
+      eventing.knative.dev/broker.class: RabbitMQBroker
+  spec:
+    config:
+      apiVersion: rabbitmq.com/v1beta1
+      kind: RabbitmqCluster
+      name: rokn
+EOF
 ```
