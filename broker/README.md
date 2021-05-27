@@ -2,106 +2,26 @@
 
 ![RabbitMQ Broker for Knative Eventing](rabbitmq-knative-broker.png)
 
-## Prerequisites
 
-install Knative Serving and Eventing as documented
-[here](https://knative.dev/docs/install/any-kubernetes-cluster/)
-
-If you have an existing RabbitMQ cluster that you'd like to use, you can skip
-installing the RabbitMQ Cluster operator.
-
-If you do not have a RabbitMQ cluster, you can install the RabbitMQ Operator as
-documented [here](https://github.com/rabbitmq/cluster-operator) which makes it
-easy to spin up a RabbitMQ cluster. At least version v1.0.0 is required.
 
 ## Installation
 
-You can install a released version of
-[Knative RabbitMQ Broker](https://github.com/knative-sandbox/eventing-rabbitmq/releases/)
+We provide two versions of the RabbitMQ Knative Eventing Broker.
 
-For example, if you wanted to install version v0.19.0 you would run:
+1. Standalone Broker
+2. RabbitMQ operator based Broker
 
-```shell
-kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/download/v0.19.0/rabbitmq-broker.yaml
-```
+### Standalone Broker
 
-If you want to run the latest version from this repo, you can use
-[`ko`](https://github.com/google/ko) to install it.
+This Broker works by utilizing libraries to manage RabbitMQ resources directly and as name implies does not have have dependencies on other operators. Choose this if you do not manage your clusters lifecycle with the [Cluster Operator](https://github.com/rabbitmq/cluster-operator).
 
-```
-ko apply -f config/broker/
-```
+[Install Standalone Broker](./standalone.md)
 
-## Creating a Knative RabbitMQ Broker
+### RabbitMQ operator based Broker
 
-### Creating a Knative RabbitMQ Broker using RabbitMQ cluster operator
+This Broker builds on top of [Cluster Operator](https://github.com/rabbitmq/cluster-operator) and [Messaging Topology Operator](https://github.com/rabbitmq/messaging-topology-operator). As such it requires both of them to be installed. This Broker also will only work with RabbitMQ clusters created and managed by the Cluster Operator and as such if you do not manage your RabbitMQ clusters with it, you must use the [Standalone Broker](./standalone.md).
 
-If you want to use the RabbitMQ Cluster operator to install your RabbitMQ
-cluster, you can easily create a RabbitMQ cluster by executing the following
-command:
-
-```shell
-kubectl apply -f - << EOF
-apiVersion: rabbitmq.com/v1beta1
-kind: RabbitmqCluster
-metadata:
-  name: rokn
-  namespace: default
-spec:
-  replicas: 1
-EOF
-```
-
-Then create Knative RabbitMQ Broker by executing the following command:
-
-```shell
-kubectl apply -f - << EOF
-  apiVersion: eventing.knative.dev/v1
-  kind: Broker
-  metadata:
-    name: default
-    annotations:
-      eventing.knative.dev/broker.class: RabbitMQBroker
-  spec:
-    config:
-      apiVersion: rabbitmq.com/v1beta1
-      kind: RabbitmqCluster
-      name: rokn
-EOF
-```
-
-### Existing RabbitMQ
-
-If you have an existing RabbitMQ that you'd like to use instead of creating a
-new one, you must specify how the Knative RabbitMQ Broker can talk to it. For
-that, you need to create a secret containing the brokerURL for your existing
-cluster:
-
-```sh
-R_USERNAME=$(kubectl get secret --namespace default rokn-rabbitmq-admin -o jsonpath="{.data.username}" | base64 --decode)
-R_PASSWORD=$(kubectl get secret --namespace default rokn-rabbitmq-admin -o jsonpath="{.data.password}" | base64 --decode)
-
-kubectl create secret generic rokn-rabbitmq-broker-secret \
-    --from-literal=brokerURL="amqp://$R_USERNAME:$R_PASSWORD@rokn-rabbitmq-client.default:5672"
-```
-
-Then create Knative RabbitMQ Broker by executing the following command:
-
-```shell
-kubectl apply -f - << EOF
-  apiVersion: eventing.knative.dev/v1
-  kind: Broker
-  metadata:
-    name: default
-    annotations:
-      eventing.knative.dev/broker.class: RabbitMQBroker
-  spec:
-    config:
-      apiVersion: v1
-      kind: Secret
-      name: rokn-rabbitmq-broker-secret
-EOF
-```
+[Install Operator based Broker](./operator-based.md)
 
 ## Autoscaling (optional)
 
@@ -110,6 +30,10 @@ install
 [KEDA based autoscaler](https://github.com/knative-sandbox/eventing-autoscaler-keda).
 
 ## Demo
+
+### Create a Broker
+
+Depending on which version of the controller you are running, create a broker either for [standalone](./standalone.md#creating-knative-eventing-broker) or [operator based](./operator-based#creating-knative-eventing-broker).
 
 ### Create a Knative Trigger
 
@@ -141,13 +65,13 @@ Create a Ping Source by executing the following command:
 
 ```
 kubectl apply -f - << EOF
-  apiVersion: sources.knative.dev/v1alpha2
+  apiVersion: sources.knative.dev/v1
   kind: PingSource
   metadata:
     name: ping-source
   spec:
     schedule: "*/1 * * * *"
-    jsonData: '{"message": "Hello world!"}'
+    data: '{"message": "Hello world!"}'
     sink:
       ref:
         apiVersion: eventing.knative.dev/v1beta1
@@ -169,7 +93,7 @@ kubectl apply -f - << EOF
     template:
       spec:
         containers:
-        - image: gcr.io/knative-releases/knative.dev/eventing-contrib/cmd/event_display
+        - image: gcr.io/knative-releases/knative.dev/eventing/cmd/event_display
 EOF
 ```
 

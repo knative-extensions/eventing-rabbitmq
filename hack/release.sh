@@ -26,6 +26,7 @@ declare -A COMPONENTS
 COMPONENTS=(
   ["rabbitmq-source.yaml"]="config/source"
   ["rabbitmq-broker.yaml"]="config/broker"
+  ["rabbitmq-standalone-broker.yaml"]="config/brokerstandalone"
   ["failer.yaml"]="config/failer"
 )
 readonly COMPONENTS
