@@ -22,7 +22,7 @@ Sink while successfully processed events do not.
 - [pingsource](https://knative.dev/docs/eventing/samples/ping-source/index.html)
   is a Knative source which sends a CloudEvent on pre-defined intervals.
 
-- [event-display](https://github.com/knative/eventing-contrib/tree/master/cmd/event_display]
+- [event-display](https://github.com/knative/eventing/tree/master/cmd/event_display]
   which is a tool that logs the CloudEvent that it receives formatted nicely.
 
 - [RabbitMQ Broker](../../../broker/README.md)
@@ -66,16 +66,6 @@ spec:
 EOF
 ```
 
-create a secret containing the brokerURL for that cluster.
-
-```sh
-R_USERNAME=$(kubectl get secret --namespace dlq-demo rokn-rabbitmq-admin -o jsonpath="{.data.username}" | base64 --decode)
-R_PASSWORD=$(kubectl get secret --namespace dlq-demo rokn-rabbitmq-admin -o jsonpath="{.data.password}" | base64 --decode)
-
-kubectl create secret --namespace dlq-demo generic rokn-rabbitmq-broker-secret \
-    --from-literal=brokerURL="amqp://$R_USERNAME:$R_PASSWORD@rokn-rabbitmq-client.dlq-demo:5672"
-```
-
 ### Create the RabbitMQ Broker
 
 ```Sh
@@ -89,9 +79,9 @@ kubectl apply -f - << EOF
       eventing.knative.dev/broker.class: RabbitMQBroker
   spec:
     config:
-      apiVersion: v1
-      kind: Secret
-      name: rokn-rabbitmq-broker-secret
+      apiVersion: rabbitmq.com/v1beta1
+      kind: RabbitmqCluster
+      name: rokn
     delivery:
       deadLetterSink:
         ref:
@@ -127,7 +117,7 @@ spec:
   template:
     spec:
       containers:
-      - image: gcr.io/knative-releases/knative.dev/eventing-contrib/cmd/event_display@sha256:a214514d6ba674d7393ec8448dd272472b2956207acb3f83152d3071f0ab1911
+      - image: gcr.io/knative-releases/knative.dev/eventing/cmd/event_display
 EOF
 ```
 
@@ -144,17 +134,17 @@ default   http://default-broker-ingress.dlq-demo.svc.cluster.local   2m39s   Tru
 
 ```sh
 kubectl apply -f - << EOF
-apiVersion: sources.knative.dev/v1alpha2
+apiVersion: sources.knative.dev/v1
 kind: PingSource
 metadata:
   name: ping-source
   namespace: dlq-demo
 spec:
   schedule: "*/1 * * * *"
-  jsonData: '{"responsecode": 200}'
+  data: '{"responsecode": 200}'
   sink:
     ref:
-      apiVersion: eventing.knative.dev/v1beta1
+      apiVersion: eventing.knative.dev/v1
       kind: Broker
       name: default
       namespace: dlq-demo
@@ -163,17 +153,17 @@ EOF
 
 ```sh
 kubectl apply -f - << EOF
-apiVersion: sources.knative.dev/v1alpha2
+apiVersion: sources.knative.dev/v1
 kind: PingSource
 metadata:
   name: ping-source-2
   namespace: dlq-demo
 spec:
   schedule: "*/1 * * * *"
-  jsonData: '{"responsecode": 500}'
+  data: '{"responsecode": 500}'
   sink:
     ref:
-      apiVersion: eventing.knative.dev/v1beta1
+      apiVersion: eventing.knative.dev/v1
       kind: Broker
       name: default
       namespace: dlq-demo

@@ -12,30 +12,13 @@
 This repository contains a work-in-progress eventing components using RabbitMQ
 as an implementation.
 
-> See <https://github.com/knative/eventing-contrib/pull/336> for background /
-> discussion.
-
 ## RabbitMQ Broker
 
 See [Install and Demo](./broker/README.md)
 
 ## RabbitMQ Source
 
-See [Install and Demo](./source/README.md)
-
-## Nightly Artifacts
-
-For RabbitMQ Broker,
-
-```shell script
-kubectl apply -f https://storage.googleapis.com/knative-nightly/eventing-rabbitmq/latest/rabbitmq-broker.yaml
-```
-
-For RabbitMQ Source,
-
-```shell script
-kubectl apply -f https://storage.googleapis.com/knative-nightly/eventing-rabbitmq/latest/rabbitmq-source.yaml
-```
+See [Install and Demo](./source/README.adoc)
 
 ---
 
