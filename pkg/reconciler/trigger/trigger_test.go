@@ -88,14 +88,15 @@ const (
 
 	subscriberURI = "http://example.com/subscriber/"
 
-	pingSourceName       = "test-ping-source"
-	testSchedule         = "*/2 * * * *"
-	testContentType      = cloudevents.TextPlain
-	testData             = "data"
-	sinkName             = "testsink"
-	dependencyAnnotation = "{\"kind\":\"PingSource\",\"name\":\"test-ping-source\",\"apiVersion\":\"sources.knative.dev/v1beta2\"}"
-	currentGeneration    = 1
-	outdatedGeneration   = 0
+	pingSourceName                = "test-ping-source"
+	testSchedule                  = "*/2 * * * *"
+	testContentType               = cloudevents.TextPlain
+	testData                      = "data"
+	sinkName                      = "testsink"
+	dependencyAnnotation          = "{\"kind\":\"PingSource\",\"name\":\"test-ping-source\",\"apiVersion\":\"sources.knative.dev/v1beta2\"}"
+	malformedDependencyAnnotation = "\"kind\":\"PingSource\""
+	currentGeneration             = 1
+	outdatedGeneration            = 0
 
 	subscriberKind    = "Service"
 	subscriberName    = "subscriber-name"
@@ -226,6 +227,16 @@ func TestReconcile(t *testing.T) {
 					WithTriggerBrokerFailed("noexchange", "NoExchange")),
 			},
 		}, {
+			Name: "Does not work with secret",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				ReadyBrokerWithSecret(),
+				triggerWithFilter(),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: triggerWithUnsupportedBrokerConfig(),
+			}},
+		}, {
 			Name: "Creates everything ok",
 			Key:  testKey,
 			Objects: []runtime.Object{
@@ -245,7 +256,7 @@ func TestReconcile(t *testing.T) {
 			Name: "Creates queue ok with CRD",
 			Key:  testKey,
 			Objects: []runtime.Object{
-				ReadyBrokerWithRabbitBroker(),
+				ReadyBroker(),
 				triggerWithFilter(),
 				createSecret(rabbitURL),
 			},
@@ -259,7 +270,7 @@ func TestReconcile(t *testing.T) {
 			Name: "Create queue fails with CRD",
 			Key:  testKey,
 			Objects: []runtime.Object{
-				ReadyBrokerWithRabbitBroker(),
+				ReadyBroker(),
 				triggerWithFilter(),
 				createSecret(rabbitURL),
 			},
@@ -280,7 +291,7 @@ func TestReconcile(t *testing.T) {
 			Name: "Queue exists, creates binding ok with CRD",
 			Key:  testKey,
 			Objects: []runtime.Object{
-				ReadyBrokerWithRabbitBroker(),
+				ReadyBroker(),
 				triggerWithFilter(),
 				createSecret(rabbitURL),
 				createReadyQueue(),
@@ -295,7 +306,7 @@ func TestReconcile(t *testing.T) {
 			Name: "Queue exists, create binding fails with CRD",
 			Key:  testKey,
 			Objects: []runtime.Object{
-				ReadyBrokerWithRabbitBroker(),
+				ReadyBroker(),
 				triggerWithFilter(),
 				createSecret(rabbitURL),
 				createReadyQueue(),
@@ -317,7 +328,7 @@ func TestReconcile(t *testing.T) {
 			Name: "Queue, binding exist, creates dispatcher deployment",
 			Key:  testKey,
 			Objects: []runtime.Object{
-				ReadyBrokerWithRabbitBroker(),
+				ReadyBroker(),
 				triggerWithFilter(),
 				createSecret(rabbitURL),
 				createReadyQueue(),
@@ -571,8 +582,7 @@ func TestReconcile(t *testing.T) {
 					WithTriggerDependencyUnknown("", ""),
 				),
 			}},
-		},
-		{
+		}, {
 			Name: "Dependency generation not equal",
 			Key:  testKey,
 			Objects: []runtime.Object{
@@ -599,8 +609,36 @@ func TestReconcile(t *testing.T) {
 					WithTriggerBrokerReady(),
 					WithTriggerDependencyUnknown("GenerationNotEqual", fmt.Sprintf("The dependency's metadata.generation, %q, is not equal to its status.observedGeneration, %q.", currentGeneration, outdatedGeneration))),
 			}},
-		},
-		{
+		}, {
+			Name: "Malformed dependency annotation",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				ReadyBroker(),
+				NewTrigger(triggerName, testNS, brokerName,
+					WithTriggerUID(triggerUID),
+					WithTriggerSubscriberURI(subscriberURI),
+					WithInitTriggerConditions,
+					WithDependencyAnnotation(malformedDependencyAnnotation),
+				),
+				createSecret(rabbitURL),
+				createReadyQueue(),
+				createReadyBinding(false),
+			},
+			WantErr: true,
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewTrigger(triggerName, testNS, brokerName,
+					WithTriggerUID(triggerUID),
+					WithTriggerSubscriberURI(subscriberURI),
+					// The first reconciliation will initialize the status conditions.
+					WithInitTriggerConditions,
+					WithDependencyAnnotation(malformedDependencyAnnotation),
+					WithTriggerBrokerReady(),
+					WithTriggerDependencyFailed("ReferenceError", "Unable to unmarshal objectReference from dependency annotation of trigger: invalid character ':' after top-level value")),
+			}},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeWarning, "UpdateFailed", "Failed to update status for \"test-trigger\": The provided annotation was not a corev1.ObjectReference: \"\\\"kind\\\":\\\"PingSource\\\"\": metadata.annotations[knative.dev/dependency]\ninvalid character ':' after top-level value"),
+			},
+		}, {
 			Name: "Dependency ready",
 			Key:  testKey,
 			Objects: []runtime.Object{
@@ -740,11 +778,11 @@ func ReadyBroker() *eventingv1.Broker {
 }
 
 // Create Ready Broker with proper annotations using the RabbitmqCluster
-func ReadyBrokerWithRabbitBroker() *eventingv1.Broker {
+func ReadyBrokerWithSecret() *eventingv1.Broker {
 	return broker.NewBroker(brokerName, testNS,
 		broker.WithBrokerClass(brokerClass),
 		broker.WithInitBrokerConditions,
-		broker.WithBrokerConfig(config()),
+		broker.WithBrokerConfig(configWithSecret()),
 		broker.WithIngressAvailable(),
 		broker.WithSecretReady(),
 		broker.WithBrokerAddressURI(brokerAddress),
@@ -761,6 +799,20 @@ func triggerWithFilter() *eventingv1.Trigger {
 		Attributes: eventingv1.TriggerFilterAttributes(map[string]string{"type": "dev.knative.sources.ping"}),
 	}
 	return t
+}
+
+func triggerWithUnsupportedBrokerConfig() *eventingv1.Trigger {
+	t := NewTrigger(triggerName, testNS, brokerName,
+		WithTriggerUID(triggerUID),
+		WithTriggerSubscriberURI(subscriberURI),
+		WithInitTriggerConditions,
+		WithTriggerBrokerReady(),
+		WithTriggerDependencyFailed("ReconcileFailure", "using secret is not supported with this controller"))
+	t.Spec.Filter = &eventingv1.TriggerFilter{
+		Attributes: eventingv1.TriggerFilterAttributes(map[string]string{"type": "dev.knative.sources.ping"}),
+	}
+	return t
+
 }
 
 func triggerWithFilterReady() *eventingv1.Trigger {
@@ -930,7 +982,7 @@ func createQueue() *rabbitv1beta1.Queue {
 		eventing.BrokerLabelKey:   brokerName,
 		resources.TriggerLabelKey: triggerName,
 	}
-	b := ReadyBrokerWithRabbitBroker()
+	b := ReadyBroker()
 	t := triggerWithFilter()
 	return &rabbitv1beta1.Queue{
 		ObjectMeta: metav1.ObjectMeta{
