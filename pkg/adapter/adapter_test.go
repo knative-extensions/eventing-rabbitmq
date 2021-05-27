@@ -160,6 +160,51 @@ func TestAdapter_CreateConn(t *testing.T) {
 	fakeServer.Stop()
 }
 
+func TestAdapter_CreateConn_WithVhost(t *testing.T) {
+	fakeServer := server.NewServer("amqp://localhost:5672/%2f")
+	err := fakeServer.Start()
+	if err != nil {
+		t.Errorf("%s: %s", "Failed to connect to RabbitMQ", err)
+	}
+
+	statsReporter, _ := source.NewStatsReporter()
+
+	a := &Adapter{
+		config: &adapterConfig{
+			Topic:   "",
+			Brokers: "amqp://localhost:5672/%2f",
+			Vhost:   "test-vhost",
+			ExchangeConfig: ExchangeConfig{
+				TypeOf:      "direct",
+				Durable:     true,
+				AutoDeleted: false,
+				Internal:    false,
+				NoWait:      false,
+			},
+			QueueConfig: QueueConfig{
+				Name:             "",
+				Durable:          false,
+				DeleteWhenUnused: false,
+				Exclusive:        true,
+				NoWait:           false,
+			},
+		},
+		logger:   zap.NewNop(),
+		reporter: statsReporter,
+	}
+
+	conn, _ := a.CreateConn("", "", logging.FromContext(context.TODO()).Desugar())
+	if conn != nil {
+		t.Errorf("Failed to connect to RabbitMQ")
+	}
+
+	conn, _ = a.CreateConn("guest", "guest", logging.FromContext(context.TODO()).Desugar())
+	if conn != nil {
+		t.Errorf("Failed to connect to RabbitMQ")
+	}
+	fakeServer.Stop()
+}
+
 func TestAdapter_CreateChannel(t *testing.T) {
 	fakeServer := server.NewServer("amqp://localhost:5672/%2f")
 	err := fakeServer.Start()
@@ -449,4 +494,51 @@ func sinkAccepted(writer http.ResponseWriter, req *http.Request) {
 
 func sinkRejected(writer http.ResponseWriter, _ *http.Request) {
 	writer.WriteHeader(http.StatusRequestTimeout)
+}
+
+func TestAdapter_VhostHandler(t *testing.T) {
+	brokers := "amqp://localhost:5672"
+	var vhost string
+
+	result := VhostHandler(brokers, vhost)
+	if result != brokers {
+		t.Errorf("The result URI was %q, the expected URI is %q", result, brokers)
+	}
+
+	brokers = "amqp://localhost:5672"
+	vhost = "test-vhost"
+
+	expected := "amqp://localhost:5672/test-vhost"
+	result = VhostHandler(brokers, vhost)
+	if result != expected {
+		t.Errorf("The result URI was %q, the expected URI is %q", result, expected)
+	}
+
+	brokers = "amqp://localhost:5672/"
+	vhost = "test-vhost"
+
+	expected = "amqp://localhost:5672/test-vhost"
+	result = VhostHandler(brokers, vhost)
+	if result != expected {
+		t.Errorf("The result URI was %q, the expected URI is %q", result, expected)
+	}
+
+	brokers = "amqp://localhost:5672"
+	vhost = "/test-vhost"
+
+	expected = "amqp://localhost:5672/test-vhost"
+	result = VhostHandler(brokers, vhost)
+	if result != expected {
+		t.Errorf("The result URI was %q, the expected URI is %q", result, expected)
+	}
+
+	brokers = "amqp://localhost:5672/"
+	vhost = "/test-vhost"
+
+	expected = "amqp://localhost:5672//test-vhost"
+	result = VhostHandler(brokers, vhost)
+	if result != expected {
+		t.Errorf("The result URI was %q, the expected URI is %q", result, expected)
+	}
+
 }
