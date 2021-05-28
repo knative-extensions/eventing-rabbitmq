@@ -105,16 +105,13 @@ func NewAdapter(ctx context.Context, processed adapter.EnvConfigAccessor, httpMe
 	}
 }
 
-func VhostHandler(Brokers string, Vhost string) string {
-	if len(Vhost) == 0 {
-		return Brokers
+func vhostHandler(brokers string, vhost string) string {
+	if len(vhost) > 0 && len(brokers) > 0 && !strings.HasSuffix(brokers, "/") &&
+		!strings.HasPrefix(vhost, "/") {
+		return fmt.Sprintf("%s/%s", brokers, vhost)
 	}
 
-	if Brokers[len(Brokers)-1] != '/' && Vhost[0] != '/' {
-		return fmt.Sprintf("%s/%s", Brokers, Vhost)
-	}
-
-	return fmt.Sprintf("%s%s", Brokers, Vhost)
+	return fmt.Sprintf("%s%s", brokers, vhost)
 }
 
 func (a *Adapter) CreateConn(User string, Password string, logger *zap.Logger) (*amqp.Conn, error) {
@@ -123,7 +120,7 @@ func (a *Adapter) CreateConn(User string, Password string, logger *zap.Logger) (
 			"amqp://%s:%s@%s",
 			a.config.User,
 			a.config.Password,
-			VhostHandler(a.config.Brokers, a.config.Vhost),
+			vhostHandler(a.config.Brokers, a.config.Vhost),
 		)
 	}
 
