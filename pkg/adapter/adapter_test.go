@@ -497,19 +497,30 @@ func sinkRejected(writer http.ResponseWriter, _ *http.Request) {
 }
 
 func TestAdapter_VhostHandler(t *testing.T) {
-	brokers := "amqp://localhost:5672"
 	var vhost string
+	var brokers string
 
-	result := VhostHandler(brokers, vhost)
+	result := vhostHandler(brokers, vhost)
 	if result != brokers {
 		t.Errorf("The result URI was %q, the expected URI is %q", result, brokers)
 	}
 
 	brokers = "amqp://localhost:5672"
-	vhost = "test-vhost"
+	result = vhostHandler(brokers, vhost)
+	if result != brokers {
+		t.Errorf("The result URI was %q, the expected URI is %q", result, brokers)
+	}
 
+	brokers = ""
+	vhost = "test-vhost"
+	result = vhostHandler(brokers, vhost)
+	if result != vhost {
+		t.Errorf("The result URI was %q, the expected URI is %q", result, vhost)
+	}
+
+	brokers = "amqp://localhost:5672"
 	expected := "amqp://localhost:5672/test-vhost"
-	result = VhostHandler(brokers, vhost)
+	result = vhostHandler(brokers, vhost)
 	if result != expected {
 		t.Errorf("The result URI was %q, the expected URI is %q", result, expected)
 	}
@@ -518,7 +529,7 @@ func TestAdapter_VhostHandler(t *testing.T) {
 	vhost = "test-vhost"
 
 	expected = "amqp://localhost:5672/test-vhost"
-	result = VhostHandler(brokers, vhost)
+	result = vhostHandler(brokers, vhost)
 	if result != expected {
 		t.Errorf("The result URI was %q, the expected URI is %q", result, expected)
 	}
@@ -527,7 +538,7 @@ func TestAdapter_VhostHandler(t *testing.T) {
 	vhost = "/test-vhost"
 
 	expected = "amqp://localhost:5672/test-vhost"
-	result = VhostHandler(brokers, vhost)
+	result = vhostHandler(brokers, vhost)
 	if result != expected {
 		t.Errorf("The result URI was %q, the expected URI is %q", result, expected)
 	}
@@ -536,7 +547,7 @@ func TestAdapter_VhostHandler(t *testing.T) {
 	vhost = "/test-vhost"
 
 	expected = "amqp://localhost:5672//test-vhost"
-	result = VhostHandler(brokers, vhost)
+	result = vhostHandler(brokers, vhost)
 	if result != expected {
 		t.Errorf("The result URI was %q, the expected URI is %q", result, expected)
 	}
