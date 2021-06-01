@@ -496,60 +496,54 @@ func sinkRejected(writer http.ResponseWriter, _ *http.Request) {
 	writer.WriteHeader(http.StatusRequestTimeout)
 }
 
-func TestAdapter_VhostHandler(t *testing.T) {
-	var vhost string
-	var brokers string
-
-	result := vhostHandler(brokers, vhost)
-	if result != brokers {
-		t.Errorf("The result URI was %q, the expected URI is %q", result, brokers)
+func TestAdapterVhostHandler(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		brokers string
+		vhost   string
+		want    string
+	}{{
+		name:    "no brokers nor vhost",
+		brokers: "",
+		vhost:   "",
+		want:    "",
+	}, {
+		name:    "no vhost",
+		brokers: "amqp://localhost:5672",
+		vhost:   "",
+		want:    "amqp://localhost:5672",
+	}, {
+		name:    "no brokers",
+		brokers: "",
+		vhost:   "test-vhost",
+		want:    "test-vhost",
+	}, {
+		name:    "brokers and vhost without separating slash",
+		brokers: "amqp://localhost:5672",
+		vhost:   "test-vhost",
+		want:    "amqp://localhost:5672/test-vhost",
+	}, {
+		name:    "brokers with trailing slash and vhost without the slash",
+		brokers: "amqp://localhost:5672/",
+		vhost:   "test-vhost",
+		want:    "amqp://localhost:5672/test-vhost",
+	}, {
+		name:    "vhost starting with slash and brokers without the slash",
+		brokers: "amqp://localhost:5672",
+		vhost:   "/test-vhost",
+		want:    "amqp://localhost:5672/test-vhost",
+	}, {
+		name:    "brokers and vhost with slash",
+		brokers: "amqp://localhost:5672/",
+		vhost:   "/test-vhost",
+		want:    "amqp://localhost:5672//test-vhost",
+	}} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got := vhostHandler(tt.brokers, tt.vhost)
+			if got != tt.want {
+				t.Errorf("Unexpected URI for %s/%s want:\n%+s\ngot:\n%+s", tt.brokers, tt.vhost, tt.want, got)
+			}
+		})
 	}
-
-	brokers = "amqp://localhost:5672"
-	result = vhostHandler(brokers, vhost)
-	if result != brokers {
-		t.Errorf("The result URI was %q, the expected URI is %q", result, brokers)
-	}
-
-	brokers = ""
-	vhost = "test-vhost"
-	result = vhostHandler(brokers, vhost)
-	if result != vhost {
-		t.Errorf("The result URI was %q, the expected URI is %q", result, vhost)
-	}
-
-	brokers = "amqp://localhost:5672"
-	expected := "amqp://localhost:5672/test-vhost"
-	result = vhostHandler(brokers, vhost)
-	if result != expected {
-		t.Errorf("The result URI was %q, the expected URI is %q", result, expected)
-	}
-
-	brokers = "amqp://localhost:5672/"
-	vhost = "test-vhost"
-
-	expected = "amqp://localhost:5672/test-vhost"
-	result = vhostHandler(brokers, vhost)
-	if result != expected {
-		t.Errorf("The result URI was %q, the expected URI is %q", result, expected)
-	}
-
-	brokers = "amqp://localhost:5672"
-	vhost = "/test-vhost"
-
-	expected = "amqp://localhost:5672/test-vhost"
-	result = vhostHandler(brokers, vhost)
-	if result != expected {
-		t.Errorf("The result URI was %q, the expected URI is %q", result, expected)
-	}
-
-	brokers = "amqp://localhost:5672/"
-	vhost = "/test-vhost"
-
-	expected = "amqp://localhost:5672//test-vhost"
-	result = vhostHandler(brokers, vhost)
-	if result != expected {
-		t.Errorf("The result URI was %q, the expected URI is %q", result, expected)
-	}
-
 }
