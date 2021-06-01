@@ -12,13 +12,13 @@ You can install a released version of
 For example, if you wanted to install version v0.24.0 you would run:
 
 ```shell
-kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/download/v0.24.0/rabbitmq-broker-standalone.yaml
+kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/download/v0.24.0/rabbitmq-standalone-broker.yaml
 ```
 
 Until release v0.24 goes out, you can install a nightly version:
 
 ```shell
-kubectl apply -f https://storage.googleapis.com/knative-nightly/eventing-rabbitmq/latest/rabbitmq-broker-standalone.yaml
+kubectl apply -f https://storage.googleapis.com/knative-nightly/eventing-rabbitmq/latest/rabbitmq-standalone-broker.yaml
 ```
 
 Or if you want to run the very latest version from this repo, you can use
