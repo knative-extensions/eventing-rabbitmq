@@ -35,7 +35,6 @@ import (
 )
 
 var ourTypes = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
-	//	v1.SchemeGroupVersion.WithKind("Broker"): &v1.Broker{},
 	v1.SchemeGroupVersion.WithKind("Broker"): &rabbitv1.RabbitBroker{},
 }
 
