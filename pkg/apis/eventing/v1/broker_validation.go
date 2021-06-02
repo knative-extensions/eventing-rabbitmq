@@ -36,7 +36,6 @@ var (
 	_ apis.Validatable = (*RabbitBroker)(nil)
 )
 
-// This is what I want to do. but can't figure out how.
 func (b *RabbitBroker) Validate(ctx context.Context) *apis.FieldError {
 	bc, ok := b.GetAnnotations()[eventingv1.BrokerClassAnnotationKey]
 	if !ok || bc != "RabbitMQBroker" {
@@ -105,6 +104,9 @@ func (b *RabbitBroker) Validate(ctx context.Context) *apis.FieldError {
 			errs = errs.Also(apis.ErrGeneric("Configuration not supported, only [kind: Secret, apiVersion: v1 or kind: RabbitmqCluster, apiVersion: rabbitmq.com/v1beta1]")).ViaField("spec").ViaField("config")
 		}
 	}
+	if errs.Error() == "" {
+		return nil
+	}
 	return errs
 }
 
@@ -116,5 +118,9 @@ func ValidateFunc(ctx context.Context, unstructured *unstructured.Unstructured) 
 	if err := duck.FromUnstructured(unstructured, &b); err != nil {
 		return err
 	}
-	return b.Validate(ctx)
+	err := b.Validate(ctx)
+	if err == nil {
+		return nil
+	}
+	return err
 }
