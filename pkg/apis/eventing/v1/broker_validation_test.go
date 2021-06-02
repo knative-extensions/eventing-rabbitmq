@@ -318,8 +318,14 @@ func TestValidateFunc(t *testing.T) {
 				ctx = apis.WithinUpdate(ctx, test.original)
 			}
 			got := ValidateFunc(ctx, test.b)
-			if diff := cmp.Diff(test.want.Error(), got.Error()); diff != "" {
-				t.Error("Broker.Validate (-want, +got) =", diff)
+			if test.want.Error() != "" && got == nil {
+				t.Errorf("Broker.Validate want: %q got nil", test.want.Error())
+			} else if test.want.Error() == "" && got != nil {
+				t.Errorf("Broker.Validate want: nil got %q", got)
+			} else if got != nil {
+				if diff := cmp.Diff(test.want.Error(), got.Error()); diff != "" {
+					t.Error("Broker.Validate (-want, +got) =", diff)
+				}
 			}
 		})
 	}
