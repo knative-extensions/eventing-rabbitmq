@@ -23,7 +23,7 @@ require (
 	github.com/streadway/amqp v1.0.0
 	github.com/testcontainers/testcontainers-go v0.7.0
 	github.com/tiago4orion/conjure v0.0.0-20150908101743-93cb30b9d218 // indirect
-	go.uber.org/zap v1.16.0
+	go.uber.org/zap v1.17.0
 	gotest.tools v2.2.0+incompatible
 	k8s.io/api v0.20.5
 	k8s.io/apiextensions-apiserver v0.20.2
@@ -31,9 +31,9 @@ require (
 	k8s.io/client-go v0.20.5
 	k8s.io/code-generator v0.21.0
 	k8s.io/kube-openapi v0.0.0-20210305001622-591a79e4bda7
-	knative.dev/eventing v0.23.1-0.20210601200329-e27695be941d
+	knative.dev/eventing v0.23.1-0.20210602100130-608a7fea977d
 	knative.dev/hack v0.0.0-20210601210329-de04b70e00d0
-	knative.dev/pkg v0.0.0-20210602044730-a2869ae1dce3
+	knative.dev/pkg v0.0.0-20210602095030-0e61d6763dd6
 	knative.dev/reconciler-test v0.0.0-20210528174829-f667a8f5433e
 )
 
