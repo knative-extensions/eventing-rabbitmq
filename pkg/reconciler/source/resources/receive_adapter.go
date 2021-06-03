@@ -140,6 +140,10 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 			Name:  "K_METRICS_CONFIG",
 			Value: args.MetricsConfig,
 		},
+		{
+			Name:  "RABBITMQ_VHOST",
+			Value: args.Source.Spec.Vhost,
+		},
 	}
 
 	return &v1.Deployment{
