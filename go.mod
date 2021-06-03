@@ -34,7 +34,7 @@ require (
 	knative.dev/eventing v0.23.1-0.20210602100130-608a7fea977d
 	knative.dev/hack v0.0.0-20210601210329-de04b70e00d0
 	knative.dev/pkg v0.0.0-20210602095030-0e61d6763dd6
-	knative.dev/reconciler-test v0.0.0-20210528174829-f667a8f5433e
+	knative.dev/reconciler-test v0.0.0-20210602211045-db062eb7ce42
 )
 
 replace (
