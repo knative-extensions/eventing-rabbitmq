@@ -333,7 +333,7 @@ func (r *Reconciler) reconcileUsingLibraries(ctx context.Context, b *eventingv1.
 	args.DLX = true
 	_, err = resources.DeclareExchange(r.dialerFunc, args)
 	if err != nil {
-		logging.FromContext(ctx).Errorw("Problem creating RabbitMQ DLX", zap.Error(err))
+		logging.FromContext(ctx).Errorw("Problem creating RabbitMQ DLX Exchange", zap.Error(err))
 		MarkDLXFailed(&b.Status, "ExchangeFailure", "Failed to create DLX: %s", err)
 		return err
 	}

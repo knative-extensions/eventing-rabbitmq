@@ -40,7 +40,6 @@ const (
 func NewBinding(ctx context.Context, broker *eventingv1.Broker, trigger *eventingv1.Trigger) (*rabbitv1beta1.Binding, error) {
 	var or metav1.OwnerReference
 	var bindingName string
-	var bindingKey string
 	var sourceName string
 
 	arguments := map[string]string{
@@ -52,7 +51,7 @@ func NewBinding(ctx context.Context, broker *eventingv1.Broker, trigger *eventin
 	if trigger != nil {
 		or = *kmeta.NewControllerRef(trigger)
 		bindingName = CreateTriggerQueueName(trigger)
-		bindingKey = trigger.Name
+		arguments[BindingKey] = trigger.Name
 		sourceName = brokerresources.ExchangeName(broker, false)
 		if trigger.Spec.Filter != nil && trigger.Spec.Filter.Attributes != nil {
 			for key, val := range trigger.Spec.Filter.Attributes {
@@ -62,10 +61,9 @@ func NewBinding(ctx context.Context, broker *eventingv1.Broker, trigger *eventin
 	} else {
 		or = *kmeta.NewControllerRef(broker)
 		bindingName = CreateBrokerDeadLetterQueueName(broker)
-		bindingKey = broker.Name
+		arguments[DLQBindingKey] = broker.Name
 		sourceName = brokerresources.ExchangeName(broker, true)
 	}
-	arguments[BindingKey] = bindingKey
 
 	argumentsJson, err := json.Marshal(arguments)
 	if err != nil {

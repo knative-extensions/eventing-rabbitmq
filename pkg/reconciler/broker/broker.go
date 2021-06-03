@@ -281,7 +281,7 @@ func (r *Reconciler) reconcileQueue(ctx context.Context, b *eventingv1.Broker) (
 	want := triggerresources.NewQueue(ctx, b, nil)
 	current, err := r.queueLister.Queues(b.Namespace).Get(queueName)
 	if apierrs.IsNotFound(err) {
-		logging.FromContext(ctx).Debugw("Creating rabbitmq exchange", zap.String("queue name", want.Name))
+		logging.FromContext(ctx).Debugw("Creating rabbitmq queue", zap.String("queue name", want.Name))
 		return r.rabbitClientSet.RabbitmqV1beta1().Queues(b.Namespace).Create(ctx, want, metav1.CreateOptions{})
 	} else if err != nil {
 		return nil, err

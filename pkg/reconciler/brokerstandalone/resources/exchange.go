@@ -36,7 +36,7 @@ type ExchangeArgs struct {
 	RabbitMQURL     *url.URL
 	RabbitMQCluster string
 	// Set to true to create a DLX, which basically just means we're going
-	// to create it with a /DLX as the prepended name.
+	// to create it with a .dlx at the end..
 	DLX bool
 }
 
