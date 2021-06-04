@@ -190,8 +190,8 @@ func createTriggerWithFilter() *eventingv1.Trigger {
 
 func getBrokerArguments() *runtime.RawExtension {
 	arguments := map[string]string{
-		"x-match":           "all",
-		"x-knative-trigger": brokerName,
+		"x-match":       "all",
+		"x-knative-dlq": brokerName,
 	}
 	argumentsJson, err := json.Marshal(arguments)
 	if err != nil {
