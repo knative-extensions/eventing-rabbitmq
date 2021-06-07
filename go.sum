@@ -1453,14 +1453,13 @@ k8s.io/utils v0.0.0-20200729134348-d5654de09c73/go.mod h1:jPW/WVKK9YHAvNhRxK0md/
 k8s.io/utils v0.0.0-20201110183641-67b214c5f920/go.mod h1:jPW/WVKK9YHAvNhRxK0md/EJ228hCsBRufyofKtW8HA=
 k8s.io/utils v0.0.0-20210111153108-fddb29f9d009 h1:0T5IaWHO3sJTEmCP6mUlBvMukxPKUQWqiI/YuiBNMiQ=
 k8s.io/utils v0.0.0-20210111153108-fddb29f9d009/go.mod h1:jPW/WVKK9YHAvNhRxK0md/EJ228hCsBRufyofKtW8HA=
-knative.dev/eventing v0.23.1-0.20210603165844-0ca9a9c8c1f2 h1:V3vXgXpAkUIBB090itwORrI9ifRpf0xwZll0PWnQhDQ=
-knative.dev/eventing v0.23.1-0.20210603165844-0ca9a9c8c1f2/go.mod h1:wsA2/DDKR9l3vcK3sys/D0IKuDs9AhDkAZ05qmTXsag=
+knative.dev/eventing v0.23.1-0.20210604160145-ab3978c3656d h1:m0kEx1tKnBNoozcRYHcGna+YeHIN0eV/++RW3vGeICQ=
+knative.dev/eventing v0.23.1-0.20210604160145-ab3978c3656d/go.mod h1:mYAQz8Jk3S5Rd24Drmp7hWX+U3JzTXUEvMmfI62VlOM=
 knative.dev/hack v0.0.0-20210601210329-de04b70e00d0 h1:GXGtVDptFpq2aFTh/m+Xii0kvGIcGZQQtx/sHinZqZs=
 knative.dev/hack v0.0.0-20210601210329-de04b70e00d0/go.mod h1:PHt8x8yX5Z9pPquBEfIj0X66f8iWkWfR0S/sarACJrI=
 knative.dev/hack/schema v0.0.0-20210601210329-de04b70e00d0/go.mod h1:ffjwmdcrH5vN3mPhO8RrF2KfNnbHeCE2C60A+2cv3U0=
 knative.dev/pkg v0.0.0-20210602095030-0e61d6763dd6 h1:Z0cPPaa6ofJ4qKrMQ8XFE0z3NHuBrxK2szR1d1+7kqA=
 knative.dev/pkg v0.0.0-20210602095030-0e61d6763dd6/go.mod h1:/hT1IXHPs8ZwQ8yTJtfaYWpLmsLhC2s6/v/ydF7PoiE=
-knative.dev/reconciler-test v0.0.0-20210602211045-db062eb7ce42/go.mod h1:Ggh7/FyaVr9R1kQiuB9KpNsvaKVoPlZ0w8OoxUGi9Ys=
 knative.dev/reconciler-test v0.0.0-20210603210445-0071c48281c7 h1:BNP1vs/FNDfpqFb+FaDzwZ9qnr3X+ms5u3lZDZk2ivw=
 knative.dev/reconciler-test v0.0.0-20210603210445-0071c48281c7/go.mod h1:Ggh7/FyaVr9R1kQiuB9KpNsvaKVoPlZ0w8OoxUGi9Ys=
 mvdan.cc/interfacer v0.0.0-20180901003855-c20040233aed/go.mod h1:Xkxe497xwlCKkIaQYRfC7CSLworTXY9RMqwhhCm+8Nc=
