@@ -41,19 +41,24 @@ type ExchangeArgs struct {
 
 func NewExchange(ctx context.Context, args *ExchangeArgs) *rabbitv1beta1.Exchange {
 	var exchangeName string
+	var or metav1.OwnerReference
+	var namespace string
+
 	if args.Trigger != nil {
+		or = *kmeta.NewControllerRef(args.Trigger)
 		exchangeName = TriggerDLXExchangeName(args.Trigger)
+		namespace = args.Trigger.Namespace
 	} else {
 		exchangeName = ExchangeName(args.Broker, args.DLX)
+		or = *kmeta.NewControllerRef(args.Broker)
+		namespace = args.Broker.Namespace
 	}
 	return &rabbitv1beta1.Exchange{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: args.Broker.Namespace,
-			Name:      exchangeName,
-			OwnerReferences: []metav1.OwnerReference{
-				*kmeta.NewControllerRef(args.Broker),
-			},
-			Labels: ExchangeLabels(args.Broker),
+			Namespace:       namespace,
+			Name:            exchangeName,
+			OwnerReferences: []metav1.OwnerReference{or},
+			Labels:          ExchangeLabels(args.Broker, args.Trigger),
 		},
 		Spec: rabbitv1beta1.ExchangeSpec{
 			// Why is the name in the Spec again? Is this different from the ObjectMeta.Name? If not,
@@ -66,7 +71,7 @@ func NewExchange(ctx context.Context, args *ExchangeArgs) *rabbitv1beta1.Exchang
 			// or do they get sane defaults that we can just work with?
 			// TODO: This one has to exist in the same namespace as this exchange.
 			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
-				Name: args.RabbitMQCluster,
+				Name: args.Broker.Spec.Config.Name,
 			},
 		},
 	}
@@ -74,9 +79,16 @@ func NewExchange(ctx context.Context, args *ExchangeArgs) *rabbitv1beta1.Exchang
 
 // ExchangeLabels generates the labels present on the Exchange linking the Broker to the
 // Exchange.
-func ExchangeLabels(b *eventingv1.Broker) map[string]string {
-	return map[string]string{
-		"eventing.knative.dev/broker": b.Name,
+func ExchangeLabels(b *eventingv1.Broker, t *eventingv1.Trigger) map[string]string {
+	if t != nil {
+		return map[string]string{
+			"eventing.knative.dev/broker":  b.Name,
+			"eventing.knative.dev/trigger": t.Name,
+		}
+	} else {
+		return map[string]string{
+			"eventing.knative.dev/broker": b.Name,
+		}
 	}
 }
 
