@@ -32,17 +32,6 @@ import (
 
 const TriggerLabelKey = "eventing.knative.dev/trigger"
 
-// QueueArgs are the arguments to create a Trigger's RabbitMQ Queue.
-type QueueArgs struct {
-	QueueName       string
-	RabbitmqURL     string
-	RabbitmqCluster string
-	// If the queue is for Trigger, this holds the trigger so we can create a proper Owner Ref
-	Trigger *eventingv1.Trigger
-	// If non-empty, wire the queue into this DLX.
-	DLX string
-}
-
 func NewQueue(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger) *rabbitv1beta1.Queue {
 	var or metav1.OwnerReference
 	var queueName string
@@ -75,11 +64,44 @@ func NewQueue(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger) 
 		},
 	}
 	if t != nil {
-		q.Spec.Arguments = &runtime.RawExtension{
-			Raw: []byte(`{"x-dead-letter-exchange":"` + brokerresources.ExchangeName(b, true) + `"}`),
+		// If the Trigger has DeadLetterSink specified, we need to point to Queues DLX instead of the broker
+		if t.Spec.Delivery != nil && t.Spec.Delivery.DeadLetterSink != nil {
+			q.Spec.Arguments = &runtime.RawExtension{
+				Raw: []byte(`{"x-dead-letter-exchange":"` + brokerresources.TriggerDLXExchangeName(t) + `"}`),
+			}
+
+		} else {
+			q.Spec.Arguments = &runtime.RawExtension{
+				Raw: []byte(`{"x-dead-letter-exchange":"` + brokerresources.ExchangeName(b, true) + `"}`),
+			}
 		}
 	}
 	return q
+}
+
+func NewTriggerDLQ(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger) *rabbitv1beta1.Queue {
+	queueName := CreateTriggerDeadLetterQueueName(t)
+	return &rabbitv1beta1.Queue{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace:       t.Namespace,
+			Name:            queueName,
+			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(t)},
+			Labels:          QueueLabels(b, t),
+		},
+		Spec: rabbitv1beta1.QueueSpec{
+			// Why is the name in the Spec again? Is this different from the ObjectMeta.Name? If not,
+			// maybe it should be removed?
+			Name:       queueName,
+			Durable:    true,
+			AutoDelete: false,
+			// TODO: We had before also internal / nowait set to false. Are these in Arguments,
+			// or do they get sane defaults that we can just work with?
+			// TODO: This one has to exist in the same namespace as this exchange.
+			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
+				Name: b.Spec.Config.Name,
+			},
+		},
+	}
 }
 
 // QueueLabels generates the labels present on the Queue linking the Broker / Trigger to the
@@ -100,11 +122,17 @@ func QueueLabels(b *eventingv1.Broker, t *eventingv1.Trigger) map[string]string 
 func CreateBrokerDeadLetterQueueName(b *eventingv1.Broker) string {
 	// TODO(vaikas): https://github.com/knative-sandbox/eventing-rabbitmq/issues/61
 	// return fmt.Sprintf("%s/%s/DLQ", b.Namespace, b.Name)
-	return fmt.Sprintf("%s.%s.dlq", b.Namespace, b.Name)
+	return fmt.Sprintf("broker.%s.%s.dlq", b.Namespace, b.Name)
 }
 
 func CreateTriggerQueueName(t *eventingv1.Trigger) string {
 	// TODO(vaikas): https://github.com/knative-sandbox/eventing-rabbitmq/issues/61
 	// return fmt.Sprintf("%s/%s", t.Namespace, t.Name)
-	return fmt.Sprintf("%s.%s", t.Namespace, t.Name)
+	return fmt.Sprintf("trigger.%s.%s", t.Namespace, t.Name)
+}
+
+func CreateTriggerDeadLetterQueueName(t *eventingv1.Trigger) string {
+	// TODO(vaikas): https://github.com/knative-sandbox/eventing-rabbitmq/issues/61
+	// return fmt.Sprintf("%s/%s", t.Namespace, t.Name)
+	return fmt.Sprintf("trigger.%s.%s.dlq", t.Namespace, t.Name)
 }

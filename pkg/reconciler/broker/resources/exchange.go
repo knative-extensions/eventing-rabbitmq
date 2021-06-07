@@ -31,15 +31,21 @@ import (
 // ExchangeArgs are the arguments to create a RabbitMQ Exchange.
 type ExchangeArgs struct {
 	Broker          *eventingv1.Broker
+	Trigger         *eventingv1.Trigger
 	RabbitMQURL     *url.URL
 	RabbitMQCluster string
 	// Set to true to create a DLX, which basically just means we're going
-	// to create it with a /DLX as the prepended name.
+	// to create it with a .dlx at the end..
 	DLX bool
 }
 
 func NewExchange(ctx context.Context, args *ExchangeArgs) *rabbitv1beta1.Exchange {
-	exchangeName := ExchangeName(args.Broker, args.DLX)
+	var exchangeName string
+	if args.Trigger != nil {
+		exchangeName = TriggerDLXExchangeName(args.Trigger)
+	} else {
+		exchangeName = ExchangeName(args.Broker, args.DLX)
+	}
 	return &rabbitv1beta1.Exchange{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: args.Broker.Namespace,
@@ -75,17 +81,27 @@ func ExchangeLabels(b *eventingv1.Broker) map[string]string {
 }
 
 // ExchangeName constructs a name given a Broker.
-// Format is broker.Namespace.broker.Name for normal exchanges and
-// broker.Namespace.broker.Name.dlx for DLX exchanges.
+// Format is broker.Namespace.Name for normal exchanges and
+// broker.Namespace.Name.dlx for DLX exchanges.
 func ExchangeName(b *eventingv1.Broker, DLX bool) string {
 	var exchangeBase string
 	if DLX {
-		exchangeBase = fmt.Sprintf("%s.%s.dlx", b.Namespace, b.Name)
+		exchangeBase = fmt.Sprintf("broker.%s.%s.dlx", b.Namespace, b.Name)
 	} else {
-		exchangeBase = fmt.Sprintf("%s.%s", b.Namespace, b.Name)
+		exchangeBase = fmt.Sprintf("broker.%s.%s", b.Namespace, b.Name)
 
 	}
 	foo := kmeta.ChildName(exchangeBase, string(b.GetUID()))
+	fmt.Printf("TODO: Fix this and use consistently to avoid collisions, worth doing? %s\n", foo)
+	return exchangeBase
+}
+
+// TriggerDLXExchangeName constructs a name given a Broker.
+// Format is broker.Namespace.Name for normal exchanges and
+// broker.Namespace.Name.dlx for DLX exchanges.
+func TriggerDLXExchangeName(t *eventingv1.Trigger) string {
+	exchangeBase := fmt.Sprintf("trigger.%s.%s.dlx", t.Namespace, t.Name)
+	foo := kmeta.ChildName(exchangeBase, string(t.GetUID()))
 	fmt.Printf("TODO: Fix this and use consistently to avoid collisions, worth doing? %s\n", foo)
 	return exchangeBase
 }

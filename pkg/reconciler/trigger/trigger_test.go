@@ -82,7 +82,7 @@ const (
 	triggerUID  = "test-trigger-uid"
 
 	rabbitURL = "amqp://localhost:5672/%2f"
-	queueName = "test-namespace.test-trigger"
+	queueName = "trigger.test-namespace.test-trigger"
 
 	dispatcherImage = "dispatcherimage"
 
@@ -867,7 +867,7 @@ func triggerWithQueueNotReady() *eventingv1.Trigger {
 		WithTriggerSubscriberURI(subscriberURI),
 		WithTriggerBrokerReady(),
 		WithTriggerDependencyReady(),
-		WithTriggerDependencyFailed("QueueFailure", `Queue "test-namespace.test-trigger" is not ready`))
+		WithTriggerDependencyFailed("QueueFailure", `Queue "trigger.test-namespace.test-trigger" is not ready`))
 
 	t.Spec.Filter = &eventingv1.TriggerFilter{
 		Attributes: eventingv1.TriggerFilterAttributes(map[string]string{"type": "dev.knative.sources.ping"}),
@@ -882,7 +882,7 @@ func triggerWithBindingNotReady() *eventingv1.Trigger {
 		WithTriggerSubscriberURI(subscriberURI),
 		WithTriggerBrokerReady(),
 		WithTriggerDependencyReady(),
-		WithTriggerDependencyFailed("BindingFailure", `Binding "test-namespace.test-trigger" is not ready`))
+		WithTriggerDependencyFailed("BindingFailure", `Binding "trigger.test-namespace.test-trigger" is not ready`))
 
 	t.Spec.Filter = &eventingv1.TriggerFilter{
 		Attributes: eventingv1.TriggerFilterAttributes(map[string]string{"type": "dev.knative.sources.ping"}),
@@ -1019,7 +1019,7 @@ func createReadyQueue() *rabbitv1beta1.Queue {
 }
 
 func createBinding(withFilter bool) *rabbitv1beta1.Binding {
-	bindingName := fmt.Sprintf("%s.%s", testNS, triggerName)
+	bindingName := fmt.Sprintf("trigger.%s.%s", testNS, triggerName)
 
 	labels := map[string]string{
 		eventing.BrokerLabelKey:   brokerName,
@@ -1039,7 +1039,7 @@ func createBinding(withFilter bool) *rabbitv1beta1.Binding {
 			Vhost:           "/",
 			DestinationType: "queue",
 			Destination:     bindingName,
-			Source:          "test-namespace.test-broker",
+			Source:          "broker.test-namespace.test-broker",
 			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
 				Name: rabbitMQBrokerName,
 			},

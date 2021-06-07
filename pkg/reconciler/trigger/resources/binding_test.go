@@ -26,7 +26,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
+	"knative.dev/pkg/apis"
 	v1 "knative.dev/pkg/apis/duck/v1"
 )
 
@@ -48,7 +50,7 @@ func TestNewBinding(t *testing.T) {
 		want: &rabbitv1beta1.Binding{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: namespace,
-				Name:      "foobar.testbroker.dlq",
+				Name:      "broker.foobar.testbroker.dlq",
 				OwnerReferences: []metav1.OwnerReference{
 					{
 						Kind:       "Broker",
@@ -60,8 +62,8 @@ func TestNewBinding(t *testing.T) {
 			},
 			Spec: rabbitv1beta1.BindingSpec{
 				Vhost:           "/",
-				Source:          "foobar.testbroker.dlx",
-				Destination:     "foobar.testbroker.dlq",
+				Source:          "broker.foobar.testbroker.dlx",
+				Destination:     "broker.foobar.testbroker.dlq",
 				DestinationType: "queue",
 				RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
 					Name: rabbitmqcluster,
@@ -76,7 +78,7 @@ func TestNewBinding(t *testing.T) {
 		want: &rabbitv1beta1.Binding{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: namespace,
-				Name:      "foobar.my-trigger",
+				Name:      "trigger.foobar.my-trigger",
 				OwnerReferences: []metav1.OwnerReference{
 					{
 						Kind:       "Trigger",
@@ -91,8 +93,8 @@ func TestNewBinding(t *testing.T) {
 			},
 			Spec: rabbitv1beta1.BindingSpec{
 				Vhost:           "/",
-				Source:          "foobar.testbroker",
-				Destination:     "foobar.my-trigger",
+				Source:          "broker.foobar.testbroker",
+				Destination:     "trigger.foobar.my-trigger",
 				DestinationType: "queue",
 				RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
 					Name: rabbitmqcluster,
@@ -107,7 +109,7 @@ func TestNewBinding(t *testing.T) {
 		want: &rabbitv1beta1.Binding{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: namespace,
-				Name:      "foobar.my-trigger",
+				Name:      "trigger.foobar.my-trigger",
 				OwnerReferences: []metav1.OwnerReference{
 					{
 						Kind:       "Trigger",
@@ -122,8 +124,8 @@ func TestNewBinding(t *testing.T) {
 			},
 			Spec: rabbitv1beta1.BindingSpec{
 				Vhost:           "/",
-				Source:          "foobar.testbroker",
-				Destination:     "foobar.my-trigger",
+				Source:          "broker.foobar.testbroker",
+				Destination:     "trigger.foobar.my-trigger",
 				DestinationType: "queue",
 				RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
 					Name: rabbitmqcluster,
@@ -146,6 +148,44 @@ func TestNewBinding(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNewTriggerDLQBinding(t *testing.T) {
+	want := &rabbitv1beta1.Binding{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      "trigger.foobar.my-trigger.dlq",
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					Kind:       "Trigger",
+					APIVersion: "eventing.knative.dev/v1",
+					Name:       triggerName,
+				},
+			},
+			Labels: map[string]string{
+				"eventing.knative.dev/broker":  "testbroker",
+				"eventing.knative.dev/trigger": "my-trigger",
+			},
+		},
+		Spec: rabbitv1beta1.BindingSpec{
+			Vhost:           "/",
+			Source:          "trigger.foobar.my-trigger.dlx",
+			Destination:     "trigger.foobar.my-trigger.dlq",
+			DestinationType: "queue",
+			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
+				Name: rabbitmqcluster,
+			},
+			Arguments: getTriggerWithFilterArgumentsDLQ(),
+		},
+	}
+	got, err := resources.NewTriggerDLQBinding(context.TODO(), createBroker(), createTriggerWithFilterAndDelivery())
+	if err != nil {
+		t.Error("NewTriggerDLQBinding failed: ", err)
+	}
+	if !equality.Semantic.DeepDerivative(want, got) {
+		t.Errorf("Unexpected Trigger DLQ Binding resource: want:\n%+v\ngot:\n%+v", want, got)
+	}
+
 }
 
 func createBroker() *eventingv1.Broker {
@@ -188,10 +228,31 @@ func createTriggerWithFilter() *eventingv1.Trigger {
 	}
 }
 
+func createTriggerWithFilterAndDelivery() *eventingv1.Trigger {
+	return &eventingv1.Trigger{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      triggerName,
+		},
+		Spec: eventingv1.TriggerSpec{
+			Filter: &eventingv1.TriggerFilter{
+				Attributes: map[string]string{
+					"source": "mysourcefilter",
+				},
+			},
+			Delivery: &eventingduckv1.DeliverySpec{
+				DeadLetterSink: &v1.Destination{
+					URI: apis.HTTP("example.com"),
+				},
+			},
+		},
+	}
+}
+
 func getBrokerArguments() *runtime.RawExtension {
 	arguments := map[string]string{
-		"x-match":           "all",
-		"x-knative-trigger": brokerName,
+		"x-match":       "all",
+		"x-knative-dlq": brokerName,
 	}
 	argumentsJson, err := json.Marshal(arguments)
 	if err != nil {
@@ -221,6 +282,20 @@ func getTriggerWithFilterArguments() *runtime.RawExtension {
 		"x-match":           "all",
 		"x-knative-trigger": triggerName,
 		"source":            "mysourcefilter",
+	}
+	argumentsJson, err := json.Marshal(arguments)
+	if err != nil {
+		panic("Failed to marshal json for test, no go.")
+	}
+	return &runtime.RawExtension{
+		Raw: argumentsJson,
+	}
+}
+
+func getTriggerWithFilterArgumentsDLQ() *runtime.RawExtension {
+	arguments := map[string]string{
+		"x-match":               "all",
+		"x-knative-trigger-dlq": triggerName,
 	}
 	argumentsJson, err := json.Marshal(arguments)
 	if err != nil {

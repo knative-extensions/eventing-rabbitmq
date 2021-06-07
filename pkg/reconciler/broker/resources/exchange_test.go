@@ -26,11 +26,11 @@ func TestExchangeName(t *testing.T) {
 	}{{
 		name:      brokerName,
 		namespace: namespace,
-		want:      "foobar.testbroker",
+		want:      "broker.foobar.testbroker",
 	}, {
 		name:      brokerName,
 		namespace: namespace,
-		want:      "foobar.testbroker.dlx",
+		want:      "broker.foobar.testbroker.dlx",
 		dlx:       true,
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -43,11 +43,24 @@ func TestExchangeName(t *testing.T) {
 	}
 }
 
+func TestTriggerDLXExchangeName(t *testing.T) {
+	want := "trigger.foobar.testtrigger.dlx"
+	got := resources.TriggerDLXExchangeName(&eventingv1.Trigger{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "foobar",
+			Name:      "testtrigger",
+		},
+	})
+	if want != got {
+		t.Errorf("Unexpected name for foobar/testtrigger Trigger DLX: want:\n%q\ngot:\n%q", want, got)
+	}
+}
+
 func TestNewExchange(t *testing.T) {
 	want := &rabbitv1beta1.Exchange{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
-			Name:      "foobar.testbroker",
+			Name:      "broker.foobar.testbroker",
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					Kind:       "Broker",
@@ -58,7 +71,7 @@ func TestNewExchange(t *testing.T) {
 			Labels: map[string]string{"eventing.knative.dev/broker": "testbroker"},
 		},
 		Spec: rabbitv1beta1.ExchangeSpec{
-			Name:       "foobar.testbroker",
+			Name:       "broker.foobar.testbroker",
 			Type:       "headers",
 			Durable:    true,
 			AutoDelete: false,
@@ -78,6 +91,6 @@ func TestNewExchange(t *testing.T) {
 	}
 	got := resources.NewExchange(context.TODO(), args)
 	if !equality.Semantic.DeepDerivative(want, got) {
-		t.Errorf("Unespected Exchange resource: want:\n%+v\ngot:\n%+v", want, got)
+		t.Errorf("Unexpected Exchange resource: want:\n%+v\ngot:\n%+v", want, got)
 	}
 }
