@@ -34,7 +34,7 @@ import (
 	clientgotesting "k8s.io/client-go/testing"
 	rabbitmqduck "knative.dev/eventing-rabbitmq/pkg/apis/duck/v1beta1"
 	rabbitduck "knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
-	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
+	"knative.dev/eventing-rabbitmq/pkg/reconciler/brokerstandalone/resources"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"

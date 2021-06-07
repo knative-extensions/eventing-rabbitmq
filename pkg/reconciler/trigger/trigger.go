@@ -61,6 +61,7 @@ type Reconciler struct {
 	deploymentLister appsv1listers.DeploymentLister
 	brokerLister     eventinglisters.BrokerLister
 	triggerLister    eventinglisters.TriggerLister
+	exchangeLister   rabbitlisters.ExchangeLister
 	queueLister      rabbitlisters.QueueLister
 	bindingLister    rabbitlisters.BindingLister
 
@@ -130,13 +131,70 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		return nil
 	}
 
-	// Note that we always create DLX with this queue because you can't
-	// change them later.
-	// Note we use the same name for queue & binding for consistency.
 	if !isUsingOperator(broker) {
 		t.Status.MarkDependencyFailed("ReconcileFailure", "using secret is not supported with this controller")
 		return nil
 	} else {
+		// If there's DeadLetterSink, we need to create a DLX that's specific for this Trigger as well
+		// as a Queue for it, and Dispatcher that pulls from that queue.
+		if t.Spec.Delivery != nil && t.Spec.Delivery.DeadLetterSink != nil {
+			args := &brokerresources.ExchangeArgs{
+				Broker:  broker,
+				Trigger: t,
+				DLX:     true,
+			}
+			dlx, err := r.reconcileExchange(ctx, args)
+			if err != nil {
+				t.Status.MarkDependencyFailed("ExchangeFailure", fmt.Sprintf("Failed to reconcile DLX exchange %q: %s", brokerresources.TriggerDLXExchangeName(t), err))
+				return err
+			}
+			if dlx != nil {
+				if !isReady(dlx.Status.Conditions) {
+					logging.FromContext(ctx).Warnf("DLX exchange %q is not ready", dlx.Name)
+					t.Status.MarkDependencyFailed("ExchangeFailure", fmt.Sprintf("DLX exchange %q is not ready", dlx.Name))
+					return nil
+				}
+			}
+
+			dlq, err := r.reconcileDLQ(ctx, broker, t)
+			if err != nil {
+				logging.FromContext(ctx).Error("Problem reconciling Trigger Queue", zap.Error(err))
+				t.Status.MarkDependencyFailed("QueueFailure", "%v", err)
+				return err
+			}
+			if dlq != nil {
+				if !isReady(dlq.Status.Conditions) {
+					logging.FromContext(ctx).Warnf("DLQ %q is not ready", dlq.Name)
+					t.Status.MarkDependencyFailed("QueueFailure", "DLQ %q is not ready", dlq.Name)
+					return nil
+				}
+			}
+			dlqBinding, err := r.reconcileDLQBinding(ctx, broker, t)
+			if err != nil {
+				logging.FromContext(ctx).Error("Problem reconciling Trigger DLQ Binding", zap.Error(err))
+				t.Status.MarkDependencyFailed("BindingFailure", "%v", err)
+				return err
+			}
+			if dlqBinding != nil {
+				if !isReady(dlqBinding.Status.Conditions) {
+					logging.FromContext(ctx).Warnf("DLQ Binding %q is not ready", dlqBinding.Name)
+					t.Status.MarkDependencyFailed("BindingFailure", "DLQ Binding %q is not ready", dlqBinding.Name)
+					return nil
+				}
+			}
+			deadLetterSinkURI, err := r.uriResolver.URIFromDestinationV1(ctx, *t.Spec.Delivery.DeadLetterSink, t)
+			if err != nil {
+				logging.FromContext(ctx).Error("Unable to get the DeadLetterSink URI", zap.Error(err))
+				t.Status.MarkDependencyFailed("DeadLetterSink", fmt.Sprintf("Unable to get the DeadLetterSink URI: %s", err))
+				return err
+			}
+			_, err = r.reconcileDLXDispatcherDeployment(ctx, t, deadLetterSinkURI)
+			if err != nil {
+				logging.FromContext(ctx).Error("Problem reconciling DLX dispatcher Deployment", zap.Error(err))
+				t.Status.MarkDependencyFailed("DeploymentFailure", "%v", err)
+				return err
+			}
+		}
 		queue, err := r.reconcileQueue(ctx, broker, t)
 		if err != nil {
 			logging.FromContext(ctx).Error("Problem reconciling Trigger Queue", zap.Error(err))
@@ -165,7 +223,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 				t.Status.MarkDependencyFailed("BindingFailure", "Binding %q is not ready", binding.Name)
 				return nil
 			}
-
 		}
 		logging.FromContext(ctx).Info("Reconciled rabbitmq binding", zap.Any("binding", binding))
 		t.Status.MarkDependencySucceeded()
@@ -200,6 +257,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		// If trigger didn't but Broker did, use it instead.
 		delivery = broker.Spec.Delivery
 	}
+
 	_, err = r.reconcileDispatcherDeployment(ctx, t, subscriberURI, delivery)
 	if err != nil {
 		logging.FromContext(ctx).Error("Problem reconciling dispatcher Deployment", zap.Error(err))
@@ -234,7 +292,7 @@ func (r *Reconciler) reconcileDeployment(ctx context.Context, d *v1.Deployment) 
 	return current, nil
 }
 
-//reconcileDispatcherDeployment reconciles Trigger's dispatcher deployment.
+// reconcileDispatcherDeployment reconciles Trigger's dispatcher deployment.
 func (r *Reconciler) reconcileDispatcherDeployment(ctx context.Context, t *eventingv1.Trigger, sub *apis.URL, delivery *eventingduckv1.DeliverySpec) (*v1.Deployment, error) {
 	rabbitmqSecret, err := r.getRabbitmqSecret(ctx, t)
 	if err != nil {
@@ -254,6 +312,29 @@ func (r *Reconciler) reconcileDispatcherDeployment(ctx context.Context, t *event
 		BrokerIngressURL:   b.Status.Address.URL,
 		Subscriber:         sub,
 		Delivery:           delivery,
+	})
+	return r.reconcileDeployment(ctx, expected)
+}
+
+// reconcileDispatcherDeployment reconciles Trigger's dispatcher deployment.
+func (r *Reconciler) reconcileDLXDispatcherDeployment(ctx context.Context, t *eventingv1.Trigger, sub *apis.URL) (*v1.Deployment, error) {
+	rabbitmqSecret, err := r.getRabbitmqSecret(ctx, t)
+	if err != nil {
+		return nil, err
+	}
+	b, err := r.brokerLister.Brokers(t.Namespace).Get(t.Spec.Broker)
+	if err != nil {
+		return nil, err
+	}
+	expected := resources.MakeDispatcherDeployment(&resources.DispatcherArgs{
+		Trigger:            t,
+		Image:              r.dispatcherImage,
+		RabbitMQSecretName: rabbitmqSecret.Name,
+		QueueName:          resources.CreateTriggerDeadLetterQueueName(t),
+		BrokerUrlSecretKey: brokerresources.BrokerURLSecretKey,
+		BrokerIngressURL:   b.Status.Address.URL,
+		Subscriber:         sub,
+		DLX:                true,
 	})
 	return r.reconcileDeployment(ctx, expected)
 }
@@ -313,12 +394,47 @@ func (r *Reconciler) getRabbitmqSecret(ctx context.Context, t *eventingv1.Trigge
 	return r.kubeClientSet.CoreV1().Secrets(t.Namespace).Get(ctx, brokerresources.SecretName(t.Spec.Broker), metav1.GetOptions{})
 }
 
+func (r *Reconciler) reconcileExchange(ctx context.Context, args *brokerresources.ExchangeArgs) (*v1beta1.Exchange, error) {
+	want := brokerresources.NewExchange(ctx, args)
+	current, err := r.exchangeLister.Exchanges(args.Trigger.Namespace).Get(brokerresources.TriggerDLXExchangeName(args.Trigger))
+	if apierrs.IsNotFound(err) {
+		logging.FromContext(ctx).Debugw("Creating rabbitmq exchange", zap.String("exchange name", want.Name))
+		return r.rabbitClientSet.RabbitmqV1beta1().Exchanges(args.Trigger.Namespace).Create(ctx, want, metav1.CreateOptions{})
+	} else if err != nil {
+		return nil, err
+	} else if !equality.Semantic.DeepDerivative(want.Spec, current.Spec) {
+		// Don't modify the informers copy.
+		desired := current.DeepCopy()
+		desired.Spec = want.Spec
+		return r.rabbitClientSet.RabbitmqV1beta1().Exchanges(args.Trigger.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
+	}
+	return current, nil
+}
+
 func (r *Reconciler) reconcileQueue(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger) (*v1beta1.Queue, error) {
 	queueName := resources.CreateTriggerQueueName(t)
 	want := resources.NewQueue(ctx, b, t)
 	current, err := r.queueLister.Queues(b.Namespace).Get(queueName)
 	if apierrs.IsNotFound(err) {
-		logging.FromContext(ctx).Debugw("Creating rabbitmq exchange", zap.String("queue name", want.Name))
+		logging.FromContext(ctx).Debugw("Creating rabbitmq queue", zap.String("queue name", want.Name))
+		return r.rabbitClientSet.RabbitmqV1beta1().Queues(b.Namespace).Create(ctx, want, metav1.CreateOptions{})
+	} else if err != nil {
+		return nil, err
+	} else if !equality.Semantic.DeepDerivative(want.Spec, current.Spec) {
+		// Don't modify the informers copy.
+		desired := current.DeepCopy()
+		desired.Spec = want.Spec
+		return r.rabbitClientSet.RabbitmqV1beta1().Queues(b.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
+	}
+	return current, nil
+}
+
+func (r *Reconciler) reconcileDLQ(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger) (*v1beta1.Queue, error) {
+	queueName := resources.CreateTriggerDeadLetterQueueName(t)
+	want := resources.NewTriggerDLQ(ctx, b, t)
+	current, err := r.queueLister.Queues(b.Namespace).Get(queueName)
+	if apierrs.IsNotFound(err) {
+		logging.FromContext(ctx).Debugw("Creating rabbitmq queue", zap.String("queue name", want.Name))
 		return r.rabbitClientSet.RabbitmqV1beta1().Queues(b.Namespace).Create(ctx, want, metav1.CreateOptions{})
 	} else if err != nil {
 		return nil, err
@@ -342,6 +458,26 @@ func (r *Reconciler) reconcileBinding(ctx context.Context, b *eventingv1.Broker,
 	current, err := r.bindingLister.Bindings(b.Namespace).Get(bindingName)
 	if apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Infow("Creating rabbitmq binding", zap.String("binding name", want.Name))
+		return r.rabbitClientSet.RabbitmqV1beta1().Bindings(b.Namespace).Create(ctx, want, metav1.CreateOptions{})
+	} else if err != nil {
+		return nil, err
+	} else if !equality.Semantic.DeepDerivative(want.Spec, current.Spec) {
+		return nil, fmt.Errorf("binding spec differs and it's immutable")
+	}
+	return current, nil
+}
+
+func (r *Reconciler) reconcileDLQBinding(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger) (*v1beta1.Binding, error) {
+	// We can use the same name for queue / binding to keep things simpler
+	bindingName := resources.CreateTriggerDeadLetterQueueName(t)
+
+	want, err := resources.NewTriggerDLQBinding(ctx, b, t)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create the DLQ binding spec: %w", err)
+	}
+	current, err := r.bindingLister.Bindings(b.Namespace).Get(bindingName)
+	if apierrs.IsNotFound(err) {
+		logging.FromContext(ctx).Infow("Creating rabbitmq DLQ binding", zap.String("binding name", want.Name))
 		return r.rabbitClientSet.RabbitmqV1beta1().Bindings(b.Namespace).Create(ctx, want, metav1.CreateOptions{})
 	} else if err != nil {
 		return nil, err

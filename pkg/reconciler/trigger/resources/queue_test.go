@@ -46,7 +46,7 @@ func TestNewQueue(t *testing.T) {
 		want: &rabbitv1beta1.Queue{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: namespace,
-				Name:      "foobar.testbroker.dlq",
+				Name:      "broker.foobar.testbroker.dlq",
 				OwnerReferences: []metav1.OwnerReference{
 					{
 						Kind:       "Broker",
@@ -57,7 +57,7 @@ func TestNewQueue(t *testing.T) {
 				Labels: map[string]string{"eventing.knative.dev/broker": "testbroker"},
 			},
 			Spec: rabbitv1beta1.QueueSpec{
-				Name:       "foobar.testbroker.dlq",
+				Name:       "broker.foobar.testbroker.dlq",
 				Durable:    true,
 				AutoDelete: false,
 				RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
@@ -72,7 +72,7 @@ func TestNewQueue(t *testing.T) {
 		want: &rabbitv1beta1.Queue{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: namespace,
-				Name:      "foobar.my-trigger",
+				Name:      "trigger.foobar.my-trigger",
 				OwnerReferences: []metav1.OwnerReference{
 					{
 						Kind:       "Trigger",
@@ -86,7 +86,7 @@ func TestNewQueue(t *testing.T) {
 				},
 			},
 			Spec: rabbitv1beta1.QueueSpec{
-				Name:       "foobar.my-trigger",
+				Name:       "trigger.foobar.my-trigger",
 				Durable:    true,
 				AutoDelete: false,
 				RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
@@ -102,7 +102,7 @@ func TestNewQueue(t *testing.T) {
 		want: &rabbitv1beta1.Queue{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: namespace,
-				Name:      "foobar.my-trigger",
+				Name:      "trigger.foobar.my-trigger",
 				OwnerReferences: []metav1.OwnerReference{
 					{
 						Kind:       "Trigger",
@@ -116,13 +116,43 @@ func TestNewQueue(t *testing.T) {
 				},
 			},
 			Spec: rabbitv1beta1.QueueSpec{
-				Name:       "foobar.my-trigger",
+				Name:       "trigger.foobar.my-trigger",
 				Durable:    true,
 				AutoDelete: false,
 				RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
 					Name: rabbitmqcluster,
 				},
 				Arguments: getTriggerQueueArguments(),
+			},
+		},
+	}, {
+		name:    "Trigger binding, filter and Delivery",
+		broker:  createBroker(),
+		trigger: createTriggerWithFilterAndDelivery(),
+		want: &rabbitv1beta1.Queue{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: namespace,
+				Name:      "trigger.foobar.my-trigger",
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						Kind:       "Trigger",
+						APIVersion: "eventing.knative.dev/v1",
+						Name:       triggerName,
+					},
+				},
+				Labels: map[string]string{
+					"eventing.knative.dev/broker":  "testbroker",
+					"eventing.knative.dev/trigger": "my-trigger",
+				},
+			},
+			Spec: rabbitv1beta1.QueueSpec{
+				Name:       "trigger.foobar.my-trigger",
+				Durable:    true,
+				AutoDelete: false,
+				RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
+					Name: rabbitmqcluster,
+				},
+				Arguments: getTriggerQueueArgumentsWithDeadLetterSink(),
 			},
 		},
 	}} {
@@ -135,9 +165,55 @@ func TestNewQueue(t *testing.T) {
 	}
 }
 
+func TestNewTriggerDLQ(t *testing.T) {
+	want := &rabbitv1beta1.Queue{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      "trigger.foobar.my-trigger.dlq",
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					Kind:       "Trigger",
+					APIVersion: "eventing.knative.dev/v1",
+					Name:       triggerName,
+				},
+			},
+			Labels: map[string]string{
+				"eventing.knative.dev/broker":  "testbroker",
+				"eventing.knative.dev/trigger": "my-trigger",
+			},
+		},
+		Spec: rabbitv1beta1.QueueSpec{
+			Name:       "trigger.foobar.my-trigger.dlq",
+			Durable:    true,
+			AutoDelete: false,
+			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
+				Name: rabbitmqcluster,
+			},
+		},
+	}
+	got := resources.NewTriggerDLQ(context.TODO(), createBroker(), createTriggerWithFilterAndDelivery())
+	if !equality.Semantic.DeepDerivative(want, got) {
+		t.Errorf("Unexpected Queue resource: want:\n%+v\ngot:\n%+v", want, got)
+	}
+
+}
+
 func getTriggerQueueArguments() *runtime.RawExtension {
 	arguments := map[string]string{
 		"x-dead-letter-exchange": brokerresources.ExchangeName(createBroker(), true),
+	}
+	argumentsJson, err := json.Marshal(arguments)
+	if err != nil {
+		panic("Failed to marshal json for test, no go.")
+	}
+	return &runtime.RawExtension{
+		Raw: argumentsJson,
+	}
+}
+
+func getTriggerQueueArgumentsWithDeadLetterSink() *runtime.RawExtension {
+	arguments := map[string]string{
+		"x-dead-letter-exchange": brokerresources.TriggerDLXExchangeName(createTriggerWithFilterAndDelivery()),
 	}
 	argumentsJson, err := json.Marshal(arguments)
 	if err != nil {

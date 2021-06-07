@@ -35,12 +35,12 @@ const (
 	DefaultManagementPort = 15672
 	BindingKey            = "x-knative-trigger"
 	DLQBindingKey         = "x-knative-dlq"
+	TriggerDLQBindingKey  = "x-knative-trigger-dlq"
 )
 
 func NewBinding(ctx context.Context, broker *eventingv1.Broker, trigger *eventingv1.Trigger) (*rabbitv1beta1.Binding, error) {
 	var or metav1.OwnerReference
 	var bindingName string
-	var bindingKey string
 	var sourceName string
 
 	arguments := map[string]string{
@@ -52,7 +52,7 @@ func NewBinding(ctx context.Context, broker *eventingv1.Broker, trigger *eventin
 	if trigger != nil {
 		or = *kmeta.NewControllerRef(trigger)
 		bindingName = CreateTriggerQueueName(trigger)
-		bindingKey = trigger.Name
+		arguments[BindingKey] = trigger.Name
 		sourceName = brokerresources.ExchangeName(broker, false)
 		if trigger.Spec.Filter != nil && trigger.Spec.Filter.Attributes != nil {
 			for key, val := range trigger.Spec.Filter.Attributes {
@@ -62,10 +62,9 @@ func NewBinding(ctx context.Context, broker *eventingv1.Broker, trigger *eventin
 	} else {
 		or = *kmeta.NewControllerRef(broker)
 		bindingName = CreateBrokerDeadLetterQueueName(broker)
-		bindingKey = broker.Name
+		arguments[DLQBindingKey] = broker.Name
 		sourceName = brokerresources.ExchangeName(broker, true)
 	}
-	arguments[BindingKey] = bindingKey
 
 	argumentsJson, err := json.Marshal(arguments)
 	if err != nil {
@@ -77,6 +76,51 @@ func NewBinding(ctx context.Context, broker *eventingv1.Broker, trigger *eventin
 			Namespace:       broker.Namespace,
 			Name:            bindingName,
 			OwnerReferences: []metav1.OwnerReference{or},
+			Labels:          BindingLabels(broker, trigger),
+		},
+		Spec: rabbitv1beta1.BindingSpec{
+			Vhost:           "/",
+			Source:          sourceName,
+			Destination:     bindingName,
+			DestinationType: "queue",
+			RoutingKey:      "",
+			Arguments: &runtime.RawExtension{
+				Raw: argumentsJson,
+			},
+
+			// TODO: We had before also internal / nowait set to false. Are these in Arguments,
+			// or do they get sane defaults that we can just work with?
+			// TODO: This one has to exist in the same namespace as this exchange.
+			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
+				Name: broker.Spec.Config.Name,
+			},
+		},
+	}
+	return binding, nil
+}
+
+// NewTriggerDLQBinding creates a binding for a Trigger DLX.
+func NewTriggerDLQBinding(ctx context.Context, broker *eventingv1.Broker, trigger *eventingv1.Trigger) (*rabbitv1beta1.Binding, error) {
+
+	arguments := map[string]string{
+		"x-match":            "all",
+		TriggerDLQBindingKey: trigger.Name,
+	}
+	// Depending on if we have a Broker & Trigger we need to rejigger some of the names and
+	// configurations little differently, so do that up front before actually creating the resource
+	// that we're returning.
+	bindingName := CreateTriggerDeadLetterQueueName(trigger)
+	sourceName := brokerresources.TriggerDLXExchangeName(trigger)
+	argumentsJson, err := json.Marshal(arguments)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode DLQ binding arguments %+v : %s", argumentsJson, err)
+	}
+
+	binding := &rabbitv1beta1.Binding{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace:       trigger.Namespace,
+			Name:            bindingName,
+			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(trigger)},
 			Labels:          BindingLabels(broker, trigger),
 		},
 		Spec: rabbitv1beta1.BindingSpec{

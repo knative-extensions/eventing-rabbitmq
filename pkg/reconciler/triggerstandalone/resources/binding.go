@@ -24,7 +24,7 @@ import (
 	"net/url"
 	"reflect"
 
-	brokerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
+	brokerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/brokerstandalone/resources"
 
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	"knative.dev/eventing/pkg/apis/eventing"

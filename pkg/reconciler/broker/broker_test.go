@@ -360,7 +360,7 @@ func TestReconcile(t *testing.T) {
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
-					WithExchangeFailed("ExchangeFailure", `Failed to reconcile exchange "test-namespace.test-broker": inducing failure for create exchanges`)),
+					WithExchangeFailed("ExchangeFailure", `Failed to reconcile exchange "broker.test-namespace.test-broker": inducing failure for create exchanges`)),
 			}},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeWarning, "InternalError", `inducing failure for create exchanges`),
@@ -386,7 +386,7 @@ func TestReconcile(t *testing.T) {
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
-					WithExchangeFailed("ExchangeFailure", `exchange "test-namespace.test-broker" is not ready`)),
+					WithExchangeFailed("ExchangeFailure", `exchange "broker.test-namespace.test-broker" is not ready`)),
 			}},
 		}, {
 			Name: "Exchange exists, create DLX CRD, not ready",
@@ -410,7 +410,7 @@ func TestReconcile(t *testing.T) {
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
-					WithExchangeFailed("ExchangeFailure", `DLX exchange "test-namespace.test-broker.dlx" is not ready`)),
+					WithExchangeFailed("ExchangeFailure", `DLX exchange "broker.test-namespace.test-broker.dlx" is not ready`)),
 			}},
 		}, {
 			Name: "Exchange exists, create DLX exchange fails",
@@ -438,7 +438,7 @@ func TestReconcile(t *testing.T) {
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
-					WithExchangeFailed("ExchangeFailure", `Failed to reconcile DLX exchange "test-namespace.test-broker.dlx": inducing failure for create exchanges`)),
+					WithExchangeFailed("ExchangeFailure", `Failed to reconcile DLX exchange "broker.test-namespace.test-broker.dlx": inducing failure for create exchanges`)),
 			}},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeWarning, "InternalError", `inducing failure for create exchanges`),
@@ -471,7 +471,7 @@ func TestReconcile(t *testing.T) {
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
 					WithExchangeReady(),
-					WithDLXFailed("QueueFailure", `Failed to reconcile Dead Letter Queue "test-namespace.test-broker.dlq" : inducing failure for create queues`)),
+					WithDLXFailed("QueueFailure", `Failed to reconcile Dead Letter Queue "broker.test-namespace.test-broker.dlq" : inducing failure for create queues`)),
 			}},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeWarning, "InternalError", `inducing failure for create queues`),
@@ -500,7 +500,7 @@ func TestReconcile(t *testing.T) {
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
 					WithExchangeReady(),
-					WithDLXFailed("QueueFailure", `Dead Letter Queue "test-namespace.test-broker.dlq" is not ready`)),
+					WithDLXFailed("QueueFailure", `Dead Letter Queue "broker.test-namespace.test-broker.dlq" is not ready`)),
 			}},
 		}, {
 			Name: "Both exchanges exist, queue exists, creates binding CRD",
@@ -528,7 +528,7 @@ func TestReconcile(t *testing.T) {
 					WithBrokerConfig(config()),
 					WithExchangeReady(),
 					WithDLXReady(),
-					WithDeadLetterSinkFailed("DLQ binding", `DLQ binding "test-namespace.test-broker.dlq" is not ready`)),
+					WithDeadLetterSinkFailed("DLQ binding", `DLQ binding "broker.test-namespace.test-broker.dlq" is not ready`)),
 			}},
 		}, {
 			Name: "Both exchanges exist, queue exists, create binding CRD fails",
@@ -560,7 +560,7 @@ func TestReconcile(t *testing.T) {
 					WithBrokerConfig(config()),
 					WithExchangeReady(),
 					WithDLXReady(),
-					WithDeadLetterSinkFailed("DLQ binding", `Failed to reconcile DLQ binding "test-namespace.test-broker.dlq" : inducing failure for create bindings`)),
+					WithDeadLetterSinkFailed("DLQ binding", `Failed to reconcile DLQ binding "broker.test-namespace.test-broker.dlq" : inducing failure for create bindings`)),
 			}},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeWarning, "InternalError", `inducing failure for create bindings`),
@@ -1180,7 +1180,7 @@ func createDispatcherDeployment() *appsv1.Deployment {
 		Broker:             broker,
 		Image:              dispatcherImage,
 		RabbitMQSecretName: rabbitBrokerSecretName,
-		QueueName:          "test-namespace.test-broker.dlq",
+		QueueName:          "broker.test-namespace.test-broker.dlq",
 		BrokerUrlSecretKey: "brokerURL",
 		BrokerIngressURL:   brokerAddress,
 		Subscriber:         deadLetterSinkAddress,
@@ -1198,9 +1198,9 @@ func createExchange(dlx bool) *rabbitv1beta1.Exchange {
 	}
 	var exchangeName string
 	if dlx {
-		exchangeName = fmt.Sprintf("%s.%s.dlx", testNS, brokerName)
+		exchangeName = fmt.Sprintf("broker.%s.%s.dlx", testNS, brokerName)
 	} else {
-		exchangeName = fmt.Sprintf("%s.%s", testNS, brokerName)
+		exchangeName = fmt.Sprintf("broker.%s.%s", testNS, brokerName)
 	}
 
 	return &rabbitv1beta1.Exchange{
@@ -1210,7 +1210,7 @@ func createExchange(dlx bool) *rabbitv1beta1.Exchange {
 			OwnerReferences: []metav1.OwnerReference{
 				*kmeta.NewControllerRef(broker),
 			},
-			Labels: resources.ExchangeLabels(broker),
+			Labels: resources.ExchangeLabels(broker, nil),
 		},
 		Spec: rabbitv1beta1.ExchangeSpec{
 			Name:       exchangeName,
@@ -1249,9 +1249,9 @@ func createQueue(dlx bool) *rabbitv1beta1.Queue {
 	}
 	var queueName string
 	if dlx {
-		queueName = fmt.Sprintf("%s.%s.dlq", testNS, brokerName)
+		queueName = fmt.Sprintf("broker.%s.%s.dlq", testNS, brokerName)
 	} else {
-		queueName = fmt.Sprintf("%s.%s", testNS, brokerName)
+		queueName = fmt.Sprintf("broker.%s.%s", testNS, brokerName)
 	}
 
 	return &rabbitv1beta1.Queue{
@@ -1261,7 +1261,7 @@ func createQueue(dlx bool) *rabbitv1beta1.Queue {
 			OwnerReferences: []metav1.OwnerReference{
 				*kmeta.NewControllerRef(broker),
 			},
-			Labels: resources.ExchangeLabels(broker),
+			Labels: resources.ExchangeLabels(broker, nil),
 		},
 		Spec: rabbitv1beta1.QueueSpec{
 			Name:       queueName,
@@ -1296,9 +1296,9 @@ func createBinding(dlx bool) *rabbitv1beta1.Binding {
 	}
 	var bindingName string
 	if dlx {
-		bindingName = fmt.Sprintf("%s.%s.dlq", testNS, brokerName)
+		bindingName = fmt.Sprintf("broker.%s.%s.dlq", testNS, brokerName)
 	} else {
-		bindingName = fmt.Sprintf("%s.%s", testNS, brokerName)
+		bindingName = fmt.Sprintf("broker.%s.%s", testNS, brokerName)
 	}
 
 	return &rabbitv1beta1.Binding{
@@ -1308,13 +1308,13 @@ func createBinding(dlx bool) *rabbitv1beta1.Binding {
 			OwnerReferences: []metav1.OwnerReference{
 				*kmeta.NewControllerRef(broker),
 			},
-			Labels: resources.ExchangeLabels(broker),
+			Labels: resources.ExchangeLabels(broker, nil),
 		},
 		Spec: rabbitv1beta1.BindingSpec{
 			Vhost:           "/",
 			DestinationType: "queue",
 			Destination:     bindingName,
-			Source:          "test-namespace.test-broker.dlx",
+			Source:          "broker.test-namespace.test-broker.dlx",
 			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
 				Name: rabbitMQBrokerName,
 			},
@@ -1433,8 +1433,8 @@ func createRabbitMQClusterMissingServiceRef() *unstructured.Unstructured {
 
 func getBrokerArguments() *runtime.RawExtension {
 	arguments := map[string]string{
-		"x-match":           "all",
-		"x-knative-trigger": brokerName,
+		"x-match":       "all",
+		"x-knative-dlq": brokerName,
 	}
 	argumentsJson, err := json.Marshal(arguments)
 	if err != nil {
