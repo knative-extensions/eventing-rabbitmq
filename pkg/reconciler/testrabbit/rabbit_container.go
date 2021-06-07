@@ -16,7 +16,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"gotest.tools/assert"
-	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
+	"knative.dev/eventing-rabbitmq/pkg/reconciler/triggerstandalone/resources"
 
 	_ "github.com/containerd/continuity"
 	_ "github.com/containerd/continuity/pathdriver"
