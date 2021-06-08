@@ -76,7 +76,7 @@ func DeclareExchange(dialerFunc dialer.DialerFunc, args *ExchangeArgs) (*corev1.
 	} else {
 		exchangeName = ExchangeName(args.Broker, args.DLX)
 	}
-
+	fmt.Printf("DECLARING EXCHANGE WITH NAME: %s", exchangeName)
 	return MakeSecret(args), channel.ExchangeDeclare(
 		exchangeName,
 		"headers", // kind

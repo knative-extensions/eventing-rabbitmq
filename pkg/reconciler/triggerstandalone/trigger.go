@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"go.uber.org/zap"
 	v1 "k8s.io/api/apps/v1"
@@ -156,12 +157,18 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 	// If there's DeadLetterSink, we need to create a DLX that's specific for this Trigger as well
 	// as a Queue for it, and Dispatcher that pulls from that queue.
 	if t.Spec.Delivery != nil && t.Spec.Delivery.DeadLetterSink != nil {
-		args := &brokerresources.ExchangeArgs{
-			Broker:  broker,
-			Trigger: t,
-			DLX:     true,
+		// TODO: We need the URL form here in different form when dealing with Exchanges
+		exchangeURL, err := url.Parse(string(rabbitmqURL))
+		if err != nil {
+			return fmt.Errorf("failed to parse the URL for RabbitMQ: %s", err)
 		}
-		_, err := brokerresources.DeclareExchange(r.dialerFunc, args)
+		args := &brokerresources.ExchangeArgs{
+			Broker:      broker,
+			Trigger:     t,
+			DLX:         true,
+			RabbitMQURL: exchangeURL,
+		}
+		_, err = brokerresources.DeclareExchange(r.dialerFunc, args)
 		if err != nil {
 			t.Status.MarkDependencyFailed("ExchangeFailure", fmt.Sprintf("Failed to reconcile trigger DLX exchange %q: %s", brokerresources.TriggerDLXExchangeName(t), err))
 			return err
@@ -213,7 +220,9 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 	queueArgs := &resources.QueueArgs{
 		QueueName:   queueName,
 		RabbitmqURL: rabbitmqURL,
-		DLX:         dlxExchange,
+		// This is either the Broker DLX or Queue DLX created above if Trigger has
+		// delivery specified.
+		DLX: dlxExchange,
 	}
 
 	queue, err := resources.DeclareQueue(r.dialerFunc, queueArgs)
@@ -373,6 +382,7 @@ func (r *Reconciler) reconcileDLXDispatcherDeployment(ctx context.Context, b *ev
 		BrokerUrlSecretKey: brokerresources.BrokerURLSecretKey,
 		BrokerIngressURL:   b.Status.Address.URL,
 		Subscriber:         sub,
+		DLX:                true,
 	})
 	return r.reconcileDeployment(ctx, expected)
 }

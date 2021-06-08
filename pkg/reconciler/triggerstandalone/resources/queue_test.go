@@ -69,7 +69,7 @@ func TestQueueDeclarationWithDLX(t *testing.T) {
 	})
 
 	assert.NilError(t, err)
-	assert.Equal(t, queue.Name(), fmt.Sprintf("broker.%s.%s", namespace, triggerName))
+	assert.Equal(t, queue.Name(), fmt.Sprintf("trigger.%s.%s", namespace, triggerName))
 }
 
 func TestIncompatibleQueueDeclarationFailure(t *testing.T) {
