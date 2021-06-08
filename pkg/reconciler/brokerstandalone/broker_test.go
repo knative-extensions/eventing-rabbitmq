@@ -1080,7 +1080,7 @@ func createDispatcherDeployment() *appsv1.Deployment {
 		Broker:             broker,
 		Image:              dispatcherImage,
 		RabbitMQSecretName: rabbitBrokerSecretName,
-		QueueName:          "test-namespace.test-broker.dlq",
+		QueueName:          "broker.test-namespace.test-broker.dlq",
 		BrokerUrlSecretKey: "brokerURL",
 		BrokerIngressURL:   brokerAddress,
 		Subscriber:         deadLetterSinkAddress,

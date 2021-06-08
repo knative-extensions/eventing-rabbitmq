@@ -80,7 +80,7 @@ const (
 	triggerUID  = "test-trigger-uid"
 
 	rabbitURL = "amqp://localhost:5672/%2f"
-	queueName = "test-namespace.test-trigger"
+	queueName = "trigger.test-namespace.test-trigger"
 
 	dispatcherImage = "dispatcherimage"
 

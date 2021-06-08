@@ -30,8 +30,9 @@ import (
 )
 
 const (
-	brokerName = "testbroker"
-	namespace  = "foobar"
+	brokerName  = "testbroker"
+	triggerName = "testtrigger"
+	namespace   = "foobar"
 )
 
 func TestExchangeName(t *testing.T) {
@@ -43,11 +44,11 @@ func TestExchangeName(t *testing.T) {
 	}{{
 		name:      brokerName,
 		namespace: namespace,
-		want:      "foobar.testbroker",
+		want:      "broker.foobar.testbroker",
 	}, {
 		name:      brokerName,
 		namespace: namespace,
-		want:      "foobar.testbroker.dlx",
+		want:      "broker.foobar.testbroker.dlx",
 		dlx:       true,
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -57,6 +58,14 @@ func TestExchangeName(t *testing.T) {
 				t.Errorf("Unexpected name for %s/%s DLX: %t: want:\n%+s\ngot:\n%+s", tt.namespace, tt.name, tt.dlx, tt.want, got)
 			}
 		})
+	}
+}
+
+func TestTriggerDLXExchangeName(t *testing.T) {
+	want := "trigger.foobar.testtrigger.dlx"
+	got := resources.TriggerDLXExchangeName(&eventingv1.Trigger{ObjectMeta: metav1.ObjectMeta{Namespace: namespace, Name: triggerName}})
+	if want != got {
+		t.Errorf("Unexpected name for %s/%s trigger DLX: want:\n%+s\ngot:\n%+s", namespace, triggerName, want, got)
 	}
 }
 func TestExchangeDeclaration(t *testing.T) {
@@ -83,7 +92,7 @@ func TestExchangeDeclaration(t *testing.T) {
 	assert.Equal(t, createdExchange["auto_delete"], false)
 	assert.Equal(t, createdExchange["internal"], false)
 	assert.Equal(t, createdExchange["type"], "headers")
-	assert.Equal(t, createdExchange["name"], fmt.Sprintf("%s.%s", namespace, brokerName))
+	assert.Equal(t, createdExchange["name"], fmt.Sprintf("broker.%s.%s", namespace, brokerName))
 }
 
 func TestIncompatibleExchangeDeclarationFailure(t *testing.T) {
@@ -91,7 +100,7 @@ func TestIncompatibleExchangeDeclarationFailure(t *testing.T) {
 	rabbitContainer := testrabbit.AutoStartRabbit(t, ctx)
 	defer testrabbit.TerminateContainer(t, ctx, rabbitContainer)
 	brokerName := "x-change"
-	exchangeName := fmt.Sprintf("%s.%s", namespace, brokerName)
+	exchangeName := fmt.Sprintf("broker.%s.%s", namespace, brokerName)
 	testrabbit.CreateExchange(t, ctx, rabbitContainer, exchangeName, "direct")
 
 	_, err := resources.DeclareExchange(dialer.RealDialer, &resources.ExchangeArgs{
@@ -112,7 +121,7 @@ func TestExchangeDeletion(t *testing.T) {
 	rabbitContainer := testrabbit.AutoStartRabbit(t, ctx)
 	defer testrabbit.TerminateContainer(t, ctx, rabbitContainer)
 	brokerName := "x-change"
-	exchangeName := fmt.Sprintf("%s.%s", namespace, brokerName)
+	exchangeName := fmt.Sprintf("broker.%s.%s", namespace, brokerName)
 	testrabbit.CreateExchange(t, ctx, rabbitContainer, exchangeName, "headers")
 
 	err := resources.DeleteExchange(&resources.ExchangeArgs{

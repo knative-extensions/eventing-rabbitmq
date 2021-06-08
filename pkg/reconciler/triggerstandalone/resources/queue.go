@@ -60,13 +60,19 @@ func QueueLabels(b *eventingv1.Broker, t *eventingv1.Trigger) map[string]string 
 func CreateBrokerDeadLetterQueueName(b *eventingv1.Broker) string {
 	// TODO(vaikas): https://github.com/knative-sandbox/eventing-rabbitmq/issues/61
 	// return fmt.Sprintf("%s/%s/DLQ", b.Namespace, b.Name)
-	return fmt.Sprintf("%s.%s.dlq", b.Namespace, b.Name)
+	return fmt.Sprintf("broker.%s.%s.dlq", b.Namespace, b.Name)
 }
 
 func CreateTriggerQueueName(t *eventingv1.Trigger) string {
 	// TODO(vaikas): https://github.com/knative-sandbox/eventing-rabbitmq/issues/61
 	// return fmt.Sprintf("%s/%s", t.Namespace, t.Name)
-	return fmt.Sprintf("%s.%s", t.Namespace, t.Name)
+	return fmt.Sprintf("trigger.%s.%s", t.Namespace, t.Name)
+}
+
+func CreateTriggerDeadLetterQueueName(t *eventingv1.Trigger) string {
+	// TODO(vaikas): https://github.com/knative-sandbox/eventing-rabbitmq/issues/61
+	// return fmt.Sprintf("%s/%s", t.Namespace, t.Name)
+	return fmt.Sprintf("trigger.%s.%s.dlq", t.Namespace, t.Name)
 }
 
 // DeclareQueue declares the Trigger's Queue.

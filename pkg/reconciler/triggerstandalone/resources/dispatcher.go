@@ -49,15 +49,22 @@ type DispatcherArgs struct {
 	BrokerUrlSecretKey string
 	BrokerIngressURL   *apis.URL
 	Subscriber         *apis.URL
+	DLX                bool
 }
 
 // MakeDispatcherDeployment creates the in-memory representation of the Broker's Dispatcher Deployment.
 func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 	one := int32(1)
+	var name string
+	if args.DLX {
+		name = fmt.Sprintf("%s-dlx-dispatcher", args.Trigger.Name)
+	} else {
+		name = fmt.Sprintf("%s-dispatcher", args.Trigger.Name)
+	}
 	d := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: args.Trigger.Namespace,
-			Name:      fmt.Sprintf("%s-dispatcher", args.Trigger.Name),
+			Name:      name,
 			OwnerReferences: []metav1.OwnerReference{
 				*kmeta.NewControllerRef(args.Trigger),
 			},

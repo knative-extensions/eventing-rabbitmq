@@ -239,3 +239,96 @@ func TestMakeDispatcherDeploymentWithDelivery(t *testing.T) {
 		t.Error("unexpected diff (-want, +got) = ", diff)
 	}
 }
+
+func TestMakeDLXDispatcherDeployment(t *testing.T) {
+	var TrueValue = true
+	ingressURL := apis.HTTP("broker.example.com")
+	sURL := apis.HTTP("function.example.com")
+	trigger := &eventingv1.Trigger{
+		ObjectMeta: metav1.ObjectMeta{Name: triggerName, Namespace: ns},
+		Spec:       eventingv1.TriggerSpec{Broker: brokerName},
+	}
+	args := &DispatcherArgs{
+		Trigger:            trigger,
+		Image:              image,
+		RabbitMQHost:       rabbitHost,
+		RabbitMQSecretName: secretName,
+		QueueName:          queueName,
+		BrokerUrlSecretKey: brokerURLKey,
+		BrokerIngressURL:   ingressURL,
+		Subscriber:         sURL,
+		DLX:                true,
+	}
+
+	got := MakeDispatcherDeployment(args)
+	one := int32(1)
+	want := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: args.Trigger.Namespace,
+			Name:      "testtrigger-dlx-dispatcher",
+			OwnerReferences: []metav1.OwnerReference{{
+				APIVersion:         "eventing.knative.dev/v1",
+				Kind:               "Trigger",
+				Name:               triggerName,
+				Controller:         &TrueValue,
+				BlockOwnerDeletion: &TrueValue,
+			}},
+			Labels: map[string]string{
+				"eventing.knative.dev/broker":     brokerName,
+				"eventing.knative.dev/brokerRole": "dispatcher",
+			},
+		},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: &one,
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"eventing.knative.dev/broker":     brokerName,
+					"eventing.knative.dev/brokerRole": "dispatcher",
+				},
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"eventing.knative.dev/broker":     brokerName,
+						"eventing.knative.dev/brokerRole": "dispatcher",
+					},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{
+						Name:  "dispatcher",
+						Image: image,
+						Env: []corev1.EnvVar{{
+							Name:  system.NamespaceEnvKey,
+							Value: system.Namespace(),
+						}, {
+							Name: "RABBIT_URL",
+							ValueFrom: &corev1.EnvVarSource{
+								SecretKeyRef: &corev1.SecretKeySelector{
+									LocalObjectReference: corev1.LocalObjectReference{
+										Name: secretName,
+									},
+									Key: brokerURLKey,
+								},
+							},
+						}, {
+							Name:  "QUEUE_NAME",
+							Value: queueName,
+						}, {
+							Name:  "SUBSCRIBER",
+							Value: subscriberURL,
+						}, {
+							Name:  "BROKER_INGRESS_URL",
+							Value: brokerIngressURL,
+						}, {
+							Name:  "REQUEUE",
+							Value: "false",
+						}},
+					}},
+				},
+			},
+		},
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Error("unexpected diff (-want, +got) = ", diff)
+	}
+}

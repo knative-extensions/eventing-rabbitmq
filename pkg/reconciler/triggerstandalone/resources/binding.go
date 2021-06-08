@@ -140,7 +140,8 @@ func MakeBinding(transport http.RoundTripper, args *BindingArgs) error {
 	return nil
 }
 
-// MakeDLQBinding declares the Binding from the Broker's DLX to the DLQ dispatchers Queue.
+// MakeDLQBinding declares the Binding from the Broker's DLX to the DLQ dispatchers Queue or
+// from the Triggers DLX to the Triggers DLQ dispatchers queue.
 func MakeDLQBinding(transport http.RoundTripper, args *BindingArgs) error {
 	uri, err := url.Parse(args.BrokerURL)
 	if err != nil {
@@ -184,10 +185,17 @@ func MakeDLQBinding(transport http.RoundTripper, args *BindingArgs) error {
 		}
 	}
 
+	var source string
+	if args.Trigger != nil {
+		source = brokerresources.TriggerDLXExchangeName(args.Trigger)
+	} else {
+		source = brokerresources.ExchangeName(args.Broker, true)
+	}
+
 	if existing == nil || !reflect.DeepEqual(existing.Arguments, arguments) {
 		response, err := c.DeclareBinding("/", rabbithole.BindingInfo{
 			Vhost:           "/",
-			Source:          brokerresources.ExchangeName(args.Broker, true),
+			Source:          source,
 			Destination:     args.QueueName,
 			DestinationType: "queue",
 			RoutingKey:      args.RoutingKey,
