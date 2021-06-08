@@ -49,7 +49,7 @@ func TestQueueDeclaration(t *testing.T) {
 	})
 
 	assert.NilError(t, err)
-	assert.Equal(t, queue.Name(), fmt.Sprintf("%s.%s", namespace, triggerName))
+	assert.Equal(t, queue.Name(), fmt.Sprintf("trigger.%s.%s", namespace, triggerName))
 }
 
 func TestQueueDeclarationWithDLX(t *testing.T) {
@@ -69,14 +69,14 @@ func TestQueueDeclarationWithDLX(t *testing.T) {
 	})
 
 	assert.NilError(t, err)
-	assert.Equal(t, queue.Name(), fmt.Sprintf("%s.%s", namespace, triggerName))
+	assert.Equal(t, queue.Name(), fmt.Sprintf("broker.%s.%s", namespace, triggerName))
 }
 
 func TestIncompatibleQueueDeclarationFailure(t *testing.T) {
 	ctx := context.Background()
 	rabbitContainer := testrabbit.AutoStartRabbit(t, ctx)
 	defer testrabbit.TerminateContainer(t, ctx, rabbitContainer)
-	queueName := fmt.Sprintf("%s.%s", namespace, triggerName)
+	queueName := fmt.Sprintf("trigger.%s.%s", namespace, triggerName)
 	testrabbit.CreateNonDurableQueue(t, ctx, rabbitContainer, queueName)
 
 	_, err := resources.DeclareQueue(dialer.RealDialer, &resources.QueueArgs{
@@ -96,7 +96,7 @@ func TestQueueDeletion(t *testing.T) {
 	ctx := context.Background()
 	rabbitContainer := testrabbit.AutoStartRabbit(t, ctx)
 	defer testrabbit.TerminateContainer(t, ctx, rabbitContainer)
-	queueName := fmt.Sprintf("%s.%s", namespace, triggerName)
+	queueName := fmt.Sprintf("trigger.%s.%s", namespace, triggerName)
 	testrabbit.CreateDurableQueue(t, ctx, rabbitContainer, queueName)
 
 	err := resources.DeleteQueue(dialer.RealDialer, &resources.QueueArgs{

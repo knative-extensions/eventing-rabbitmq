@@ -151,8 +151,8 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		return err
 	}
 
-	// Note that we always create DLX with this queue because you can't
-	// change them later.
+	// By default use the Broker DLX, though it might get overridden below.
+	dlxExchange := brokerresources.ExchangeName(broker, true)
 	// If there's DeadLetterSink, we need to create a DLX that's specific for this Trigger as well
 	// as a Queue for it, and Dispatcher that pulls from that queue.
 	if t.Spec.Delivery != nil && t.Spec.Delivery.DeadLetterSink != nil {
@@ -163,12 +163,15 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		}
 		_, err := brokerresources.DeclareExchange(r.dialerFunc, args)
 		if err != nil {
-			t.Status.MarkDependencyFailed("ExchangeFailure", fmt.Sprintf("Failed to reconcile DLX exchange %q: %s", brokerresources.TriggerDLXExchangeName(t), err))
+			t.Status.MarkDependencyFailed("ExchangeFailure", fmt.Sprintf("Failed to reconcile trigger DLX exchange %q: %s", brokerresources.TriggerDLXExchangeName(t), err))
 			return err
 		}
+		// Use the Trigger specific exchange for the trigger queue (when created below).
+		dlxExchange = brokerresources.TriggerDLXExchangeName(t)
+
 		dlqArgs := &resources.QueueArgs{
-			QueueName:   resources.CreateBrokerDeadLetterQueueName(broker),
-			RabbitmqURL: args.RabbitMQURL.String(),
+			QueueName:   resources.CreateTriggerDeadLetterQueueName(t),
+			RabbitmqURL: rabbitmqURL,
 		}
 
 		_, err = resources.DeclareQueue(r.dialerFunc, dlqArgs)
@@ -210,7 +213,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 	queueArgs := &resources.QueueArgs{
 		QueueName:   queueName,
 		RabbitmqURL: rabbitmqURL,
-		DLX:         brokerresources.ExchangeName(broker, true),
+		DLX:         dlxExchange,
 	}
 
 	queue, err := resources.DeclareQueue(r.dialerFunc, queueArgs)
