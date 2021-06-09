@@ -27,7 +27,6 @@ import (
 	brokerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/brokerstandalone/resources"
 
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
-	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 )
 
@@ -50,21 +49,6 @@ type BindingArgs struct {
 	RabbitmqManagementPort int
 	AdminURL               string
 	QueueName              string // only for DLQ
-}
-
-// BindingLabels generates the labels present on the Queue linking the Broker / Trigger to the
-// Binding.
-func BindingLabels(b *eventingv1.Broker, t *eventingv1.Trigger) map[string]string {
-	if t == nil {
-		return map[string]string{
-			eventing.BrokerLabelKey: b.Name,
-		}
-	} else {
-		return map[string]string{
-			eventing.BrokerLabelKey: b.Name,
-			TriggerLabelKey:         t.Name,
-		}
-	}
 }
 
 // MakeBinding declares the Binding from the Broker's Exchange to the Trigger's Queue.

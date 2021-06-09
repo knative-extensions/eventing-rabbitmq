@@ -41,21 +41,6 @@ type ExchangeArgs struct {
 	DLX bool
 }
 
-// ExchangeLabels generates the labels present on the Exchange linking the Broker to the
-// Exchange.
-func ExchangeLabels(b *eventingv1.Broker, t *eventingv1.Trigger) map[string]string {
-	if t != nil {
-		return map[string]string{
-			"eventing.knative.dev/broker":  b.Name,
-			"eventing.knative.dev/trigger": t.Name,
-		}
-	} else {
-		return map[string]string{
-			"eventing.knative.dev/broker": b.Name,
-		}
-	}
-}
-
 // DeclareExchange declares the Exchange for a Broker.
 func DeclareExchange(dialerFunc dialer.DialerFunc, args *ExchangeArgs) (*corev1.Secret, error) {
 	conn, err := dialerFunc(args.RabbitMQURL.String())
@@ -76,7 +61,6 @@ func DeclareExchange(dialerFunc dialer.DialerFunc, args *ExchangeArgs) (*corev1.
 	} else {
 		exchangeName = ExchangeName(args.Broker, args.DLX)
 	}
-	fmt.Printf("DECLARING EXCHANGE WITH NAME: %s", exchangeName)
 	return MakeSecret(args), channel.ExchangeDeclare(
 		exchangeName,
 		"headers", // kind
@@ -133,7 +117,7 @@ func ExchangeName(b *eventingv1.Broker, DLX bool) string {
 	return exchangeBase
 }
 
-// TriggerDLXExchangeName constructs a name given a Broker.
+// TriggerDLXExchangeName constructs a name given a Trigger.
 // Format is trigger.Namespace.Name.dlx
 func TriggerDLXExchangeName(t *eventingv1.Trigger) string {
 	exchangeBase := fmt.Sprintf("trigger.%s.%s.dlx", t.Namespace, t.Name)

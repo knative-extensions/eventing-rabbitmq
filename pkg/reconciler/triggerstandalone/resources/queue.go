@@ -22,7 +22,6 @@ import (
 	"github.com/streadway/amqp"
 	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/io"
-	"knative.dev/eventing/pkg/apis/eventing"
 
 	"github.com/NeowayLabs/wabbit"
 
@@ -40,21 +39,6 @@ type QueueArgs struct {
 	Trigger *eventingv1.Trigger
 	// If non-empty, wire the queue into this DLX.
 	DLX string
-}
-
-// QueueLabels generates the labels present on the Queue linking the Broker / Trigger to the
-// Queue.
-func QueueLabels(b *eventingv1.Broker, t *eventingv1.Trigger) map[string]string {
-	if t == nil {
-		return map[string]string{
-			eventing.BrokerLabelKey: b.Name,
-		}
-	} else {
-		return map[string]string{
-			eventing.BrokerLabelKey: b.Name,
-			TriggerLabelKey:         t.Name,
-		}
-	}
 }
 
 func CreateBrokerDeadLetterQueueName(b *eventingv1.Broker) string {
@@ -100,7 +84,6 @@ func DeclareQueue(dialerFunc dialer.DialerFunc, args *QueueArgs) (wabbit.Queue, 
 		rabbitArgs["x-dead-letter-exchange"] = interface{}(args.DLX)
 		options["args"] = amqp.Table(rabbitArgs)
 	}
-
 	queue, err := channel.QueueDeclare(
 		args.QueueName,
 		options,
