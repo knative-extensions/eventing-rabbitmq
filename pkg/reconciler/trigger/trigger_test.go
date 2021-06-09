@@ -39,8 +39,8 @@ import (
 	clientgotesting "k8s.io/client-go/testing"
 	rabbitduck "knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
 	fakerabbitclient "knative.dev/eventing-rabbitmq/pkg/client/injection/rabbitmq.com/client/fake"
+	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker"
-	brokerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
 	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
@@ -74,6 +74,7 @@ const (
 	testNS      = "test-namespace"
 	brokerClass = "RabbitMQBroker"
 	brokerName  = "test-broker"
+	brokerUID   = "broker-test-uid"
 
 	rabbitSecretName   = "test-broker-broker-rabbit"
 	rabbitMQBrokerName = "rabbitbrokerhere"
@@ -82,7 +83,7 @@ const (
 	triggerUID  = "test-trigger-uid"
 
 	rabbitURL = "amqp://localhost:5672/%2f"
-	queueName = "trigger.test-namespace.test-trigger"
+	queueName = "t.test-namespace.test-trigger.test-trigger-uid"
 
 	dispatcherImage = "dispatcherimage"
 
@@ -170,6 +171,7 @@ func TestReconcile(t *testing.T) {
 					broker.WithBrokerConfig(config()),
 					broker.WithInitBrokerConditions),
 				NewTrigger(triggerName, testNS, brokerName,
+					WithTriggerUID(triggerUID),
 					WithInitTriggerConditions,
 					WithTriggerDeleted,
 					WithTriggerSubscriberURI(subscriberURI)),
@@ -179,11 +181,13 @@ func TestReconcile(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewTrigger(triggerName, testNS, brokerName,
+					WithTriggerUID(triggerUID),
 					WithInitTriggerConditions,
 					WithTriggerSubscriberURI(subscriberURI)),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewTrigger(triggerName, testNS, brokerName,
+					WithTriggerUID(triggerUID),
 					WithTriggerSubscriberURI(subscriberURI),
 					WithInitTriggerConditions,
 					WithTriggerBrokerFailed("BrokerDoesNotExist", `Broker "test-broker" does not exist`)),
@@ -197,6 +201,7 @@ func TestReconcile(t *testing.T) {
 					broker.WithBrokerConfig(config()),
 					broker.WithInitBrokerConditions),
 				NewTrigger(triggerName, testNS, brokerName,
+					WithTriggerUID(triggerUID),
 					WithInitTriggerConditions,
 					WithTriggerSubscriberURI(subscriberURI)),
 			},
@@ -208,6 +213,7 @@ func TestReconcile(t *testing.T) {
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config())),
 				NewTrigger(triggerName, testNS, brokerName,
+					WithTriggerUID(triggerUID),
 					WithInitTriggerConditions,
 					WithTriggerSubscriberURI(subscriberURI),
 					WithTriggerBrokerNotConfigured()),
@@ -222,6 +228,7 @@ func TestReconcile(t *testing.T) {
 					broker.WithInitBrokerConditions,
 					broker.WithExchangeFailed("noexchange", "NoExchange")),
 				NewTrigger(triggerName, testNS, brokerName,
+					WithTriggerUID(triggerUID),
 					WithInitTriggerConditions,
 					WithTriggerSubscriberURI(subscriberURI),
 					WithTriggerBrokerFailed("noexchange", "NoExchange")),
@@ -766,6 +773,7 @@ func makeReadyPingSource() *sourcesv1beta2.PingSource {
 // Create Ready Broker with proper annotations.
 func ReadyBroker() *eventingv1.Broker {
 	return broker.NewBroker(brokerName, testNS,
+		broker.WithBrokerUID(brokerUID),
 		broker.WithBrokerClass(brokerClass),
 		broker.WithInitBrokerConditions,
 		broker.WithBrokerConfig(config()),
@@ -780,6 +788,7 @@ func ReadyBroker() *eventingv1.Broker {
 // Create Ready Broker with proper annotations using the RabbitmqCluster
 func ReadyBrokerWithSecret() *eventingv1.Broker {
 	return broker.NewBroker(brokerName, testNS,
+		broker.WithBrokerUID(brokerUID),
 		broker.WithBrokerClass(brokerClass),
 		broker.WithInitBrokerConditions,
 		broker.WithBrokerConfig(configWithSecret()),
@@ -867,7 +876,7 @@ func triggerWithQueueNotReady() *eventingv1.Trigger {
 		WithTriggerSubscriberURI(subscriberURI),
 		WithTriggerBrokerReady(),
 		WithTriggerDependencyReady(),
-		WithTriggerDependencyFailed("QueueFailure", `Queue "trigger.test-namespace.test-trigger" is not ready`))
+		WithTriggerDependencyFailed("QueueFailure", `Queue "t.test-namespace.test-trigger.test-trigger-uid" is not ready`))
 
 	t.Spec.Filter = &eventingv1.TriggerFilter{
 		Attributes: eventingv1.TriggerFilterAttributes(map[string]string{"type": "dev.knative.sources.ping"}),
@@ -882,7 +891,7 @@ func triggerWithBindingNotReady() *eventingv1.Trigger {
 		WithTriggerSubscriberURI(subscriberURI),
 		WithTriggerBrokerReady(),
 		WithTriggerDependencyReady(),
-		WithTriggerDependencyFailed("BindingFailure", `Binding "trigger.test-namespace.test-trigger" is not ready`))
+		WithTriggerDependencyFailed("BindingFailure", `Binding "t.test-namespace.test-trigger.test-trigger-uid" is not ready`))
 
 	t.Spec.Filter = &eventingv1.TriggerFilter{
 		Attributes: eventingv1.TriggerFilterAttributes(map[string]string{"type": "dev.knative.sources.ping"}),
@@ -1000,7 +1009,7 @@ func createQueue() *rabbitv1beta1.Queue {
 				Name: rabbitMQBrokerName,
 			},
 			Arguments: &runtime.RawExtension{
-				Raw: []byte(`{"x-dead-letter-exchange":"` + brokerresources.ExchangeName(b, true) + `"}`),
+				Raw: []byte(`{"x-dead-letter-exchange":"` + naming.BrokerExchangeName(b, true) + `"}`),
 			},
 		},
 	}
@@ -1019,7 +1028,7 @@ func createReadyQueue() *rabbitv1beta1.Queue {
 }
 
 func createBinding(withFilter bool) *rabbitv1beta1.Binding {
-	bindingName := fmt.Sprintf("trigger.%s.%s", testNS, triggerName)
+	bindingName := fmt.Sprintf("t.%s.%s.test-trigger-uid", testNS, triggerName)
 
 	labels := map[string]string{
 		eventing.BrokerLabelKey:   brokerName,
@@ -1039,7 +1048,7 @@ func createBinding(withFilter bool) *rabbitv1beta1.Binding {
 			Vhost:           "/",
 			DestinationType: "queue",
 			Destination:     bindingName,
-			Source:          "broker.test-namespace.test-broker",
+			Source:          "b.test-namespace.test-broker.broker-test-uid",
 			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
 				Name: rabbitMQBrokerName,
 			},

@@ -18,12 +18,11 @@ package resources
 
 import (
 	"context"
-	"fmt"
 
 	rabbitv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	brokerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
+	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
 	"knative.dev/eventing/pkg/apis/eventing"
 	"knative.dev/pkg/kmeta"
 
@@ -37,10 +36,10 @@ func NewQueue(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger) 
 	var queueName string
 	if t != nil {
 		or = *kmeta.NewControllerRef(t)
-		queueName = CreateTriggerQueueName(t)
+		queueName = naming.CreateTriggerQueueName(t)
 	} else {
 		or = *kmeta.NewControllerRef(b)
-		queueName = CreateBrokerDeadLetterQueueName(b)
+		queueName = naming.CreateBrokerDeadLetterQueueName(b)
 	}
 	q := &rabbitv1beta1.Queue{
 		ObjectMeta: metav1.ObjectMeta{
@@ -67,12 +66,12 @@ func NewQueue(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger) 
 		// If the Trigger has DeadLetterSink specified, we need to point to Queues DLX instead of the broker
 		if t.Spec.Delivery != nil && t.Spec.Delivery.DeadLetterSink != nil {
 			q.Spec.Arguments = &runtime.RawExtension{
-				Raw: []byte(`{"x-dead-letter-exchange":"` + brokerresources.TriggerDLXExchangeName(t) + `"}`),
+				Raw: []byte(`{"x-dead-letter-exchange":"` + naming.TriggerDLXExchangeName(t) + `"}`),
 			}
 
 		} else {
 			q.Spec.Arguments = &runtime.RawExtension{
-				Raw: []byte(`{"x-dead-letter-exchange":"` + brokerresources.ExchangeName(b, true) + `"}`),
+				Raw: []byte(`{"x-dead-letter-exchange":"` + naming.BrokerExchangeName(b, true) + `"}`),
 			}
 		}
 	}
@@ -80,7 +79,7 @@ func NewQueue(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger) 
 }
 
 func NewTriggerDLQ(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger) *rabbitv1beta1.Queue {
-	queueName := CreateTriggerDeadLetterQueueName(t)
+	queueName := naming.CreateTriggerDeadLetterQueueName(t)
 	return &rabbitv1beta1.Queue{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:       t.Namespace,
@@ -117,22 +116,4 @@ func QueueLabels(b *eventingv1.Broker, t *eventingv1.Trigger) map[string]string 
 			TriggerLabelKey:         t.Name,
 		}
 	}
-}
-
-func CreateBrokerDeadLetterQueueName(b *eventingv1.Broker) string {
-	// TODO(vaikas): https://github.com/knative-sandbox/eventing-rabbitmq/issues/61
-	// return fmt.Sprintf("%s/%s/DLQ", b.Namespace, b.Name)
-	return fmt.Sprintf("broker.%s.%s.dlq", b.Namespace, b.Name)
-}
-
-func CreateTriggerQueueName(t *eventingv1.Trigger) string {
-	// TODO(vaikas): https://github.com/knative-sandbox/eventing-rabbitmq/issues/61
-	// return fmt.Sprintf("%s/%s", t.Namespace, t.Name)
-	return fmt.Sprintf("trigger.%s.%s", t.Namespace, t.Name)
-}
-
-func CreateTriggerDeadLetterQueueName(t *eventingv1.Trigger) string {
-	// TODO(vaikas): https://github.com/knative-sandbox/eventing-rabbitmq/issues/61
-	// return fmt.Sprintf("%s/%s", t.Namespace, t.Name)
-	return fmt.Sprintf("trigger.%s.%s.dlq", t.Namespace, t.Name)
 }

@@ -37,6 +37,7 @@ import (
 	"knative.dev/pkg/network"
 
 	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
+	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/brokerstandalone/resources"
 	triggerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/triggerstandalone/resources"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
@@ -169,7 +170,7 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, b *eventingv1.Broker) pkg
 		logging.FromContext(ctx).Errorw("Problem deleting DLX exchange", zap.Error(err))
 	}
 	queueArgs := &triggerresources.QueueArgs{
-		QueueName:   triggerresources.CreateBrokerDeadLetterQueueName(b),
+		QueueName:   naming.CreateBrokerDeadLetterQueueName(b),
 		RabbitmqURL: args.RabbitMQURL.String(),
 	}
 	err = triggerresources.DeleteQueue(r.dialerFunc, queueArgs)
@@ -276,7 +277,7 @@ func (r *Reconciler) reconcileDLXDispatcherDeployment(ctx context.Context, b *ev
 			Image:  r.dispatcherImage,
 			//ServiceAccountName string
 			RabbitMQSecretName: resources.SecretName(b.Name),
-			QueueName:          triggerresources.CreateBrokerDeadLetterQueueName(b),
+			QueueName:          naming.CreateBrokerDeadLetterQueueName(b),
 			BrokerUrlSecretKey: resources.BrokerURLSecretKey,
 			Subscriber:         sub,
 			BrokerIngressURL:   b.Status.Address.URL,
@@ -307,7 +308,7 @@ func (r *Reconciler) reconcileDLQBinding(ctx context.Context, b *eventingv1.Brok
 		RoutingKey: "",
 		BrokerURL:  args.RabbitMQURL.String(),
 		AdminURL:   r.adminURL,
-		QueueName:  triggerresources.CreateBrokerDeadLetterQueueName(b),
+		QueueName:  naming.CreateBrokerDeadLetterQueueName(b),
 	})
 	if err != nil {
 		logging.FromContext(ctx).Error("Problem declaring Broker DLQ Binding", zap.Error(err))
@@ -339,7 +340,7 @@ func (r *Reconciler) reconcileUsingLibraries(ctx context.Context, b *eventingv1.
 	}
 
 	queueArgs := &triggerresources.QueueArgs{
-		QueueName:   triggerresources.CreateBrokerDeadLetterQueueName(b),
+		QueueName:   naming.CreateBrokerDeadLetterQueueName(b),
 		RabbitmqURL: args.RabbitMQURL.String(),
 	}
 	_, err = triggerresources.DeclareQueue(r.dialerFunc, queueArgs)

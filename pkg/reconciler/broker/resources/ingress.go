@@ -24,6 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
 	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	"knative.dev/pkg/kmeta"
@@ -92,7 +93,7 @@ func MakeIngressDeployment(args *IngressArgs) *appsv1.Deployment {
 							},
 						}, {
 							Name:  "EXCHANGE_NAME",
-							Value: ExchangeName(args.Broker, false),
+							Value: naming.BrokerExchangeName(args.Broker, false),
 						}},
 						Ports: []corev1.ContainerPort{{
 							ContainerPort: 8080,

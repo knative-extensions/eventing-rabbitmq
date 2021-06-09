@@ -38,6 +38,7 @@ import (
 	"github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	rabbitclientset "github.com/rabbitmq/messaging-topology-operator/pkg/generated/clientset/versioned"
 	rabbitlisters "github.com/rabbitmq/messaging-topology-operator/pkg/generated/listers/rabbitmq.com/v1beta1"
+	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
 	triggerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
@@ -239,7 +240,7 @@ func (r *Reconciler) reconcileDLXDispatcherDeployment(ctx context.Context, b *ev
 			Image:  r.dispatcherImage,
 			//ServiceAccountName string
 			RabbitMQSecretName: resources.SecretName(b.Name),
-			QueueName:          triggerresources.CreateBrokerDeadLetterQueueName(b),
+			QueueName:          naming.CreateBrokerDeadLetterQueueName(b),
 			BrokerUrlSecretKey: resources.BrokerURLSecretKey,
 			Subscriber:         sub,
 			BrokerIngressURL:   b.Status.Address.URL,
@@ -261,7 +262,7 @@ func (r *Reconciler) reconcileDLXDispatcherDeployment(ctx context.Context, b *ev
 
 func (r *Reconciler) reconcileExchange(ctx context.Context, args *resources.ExchangeArgs) (*v1beta1.Exchange, error) {
 	want := resources.NewExchange(ctx, args)
-	current, err := r.exchangeLister.Exchanges(args.Broker.Namespace).Get(resources.ExchangeName(args.Broker, args.DLX))
+	current, err := r.exchangeLister.Exchanges(args.Broker.Namespace).Get(naming.BrokerExchangeName(args.Broker, args.DLX))
 	if apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Debugw("Creating rabbitmq exchange", zap.String("exchange name", want.Name))
 		return r.rabbitClientSet.RabbitmqV1beta1().Exchanges(args.Broker.Namespace).Create(ctx, want, metav1.CreateOptions{})
@@ -277,7 +278,7 @@ func (r *Reconciler) reconcileExchange(ctx context.Context, args *resources.Exch
 }
 
 func (r *Reconciler) reconcileQueue(ctx context.Context, b *eventingv1.Broker) (*v1beta1.Queue, error) {
-	queueName := triggerresources.CreateBrokerDeadLetterQueueName(b)
+	queueName := naming.CreateBrokerDeadLetterQueueName(b)
 	want := triggerresources.NewQueue(ctx, b, nil)
 	current, err := r.queueLister.Queues(b.Namespace).Get(queueName)
 	if apierrs.IsNotFound(err) {
@@ -296,7 +297,7 @@ func (r *Reconciler) reconcileQueue(ctx context.Context, b *eventingv1.Broker) (
 
 func (r *Reconciler) reconcileBinding(ctx context.Context, b *eventingv1.Broker) (*v1beta1.Binding, error) {
 	// We can use the same name for queue / binding to keep things simpler
-	bindingName := triggerresources.CreateBrokerDeadLetterQueueName(b)
+	bindingName := naming.CreateBrokerDeadLetterQueueName(b)
 
 	want, err := triggerresources.NewBinding(ctx, b, nil)
 	if err != nil {
@@ -321,7 +322,7 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 	logging.FromContext(ctx).Info("Reconciling exchange")
 	exchange, err := r.reconcileExchange(ctx, args)
 	if err != nil {
-		MarkExchangeFailed(&b.Status, "ExchangeFailure", fmt.Sprintf("Failed to reconcile exchange %q: %s", resources.ExchangeName(args.Broker, false), err))
+		MarkExchangeFailed(&b.Status, "ExchangeFailure", fmt.Sprintf("Failed to reconcile exchange %q: %s", naming.BrokerExchangeName(args.Broker, false), err))
 		return err
 	}
 	if exchange != nil {
@@ -336,7 +337,7 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 	logging.FromContext(ctx).Info("Reconciling DLX exchange")
 	dlxExchange, err := r.reconcileExchange(ctx, args)
 	if err != nil {
-		MarkExchangeFailed(&b.Status, "ExchangeFailure", fmt.Sprintf("Failed to reconcile DLX exchange %q: %s", resources.ExchangeName(args.Broker, true), err))
+		MarkExchangeFailed(&b.Status, "ExchangeFailure", fmt.Sprintf("Failed to reconcile DLX exchange %q: %s", naming.BrokerExchangeName(args.Broker, true), err))
 		return err
 	}
 	if dlxExchange != nil {
@@ -351,7 +352,7 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 	logging.FromContext(ctx).Info("Reconciling queue")
 	queue, err := r.reconcileQueue(ctx, b)
 	if err != nil {
-		MarkDLXFailed(&b.Status, "QueueFailure", fmt.Sprintf("Failed to reconcile Dead Letter Queue %q : %s", triggerresources.CreateBrokerDeadLetterQueueName(b), err))
+		MarkDLXFailed(&b.Status, "QueueFailure", fmt.Sprintf("Failed to reconcile Dead Letter Queue %q : %s", naming.CreateBrokerDeadLetterQueueName(b), err))
 		return err
 	}
 	if queue != nil {
@@ -368,7 +369,7 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 	binding, err := r.reconcileBinding(ctx, b)
 	if err != nil {
 		// NB, binding has the same name as the queue.
-		MarkDeadLetterSinkFailed(&b.Status, "DLQ binding", fmt.Sprintf("Failed to reconcile DLQ binding %q : %s", triggerresources.CreateBrokerDeadLetterQueueName(b), err))
+		MarkDeadLetterSinkFailed(&b.Status, "DLQ binding", fmt.Sprintf("Failed to reconcile DLQ binding %q : %s", naming.CreateBrokerDeadLetterQueueName(b), err))
 		return err
 	}
 	if binding != nil {

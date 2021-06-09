@@ -24,7 +24,7 @@ import (
 	rabbitv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	brokerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
+	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
 	"knative.dev/pkg/kmeta"
 
 	"knative.dev/eventing/pkg/apis/eventing"
@@ -51,9 +51,9 @@ func NewBinding(ctx context.Context, broker *eventingv1.Broker, trigger *eventin
 	// that we're returning.
 	if trigger != nil {
 		or = *kmeta.NewControllerRef(trigger)
-		bindingName = CreateTriggerQueueName(trigger)
+		bindingName = naming.CreateTriggerQueueName(trigger)
 		arguments[BindingKey] = trigger.Name
-		sourceName = brokerresources.ExchangeName(broker, false)
+		sourceName = naming.BrokerExchangeName(broker, false)
 		if trigger.Spec.Filter != nil && trigger.Spec.Filter.Attributes != nil {
 			for key, val := range trigger.Spec.Filter.Attributes {
 				arguments[key] = val
@@ -61,9 +61,9 @@ func NewBinding(ctx context.Context, broker *eventingv1.Broker, trigger *eventin
 		}
 	} else {
 		or = *kmeta.NewControllerRef(broker)
-		bindingName = CreateBrokerDeadLetterQueueName(broker)
+		bindingName = naming.CreateBrokerDeadLetterQueueName(broker)
 		arguments[DLQBindingKey] = broker.Name
-		sourceName = brokerresources.ExchangeName(broker, true)
+		sourceName = naming.BrokerExchangeName(broker, true)
 	}
 
 	argumentsJson, err := json.Marshal(arguments)
@@ -107,8 +107,8 @@ func NewTriggerDLQBinding(ctx context.Context, broker *eventingv1.Broker, trigge
 		TriggerDLQBindingKey: trigger.Name,
 	}
 
-	bindingName := CreateTriggerDeadLetterQueueName(trigger)
-	sourceName := brokerresources.TriggerDLXExchangeName(trigger)
+	bindingName := naming.CreateTriggerDeadLetterQueueName(trigger)
+	sourceName := naming.TriggerDLXExchangeName(trigger)
 	argumentsJson, err := json.Marshal(arguments)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode DLQ binding arguments %+v : %s", argumentsJson, err)

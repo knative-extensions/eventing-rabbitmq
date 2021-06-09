@@ -17,8 +17,6 @@ limitations under the License.
 package resources
 
 import (
-	"fmt"
-
 	"github.com/streadway/amqp"
 	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/io"
@@ -39,24 +37,6 @@ type QueueArgs struct {
 	Trigger *eventingv1.Trigger
 	// If non-empty, wire the queue into this DLX.
 	DLX string
-}
-
-func CreateBrokerDeadLetterQueueName(b *eventingv1.Broker) string {
-	// TODO(vaikas): https://github.com/knative-sandbox/eventing-rabbitmq/issues/61
-	// return fmt.Sprintf("%s/%s/DLQ", b.Namespace, b.Name)
-	return fmt.Sprintf("broker.%s.%s.dlq", b.Namespace, b.Name)
-}
-
-func CreateTriggerQueueName(t *eventingv1.Trigger) string {
-	// TODO(vaikas): https://github.com/knative-sandbox/eventing-rabbitmq/issues/61
-	// return fmt.Sprintf("%s/%s", t.Namespace, t.Name)
-	return fmt.Sprintf("trigger.%s.%s", t.Namespace, t.Name)
-}
-
-func CreateTriggerDeadLetterQueueName(t *eventingv1.Trigger) string {
-	// TODO(vaikas): https://github.com/knative-sandbox/eventing-rabbitmq/issues/61
-	// return fmt.Sprintf("%s/%s", t.Namespace, t.Name)
-	return fmt.Sprintf("trigger.%s.%s.dlq", t.Namespace, t.Name)
 }
 
 // DeclareQueue declares the Trigger's Queue.

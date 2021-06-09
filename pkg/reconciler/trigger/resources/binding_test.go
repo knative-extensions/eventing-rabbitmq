@@ -34,6 +34,8 @@ import (
 
 const (
 	brokerName      = "testbroker"
+	brokerUID       = "broker-test-uid"
+	triggerUID      = "trigger-test-uid"
 	rabbitmqcluster = "testrabbitmqcluster"
 )
 
@@ -50,20 +52,21 @@ func TestNewBinding(t *testing.T) {
 		want: &rabbitv1beta1.Binding{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: namespace,
-				Name:      "broker.foobar.testbroker.dlq",
+				Name:      "b.foobar.testbroker.dlq.broker-test-uid",
 				OwnerReferences: []metav1.OwnerReference{
 					{
 						Kind:       "Broker",
 						APIVersion: "eventing.knative.dev/v1",
 						Name:       brokerName,
+						UID:        brokerUID,
 					},
 				},
 				Labels: map[string]string{"eventing.knative.dev/broker": "testbroker"},
 			},
 			Spec: rabbitv1beta1.BindingSpec{
 				Vhost:           "/",
-				Source:          "broker.foobar.testbroker.dlx",
-				Destination:     "broker.foobar.testbroker.dlq",
+				Source:          "b.foobar.testbroker.dlx.broker-test-uid",
+				Destination:     "b.foobar.testbroker.dlq.broker-test-uid",
 				DestinationType: "queue",
 				RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
 					Name: rabbitmqcluster,
@@ -78,7 +81,7 @@ func TestNewBinding(t *testing.T) {
 		want: &rabbitv1beta1.Binding{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: namespace,
-				Name:      "trigger.foobar.my-trigger",
+				Name:      "t.foobar.my-trigger.trigger-test-uid",
 				OwnerReferences: []metav1.OwnerReference{
 					{
 						Kind:       "Trigger",
@@ -93,8 +96,8 @@ func TestNewBinding(t *testing.T) {
 			},
 			Spec: rabbitv1beta1.BindingSpec{
 				Vhost:           "/",
-				Source:          "broker.foobar.testbroker",
-				Destination:     "trigger.foobar.my-trigger",
+				Source:          "b.foobar.testbroker.broker-test-uid",
+				Destination:     "t.foobar.my-trigger.trigger-test-uid",
 				DestinationType: "queue",
 				RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
 					Name: rabbitmqcluster,
@@ -109,7 +112,7 @@ func TestNewBinding(t *testing.T) {
 		want: &rabbitv1beta1.Binding{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: namespace,
-				Name:      "trigger.foobar.my-trigger",
+				Name:      "t.foobar.my-trigger.trigger-test-uid",
 				OwnerReferences: []metav1.OwnerReference{
 					{
 						Kind:       "Trigger",
@@ -124,8 +127,8 @@ func TestNewBinding(t *testing.T) {
 			},
 			Spec: rabbitv1beta1.BindingSpec{
 				Vhost:           "/",
-				Source:          "broker.foobar.testbroker",
-				Destination:     "trigger.foobar.my-trigger",
+				Source:          "b.foobar.testbroker.broker-test-uid",
+				Destination:     "t.foobar.my-trigger.trigger-test-uid",
 				DestinationType: "queue",
 				RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
 					Name: rabbitmqcluster,
@@ -154,12 +157,13 @@ func TestNewTriggerDLQBinding(t *testing.T) {
 	want := &rabbitv1beta1.Binding{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
-			Name:      "trigger.foobar.my-trigger.dlq",
+			Name:      "t.foobar.my-trigger.dlq.trigger-test-uid",
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					Kind:       "Trigger",
 					APIVersion: "eventing.knative.dev/v1",
 					Name:       triggerName,
+					UID:        triggerUID,
 				},
 			},
 			Labels: map[string]string{
@@ -169,8 +173,8 @@ func TestNewTriggerDLQBinding(t *testing.T) {
 		},
 		Spec: rabbitv1beta1.BindingSpec{
 			Vhost:           "/",
-			Source:          "trigger.foobar.my-trigger.dlx",
-			Destination:     "trigger.foobar.my-trigger.dlq",
+			Source:          "t.foobar.my-trigger.dlx.trigger-test-uid",
+			Destination:     "t.foobar.my-trigger.dlq.trigger-test-uid",
 			DestinationType: "queue",
 			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
 				Name: rabbitmqcluster,
@@ -193,6 +197,7 @@ func createBroker() *eventingv1.Broker {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
 			Name:      brokerName,
+			UID:       brokerUID,
 		},
 		Spec: eventingv1.BrokerSpec{
 			Config: &v1.KReference{
@@ -207,6 +212,7 @@ func createTrigger() *eventingv1.Trigger {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
 			Name:      triggerName,
+			UID:       triggerUID,
 		},
 		Spec: eventingv1.TriggerSpec{},
 	}
@@ -217,6 +223,7 @@ func createTriggerWithFilter() *eventingv1.Trigger {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
 			Name:      triggerName,
+			UID:       triggerUID,
 		},
 		Spec: eventingv1.TriggerSpec{
 			Filter: &eventingv1.TriggerFilter{
@@ -233,6 +240,7 @@ func createTriggerWithFilterAndDelivery() *eventingv1.Trigger {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
 			Name:      triggerName,
+			UID:       triggerUID,
 		},
 		Spec: eventingv1.TriggerSpec{
 			Filter: &eventingv1.TriggerFilter{

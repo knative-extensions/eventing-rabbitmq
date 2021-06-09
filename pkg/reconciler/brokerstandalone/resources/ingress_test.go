@@ -33,12 +33,13 @@ import (
 const (
 	deploymentName = "testbroker-broker-ingress"
 	serviceName    = "testbroker-broker-ingress"
+	brokerUID      = "broker-test-uid"
 )
 
 func TestMakeIngressDeployment(t *testing.T) {
 	var TrueValue = true
 	args := &IngressArgs{
-		Broker:             &eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: ns}},
+		Broker:             &eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: ns, UID: brokerUID}},
 		Image:              image,
 		RabbitMQSecretName: secretName,
 		BrokerUrlSecretKey: brokerURLKey,
@@ -53,6 +54,7 @@ func TestMakeIngressDeployment(t *testing.T) {
 				APIVersion:         "eventing.knative.dev/v1",
 				Kind:               "Broker",
 				Name:               brokerName,
+				UID:                brokerUID,
 				Controller:         &TrueValue,
 				BlockOwnerDeletion: &TrueValue,
 			}},
@@ -94,7 +96,7 @@ func TestMakeIngressDeployment(t *testing.T) {
 							},
 						}, {
 							Name:  "EXCHANGE_NAME",
-							Value: "broker." + ns + "." + brokerName,
+							Value: "b." + ns + "." + brokerName + "." + brokerUID,
 						}},
 						Ports: []corev1.ContainerPort{{
 							ContainerPort: 8080,

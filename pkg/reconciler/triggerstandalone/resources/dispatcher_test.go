@@ -33,7 +33,9 @@ import (
 
 const (
 	brokerName       = "testbroker"
+	brokerUID        = "broker-test-uid"
 	triggerName      = "testtrigger"
+	triggerUID       = "trigger-test-uid"
 	ns               = "testnamespace"
 	image            = "dispatcherimage"
 	secretName       = "testbroker-broker-rabbit"
@@ -49,7 +51,7 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 	ingressURL := apis.HTTP("broker.example.com")
 	sURL := apis.HTTP("function.example.com")
 	trigger := &eventingv1.Trigger{
-		ObjectMeta: metav1.ObjectMeta{Name: triggerName, Namespace: ns},
+		ObjectMeta: metav1.ObjectMeta{Name: triggerName, Namespace: ns, UID: triggerUID},
 		Spec:       eventingv1.TriggerSpec{Broker: brokerName},
 	}
 	args := &DispatcherArgs{
@@ -73,6 +75,7 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 				APIVersion:         "eventing.knative.dev/v1",
 				Kind:               "Trigger",
 				Name:               triggerName,
+				UID:                triggerUID,
 				Controller:         &TrueValue,
 				BlockOwnerDeletion: &TrueValue,
 			}},
@@ -143,7 +146,7 @@ func TestMakeDispatcherDeploymentWithDelivery(t *testing.T) {
 	ingressURL := apis.HTTP("broker.example.com")
 	sURL := apis.HTTP("function.example.com")
 	trigger := &eventingv1.Trigger{
-		ObjectMeta: metav1.ObjectMeta{Name: triggerName, Namespace: ns},
+		ObjectMeta: metav1.ObjectMeta{Name: triggerName, Namespace: ns, UID: triggerUID},
 		Spec:       eventingv1.TriggerSpec{Broker: brokerName},
 	}
 	args := &DispatcherArgs{
@@ -171,6 +174,7 @@ func TestMakeDispatcherDeploymentWithDelivery(t *testing.T) {
 				APIVersion:         "eventing.knative.dev/v1",
 				Kind:               "Trigger",
 				Name:               triggerName,
+				UID:                triggerUID,
 				Controller:         &TrueValue,
 				BlockOwnerDeletion: &TrueValue,
 			}},
@@ -245,7 +249,7 @@ func TestMakeDLXDispatcherDeployment(t *testing.T) {
 	ingressURL := apis.HTTP("broker.example.com")
 	sURL := apis.HTTP("function.example.com")
 	trigger := &eventingv1.Trigger{
-		ObjectMeta: metav1.ObjectMeta{Name: triggerName, Namespace: ns},
+		ObjectMeta: metav1.ObjectMeta{Name: triggerName, Namespace: ns, UID: triggerUID},
 		Spec:       eventingv1.TriggerSpec{Broker: brokerName},
 	}
 	args := &DispatcherArgs{
@@ -270,6 +274,7 @@ func TestMakeDLXDispatcherDeployment(t *testing.T) {
 				APIVersion:         "eventing.knative.dev/v1",
 				Kind:               "Trigger",
 				Name:               triggerName,
+				UID:                triggerUID,
 				Controller:         &TrueValue,
 				BlockOwnerDeletion: &TrueValue,
 			}},

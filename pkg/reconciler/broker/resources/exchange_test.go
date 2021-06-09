@@ -14,49 +14,12 @@ import (
 
 const (
 	brokerName      = "testbroker"
+	brokerUID       = "broker-test-uid"
 	triggerName     = "testtrigger"
+	triggerUID      = "trigger-test-uid"
 	namespace       = "foobar"
 	rabbitmqcluster = "testrabbitmqcluster"
 )
-
-func TestExchangeName(t *testing.T) {
-	for _, tt := range []struct {
-		name      string
-		namespace string
-		dlx       bool
-		want      string
-	}{{
-		name:      brokerName,
-		namespace: namespace,
-		want:      "broker.foobar.testbroker",
-	}, {
-		name:      brokerName,
-		namespace: namespace,
-		want:      "broker.foobar.testbroker.dlx",
-		dlx:       true,
-	}} {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			got := resources.ExchangeName(&eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Namespace: tt.namespace, Name: tt.name}}, tt.dlx)
-			if got != tt.want {
-				t.Errorf("Unexpected name for %s/%s DLX: %t: want:\n%+s\ngot:\n%+s", tt.namespace, tt.name, tt.dlx, tt.want, got)
-			}
-		})
-	}
-}
-
-func TestTriggerDLXExchangeName(t *testing.T) {
-	want := "trigger.foobar.testtrigger.dlx"
-	got := resources.TriggerDLXExchangeName(&eventingv1.Trigger{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "foobar",
-			Name:      "testtrigger",
-		},
-	})
-	if want != got {
-		t.Errorf("Unexpected name for foobar/testtrigger Trigger DLX: want:\n%q\ngot:\n%q", want, got)
-	}
-}
 
 func TestNewExchange(t *testing.T) {
 	for _, tt := range []struct {
@@ -69,18 +32,19 @@ func TestNewExchange(t *testing.T) {
 		want: &rabbitv1beta1.Exchange{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: namespace,
-				Name:      "broker.foobar.testbroker",
+				Name:      "b.foobar.testbroker.broker-test-uid",
 				OwnerReferences: []metav1.OwnerReference{
 					{
 						Kind:       "Broker",
 						APIVersion: "eventing.knative.dev/v1",
 						Name:       brokerName,
+						UID:        brokerUID,
 					},
 				},
 				Labels: map[string]string{"eventing.knative.dev/broker": "testbroker"},
 			},
 			Spec: rabbitv1beta1.ExchangeSpec{
-				Name:       "broker.foobar.testbroker",
+				Name:       "b.foobar.testbroker.broker-test-uid",
 				Type:       "headers",
 				Durable:    true,
 				AutoDelete: false,
@@ -95,18 +59,19 @@ func TestNewExchange(t *testing.T) {
 		want: &rabbitv1beta1.Exchange{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: namespace,
-				Name:      "broker.foobar.testbroker.dlx",
+				Name:      "b.foobar.testbroker.dlx.broker-test-uid",
 				OwnerReferences: []metav1.OwnerReference{
 					{
 						Kind:       "Broker",
 						APIVersion: "eventing.knative.dev/v1",
 						Name:       brokerName,
+						UID:        brokerUID,
 					},
 				},
 				Labels: map[string]string{"eventing.knative.dev/broker": "testbroker"},
 			},
 			Spec: rabbitv1beta1.ExchangeSpec{
-				Name:       "broker.foobar.testbroker.dlx",
+				Name:       "b.foobar.testbroker.dlx.broker-test-uid",
 				Type:       "headers",
 				Durable:    true,
 				AutoDelete: false,
@@ -122,17 +87,19 @@ func TestNewExchange(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: namespace,
 				Name:      triggerName,
+				UID:       triggerUID,
 			},
 		},
 		want: &rabbitv1beta1.Exchange{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: namespace,
-				Name:      "trigger.foobar.testtrigger.dlx",
+				Name:      "t.foobar.testtrigger.dlx.trigger-test-uid",
 				OwnerReferences: []metav1.OwnerReference{
 					{
 						Kind:       "Trigger",
 						APIVersion: "eventing.knative.dev/v1",
 						Name:       triggerName,
+						UID:        triggerUID,
 					},
 				},
 				Labels: map[string]string{
@@ -141,7 +108,7 @@ func TestNewExchange(t *testing.T) {
 				},
 			},
 			Spec: rabbitv1beta1.ExchangeSpec{
-				Name:       "trigger.foobar.testtrigger.dlx",
+				Name:       "t.foobar.testtrigger.dlx.trigger-test-uid",
 				Type:       "headers",
 				Durable:    true,
 				AutoDelete: false,
@@ -157,6 +124,7 @@ func TestNewExchange(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      brokerName,
 						Namespace: namespace,
+						UID:       brokerUID,
 					},
 					Spec: eventingv1.BrokerSpec{
 						Config: &duckv1.KReference{
