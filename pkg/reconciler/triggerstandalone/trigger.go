@@ -157,7 +157,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 	// If there's DeadLetterSink, we need to create a DLX that's specific for this Trigger as well
 	// as a Queue for it, and Dispatcher that pulls from that queue.
 	if t.Spec.Delivery != nil && t.Spec.Delivery.DeadLetterSink != nil {
-		// TODO: We need the URL form here in different form when dealing with Exchanges
 		exchangeURL, err := url.Parse(rabbitmqURL)
 		if err != nil {
 			return fmt.Errorf("failed to parse the URL for RabbitMQ: %s", err)
@@ -168,7 +167,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 			DLX:         true,
 			RabbitMQURL: exchangeURL,
 		}
-		fmt.Printf("CREATING TRIGGER EXCHANGE: %+v\n", args)
 		_, err = brokerresources.DeclareExchange(r.dialerFunc, args)
 		if err != nil {
 			t.Status.MarkDependencyFailed("ExchangeFailure", fmt.Sprintf("Failed to reconcile trigger DLX exchange %q: %s", brokerresources.TriggerDLXExchangeName(t), err))
@@ -181,7 +179,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 			QueueName:   resources.CreateTriggerDeadLetterQueueName(t),
 			RabbitmqURL: rabbitmqURL,
 		}
-		fmt.Printf("CREATING TRIGGER DLX QUEUE: %+v\n", dlqArgs)
 		_, err = resources.DeclareQueue(r.dialerFunc, dlqArgs)
 		if err != nil {
 			logging.FromContext(ctx).Error("Problem reconciling Trigger Queue", zap.Error(err))
@@ -189,15 +186,15 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 			return err
 		}
 
-		fmt.Printf("CREATING TRIGGER DLX BINDING: %+v\n", dlqArgs)
-		err = resources.MakeDLQBinding(r.transport, &resources.BindingArgs{
+		bindingArgs := &resources.BindingArgs{
 			Broker:     broker,
 			Trigger:    t,
 			RoutingKey: "",
 			BrokerURL:  rabbitmqURL,
 			AdminURL:   r.adminURL,
 			QueueName:  resources.CreateTriggerDeadLetterQueueName(args.Trigger),
-		})
+		}
+		err = resources.MakeDLQBinding(r.transport, bindingArgs)
 		if err != nil {
 			logging.FromContext(ctx).Error("Problem declaring Trigger DLQ Binding", zap.Error(err))
 			t.Status.MarkDependencyFailed("BindingFailure", "%v", err)

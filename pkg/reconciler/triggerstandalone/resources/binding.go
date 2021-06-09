@@ -35,6 +35,7 @@ const (
 	DefaultManagementPort = 15672
 	BindingKey            = "x-knative-trigger"
 	DLQBindingKey         = "x-knative-dlq"
+	TriggerDLQBindingKey  = "x-knative-trigger-dlq"
 )
 
 // BindingArgs are the arguments to create a Trigger's Binding to a RabbitMQ Exchange.
@@ -166,9 +167,18 @@ func MakeDLQBinding(transport http.RoundTripper, args *BindingArgs) error {
 		c.SetTransport(transport)
 	}
 
+	var bindingKey string
+	var bindingValue string
+	if args.Trigger != nil {
+		bindingKey = TriggerDLQBindingKey
+		bindingValue = args.Trigger.Name
+	} else {
+		bindingKey = BindingKey
+		bindingValue = args.Broker.Name
+	}
+
 	arguments := map[string]interface{}{
-		"x-match":  interface{}("all"),
-		BindingKey: interface{}(args.Broker.Name),
+		"x-match": interface{}("all"),
 	}
 
 	var existing *rabbithole.BindingInfo
@@ -179,7 +189,7 @@ func MakeDLQBinding(transport http.RoundTripper, args *BindingArgs) error {
 	}
 
 	for _, b := range bindings {
-		if val, exists := b.Arguments[BindingKey]; exists && val == args.Broker.Name {
+		if val, exists := b.Arguments[bindingKey]; exists && val == bindingValue {
 			existing = &b
 			break
 		}

@@ -106,9 +106,7 @@ func NewTriggerDLQBinding(ctx context.Context, broker *eventingv1.Broker, trigge
 		"x-match":            "all",
 		TriggerDLQBindingKey: trigger.Name,
 	}
-	// Depending on if we have a Broker & Trigger we need to rejigger some of the names and
-	// configurations little differently, so do that up front before actually creating the resource
-	// that we're returning.
+
 	bindingName := CreateTriggerDeadLetterQueueName(trigger)
 	sourceName := brokerresources.TriggerDLXExchangeName(trigger)
 	argumentsJson, err := json.Marshal(arguments)
