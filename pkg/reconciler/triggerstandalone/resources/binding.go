@@ -162,7 +162,8 @@ func MakeDLQBinding(transport http.RoundTripper, args *BindingArgs) error {
 	}
 
 	arguments := map[string]interface{}{
-		"x-match": interface{}("all"),
+		"x-match":  interface{}("all"),
+		bindingKey: bindingValue,
 	}
 
 	var existing *rabbithole.BindingInfo

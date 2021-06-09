@@ -154,7 +154,7 @@ func TestBindingDLQDeclarationForTrigger(t *testing.T) {
 	assert.Equal(t, explicitBinding["source"], exchangeName)
 	assert.Equal(t, explicitBinding["destination_type"], "queue")
 	assert.Equal(t, explicitBinding["destination"], queueName)
-	assert.Equal(t, asMap(t, explicitBinding["arguments"])[resources.BindingKey], brokerName)
+	assert.Equal(t, asMap(t, explicitBinding["arguments"])[resources.TriggerDLQBindingKey], triggerName)
 }
 
 func TestMissingExchangeBindingDeclarationFailure(t *testing.T) {
