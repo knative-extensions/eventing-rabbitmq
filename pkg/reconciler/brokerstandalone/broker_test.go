@@ -70,6 +70,7 @@ const (
 	brokerClass = "RabbitMQBroker"
 	testNS      = "test-namespace"
 	brokerName  = "test-broker"
+	brokerUID   = "broker-test-uid"
 
 	rabbitSecretName          = "test-secret"
 	rabbitBrokerSecretName    = "test-broker-broker-rabbit"
@@ -170,6 +171,7 @@ func TestReconcile(t *testing.T) {
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
 					WithBrokerClass(brokerClass),
+					WithBrokerUID(brokerUID),
 					WithBrokerConfig(config()),
 					WithInitBrokerConditions,
 					WithBrokerDeletionTimestamp),
@@ -192,6 +194,7 @@ func TestReconcile(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions),
 			},
@@ -204,6 +207,7 @@ func TestReconcile(t *testing.T) {
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithExchangeFailed("ExchangeCredentialsUnavailable", "Failed to get arguments for creating exchange: Broker.Spec.Config is required")),
@@ -215,6 +219,7 @@ func TestReconcile(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(&duckv1.KReference{Kind: "Secret", APIVersion: "v1"}),
 					WithInitBrokerConditions),
@@ -228,6 +233,7 @@ func TestReconcile(t *testing.T) {
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(&duckv1.KReference{Kind: "Secret", APIVersion: "v1"}),
 					WithInitBrokerConditions,
@@ -455,6 +461,7 @@ func TestReconcile(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
@@ -465,6 +472,7 @@ func TestReconcile(t *testing.T) {
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
@@ -524,6 +532,7 @@ func TestReconcile(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
@@ -535,6 +544,7 @@ func TestReconcile(t *testing.T) {
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
@@ -560,6 +570,7 @@ func TestReconcile(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
@@ -572,6 +583,7 @@ func TestReconcile(t *testing.T) {
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
@@ -597,6 +609,7 @@ func TestReconcile(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
@@ -609,6 +622,7 @@ func TestReconcile(t *testing.T) {
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
@@ -634,6 +648,7 @@ func TestReconcile(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
@@ -647,6 +662,7 @@ func TestReconcile(t *testing.T) {
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
@@ -672,6 +688,7 @@ func TestReconcile(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
@@ -679,6 +696,7 @@ func TestReconcile(t *testing.T) {
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
@@ -706,6 +724,7 @@ func TestReconcile(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
@@ -716,6 +735,7 @@ func TestReconcile(t *testing.T) {
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
@@ -746,7 +766,8 @@ func TestReconcile(t *testing.T) {
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithBrokerDelivery(delivery),
-					WithInitBrokerConditions),
+					WithInitBrokerConditions,
+					WithBrokerUID(brokerUID)),
 				createSecret(rabbitURL),
 				rt.NewEndpoints(ingressServiceName, testNS,
 					rt.WithEndpointsLabels(IngressLabels()),
@@ -754,6 +775,7 @@ func TestReconcile(t *testing.T) {
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
@@ -783,6 +805,7 @@ func TestReconcile(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithBrokerDelivery(deliveryUnresolvableDeadLetterSink),
@@ -794,6 +817,7 @@ func TestReconcile(t *testing.T) {
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
@@ -889,6 +913,7 @@ func createBrokerSecret(data string) *corev1.Secret {
 				APIVersion:         "eventing.knative.dev/v1",
 				Kind:               "Broker",
 				Name:               brokerName,
+				UID:                brokerUID,
 				Controller:         &TrueValue,
 				BlockOwnerDeletion: &TrueValue,
 			}},
@@ -919,6 +944,7 @@ func createSecretForRabbitmqCluster() *corev1.Secret {
 				APIVersion:         "eventing.knative.dev/v1",
 				Kind:               "Broker",
 				Name:               brokerName,
+				UID:                brokerUID,
 				Controller:         &TrueValue,
 				BlockOwnerDeletion: &TrueValue,
 			}},
@@ -941,6 +967,7 @@ func createSecretForRabbitmqClusterNoUser() *corev1.Secret {
 				APIVersion:         "eventing.knative.dev/v1",
 				Kind:               "Broker",
 				Name:               brokerName,
+				UID:                brokerUID,
 				Controller:         &TrueValue,
 				BlockOwnerDeletion: &TrueValue,
 			}},
@@ -962,6 +989,7 @@ func createSecretForRabbitmqClusterNoPassword() *corev1.Secret {
 				APIVersion:         "eventing.knative.dev/v1",
 				Kind:               "Broker",
 				Name:               brokerName,
+				UID:                brokerUID,
 				Controller:         &TrueValue,
 				BlockOwnerDeletion: &TrueValue,
 			}},
@@ -974,7 +1002,7 @@ func createSecretForRabbitmqClusterNoPassword() *corev1.Secret {
 
 func createIngressDeployment() *appsv1.Deployment {
 	args := &resources.IngressArgs{
-		Broker:             &eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: testNS}},
+		Broker:             &eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: testNS, UID: brokerUID}},
 		Image:              ingressImage,
 		RabbitMQSecretName: rabbitBrokerSecretName,
 		BrokerUrlSecretKey: resources.BrokerURLSecretKey,
@@ -984,7 +1012,7 @@ func createIngressDeployment() *appsv1.Deployment {
 
 func createDifferentIngressDeployment() *appsv1.Deployment {
 	args := &resources.IngressArgs{
-		Broker:             &eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: testNS}},
+		Broker:             &eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: testNS, UID: brokerUID}},
 		Image:              "differentImage",
 		RabbitMQSecretName: rabbitBrokerSecretName,
 		BrokerUrlSecretKey: resources.BrokerURLSecretKey,
@@ -993,11 +1021,11 @@ func createDifferentIngressDeployment() *appsv1.Deployment {
 }
 
 func createIngressService() *corev1.Service {
-	return resources.MakeIngressService(&eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: testNS}})
+	return resources.MakeIngressService(&eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: testNS, UID: brokerUID}})
 }
 
 func createDifferentIngressService() *corev1.Service {
-	svc := resources.MakeIngressService(&eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: testNS}})
+	svc := resources.MakeIngressService(&eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: testNS, UID: brokerUID}})
 	svc.Spec.Ports = []corev1.ServicePort{{Name: "diff", Port: 9999}}
 	return svc
 }
@@ -1070,6 +1098,7 @@ func createDispatcherDeployment() *appsv1.Deployment {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      brokerName,
 			Namespace: testNS,
+			UID:       brokerUID,
 		},
 		Spec: eventingv1.BrokerSpec{
 			Config:   config(),
@@ -1080,7 +1109,7 @@ func createDispatcherDeployment() *appsv1.Deployment {
 		Broker:             broker,
 		Image:              dispatcherImage,
 		RabbitMQSecretName: rabbitBrokerSecretName,
-		QueueName:          "broker.test-namespace.test-broker.dlq",
+		QueueName:          "b.test-namespace.test-broker.dlq.broker-test-uid",
 		BrokerUrlSecretKey: "brokerURL",
 		BrokerIngressURL:   brokerAddress,
 		Subscriber:         deadLetterSinkAddress,

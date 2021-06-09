@@ -25,7 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	brokerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
+	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 )
@@ -46,18 +46,19 @@ func TestNewQueue(t *testing.T) {
 		want: &rabbitv1beta1.Queue{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: namespace,
-				Name:      "broker.foobar.testbroker.dlq",
+				Name:      "b.foobar.testbroker.dlq.broker-test-uid",
 				OwnerReferences: []metav1.OwnerReference{
 					{
 						Kind:       "Broker",
 						APIVersion: "eventing.knative.dev/v1",
 						Name:       brokerName,
+						UID:        brokerUID,
 					},
 				},
 				Labels: map[string]string{"eventing.knative.dev/broker": "testbroker"},
 			},
 			Spec: rabbitv1beta1.QueueSpec{
-				Name:       "broker.foobar.testbroker.dlq",
+				Name:       "b.foobar.testbroker.dlq.broker-test-uid",
 				Durable:    true,
 				AutoDelete: false,
 				RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
@@ -72,12 +73,13 @@ func TestNewQueue(t *testing.T) {
 		want: &rabbitv1beta1.Queue{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: namespace,
-				Name:      "trigger.foobar.my-trigger",
+				Name:      "t.foobar.my-trigger.trigger-test-uid",
 				OwnerReferences: []metav1.OwnerReference{
 					{
 						Kind:       "Trigger",
 						APIVersion: "eventing.knative.dev/v1",
 						Name:       triggerName,
+						UID:        triggerUID,
 					},
 				},
 				Labels: map[string]string{
@@ -86,7 +88,7 @@ func TestNewQueue(t *testing.T) {
 				},
 			},
 			Spec: rabbitv1beta1.QueueSpec{
-				Name:       "trigger.foobar.my-trigger",
+				Name:       "t.foobar.my-trigger.trigger-test-uid",
 				Durable:    true,
 				AutoDelete: false,
 				RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
@@ -102,12 +104,13 @@ func TestNewQueue(t *testing.T) {
 		want: &rabbitv1beta1.Queue{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: namespace,
-				Name:      "trigger.foobar.my-trigger",
+				Name:      "t.foobar.my-trigger.trigger-test-uid",
 				OwnerReferences: []metav1.OwnerReference{
 					{
 						Kind:       "Trigger",
 						APIVersion: "eventing.knative.dev/v1",
 						Name:       triggerName,
+						UID:        triggerUID,
 					},
 				},
 				Labels: map[string]string{
@@ -116,7 +119,7 @@ func TestNewQueue(t *testing.T) {
 				},
 			},
 			Spec: rabbitv1beta1.QueueSpec{
-				Name:       "trigger.foobar.my-trigger",
+				Name:       "t.foobar.my-trigger.trigger-test-uid",
 				Durable:    true,
 				AutoDelete: false,
 				RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
@@ -132,12 +135,13 @@ func TestNewQueue(t *testing.T) {
 		want: &rabbitv1beta1.Queue{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: namespace,
-				Name:      "trigger.foobar.my-trigger",
+				Name:      "t.foobar.my-trigger.trigger-test-uid",
 				OwnerReferences: []metav1.OwnerReference{
 					{
 						Kind:       "Trigger",
 						APIVersion: "eventing.knative.dev/v1",
 						Name:       triggerName,
+						UID:        triggerUID,
 					},
 				},
 				Labels: map[string]string{
@@ -146,7 +150,7 @@ func TestNewQueue(t *testing.T) {
 				},
 			},
 			Spec: rabbitv1beta1.QueueSpec{
-				Name:       "trigger.foobar.my-trigger",
+				Name:       "t.foobar.my-trigger.trigger-test-uid",
 				Durable:    true,
 				AutoDelete: false,
 				RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
@@ -169,12 +173,13 @@ func TestNewTriggerDLQ(t *testing.T) {
 	want := &rabbitv1beta1.Queue{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
-			Name:      "trigger.foobar.my-trigger.dlq",
+			Name:      "t.foobar.my-trigger.dlq.trigger-test-uid",
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					Kind:       "Trigger",
 					APIVersion: "eventing.knative.dev/v1",
 					Name:       triggerName,
+					UID:        triggerUID,
 				},
 			},
 			Labels: map[string]string{
@@ -183,7 +188,7 @@ func TestNewTriggerDLQ(t *testing.T) {
 			},
 		},
 		Spec: rabbitv1beta1.QueueSpec{
-			Name:       "trigger.foobar.my-trigger.dlq",
+			Name:       "t.foobar.my-trigger.dlq.trigger-test-uid",
 			Durable:    true,
 			AutoDelete: false,
 			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
@@ -200,7 +205,7 @@ func TestNewTriggerDLQ(t *testing.T) {
 
 func getTriggerQueueArguments() *runtime.RawExtension {
 	arguments := map[string]string{
-		"x-dead-letter-exchange": brokerresources.ExchangeName(createBroker(), true),
+		"x-dead-letter-exchange": naming.BrokerExchangeName(createBroker(), true),
 	}
 	argumentsJson, err := json.Marshal(arguments)
 	if err != nil {
@@ -213,7 +218,7 @@ func getTriggerQueueArguments() *runtime.RawExtension {
 
 func getTriggerQueueArgumentsWithDeadLetterSink() *runtime.RawExtension {
 	arguments := map[string]string{
-		"x-dead-letter-exchange": brokerresources.TriggerDLXExchangeName(createTriggerWithFilterAndDelivery()),
+		"x-dead-letter-exchange": naming.TriggerDLXExchangeName(createTriggerWithFilterAndDelivery()),
 	}
 	argumentsJson, err := json.Marshal(arguments)
 	if err != nil {

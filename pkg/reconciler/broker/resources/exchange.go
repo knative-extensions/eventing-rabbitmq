@@ -18,11 +18,12 @@ package resources
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/kmeta"
+
+	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
 
 	rabbitv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
@@ -46,10 +47,10 @@ func NewExchange(ctx context.Context, args *ExchangeArgs) *rabbitv1beta1.Exchang
 
 	if args.Trigger != nil {
 		or = *kmeta.NewControllerRef(args.Trigger)
-		exchangeName = TriggerDLXExchangeName(args.Trigger)
+		exchangeName = naming.TriggerDLXExchangeName(args.Trigger)
 		namespace = args.Trigger.Namespace
 	} else {
-		exchangeName = ExchangeName(args.Broker, args.DLX)
+		exchangeName = naming.BrokerExchangeName(args.Broker, args.DLX)
 		or = *kmeta.NewControllerRef(args.Broker)
 		namespace = args.Broker.Namespace
 	}
@@ -90,29 +91,4 @@ func ExchangeLabels(b *eventingv1.Broker, t *eventingv1.Trigger) map[string]stri
 			"eventing.knative.dev/broker": b.Name,
 		}
 	}
-}
-
-// ExchangeName constructs a name given a Broker.
-// Format is broker.Namespace.Name for normal exchanges and
-// broker.Namespace.Name.dlx for DLX exchanges.
-func ExchangeName(b *eventingv1.Broker, DLX bool) string {
-	var exchangeBase string
-	if DLX {
-		exchangeBase = fmt.Sprintf("broker.%s.%s.dlx", b.Namespace, b.Name)
-	} else {
-		exchangeBase = fmt.Sprintf("broker.%s.%s", b.Namespace, b.Name)
-
-	}
-	foo := kmeta.ChildName(exchangeBase, string(b.GetUID()))
-	fmt.Printf("TODO: Fix this and use consistently to avoid collisions, worth doing? %s\n", foo)
-	return exchangeBase
-}
-
-// TriggerDLXExchangeName constructs a name given a Broker.
-// Format is trigger.Namespace.Name.dlx
-func TriggerDLXExchangeName(t *eventingv1.Trigger) string {
-	exchangeBase := fmt.Sprintf("trigger.%s.%s.dlx", t.Namespace, t.Name)
-	foo := kmeta.ChildName(exchangeBase, string(t.GetUID()))
-	fmt.Printf("TODO: Fix this and use consistently to avoid collisions, worth doing? %s\n", foo)
-	return exchangeBase
 }

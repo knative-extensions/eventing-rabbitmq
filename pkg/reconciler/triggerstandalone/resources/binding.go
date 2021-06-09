@@ -24,7 +24,7 @@ import (
 	"net/url"
 	"reflect"
 
-	brokerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/brokerstandalone/resources"
+	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
 
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
@@ -76,7 +76,7 @@ func MakeBinding(transport http.RoundTripper, args *BindingArgs) error {
 		c.SetTransport(transport)
 	}
 
-	queueName := CreateTriggerQueueName(args.Trigger)
+	queueName := naming.CreateTriggerQueueName(args.Trigger)
 	arguments := map[string]interface{}{
 		"x-match":  interface{}("all"),
 		BindingKey: interface{}(args.Trigger.Name),
@@ -102,7 +102,7 @@ func MakeBinding(transport http.RoundTripper, args *BindingArgs) error {
 	if existing == nil || !reflect.DeepEqual(existing.Arguments, arguments) {
 		response, err := c.DeclareBinding("/", rabbithole.BindingInfo{
 			Vhost:           "/",
-			Source:          brokerresources.ExchangeName(args.Broker, false),
+			Source:          naming.BrokerExchangeName(args.Broker, false),
 			Destination:     queueName,
 			DestinationType: "queue",
 			RoutingKey:      args.RoutingKey,
@@ -182,9 +182,9 @@ func MakeDLQBinding(transport http.RoundTripper, args *BindingArgs) error {
 
 	var source string
 	if args.Trigger != nil {
-		source = brokerresources.TriggerDLXExchangeName(args.Trigger)
+		source = naming.TriggerDLXExchangeName(args.Trigger)
 	} else {
-		source = brokerresources.ExchangeName(args.Broker, true)
+		source = naming.BrokerExchangeName(args.Broker, true)
 	}
 
 	if existing == nil || !reflect.DeepEqual(existing.Arguments, arguments) {

@@ -25,13 +25,17 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
+	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/testrabbit"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/triggerstandalone/resources"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 )
 
-const namespace = "foobar"
-const triggerName = "my-trigger"
+const (
+	namespace   = "foobar"
+	triggerName = "my-trigger"
+	triggerUID  = "trigger-test-uid"
+)
 
 func TestQueueDeclaration(t *testing.T) {
 	ctx := context.Background()
@@ -39,17 +43,18 @@ func TestQueueDeclaration(t *testing.T) {
 	defer testrabbit.TerminateContainer(t, ctx, rabbitContainer)
 
 	queue, err := resources.DeclareQueue(dialer.RealDialer, &resources.QueueArgs{
-		QueueName: resources.CreateTriggerQueueName(&eventingv1.Trigger{
+		QueueName: naming.CreateTriggerQueueName(&eventingv1.Trigger{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      triggerName,
 				Namespace: namespace,
+				UID:       triggerUID,
 			},
 		}),
 		RabbitmqURL: testrabbit.BrokerUrl(t, ctx, rabbitContainer).String(),
 	})
 
 	assert.NilError(t, err)
-	assert.Equal(t, queue.Name(), fmt.Sprintf("trigger.%s.%s", namespace, triggerName))
+	assert.Equal(t, queue.Name(), fmt.Sprintf("t.%s.%s.%s", namespace, triggerName, triggerUID))
 }
 
 func TestQueueDeclarationWithDLX(t *testing.T) {
@@ -58,10 +63,11 @@ func TestQueueDeclarationWithDLX(t *testing.T) {
 	defer testrabbit.TerminateContainer(t, ctx, rabbitContainer)
 
 	queue, err := resources.DeclareQueue(dialer.RealDialer, &resources.QueueArgs{
-		QueueName: resources.CreateTriggerQueueName(&eventingv1.Trigger{
+		QueueName: naming.CreateTriggerQueueName(&eventingv1.Trigger{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      triggerName,
 				Namespace: namespace,
+				UID:       triggerUID,
 			},
 		}),
 		RabbitmqURL: testrabbit.BrokerUrl(t, ctx, rabbitContainer).String(),
@@ -69,21 +75,22 @@ func TestQueueDeclarationWithDLX(t *testing.T) {
 	})
 
 	assert.NilError(t, err)
-	assert.Equal(t, queue.Name(), fmt.Sprintf("trigger.%s.%s", namespace, triggerName))
+	assert.Equal(t, queue.Name(), fmt.Sprintf("t.%s.%s.%s", namespace, triggerName, triggerUID))
 }
 
 func TestIncompatibleQueueDeclarationFailure(t *testing.T) {
 	ctx := context.Background()
 	rabbitContainer := testrabbit.AutoStartRabbit(t, ctx)
 	defer testrabbit.TerminateContainer(t, ctx, rabbitContainer)
-	queueName := fmt.Sprintf("trigger.%s.%s", namespace, triggerName)
+	queueName := fmt.Sprintf("t.%s.%s.%s", namespace, triggerName, triggerUID)
 	testrabbit.CreateNonDurableQueue(t, ctx, rabbitContainer, queueName)
 
 	_, err := resources.DeclareQueue(dialer.RealDialer, &resources.QueueArgs{
-		QueueName: resources.CreateTriggerQueueName(&eventingv1.Trigger{
+		QueueName: naming.CreateTriggerQueueName(&eventingv1.Trigger{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      triggerName,
 				Namespace: namespace,
+				UID:       triggerUID,
 			},
 		}),
 		RabbitmqURL: testrabbit.BrokerUrl(t, ctx, rabbitContainer).String(),
@@ -96,14 +103,15 @@ func TestQueueDeletion(t *testing.T) {
 	ctx := context.Background()
 	rabbitContainer := testrabbit.AutoStartRabbit(t, ctx)
 	defer testrabbit.TerminateContainer(t, ctx, rabbitContainer)
-	queueName := fmt.Sprintf("trigger.%s.%s", namespace, triggerName)
+	queueName := fmt.Sprintf("t.%s.%s.%s", namespace, triggerName, triggerUID)
 	testrabbit.CreateDurableQueue(t, ctx, rabbitContainer, queueName)
 
 	err := resources.DeleteQueue(dialer.RealDialer, &resources.QueueArgs{
-		QueueName: resources.CreateTriggerQueueName(&eventingv1.Trigger{
+		QueueName: naming.CreateTriggerQueueName(&eventingv1.Trigger{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      triggerName,
 				Namespace: namespace,
+				UID:       triggerUID,
 			},
 		}),
 		RabbitmqURL: testrabbit.BrokerUrl(t, ctx, rabbitContainer).String(),

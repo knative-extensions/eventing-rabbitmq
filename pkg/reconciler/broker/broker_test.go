@@ -69,6 +69,7 @@ const (
 	brokerClass = "RabbitMQBroker"
 	testNS      = "test-namespace"
 	brokerName  = "test-broker"
+	brokerUID   = "broker-test-uid"
 
 	rabbitSecretName          = "test-secret"
 	rabbitBrokerSecretName    = "test-broker-broker-rabbit"
@@ -201,7 +202,7 @@ func TestReconcile(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
-					WithBrokerUID("uid-for-test"),
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(invalidConfigForRabbitOperator()),
 					WithInitBrokerConditions),
@@ -209,7 +210,7 @@ func TestReconcile(t *testing.T) {
 			WantErr: true,
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
-					WithBrokerUID("uid-for-test"),
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(invalidConfigForRabbitOperator()),
@@ -223,7 +224,7 @@ func TestReconcile(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
-					WithBrokerUID("uid-for-test"),
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
@@ -232,7 +233,7 @@ func TestReconcile(t *testing.T) {
 			WantErr: true,
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
-					WithBrokerUID("uid-for-test"),
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
@@ -246,7 +247,7 @@ func TestReconcile(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
-					WithBrokerUID("uid-for-test"),
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
@@ -255,7 +256,7 @@ func TestReconcile(t *testing.T) {
 			WantErr: true,
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
-					WithBrokerUID("uid-for-test"),
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
@@ -269,7 +270,7 @@ func TestReconcile(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
-					WithBrokerUID("uid-for-test"),
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
@@ -278,7 +279,7 @@ func TestReconcile(t *testing.T) {
 			WantErr: true,
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
-					WithBrokerUID("uid-for-test"),
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
@@ -292,7 +293,7 @@ func TestReconcile(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
-					WithBrokerUID("uid-for-test"),
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
@@ -302,7 +303,7 @@ func TestReconcile(t *testing.T) {
 			WantErr: true,
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
-					WithBrokerUID("uid-for-test"),
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
@@ -316,7 +317,7 @@ func TestReconcile(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
-					WithBrokerUID("uid-for-test"),
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
@@ -326,7 +327,7 @@ func TestReconcile(t *testing.T) {
 			WantErr: true,
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
-					WithBrokerUID("uid-for-test"),
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
@@ -340,7 +341,7 @@ func TestReconcile(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
-					WithBrokerUID("uid-for-test"),
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
@@ -356,11 +357,11 @@ func TestReconcile(t *testing.T) {
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
-					WithBrokerUID("uid-for-test"),
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
-					WithExchangeFailed("ExchangeFailure", `Failed to reconcile exchange "broker.test-namespace.test-broker": inducing failure for create exchanges`)),
+					WithExchangeFailed("ExchangeFailure", `Failed to reconcile exchange "b.test-namespace.test-broker.broker-test-uid": inducing failure for create exchanges`)),
 			}},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeWarning, "InternalError", `inducing failure for create exchanges`),
@@ -370,7 +371,7 @@ func TestReconcile(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
-					WithBrokerUID("uid-for-test"),
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
@@ -382,18 +383,18 @@ func TestReconcile(t *testing.T) {
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
-					WithBrokerUID("uid-for-test"),
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
-					WithExchangeFailed("ExchangeFailure", `exchange "broker.test-namespace.test-broker" is not ready`)),
+					WithExchangeFailed("ExchangeFailure", `exchange "b.test-namespace.test-broker.broker-test-uid" is not ready`)),
 			}},
 		}, {
 			Name: "Exchange exists, create DLX CRD, not ready",
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
-					WithBrokerUID("uid-for-test"),
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
@@ -406,18 +407,18 @@ func TestReconcile(t *testing.T) {
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
-					WithBrokerUID("uid-for-test"),
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
-					WithExchangeFailed("ExchangeFailure", `DLX exchange "broker.test-namespace.test-broker.dlx" is not ready`)),
+					WithExchangeFailed("ExchangeFailure", `DLX exchange "b.test-namespace.test-broker.dlx.broker-test-uid" is not ready`)),
 			}},
 		}, {
 			Name: "Exchange exists, create DLX exchange fails",
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
-					WithBrokerUID("uid-for-test"),
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
@@ -434,11 +435,11 @@ func TestReconcile(t *testing.T) {
 			WantErr: true,
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
-					WithBrokerUID("uid-for-test"),
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
-					WithExchangeFailed("ExchangeFailure", `Failed to reconcile DLX exchange "broker.test-namespace.test-broker.dlx": inducing failure for create exchanges`)),
+					WithExchangeFailed("ExchangeFailure", `Failed to reconcile DLX exchange "b.test-namespace.test-broker.dlx.broker-test-uid": inducing failure for create exchanges`)),
 			}},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeWarning, "InternalError", `inducing failure for create exchanges`),
@@ -448,7 +449,7 @@ func TestReconcile(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
-					WithBrokerUID("uid-for-test"),
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
@@ -466,12 +467,12 @@ func TestReconcile(t *testing.T) {
 			WantErr: true,
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
-					WithBrokerUID("uid-for-test"),
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
 					WithExchangeReady(),
-					WithDLXFailed("QueueFailure", `Failed to reconcile Dead Letter Queue "broker.test-namespace.test-broker.dlq" : inducing failure for create queues`)),
+					WithDLXFailed("QueueFailure", `Failed to reconcile Dead Letter Queue "b.test-namespace.test-broker.dlq.broker-test-uid" : inducing failure for create queues`)),
 			}},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeWarning, "InternalError", `inducing failure for create queues`),
@@ -481,7 +482,7 @@ func TestReconcile(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
-					WithBrokerUID("uid-for-test"),
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
@@ -495,19 +496,19 @@ func TestReconcile(t *testing.T) {
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
-					WithBrokerUID("uid-for-test"),
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
 					WithExchangeReady(),
-					WithDLXFailed("QueueFailure", `Dead Letter Queue "broker.test-namespace.test-broker.dlq" is not ready`)),
+					WithDLXFailed("QueueFailure", `Dead Letter Queue "b.test-namespace.test-broker.dlq.broker-test-uid" is not ready`)),
 			}},
 		}, {
 			Name: "Both exchanges exist, queue exists, creates binding CRD",
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
-					WithBrokerUID("uid-for-test"),
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
@@ -522,20 +523,20 @@ func TestReconcile(t *testing.T) {
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
-					WithBrokerUID("uid-for-test"),
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
 					WithExchangeReady(),
 					WithDLXReady(),
-					WithDeadLetterSinkFailed("DLQ binding", `DLQ binding "broker.test-namespace.test-broker.dlq" is not ready`)),
+					WithDeadLetterSinkFailed("DLQ binding", `DLQ binding "b.test-namespace.test-broker.dlq.broker-test-uid" is not ready`)),
 			}},
 		}, {
 			Name: "Both exchanges exist, queue exists, create binding CRD fails",
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
-					WithBrokerUID("uid-for-test"),
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
@@ -554,13 +555,13 @@ func TestReconcile(t *testing.T) {
 			WantErr: true,
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
-					WithBrokerUID("uid-for-test"),
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
 					WithExchangeReady(),
 					WithDLXReady(),
-					WithDeadLetterSinkFailed("DLQ binding", `Failed to reconcile DLQ binding "broker.test-namespace.test-broker.dlq" : inducing failure for create bindings`)),
+					WithDeadLetterSinkFailed("DLQ binding", `Failed to reconcile DLQ binding "b.test-namespace.test-broker.dlq.broker-test-uid" : inducing failure for create bindings`)),
 			}},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeWarning, "InternalError", `inducing failure for create bindings`),
@@ -570,6 +571,7 @@ func TestReconcile(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
@@ -587,6 +589,7 @@ func TestReconcile(t *testing.T) {
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
@@ -605,6 +608,7 @@ func TestReconcile(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
@@ -625,6 +629,7 @@ func TestReconcile(t *testing.T) {
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
@@ -640,6 +645,7 @@ func TestReconcile(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
@@ -658,6 +664,7 @@ func TestReconcile(t *testing.T) {
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
@@ -678,6 +685,7 @@ func TestReconcile(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
@@ -697,6 +705,7 @@ func TestReconcile(t *testing.T) {
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
@@ -717,6 +726,7 @@ func TestReconcile(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
@@ -737,6 +747,7 @@ func TestReconcile(t *testing.T) {
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
@@ -758,6 +769,7 @@ func TestReconcile(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
@@ -778,6 +790,7 @@ func TestReconcile(t *testing.T) {
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
@@ -799,6 +812,7 @@ func TestReconcile(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
@@ -819,6 +833,7 @@ func TestReconcile(t *testing.T) {
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
@@ -840,6 +855,7 @@ func TestReconcile(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithInitBrokerConditions),
@@ -861,6 +877,7 @@ func TestReconcile(t *testing.T) {
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
@@ -882,6 +899,7 @@ func TestReconcile(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithBrokerDelivery(delivery),
@@ -900,6 +918,7 @@ func TestReconcile(t *testing.T) {
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
@@ -921,6 +940,7 @@ func TestReconcile(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithBrokerConfig(config()),
 					WithBrokerDelivery(deliveryUnresolvableDeadLetterSink),
@@ -940,6 +960,7 @@ func TestReconcile(t *testing.T) {
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
@@ -1021,6 +1042,7 @@ func createBrokerSecret(data string) *corev1.Secret {
 				APIVersion:         "eventing.knative.dev/v1",
 				Kind:               "Broker",
 				Name:               brokerName,
+				UID:                brokerUID,
 				Controller:         &TrueValue,
 				BlockOwnerDeletion: &TrueValue,
 			}},
@@ -1056,6 +1078,7 @@ func createSecretForRabbitmqCluster() *corev1.Secret {
 				APIVersion:         "eventing.knative.dev/v1",
 				Kind:               "Broker",
 				Name:               brokerName,
+				UID:                brokerUID,
 				Controller:         &TrueValue,
 				BlockOwnerDeletion: &TrueValue,
 			}},
@@ -1078,6 +1101,7 @@ func createSecretForRabbitmqClusterNoUser() *corev1.Secret {
 				APIVersion:         "eventing.knative.dev/v1",
 				Kind:               "Broker",
 				Name:               brokerName,
+				UID:                brokerUID,
 				Controller:         &TrueValue,
 				BlockOwnerDeletion: &TrueValue,
 			}},
@@ -1099,6 +1123,7 @@ func createSecretForRabbitmqClusterNoPassword() *corev1.Secret {
 				APIVersion:         "eventing.knative.dev/v1",
 				Kind:               "Broker",
 				Name:               brokerName,
+				UID:                brokerUID,
 				Controller:         &TrueValue,
 				BlockOwnerDeletion: &TrueValue,
 			}},
@@ -1111,7 +1136,7 @@ func createSecretForRabbitmqClusterNoPassword() *corev1.Secret {
 
 func createIngressDeployment() *appsv1.Deployment {
 	args := &resources.IngressArgs{
-		Broker:             &eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: testNS}},
+		Broker:             &eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: testNS, UID: brokerUID}},
 		Image:              ingressImage,
 		RabbitMQSecretName: rabbitBrokerSecretName,
 		BrokerUrlSecretKey: resources.BrokerURLSecretKey,
@@ -1121,7 +1146,7 @@ func createIngressDeployment() *appsv1.Deployment {
 
 func createDifferentIngressDeployment() *appsv1.Deployment {
 	args := &resources.IngressArgs{
-		Broker:             &eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: testNS}},
+		Broker:             &eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: testNS, UID: brokerUID}},
 		Image:              "differentImage",
 		RabbitMQSecretName: rabbitBrokerSecretName,
 		BrokerUrlSecretKey: resources.BrokerURLSecretKey,
@@ -1130,11 +1155,11 @@ func createDifferentIngressDeployment() *appsv1.Deployment {
 }
 
 func createIngressService() *corev1.Service {
-	return resources.MakeIngressService(&eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: testNS}})
+	return resources.MakeIngressService(&eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: testNS, UID: brokerUID}})
 }
 
 func createDifferentIngressService() *corev1.Service {
-	svc := resources.MakeIngressService(&eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: testNS}})
+	svc := resources.MakeIngressService(&eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: testNS, UID: brokerUID}})
 	svc.Spec.Ports = []corev1.ServicePort{{Name: "diff", Port: 9999}}
 	return svc
 }
@@ -1170,6 +1195,7 @@ func createDispatcherDeployment() *appsv1.Deployment {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      brokerName,
 			Namespace: testNS,
+			UID:       brokerUID,
 		},
 		Spec: eventingv1.BrokerSpec{
 			Config:   config(),
@@ -1180,7 +1206,7 @@ func createDispatcherDeployment() *appsv1.Deployment {
 		Broker:             broker,
 		Image:              dispatcherImage,
 		RabbitMQSecretName: rabbitBrokerSecretName,
-		QueueName:          "broker.test-namespace.test-broker.dlq",
+		QueueName:          "b.test-namespace.test-broker.dlq.broker-test-uid",
 		BrokerUrlSecretKey: "brokerURL",
 		BrokerIngressURL:   brokerAddress,
 		Subscriber:         deadLetterSinkAddress,
@@ -1193,14 +1219,14 @@ func createExchange(dlx bool) *rabbitv1beta1.Exchange {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      brokerName,
 			Namespace: testNS,
-			UID:       "uid-for-test",
+			UID:       brokerUID,
 		},
 	}
 	var exchangeName string
 	if dlx {
-		exchangeName = fmt.Sprintf("broker.%s.%s.dlx", testNS, brokerName)
+		exchangeName = fmt.Sprintf("b.%s.%s.dlx.%s", testNS, brokerName, brokerUID)
 	} else {
-		exchangeName = fmt.Sprintf("broker.%s.%s", testNS, brokerName)
+		exchangeName = fmt.Sprintf("b.%s.%s.%s", testNS, brokerName, brokerUID)
 	}
 
 	return &rabbitv1beta1.Exchange{
@@ -1244,14 +1270,14 @@ func createQueue(dlx bool) *rabbitv1beta1.Queue {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      brokerName,
 			Namespace: testNS,
-			UID:       "uid-for-test",
+			UID:       brokerUID,
 		},
 	}
 	var queueName string
 	if dlx {
-		queueName = fmt.Sprintf("broker.%s.%s.dlq", testNS, brokerName)
+		queueName = fmt.Sprintf("b.%s.%s.dlq.broker-test-uid", testNS, brokerName)
 	} else {
-		queueName = fmt.Sprintf("broker.%s.%s", testNS, brokerName)
+		queueName = fmt.Sprintf("b.%s.%s.broker-test-uid", testNS, brokerName)
 	}
 
 	return &rabbitv1beta1.Queue{
@@ -1291,14 +1317,14 @@ func createBinding(dlx bool) *rabbitv1beta1.Binding {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      brokerName,
 			Namespace: testNS,
-			UID:       "uid-for-test",
+			UID:       brokerUID,
 		},
 	}
 	var bindingName string
 	if dlx {
-		bindingName = fmt.Sprintf("broker.%s.%s.dlq", testNS, brokerName)
+		bindingName = fmt.Sprintf("b.%s.%s.dlq.broker-test-uid", testNS, brokerName)
 	} else {
-		bindingName = fmt.Sprintf("broker.%s.%s", testNS, brokerName)
+		bindingName = fmt.Sprintf("b.%s.%s.broker-test-uid", testNS, brokerName)
 	}
 
 	return &rabbitv1beta1.Binding{
@@ -1314,7 +1340,7 @@ func createBinding(dlx bool) *rabbitv1beta1.Binding {
 			Vhost:           "/",
 			DestinationType: "queue",
 			Destination:     bindingName,
-			Source:          "broker.test-namespace.test-broker.dlx",
+			Source:          "b.test-namespace.test-broker.dlx.broker-test-uid",
 			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
 				Name: rabbitMQBrokerName,
 			},

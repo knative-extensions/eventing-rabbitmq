@@ -17,15 +17,14 @@ limitations under the License.
 package resources
 
 import (
-	"fmt"
 	"net/url"
 
 	corev1 "k8s.io/api/core/v1"
-	"knative.dev/pkg/kmeta"
 
 	"github.com/NeowayLabs/wabbit"
 	"github.com/streadway/amqp"
 	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
+	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/io"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 )
@@ -57,9 +56,9 @@ func DeclareExchange(dialerFunc dialer.DialerFunc, args *ExchangeArgs) (*corev1.
 
 	var exchangeName string
 	if args.Trigger != nil {
-		exchangeName = TriggerDLXExchangeName(args.Trigger)
+		exchangeName = naming.TriggerDLXExchangeName(args.Trigger)
 	} else {
-		exchangeName = ExchangeName(args.Broker, args.DLX)
+		exchangeName = naming.BrokerExchangeName(args.Broker, args.DLX)
 	}
 	return MakeSecret(args), channel.ExchangeDeclare(
 		exchangeName,
@@ -89,9 +88,9 @@ func DeleteExchange(args *ExchangeArgs) error {
 
 	var exchangeName string
 	if args.Trigger != nil {
-		exchangeName = TriggerDLXExchangeName(args.Trigger)
+		exchangeName = naming.TriggerDLXExchangeName(args.Trigger)
 	} else {
-		exchangeName = ExchangeName(args.Broker, args.DLX)
+		exchangeName = naming.BrokerExchangeName(args.Broker, args.DLX)
 	}
 
 	return channel.ExchangeDelete(
@@ -99,29 +98,4 @@ func DeleteExchange(args *ExchangeArgs) error {
 		false, // if-unused
 		false, // nowait
 	)
-}
-
-// ExchangeName constructs a name given a Broker.
-// Format is broker.Namespace.broker.Name for normal exchanges and
-// broker.Namespace.broker.Name.dlx for DLX exchanges.
-func ExchangeName(b *eventingv1.Broker, DLX bool) string {
-	var exchangeBase string
-	if DLX {
-		exchangeBase = fmt.Sprintf("broker.%s.%s.dlx", b.Namespace, b.Name)
-	} else {
-		exchangeBase = fmt.Sprintf("broker.%s.%s", b.Namespace, b.Name)
-
-	}
-	foo := kmeta.ChildName(exchangeBase, string(b.GetUID()))
-	fmt.Printf("TODO: Fix this and use consistently to avoid collisions, worth doing? %s\n", foo)
-	return exchangeBase
-}
-
-// TriggerDLXExchangeName constructs a name given a Trigger.
-// Format is trigger.Namespace.Name.dlx
-func TriggerDLXExchangeName(t *eventingv1.Trigger) string {
-	exchangeBase := fmt.Sprintf("trigger.%s.%s.dlx", t.Namespace, t.Name)
-	foo := kmeta.ChildName(exchangeBase, string(t.GetUID()))
-	fmt.Printf("TODO: Fix this and use consistently to avoid collisions, worth doing? %s\n", foo)
-	return exchangeBase
 }
