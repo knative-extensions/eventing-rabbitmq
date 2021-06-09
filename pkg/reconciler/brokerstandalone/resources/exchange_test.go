@@ -31,11 +31,9 @@ import (
 )
 
 const (
-	brokerName  = "testbroker"
-	brokerUID   = "broker-test-uid"
-	triggerName = "testtrigger"
-	triggerUID  = "trigger-test-uid"
-	namespace   = "foobar"
+	brokerName = "testbroker"
+	brokerUID  = "broker-test-uid"
+	namespace  = "foobar"
 )
 
 func TestExchangeName(t *testing.T) {

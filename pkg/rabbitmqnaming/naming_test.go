@@ -24,12 +24,11 @@ import (
 )
 
 const (
-	brokerName      = "testbroker"
-	brokerUID       = "brokeruid"
-	triggerName     = "testtrigger"
-	triggerUID      = "triggeruid"
-	namespace       = "foobar"
-	rabbitmqcluster = "testrabbitmqcluster"
+	brokerName  = "testbroker"
+	brokerUID   = "brokeruid"
+	triggerName = "testtrigger"
+	triggerUID  = "triggeruid"
+	namespace   = "foobar"
 )
 
 func TestExchangeName(t *testing.T) {
