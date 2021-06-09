@@ -167,7 +167,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 			DLX:         true,
 			RabbitMQURL: exchangeURL,
 		}
-		fmt.Printf("CREATING TRIGGER EXCHANGE: %+v\n", args)
 		_, err = brokerresources.DeclareExchange(r.dialerFunc, args)
 		if err != nil {
 			t.Status.MarkDependencyFailed("ExchangeFailure", fmt.Sprintf("Failed to reconcile trigger DLX exchange %q: %s", brokerresources.TriggerDLXExchangeName(t), err))
