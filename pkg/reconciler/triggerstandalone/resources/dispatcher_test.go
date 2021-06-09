@@ -33,7 +33,6 @@ import (
 
 const (
 	brokerName       = "testbroker"
-	brokerUID        = "broker-test-uid"
 	triggerName      = "testtrigger"
 	triggerUID       = "trigger-test-uid"
 	ns               = "testnamespace"
