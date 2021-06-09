@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"go.uber.org/zap"
 	v1 "k8s.io/api/apps/v1"
@@ -127,6 +128,10 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 
 	t.Status.ObservedGeneration = t.Generation
 
+	if isUsingOperator(broker) {
+		return fmt.Errorf("WON'T GO")
+	}
+
 	t.Status.PropagateBrokerCondition(broker.Status.GetTopLevelCondition())
 	// If Broker is not ready, we're done, but once it becomes ready, we'll get requeued.
 	if !broker.Status.IsReady() {
@@ -141,24 +146,84 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 	// 1. RabbitMQ Queue
 	// 2. RabbitMQ Binding
 	// 3. Dispatcher Deployment for Subscriber
-	rabbitmqURL, err := r.rabbitmqURL(ctx, t)
+	secretName, rabbitmqURL, err := r.rabbitmqURL(ctx, t)
 	if err != nil {
 		t.Status.MarkDependencyFailed("SecretFailure", "%v", err)
 		return err
 	}
 
-	// Note that we always create DLX with this queue because you can't
-	// change them later.
+	// By default use the Broker DLX, though it might get overridden below.
+	dlxExchange := brokerresources.ExchangeName(broker, true)
+	// If there's DeadLetterSink, we need to create a DLX that's specific for this Trigger as well
+	// as a Queue for it, and Dispatcher that pulls from that queue.
+	if t.Spec.Delivery != nil && t.Spec.Delivery.DeadLetterSink != nil {
+		exchangeURL, err := url.Parse(rabbitmqURL)
+		if err != nil {
+			return fmt.Errorf("failed to parse the URL for RabbitMQ: %s", err)
+		}
+		args := &brokerresources.ExchangeArgs{
+			Broker:      broker,
+			Trigger:     t,
+			DLX:         true,
+			RabbitMQURL: exchangeURL,
+		}
+		_, err = brokerresources.DeclareExchange(r.dialerFunc, args)
+		if err != nil {
+			t.Status.MarkDependencyFailed("ExchangeFailure", fmt.Sprintf("Failed to reconcile trigger DLX exchange %q: %s", brokerresources.TriggerDLXExchangeName(t), err))
+			return err
+		}
+		// Use the Trigger specific exchange for the trigger queue (when created below).
+		dlxExchange = brokerresources.TriggerDLXExchangeName(t)
+
+		dlqArgs := &resources.QueueArgs{
+			QueueName:   resources.CreateTriggerDeadLetterQueueName(t),
+			RabbitmqURL: rabbitmqURL,
+		}
+		_, err = resources.DeclareQueue(r.dialerFunc, dlqArgs)
+		if err != nil {
+			logging.FromContext(ctx).Error("Problem reconciling Trigger Queue", zap.Error(err))
+			t.Status.MarkDependencyFailed("QueueFailure", "%v", err)
+			return err
+		}
+
+		bindingArgs := &resources.BindingArgs{
+			Broker:     broker,
+			Trigger:    t,
+			RoutingKey: "",
+			BrokerURL:  rabbitmqURL,
+			AdminURL:   r.adminURL,
+			QueueName:  resources.CreateTriggerDeadLetterQueueName(args.Trigger),
+		}
+		err = resources.MakeDLQBinding(r.transport, bindingArgs)
+		if err != nil {
+			logging.FromContext(ctx).Error("Problem declaring Trigger DLQ Binding", zap.Error(err))
+			t.Status.MarkDependencyFailed("BindingFailure", "%v", err)
+			return err
+		}
+		deadLetterSinkURI, err := r.uriResolver.URIFromDestinationV1(ctx, *t.Spec.Delivery.DeadLetterSink, t)
+		if err != nil {
+			logging.FromContext(ctx).Error("Unable to get the DeadLetterSink URI", zap.Error(err))
+			t.Status.MarkDependencyFailed("DeadLetterSink", fmt.Sprintf("Unable to get the DeadLetterSink URI: %s", err))
+			return err
+		}
+		_, err = r.reconcileDLXDispatcherDeployment(ctx, broker, t, secretName, deadLetterSinkURI)
+		if err != nil {
+			logging.FromContext(ctx).Error("Problem reconciling DLX dispatcher Deployment", zap.Error(err))
+			t.Status.MarkDependencyFailed("DeploymentFailure", "%v", err)
+			return err
+		}
+	}
+
 	// Note we use the same name for queue & binding for consistency.
 	queueName := resources.CreateTriggerQueueName(t)
 	queueArgs := &resources.QueueArgs{
 		QueueName:   queueName,
 		RabbitmqURL: rabbitmqURL,
-		DLX:         brokerresources.ExchangeName(broker, true),
+		// This is either the Broker DLX or Queue DLX created above if Trigger has
+		// delivery specified.
+		DLX: dlxExchange,
 	}
-	if isUsingOperator(broker) {
-		return fmt.Errorf("WON'T GO")
-	}
+
 	queue, err := resources.DeclareQueue(r.dialerFunc, queueArgs)
 	if err != nil {
 		logging.FromContext(ctx).Error("Problem declaring Trigger Queue", zap.Error(err))
@@ -209,7 +274,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		// If trigger didn't but Broker did, use it instead.
 		delivery = broker.Spec.Delivery
 	}
-	_, err = r.reconcileDispatcherDeployment(ctx, t, subscriberURI, delivery)
+	_, err = r.reconcileDispatcherDeployment(ctx, broker, t, secretName, subscriberURI, delivery)
 	if err != nil {
 		logging.FromContext(ctx).Error("Problem reconciling dispatcher Deployment", zap.Error(err))
 		t.Status.MarkDependencyFailed("DeploymentFailure", "%v", err)
@@ -248,7 +313,7 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, t *eventingv1.Trigger) pk
 		return nil
 	}
 
-	rabbitmqURL, err := r.rabbitmqURL(ctx, t)
+	_, rabbitmqURL, err := r.rabbitmqURL(ctx, t)
 	// If there's no secret, we can't delete the queue. Deleting an object should not require creation
 	// of a secret, and for example if the namespace is being deleted, there's nothing we can do.
 	// For now, return nil rather than leave the Trigger around.
@@ -292,25 +357,31 @@ func (r *Reconciler) reconcileDeployment(ctx context.Context, d *v1.Deployment) 
 }
 
 //reconcileDispatcherDeployment reconciles Trigger's dispatcher deployment.
-func (r *Reconciler) reconcileDispatcherDeployment(ctx context.Context, t *eventingv1.Trigger, sub *apis.URL, delivery *eventingduckv1.DeliverySpec) (*v1.Deployment, error) {
-	rabbitmqSecret, err := r.getRabbitmqSecret(ctx, t)
-	if err != nil {
-		return nil, err
-	}
-	b, err := r.brokerLister.Brokers(t.Namespace).Get(t.Spec.Broker)
-	if err != nil {
-		return nil, err
-	}
+func (r *Reconciler) reconcileDispatcherDeployment(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger, secretName string, sub *apis.URL, delivery *eventingduckv1.DeliverySpec) (*v1.Deployment, error) {
 	expected := resources.MakeDispatcherDeployment(&resources.DispatcherArgs{
-		Trigger: t,
-		Image:   r.dispatcherImage,
-		//ServiceAccountName string
-		RabbitMQSecretName: rabbitmqSecret.Name,
+		Trigger:            t,
+		Image:              r.dispatcherImage,
+		RabbitMQSecretName: secretName,
 		QueueName:          resources.CreateTriggerQueueName(t),
 		BrokerUrlSecretKey: brokerresources.BrokerURLSecretKey,
 		BrokerIngressURL:   b.Status.Address.URL,
 		Subscriber:         sub,
 		Delivery:           delivery,
+	})
+	return r.reconcileDeployment(ctx, expected)
+}
+
+//reconcileDispatcherDeployment reconciles Trigger's dispatcher deployment.
+func (r *Reconciler) reconcileDLXDispatcherDeployment(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger, secretName string, sub *apis.URL) (*v1.Deployment, error) {
+	expected := resources.MakeDispatcherDeployment(&resources.DispatcherArgs{
+		Trigger:            t,
+		Image:              r.dispatcherImage,
+		RabbitMQSecretName: secretName,
+		QueueName:          resources.CreateTriggerDeadLetterQueueName(t),
+		BrokerUrlSecretKey: brokerresources.BrokerURLSecretKey,
+		BrokerIngressURL:   b.Status.Address.URL,
+		Subscriber:         sub,
+		DLX:                true,
 	})
 	return r.reconcileDeployment(ctx, expected)
 }
@@ -370,14 +441,16 @@ func (r *Reconciler) getRabbitmqSecret(ctx context.Context, t *eventingv1.Trigge
 	return r.kubeClientSet.CoreV1().Secrets(t.Namespace).Get(ctx, brokerresources.SecretName(t.Spec.Broker), metav1.GetOptions{})
 }
 
-func (r *Reconciler) rabbitmqURL(ctx context.Context, t *eventingv1.Trigger) (string, error) {
+// rabbitmqURL returns the URL for the Rabbit as well as the name of the secret to use
+// to access it.
+func (r *Reconciler) rabbitmqURL(ctx context.Context, t *eventingv1.Trigger) (string, string, error) {
 	s, err := r.getRabbitmqSecret(ctx, t)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	val := s.Data[brokerresources.BrokerURLSecretKey]
 	if val == nil {
-		return "", fmt.Errorf("secret missing key %s", brokerresources.BrokerURLSecretKey)
+		return "", "", fmt.Errorf("secret missing key %s", brokerresources.BrokerURLSecretKey)
 	}
-	return string(val), nil
+	return s.Name, string(val), nil
 }

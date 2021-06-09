@@ -27,7 +27,6 @@ import (
 	brokerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/brokerstandalone/resources"
 
 	rabbithole "github.com/michaelklishin/rabbit-hole/v2"
-	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 )
 
@@ -35,6 +34,7 @@ const (
 	DefaultManagementPort = 15672
 	BindingKey            = "x-knative-trigger"
 	DLQBindingKey         = "x-knative-dlq"
+	TriggerDLQBindingKey  = "x-knative-trigger-dlq"
 )
 
 // BindingArgs are the arguments to create a Trigger's Binding to a RabbitMQ Exchange.
@@ -49,21 +49,6 @@ type BindingArgs struct {
 	RabbitmqManagementPort int
 	AdminURL               string
 	QueueName              string // only for DLQ
-}
-
-// BindingLabels generates the labels present on the Queue linking the Broker / Trigger to the
-// Binding.
-func BindingLabels(b *eventingv1.Broker, t *eventingv1.Trigger) map[string]string {
-	if t == nil {
-		return map[string]string{
-			eventing.BrokerLabelKey: b.Name,
-		}
-	} else {
-		return map[string]string{
-			eventing.BrokerLabelKey: b.Name,
-			TriggerLabelKey:         t.Name,
-		}
-	}
 }
 
 // MakeBinding declares the Binding from the Broker's Exchange to the Trigger's Queue.
@@ -140,7 +125,8 @@ func MakeBinding(transport http.RoundTripper, args *BindingArgs) error {
 	return nil
 }
 
-// MakeDLQBinding declares the Binding from the Broker's DLX to the DLQ dispatchers Queue.
+// MakeDLQBinding declares the Binding from the Broker's DLX to the DLQ dispatchers Queue or
+// from the Triggers DLX to the Triggers DLQ dispatchers queue.
 func MakeDLQBinding(transport http.RoundTripper, args *BindingArgs) error {
 	uri, err := url.Parse(args.BrokerURL)
 	if err != nil {
@@ -165,9 +151,19 @@ func MakeDLQBinding(transport http.RoundTripper, args *BindingArgs) error {
 		c.SetTransport(transport)
 	}
 
+	var bindingKey string
+	var bindingValue string
+	if args.Trigger != nil {
+		bindingKey = TriggerDLQBindingKey
+		bindingValue = args.Trigger.Name
+	} else {
+		bindingKey = BindingKey
+		bindingValue = args.Broker.Name
+	}
+
 	arguments := map[string]interface{}{
 		"x-match":  interface{}("all"),
-		BindingKey: interface{}(args.Broker.Name),
+		bindingKey: bindingValue,
 	}
 
 	var existing *rabbithole.BindingInfo
@@ -178,16 +174,23 @@ func MakeDLQBinding(transport http.RoundTripper, args *BindingArgs) error {
 	}
 
 	for _, b := range bindings {
-		if val, exists := b.Arguments[BindingKey]; exists && val == args.Broker.Name {
+		if val, exists := b.Arguments[bindingKey]; exists && val == bindingValue {
 			existing = &b
 			break
 		}
 	}
 
+	var source string
+	if args.Trigger != nil {
+		source = brokerresources.TriggerDLXExchangeName(args.Trigger)
+	} else {
+		source = brokerresources.ExchangeName(args.Broker, true)
+	}
+
 	if existing == nil || !reflect.DeepEqual(existing.Arguments, arguments) {
 		response, err := c.DeclareBinding("/", rabbithole.BindingInfo{
 			Vhost:           "/",
-			Source:          brokerresources.ExchangeName(args.Broker, true),
+			Source:          source,
 			Destination:     args.QueueName,
 			DestinationType: "queue",
 			RoutingKey:      args.RoutingKey,

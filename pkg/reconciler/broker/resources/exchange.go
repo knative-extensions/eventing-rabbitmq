@@ -109,8 +109,7 @@ func ExchangeName(b *eventingv1.Broker, DLX bool) string {
 }
 
 // TriggerDLXExchangeName constructs a name given a Broker.
-// Format is broker.Namespace.Name for normal exchanges and
-// broker.Namespace.Name.dlx for DLX exchanges.
+// Format is trigger.Namespace.Name.dlx
 func TriggerDLXExchangeName(t *eventingv1.Trigger) string {
 	exchangeBase := fmt.Sprintf("trigger.%s.%s.dlx", t.Namespace, t.Name)
 	foo := kmeta.ChildName(exchangeBase, string(t.GetUID()))

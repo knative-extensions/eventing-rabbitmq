@@ -33,19 +33,12 @@ import (
 // ExchangeArgs are the arguments to create a RabbitMQ Exchange.
 type ExchangeArgs struct {
 	Broker          *eventingv1.Broker
+	Trigger         *eventingv1.Trigger
 	RabbitMQURL     *url.URL
 	RabbitMQCluster string
 	// Set to true to create a DLX, which basically just means we're going
 	// to create it with a /DLX as the prepended name.
 	DLX bool
-}
-
-// ExchangeLabels generates the labels present on the Exchange linking the Broker to the
-// Exchange.
-func ExchangeLabels(b *eventingv1.Broker) map[string]string {
-	return map[string]string{
-		"eventing.knative.dev/broker": b.Name,
-	}
 }
 
 // DeclareExchange declares the Exchange for a Broker.
@@ -62,8 +55,14 @@ func DeclareExchange(dialerFunc dialer.DialerFunc, args *ExchangeArgs) (*corev1.
 	}
 	defer io.CloseAmqpResourceAndExitOnError(channel)
 
+	var exchangeName string
+	if args.Trigger != nil {
+		exchangeName = TriggerDLXExchangeName(args.Trigger)
+	} else {
+		exchangeName = ExchangeName(args.Broker, args.DLX)
+	}
 	return MakeSecret(args), channel.ExchangeDeclare(
-		ExchangeName(args.Broker, args.DLX),
+		exchangeName,
 		"headers", // kind
 		wabbit.Option{
 			"durable":    true,
@@ -88,8 +87,15 @@ func DeleteExchange(args *ExchangeArgs) error {
 	}
 	defer io.CloseAmqpResourceAndExitOnError(channel)
 
+	var exchangeName string
+	if args.Trigger != nil {
+		exchangeName = TriggerDLXExchangeName(args.Trigger)
+	} else {
+		exchangeName = ExchangeName(args.Broker, args.DLX)
+	}
+
 	return channel.ExchangeDelete(
-		ExchangeName(args.Broker, args.DLX),
+		exchangeName,
 		false, // if-unused
 		false, // nowait
 	)
@@ -101,12 +107,21 @@ func DeleteExchange(args *ExchangeArgs) error {
 func ExchangeName(b *eventingv1.Broker, DLX bool) string {
 	var exchangeBase string
 	if DLX {
-		exchangeBase = fmt.Sprintf("%s.%s.dlx", b.Namespace, b.Name)
+		exchangeBase = fmt.Sprintf("broker.%s.%s.dlx", b.Namespace, b.Name)
 	} else {
-		exchangeBase = fmt.Sprintf("%s.%s", b.Namespace, b.Name)
+		exchangeBase = fmt.Sprintf("broker.%s.%s", b.Namespace, b.Name)
 
 	}
 	foo := kmeta.ChildName(exchangeBase, string(b.GetUID()))
+	fmt.Printf("TODO: Fix this and use consistently to avoid collisions, worth doing? %s\n", foo)
+	return exchangeBase
+}
+
+// TriggerDLXExchangeName constructs a name given a Trigger.
+// Format is trigger.Namespace.Name.dlx
+func TriggerDLXExchangeName(t *eventingv1.Trigger) string {
+	exchangeBase := fmt.Sprintf("trigger.%s.%s.dlx", t.Namespace, t.Name)
+	foo := kmeta.ChildName(exchangeBase, string(t.GetUID()))
 	fmt.Printf("TODO: Fix this and use consistently to avoid collisions, worth doing? %s\n", foo)
 	return exchangeBase
 }

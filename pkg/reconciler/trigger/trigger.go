@@ -303,9 +303,8 @@ func (r *Reconciler) reconcileDispatcherDeployment(ctx context.Context, t *event
 		return nil, err
 	}
 	expected := resources.MakeDispatcherDeployment(&resources.DispatcherArgs{
-		Trigger: t,
-		Image:   r.dispatcherImage,
-		//ServiceAccountName string
+		Trigger:            t,
+		Image:              r.dispatcherImage,
 		RabbitMQSecretName: rabbitmqSecret.Name,
 		QueueName:          resources.CreateTriggerQueueName(t),
 		BrokerUrlSecretKey: brokerresources.BrokerURLSecretKey,
