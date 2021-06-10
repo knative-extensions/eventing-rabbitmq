@@ -22,13 +22,17 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
+	"time"
 
+	"github.com/NeowayLabs/wabbit"
 	"github.com/NeowayLabs/wabbit/amqp"
 	"github.com/NeowayLabs/wabbit/amqptest"
 	"github.com/NeowayLabs/wabbit/amqptest/server"
 	origamqp "github.com/streadway/amqp"
 	"go.uber.org/zap"
+	"knative.dev/eventing/pkg/adapter/v2"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/source"
@@ -478,6 +482,11 @@ func TestAdapterVhostHandler(t *testing.T) {
 		vhost:   "test-vhost",
 		want:    "amqp://localhost:5672/test-vhost",
 	}, {
+		name:    "brokers and vhost without separating slash but vhost with ending slash",
+		brokers: "amqp://localhost:5672",
+		vhost:   "test-vhost/",
+		want:    "amqp://localhost:5672/test-vhost/",
+	}, {
 		name:    "brokers with trailing slash and vhost without the slash",
 		brokers: "amqp://localhost:5672/",
 		vhost:   "test-vhost",
@@ -494,11 +503,124 @@ func TestAdapterVhostHandler(t *testing.T) {
 		want:    "amqp://localhost:5672//test-vhost",
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
 			got := vhostHandler(tt.brokers, tt.vhost)
 			if got != tt.want {
 				t.Errorf("Unexpected URI for %s/%s want:\n%+s\ngot:\n%+s", tt.brokers, tt.vhost, tt.want, got)
 			}
 		})
+	}
+}
+
+func TestAdapter_PollForMessages(t *testing.T) {
+	fakeServer := server.NewServer("amqp://localhost:5672/%2f")
+	err := fakeServer.Start()
+	if err != nil {
+		t.Errorf("%s: %s", "Failed to connect to RabbitMQ", err)
+	}
+
+	conn, err := amqptest.Dial("amqp://localhost:5672/%2f")
+	if err != nil {
+		t.Errorf("%s: %s", "Failed to connect to RabbitMQ", err)
+	}
+
+	channel, err := conn.Channel()
+	if err != nil {
+		t.Errorf("Failed to open a channel")
+	}
+
+	statsReporter, _ := source.NewStatsReporter()
+
+	a := &Adapter{
+		config: &adapterConfig{
+			Topic:   "topic",
+			Brokers: "amqp://guest:guest@localhost:5672/",
+			ExchangeConfig: ExchangeConfig{
+				Name:        "Test-exchange",
+				TypeOf:      "topic",
+				Durable:     true,
+				AutoDeleted: false,
+				Internal:    false,
+				NoWait:      false,
+			},
+			QueueConfig: QueueConfig{
+				Name:             "",
+				Durable:          false,
+				DeleteWhenUnused: false,
+				Exclusive:        true,
+				NoWait:           false,
+			},
+		},
+		context:  context.TODO(),
+		logger:   zap.NewNop(),
+		reporter: statsReporter,
+	}
+
+	err = channel.ExchangeDeclare(a.config.ExchangeConfig.Name, a.config.ExchangeConfig.TypeOf, nil)
+
+	if err != nil {
+		t.Errorf("Failed to declare an exchange")
+	}
+
+	queue, err := channel.QueueDeclare("", wabbit.Option{
+		"durable":   a.config.QueueConfig.Durable,
+		"delete":    a.config.QueueConfig.DeleteWhenUnused,
+		"exclusive": a.config.QueueConfig.Exclusive,
+		"noWait":    a.config.QueueConfig.NoWait,
+	})
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	if err := channel.Confirm(false); err != nil {
+		t.Fatalf("[x] Channel could not be put into confirm mode: %s", err)
+	}
+
+	ctx, _ := context.WithDeadline(context.TODO(), time.Now().Add(100*time.Millisecond))
+
+	err = a.PollForMessages(&channel, &queue, ctx.Done())
+
+	if err != nil {
+		t.Errorf("testing err %s", err)
+	}
+
+	channel.Close()
+	fakeServer.Stop()
+}
+
+func TestAdapter_NewEnvConfig(t *testing.T) {
+	env := NewEnvConfig()
+	var envPlaceholder adapter.EnvConfigAccessor
+	if reflect.TypeOf(env) == reflect.TypeOf(envPlaceholder) {
+		t.Errorf("Error in NewnvConfig return Type")
+	}
+}
+
+func TestAdapter_NewAdapter(t *testing.T) {
+	ctx := context.TODO()
+	env := NewEnvConfig()
+	h := &fakeHandler{
+		handler: sinkAccepted,
+	}
+
+	sinkServer := httptest.NewServer(h)
+	defer sinkServer.Close()
+
+	s, err := kncloudevents.NewHTTPMessageSenderWithTarget(sinkServer.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	statsReporter, _ := source.NewStatsReporter()
+	a := NewAdapter(ctx, env, s, statsReporter)
+	cmpA := &Adapter{
+		config:            env.(*adapterConfig),
+		httpMessageSender: s,
+		reporter:          statsReporter,
+		logger:            logging.FromContext(ctx).Desugar(),
+		context:           ctx,
+	}
+
+	if a == cmpA {
+		t.Errorf("Error in NewnvConfig return Type")
 	}
 }

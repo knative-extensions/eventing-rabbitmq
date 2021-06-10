@@ -114,8 +114,8 @@ func vhostHandler(brokers string, vhost string) string {
 	return fmt.Sprintf("%s%s", brokers, vhost)
 }
 
-func (a *Adapter) CreateConn(User string, Password string, logger *zap.Logger) (*amqp.Conn, error) {
-	if User != "" && Password != "" {
+func (a *Adapter) CreateConn(user string, password string, logger *zap.Logger) (*amqp.Conn, error) {
+	if user != "" && password != "" {
 		a.config.Brokers = fmt.Sprintf(
 			"amqp://%s:%s@%s",
 			a.config.User,
