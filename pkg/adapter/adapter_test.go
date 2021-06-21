@@ -503,6 +503,8 @@ func TestAdapterVhostHandler(t *testing.T) {
 		want:    "amqp://localhost:5672//test-vhost",
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 			got := vhostHandler(tt.brokers, tt.vhost)
 			if got != tt.want {
 				t.Errorf("Unexpected URI for %s/%s want:\n%+s\ngot:\n%+s", tt.brokers, tt.vhost, tt.want, got)
