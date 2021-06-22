@@ -14,32 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package rabbitmq
+package source
 
 import (
 	"context"
 
-	"knative.dev/pkg/apis"
-	"knative.dev/pkg/kmp"
+	"knative.dev/reconciler-test/pkg/environment"
+	"knative.dev/reconciler-test/pkg/feature"
+	"knative.dev/reconciler-test/pkg/manifest"
 )
 
-func (current *Adapter) Validate(ctx context.Context) *apis.FieldError {
-	if apis.IsInUpdate(ctx) {
-		original := apis.GetBaseline(ctx).(*Adapter)
-		if diff, err := kmp.ShortDiff(original.config, current.config); err != nil {
-			return &apis.FieldError{
-				Message: "Failed to diff RabbitmqSource",
-				Paths:   []string{"spec"},
-				Details: err.Error(),
-			}
-		} else if diff != "" {
-			return &apis.FieldError{
-				Message: "Immutable fields changed (-old +new)",
-				Paths:   []string{"spec"},
-				Details: diff,
-			}
+func init() {
+	environment.RegisterPackage(manifest.ImagesLocalYaml()...)
+}
+
+func Install() feature.StepFn {
+	return func(ctx context.Context, t feature.T) {
+		if _, err := manifest.InstallLocalYaml(ctx, map[string]interface{}{"producerCount": 5}); err != nil {
+			t.Fatal(err)
 		}
 	}
-
-	return nil
 }
