@@ -23,6 +23,8 @@ import (
 
 	"knative.dev/eventing-rabbitmq/test/e2e/config/source"
 	"knative.dev/eventing-rabbitmq/test/e2e/config/sourceproducer"
+	"knative.dev/eventing-rabbitmq/test/e2e/config/sourcevhost"
+
 	"knative.dev/reconciler-test/pkg/eventshub"
 	"knative.dev/reconciler-test/pkg/feature"
 
@@ -58,7 +60,7 @@ func DirectSourceTest() *feature.Feature {
 func VhostSourceTest() *feature.Feature {
 	f := new(feature.Feature)
 
-	f.Setup("install RabbitMQ source", source.Install())
+	f.Setup("install RabbitMQ source on test-vhost", sourcevhost.Install())
 	f.Alpha("RabbitMQ source").Must("goes ready", AllGoReady)
 	// Note this is a different producer than events hub because it publishes
 	// directly to RabbitMQ
