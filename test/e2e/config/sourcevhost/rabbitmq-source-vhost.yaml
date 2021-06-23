@@ -3,8 +3,6 @@ kind: RabbitmqSource
 metadata:
   name: rabbitmq-source
   namespace: {{ .namespace }}
-  labels:
-    app: rabbitmq-source-app
 spec:
   brokers: "rabbitmqc.{{ .namespace }}:5672/"
   vhost: "test-vhost"
