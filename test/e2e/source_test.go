@@ -62,5 +62,6 @@ func VhostSourceTest() *feature.Feature {
 
 	f.Setup("install RabbitMQ source on test-vhost", sourcevhost.Install())
 	f.Alpha("RabbitMQ source").Must("goes ready", AllGoReady)
+	// TODO: still needs some more logic to test all of it
 	return f
 }
