@@ -577,7 +577,8 @@ func TestAdapter_PollForMessages(t *testing.T) {
 		t.Fatalf("[x] Channel could not be put into confirm mode: %s", err)
 	}
 
-	ctx, _ := context.WithDeadline(context.TODO(), time.Now().Add(100*time.Millisecond))
+	ctx, cancelFunc := context.WithDeadline(context.TODO(), time.Now().Add(100*time.Millisecond))
+	defer cancelFunc()
 
 	err = a.PollForMessages(&channel, &queue, ctx.Done())
 
