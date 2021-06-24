@@ -62,15 +62,5 @@ func VhostSourceTest() *feature.Feature {
 
 	f.Setup("install RabbitMQ source on test-vhost", sourcevhost.Install())
 	f.Alpha("RabbitMQ source").Must("goes ready", AllGoReady)
-	// Note this is a different producer than events hub because it publishes
-	// directly to RabbitMQ
-	f.Setup("install producer", sourceproducer.Install())
-	f.Alpha("RabbitMQ source").
-		Must("the recorder received all sent events within the time",
-			func(ctx context.Context, t feature.T) {
-				// TODO: Use constraint matching instead of just counting number of events.
-				eventshub.StoreFromContext(ctx, "recorder").AssertAtLeast(t, 5)
-			})
-
 	return f
 }
