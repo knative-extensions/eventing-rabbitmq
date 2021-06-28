@@ -57,7 +57,7 @@ func DirectSourceTest() *feature.Feature {
 }
 
 // VhostSourceTest makes sure an RabbitMQ Source is created on the desired vhost.
-func VhostSourceTest() *feature.Feature {
+func VHostSourceTest() *feature.Feature {
 	f := new(feature.Feature)
 
 	f.Setup("install RabbitMQ source on test-vhost", sourcevhost.Install())
