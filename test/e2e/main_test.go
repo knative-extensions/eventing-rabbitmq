@@ -151,14 +151,8 @@ func TestSourceDirect(t *testing.T) {
 func TestSourceVhostSetup(t *testing.T) {
 	t.Parallel()
 
-	ctx, env := global.Environment(
-		knative.WithKnativeNamespace(system.Namespace()),
-		knative.WithLoggingConfig,
-		knative.WithTracingConfig,
-		k8s.WithEventListener,
-	)
+	ctx, env := global.Environment()
 	env.Test(ctx, t, RabbitMQCluster())
-	env.Test(ctx, t, RecorderFeature())
 	env.Test(ctx, t, VhostSourceTest())
 	env.Finish()
 }
