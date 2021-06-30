@@ -42,8 +42,3 @@ spec:
     delete_when_unused: false
     exclusive: false
     nowait: false
-  sink:
-    ref:
-      apiVersion: v1
-      kind: Service
-      name: recorder
