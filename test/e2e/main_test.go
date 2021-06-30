@@ -147,3 +147,13 @@ func TestSourceDirect(t *testing.T) {
 	env.Test(ctx, t, DirectSourceTest())
 	env.Finish()
 }
+
+func TestSourceVhostSetup(t *testing.T) {
+	t.Parallel()
+
+	ctx, env := global.Environment(
+		knative.WithKnativeNamespace(system.Namespace()),
+	)
+	env.Test(ctx, t, VHostSourceTest())
+	env.Finish()
+}

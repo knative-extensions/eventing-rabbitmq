@@ -15,10 +15,11 @@
 apiVersion: sources.knative.dev/v1alpha1
 kind: RabbitmqSource
 metadata:
-  name: rabbitmq-source
+  name: rabbitmq-source-vhost
   namespace: {{ .namespace }}
 spec:
   brokers: "rabbitmqc.{{ .namespace }}:5672/"
+  vhost: "test-vhost"
   topic: ""
   user:
     secretKeyRef:
@@ -41,8 +42,3 @@ spec:
     delete_when_unused: false
     exclusive: false
     nowait: false
-  sink:
-    ref:
-      apiVersion: v1
-      kind: Service
-      name: recorder

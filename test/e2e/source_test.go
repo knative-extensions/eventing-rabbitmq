@@ -23,6 +23,8 @@ import (
 
 	"knative.dev/eventing-rabbitmq/test/e2e/config/source"
 	"knative.dev/eventing-rabbitmq/test/e2e/config/sourceproducer"
+	"knative.dev/eventing-rabbitmq/test/e2e/config/sourcevhost"
+
 	"knative.dev/reconciler-test/pkg/eventshub"
 	"knative.dev/reconciler-test/pkg/feature"
 
@@ -50,6 +52,16 @@ func DirectSourceTest() *feature.Feature {
 				// TODO: Use constraint matching instead of just counting number of events.
 				eventshub.StoreFromContext(ctx, "recorder").AssertAtLeast(t, 5)
 			})
+
+	return f
+}
+
+// VhostSourceTest makes sure an RabbitMQ Source is created on the desired vhost.
+func VHostSourceTest() *feature.Feature {
+	f := new(feature.Feature)
+
+	f.Setup("install RabbitMQ source on test-vhost", sourcevhost.Install())
+	// TODO: still needs some more logic to test all of it
 
 	return f
 }
