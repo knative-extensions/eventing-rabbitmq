@@ -155,6 +155,7 @@ func TestSourceVhostSetup(t *testing.T) {
 		knative.WithKnativeNamespace(system.Namespace()),
 	)
 	env.Test(ctx, t, RabbitMQClusterVHost())
+	env.Test(ctx, t, RecorderFeature())
 	env.Test(ctx, t, VHostSourceTest())
 	env.Finish()
 }
