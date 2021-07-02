@@ -153,6 +153,8 @@ func TestSourceVhostSetup(t *testing.T) {
 
 	ctx, env := global.Environment(
 		knative.WithKnativeNamespace(system.Namespace()),
+		knative.WithLoggingConfig,
+		knative.WithTracingConfig,
 	)
 	env.Test(ctx, t, RabbitMQClusterVHost())
 	env.Test(ctx, t, RecorderFeature())
