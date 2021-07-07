@@ -19,8 +19,12 @@ limitations under the License.
 package e2e
 
 import (
+	"context"
+
+	"knative.dev/eventing-rabbitmq/test/e2e/config/sourceproducer"
 	"knative.dev/eventing-rabbitmq/test/e2e/config/sourcevhost"
 
+	"knative.dev/reconciler-test/pkg/eventshub"
 	"knative.dev/reconciler-test/pkg/feature"
 
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
@@ -38,6 +42,14 @@ func VHostSourceTest() *feature.Feature {
 
 	f.Setup("install RabbitMQ source on test-vhost", sourcevhost.Install())
 	f.Alpha("RabbitMQ source").Must("goes ready", AllGoReady)
+
+	f.Setup("install producer", sourceproducer.Install())
+	f.Alpha("RabbitMQ source").
+		Must("the recorder received all sent events within the time",
+			func(ctx context.Context, t feature.T) {
+				// TODO: Use constraint matching instead of just counting number of events.
+				eventshub.StoreFromContext(ctx, "recorder").AssertAtLeast(t, 5)
+			})
 
 	return f
 }
