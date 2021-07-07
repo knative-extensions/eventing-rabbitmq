@@ -1,7 +1,7 @@
 // +build e2e
 
 /*
-Copyright 2020 The Knative Authors
+Copyright 2021 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,8 +21,7 @@ package e2e
 import (
 	"context"
 
-	"knative.dev/eventing-rabbitmq/test/e2e/config/source"
-	"knative.dev/eventing-rabbitmq/test/e2e/config/sourceproducer"
+	"knative.dev/eventing-rabbitmq/test/e2e/config/sourcevhost"
 
 	"knative.dev/reconciler-test/pkg/eventshub"
 	"knative.dev/reconciler-test/pkg/feature"
@@ -33,19 +32,16 @@ import (
 )
 
 //
-// producer ---> rabbitmq --[source]--> recorder
+// producer ---> rabbitmq --[vhost(source)]--> recorder
 //
 
-// DirectSourceTest makes sure an RabbitMQ Source delivers events to a sink.
-func DirectSourceTest() *feature.Feature {
+// VhostSourceTest makes sure an RabbitMQ Source is created on the desired vhost.
+func VHostSourceTest() *feature.Feature {
 	f := new(feature.Feature)
 
-	f.Setup("install RabbitMQ source", source.Install())
-	f.Alpha("RabbitMQ source").Must("goes ready", AllGoReady)
-	// Note this is a different producer than events hub because it publishes
-	// directly to RabbitMQ
-	f.Setup("install producer", sourceproducer.Install())
-	f.Alpha("RabbitMQ source").
+	f.Setup("install RabbitMQ source on test-vhost", sourcevhost.Install())
+	f.Alpha("RabbitMQ source with vhost").Must("goes ready", AllGoReady)
+	f.Alpha("RabbitMQ source with vhost").
 		Must("the recorder received all sent events within the time",
 			func(ctx context.Context, t feature.T) {
 				// TODO: Use constraint matching instead of just counting number of events.

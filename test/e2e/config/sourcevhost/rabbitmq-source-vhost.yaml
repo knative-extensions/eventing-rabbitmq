@@ -23,11 +23,11 @@ spec:
   topic: ""
   user:
     secretKeyRef:
-      name: "rabbitmqc-default-user"
+      name: "secret-basic-auth"
       key: "username"
   password:
     secretKeyRef:
-      name: "rabbitmqc-default-user"
+      name: "secret-basic-auth"
       key: "password"
   exchange_config:
     type: "fanout"
@@ -42,3 +42,8 @@ spec:
     delete_when_unused: false
     exclusive: false
     nowait: false
+  sink:
+    ref:
+      apiVersion: v1
+      kind: Service
+      name: recorder

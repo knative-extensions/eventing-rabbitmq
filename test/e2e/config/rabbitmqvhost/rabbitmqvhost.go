@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package sourcevhost
+package rabbitmqvhost
 
 import (
 	"context"
@@ -30,7 +30,7 @@ func init() {
 
 func Install() feature.StepFn {
 	return func(ctx context.Context, t feature.T) {
-		if _, err := manifest.InstallLocalYaml(ctx, map[string]interface{}{"producerCount": 5}); err != nil {
+		if _, err := manifest.InstallLocalYaml(ctx, nil); err != nil {
 			t.Fatal(err)
 		}
 	}

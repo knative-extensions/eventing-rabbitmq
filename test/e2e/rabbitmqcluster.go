@@ -36,6 +36,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 
 	"knative.dev/eventing-rabbitmq/test/e2e/config/rabbitmq"
+	"knative.dev/eventing-rabbitmq/test/e2e/config/rabbitmqvhost"
 	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"
 )
@@ -53,6 +54,14 @@ func RabbitMQCluster() *feature.Feature {
 	f := new(feature.Feature)
 
 	f.Setup("install a rabbitmqcluster", rabbitmq.Install())
+	f.Requirement("RabbitMQCluster goes ready", RabbitMQClusterReady)
+	return f
+}
+
+func RabbitMQClusterVHost() *feature.Feature {
+	f := new(feature.Feature)
+
+	f.Setup("install a rabbitmqcluster with a default vhost and user permissions to it", rabbitmqvhost.Install())
 	f.Requirement("RabbitMQCluster goes ready", RabbitMQClusterReady)
 	return f
 }
