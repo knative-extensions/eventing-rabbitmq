@@ -22,6 +22,7 @@ import (
 	"context"
 
 	"knative.dev/eventing-rabbitmq/test/e2e/config/sourcevhost"
+	"knative.dev/eventing-rabbitmq/test/e2e/config/vhostsourceproducer"
 
 	"knative.dev/reconciler-test/pkg/eventshub"
 	"knative.dev/reconciler-test/pkg/feature"
@@ -41,6 +42,10 @@ func VHostSourceTest() *feature.Feature {
 
 	f.Setup("install RabbitMQ source on test-vhost", sourcevhost.Install())
 	f.Alpha("RabbitMQ source with vhost").Must("goes ready", AllGoReady)
+
+	// Note this is a different producer than events hub because it publishes
+	// directly to RabbitMQ
+	f.Setup("install producer inside the vhost", vhostsourceproducer.Install())
 	f.Alpha("RabbitMQ source with vhost").
 		Must("the recorder received all sent events within the time",
 			func(ctx context.Context, t feature.T) {
