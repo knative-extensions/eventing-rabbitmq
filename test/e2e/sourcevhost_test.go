@@ -22,6 +22,7 @@ import (
 	"context"
 
 	"knative.dev/eventing-rabbitmq/test/e2e/config/sourcevhost"
+	"knative.dev/eventing-rabbitmq/test/e2e/config/vhostsourceproducer"
 
 	"knative.dev/reconciler-test/pkg/eventshub"
 	"knative.dev/reconciler-test/pkg/feature"
@@ -40,8 +41,12 @@ func VHostSourceTest() *feature.Feature {
 	f := new(feature.Feature)
 
 	f.Setup("install RabbitMQ source on test-vhost", sourcevhost.Install())
-	f.Alpha("RabbitMQ source with vhost").Must("goes ready", AllGoReady)
-	f.Alpha("RabbitMQ source with vhost").
+	f.Alpha("RabbitMQ vhost-source ready").Must("goes ready", AllGoReady)
+
+	// Note this is a different producer than events hub because it publishes
+	// directly to RabbitMQ
+	f.Setup("install producer pointing to the vhost-source", vhostsourceproducer.Install())
+	f.Alpha("RabbitMQ vhost-source receiving messages").
 		Must("the recorder received all sent events within the time",
 			func(ctx context.Context, t feature.T) {
 				// TODO: Use constraint matching instead of just counting number of events.
