@@ -132,7 +132,7 @@ func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel wabbit.Channe
 			}
 
 			logging.FromContext(ctx).Debugf("Got Response: %+v", response)
-			if response != nil {
+			if response != nil && d.brokerIngressURL != "" {
 				logging.FromContext(ctx).Infof("Sending an event: %+v", response)
 				ctx = cloudevents.ContextWithTarget(ctx, d.brokerIngressURL)
 				backoffDelay := 50 * time.Millisecond

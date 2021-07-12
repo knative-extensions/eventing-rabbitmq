@@ -20,15 +20,20 @@ import (
 	"testing"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	messagingv1beta1 "knative.dev/eventing-rabbitmq/pkg/apis/messaging/v1beta1"
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 )
 
 const (
-	brokerName  = "testbroker"
-	brokerUID   = "brokeruid"
-	triggerName = "testtrigger"
-	triggerUID  = "triggeruid"
-	namespace   = "foobar"
+	brokerName      = "testbroker"
+	brokerUID       = "brokeruid"
+	triggerName     = "testtrigger"
+	triggerUID      = "triggeruid"
+	namespace       = "foobar"
+	channelName     = "testchannel"
+	channelUID      = "channeluid"
+	subscriptionUID = "subscriptionuid"
 )
 
 func TestExchangeName(t *testing.T) {
@@ -109,5 +114,92 @@ func TestCreateTriggerDeadLetterQueueName(t *testing.T) {
 	})
 	if want != got {
 		t.Errorf("Unexpected name for foobar/trigger Trigger DLQ: want:\n%q\ngot:\n%q", want, got)
+	}
+}
+
+func TestChannelExchangeName(t *testing.T) {
+	for _, tt := range []struct {
+		name      string
+		namespace string
+		dlx       bool
+		want      string
+	}{{
+		name:      channelName,
+		namespace: namespace,
+		want:      "c.foobar.testchannel.channeluid",
+	}, {
+		name:      channelName,
+		namespace: namespace,
+		want:      "c.foobar.testchannel.dlx.channeluid",
+		dlx:       true,
+	}} {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ChannelExchangeName(&messagingv1beta1.RabbitmqChannel{ObjectMeta: metav1.ObjectMeta{UID: channelUID, Namespace: tt.namespace, Name: tt.name}}, tt.dlx)
+			if got != tt.want {
+				t.Errorf("Unexpected name for Channel Exchange %s/%s DLX: %t: want:\n%+s\ngot:\n%+s", tt.namespace, tt.name, tt.dlx, tt.want, got)
+			}
+		})
+	}
+}
+
+func TestSubscriptionDLXExchangeName(t *testing.T) {
+	c := &messagingv1beta1.RabbitmqChannel{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      channelName,
+			UID:       channelUID,
+		},
+	}
+
+	want := "s.foobar.testchannel.dlx.subscriptionuid"
+	got := SubscriberDLXExchangeName(c, &eventingduckv1.SubscriberSpec{UID: subscriptionUID})
+	if want != got {
+		t.Errorf("Unexpected name for foobar/testsubscription Subscription DLX: want:\n%q\ngot:\n%q", want, got)
+	}
+}
+
+func TestCreateChannelDeadLetterQueueName(t *testing.T) {
+	want := "c.foobar.testchannel.dlq.channeluid"
+	got := CreateChannelDeadLetterQueueName(&messagingv1beta1.RabbitmqChannel{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      channelName,
+			UID:       channelUID,
+		},
+	})
+	if want != got {
+		t.Errorf("Unexpected name for foobar/testchannel Channel DLQ: want:\n%q\ngot:\n%q", want, got)
+	}
+}
+
+func TestCreateSubscriptionQueueName(t *testing.T) {
+	c := &messagingv1beta1.RabbitmqChannel{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      channelName,
+			UID:       channelUID,
+		},
+	}
+
+	want := "s.foobar.testchannel.subscriptionuid"
+	got := CreateSubscriberQueueName(c, &eventingduckv1.SubscriberSpec{UID: subscriptionUID})
+	if want != got {
+		t.Errorf("Unexpected name for foobar/testbroker Subscription queue: want:\n%q\ngot:\n%q", want, got)
+	}
+}
+
+func TestCreateSubscriptionDeadLetterQueueName(t *testing.T) {
+	c := &messagingv1beta1.RabbitmqChannel{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      channelName,
+			UID:       channelUID,
+		},
+	}
+
+	want := "s.foobar.testchannel.dlq.subscriptionuid"
+	got := CreateSubscriberDeadLetterQueueName(c, &eventingduckv1.SubscriberSpec{UID: subscriptionUID})
+	if want != got {
+		t.Errorf("Unexpected name for foobar/testbroker Subscription DLQ: want:\n%q\ngot:\n%q", want, got)
 	}
 }

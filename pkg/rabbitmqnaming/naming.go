@@ -21,12 +21,14 @@ import (
 
 	"knative.dev/pkg/kmeta"
 
+	messagingv1beta1 "knative.dev/eventing-rabbitmq/pkg/apis/messaging/v1beta1"
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 )
 
 // BrokerExchangeName creates a name for Broker Exchange.
-// Format is broker.Namespace.Name.BrokerUID for normal exchanges and
-// broker.Namespace.Name.dlx.BrokerUID for DLX exchanges.
+// Format is b.Namespace.Name.BrokerUID for normal exchanges and
+// b.Namespace.Name.dlx.BrokerUID for DLX exchanges.
 func BrokerExchangeName(b *eventingv1.Broker, dlx bool) string {
 	var exchangeBase string
 	if dlx {
@@ -66,4 +68,47 @@ func CreateTriggerQueueName(t *eventingv1.Trigger) string {
 func CreateTriggerDeadLetterQueueName(t *eventingv1.Trigger) string {
 	triggerDLQBase := fmt.Sprintf("t.%s.%s.dlq.", t.Namespace, t.Name)
 	return kmeta.ChildName(triggerDLQBase, string(t.GetUID()))
+}
+
+// ChannelExchangeName creates a name for Channel Exchange.
+// Format is c.Namespace.Name.ChannelUID for normal exchanges and
+// c.Namespace.Name.dlx.ChannelUID for DLX exchanges.
+func ChannelExchangeName(c *messagingv1beta1.RabbitmqChannel, dlx bool) string {
+	var exchangeBase string
+	if dlx {
+		exchangeBase = fmt.Sprintf("c.%s.%s.dlx.", c.Namespace, c.Name)
+	} else {
+		exchangeBase = fmt.Sprintf("c.%s.%s.", c.Namespace, c.Name)
+
+	}
+	return kmeta.ChildName(exchangeBase, string(c.GetUID()))
+}
+
+// CreateChannelDeadLetterQueueName constructs a Channel dead letter queue name.
+// Format is c.Namespace.Name.dlq.ChannelUID
+func CreateChannelDeadLetterQueueName(c *messagingv1beta1.RabbitmqChannel) string {
+	dlqBase := fmt.Sprintf("c.%s.%s.dlq.", c.Namespace, c.Name)
+	return kmeta.ChildName(dlqBase, string(c.GetUID()))
+}
+
+// SubscriberDLXExchangeName creates a DLX name that's used if Subscription has defined
+// a DeadLetterSink.
+// Format is s.ChannelNamespace.ChannelName.dlx.SubscriptionUID
+func SubscriberDLXExchangeName(c *messagingv1beta1.RabbitmqChannel, s *eventingduckv1.SubscriberSpec) string {
+	exchangeBase := fmt.Sprintf("s.%s.%s.dlx.", c.Namespace, c.Name)
+	return kmeta.ChildName(exchangeBase, string(s.UID))
+}
+
+// CreateSubscriberQueueName creates a queue name for Subscription events.
+// Format is s.ChannelNamespace.ChannelName.SubscriptionUID
+func CreateSubscriberQueueName(c *messagingv1beta1.RabbitmqChannel, s *eventingduckv1.SubscriberSpec) string {
+	subscriptionQueueBase := fmt.Sprintf("s.%s.%s.", c.Namespace, c.Name)
+	return kmeta.ChildName(subscriptionQueueBase, string(s.UID))
+}
+
+// CreateSubsriberDeadLetterQueueName creates a DLQ name for Subscription events.
+// Format is s.ChannelNamespace.ChannelName.dlq.SubscriptionUID
+func CreateSubscriberDeadLetterQueueName(c *messagingv1beta1.RabbitmqChannel, s *eventingduckv1.SubscriberSpec) string {
+	subscriptionDLQBase := fmt.Sprintf("s.%s.%s.dlq.", c.Namespace, c.Name)
+	return kmeta.ChildName(subscriptionDLQBase, string(s.UID))
 }

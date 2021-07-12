@@ -15,16 +15,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: rabbitmq-webhook
-  namespace: knative-sources
+  name: rabbitmq-channel-webhook
+  namespace: knative-eventing
   labels:
     rabbitmq.eventing.knative.dev/release: devel
 spec:
   replicas: 1
   selector:
     matchLabels: &labels
-      app: rabbitmq-webhook
-      role: rabbitmq-webhook
+      app: rabbitmq-channel-webhook
+      role: rabbitmq-channel-webhook
   template:
     metadata:
       labels: *labels
@@ -36,19 +36,19 @@ spec:
           - podAffinityTerm:
               labelSelector:
                 matchLabels:
-                  app: rabbitmq-webhook
+                  app: rabbitmq-channel-webhook
               topologyKey: kubernetes.io/hostname
             weight: 100
 
-      serviceAccountName: rabbitmq-webhook
+      serviceAccountName: rabbitmq-channel-webhook
 
       containers:
-      - name: rabbitmq-webhook
+      - name: rabbitmq-channel-webhook
         terminationMessagePolicy: FallbackToLogsOnError
 
         # This is the Go import path for the binary that is containerized
         # and substituted here.
-        image: ko://knative.dev/eventing-rabbitmq/cmd/source/webhook
+        image: ko://knative.dev/eventing-rabbitmq/cmd/webhook/channel
 
         resources:
           requests:
@@ -68,9 +68,9 @@ spec:
         - name: CONFIG_LOGGING_NAME
           value: config-logging
         - name: METRICS_DOMAIN
-          value: knative.dev/sources
+          value: knative.dev/messaging
         - name: WEBHOOK_NAME
-          value: rabbitmq-webhook
+          value: rabbitmq-channel-webhook
         - name: WEBHOOK_PORT
           value: "8443"
 
@@ -107,13 +107,13 @@ kind: Service
 metadata:
   labels:
     rabbitmq.eventing.knative.dev/release: devel
-    role: rabbitmq-webhook
-  name: rabbitmq-webhook
-  namespace: knative-sources
+    role: rabbitmq-channel-webhook
+  name: rabbitmq-channel-webhook
+  namespace: knative-eventing
 spec:
   ports:
     - name: https-webhook
       port: 443
       targetPort: 8443
   selector:
-    role: rabbitmq-webhook
+    role: rabbitmq-channel-webhook

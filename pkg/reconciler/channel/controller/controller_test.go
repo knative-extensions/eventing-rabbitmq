@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Knative Authors
+Copyright 2021 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import (
 
 	"k8s.io/client-go/rest"
 
+	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/injection"
 
 	_ "knative.dev/eventing-rabbitmq/pkg/client/injection/informers/messaging/v1beta1/rabbitmqchannel/fake"
@@ -33,5 +34,5 @@ import (
 func TestNewController(t *testing.T) {
 	ctx, _ := injection.Fake.SetupInformers(context.Background(), &rest.Config{})
 	// no panic
-	_ = NewController(ctx)
+	_ = NewController(ctx, configmap.NewStaticWatcher())
 }

@@ -1,4 +1,4 @@
-# Copyright 2020 The Knative Authors
+# Copyright 2021 The Knative Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,18 +15,18 @@
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
-  name: config.webhook.rabbitmq.sources.knative.dev
+  name: config.webhook.rabbitmq.messaging.knative.dev
   labels:
     rabbitmq.eventing.knative.dev/release: devel
 webhooks:
-- admissionReviewVersions: ["v1", "v1beta1"]
+- admissionReviewVersions: ["v1"]
   clientConfig:
     service:
-      name: rabbitmq-webhook
-      namespace: knative-sources
+      name: rabbitmq-channel-webhook
+      namespace: knative-eventing
   sideEffects: None
   failurePolicy: Fail
-  name: config.webhook.rabbitmq.sources.knative.dev
+  name: config.webhook.rabbitmq.messaging.knative.dev
   namespaceSelector:
     matchExpressions:
     - key: eventing.knative.dev/release

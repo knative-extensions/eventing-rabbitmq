@@ -14,14 +14,14 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: imc-controller
+  name: rabbitmq-channel-controller
   labels:
     eventing.knative.dev/release: devel
 subjects:
   - kind: ServiceAccount
-    name: imc-controller
+    name: rabbitmq-channel-controller
     namespace: knative-eventing
 roleRef:
   kind: ClusterRole
-  name: imc-controller
+  name: rabbitmq-channel-controller
   apiGroup: rbac.authorization.k8s.io

@@ -1,4 +1,4 @@
-# Copyright 2019 The Knative Authors
+# Copyright 2021 The Knative Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: imc-channelable-manipulator
+  name: rabbitmq-channelable-manipulator
   labels:
     eventing.knative.dev/release: devel
     duck.knative.dev/channelable: "true"
@@ -24,8 +24,8 @@ rules:
   - apiGroups:
       - messaging.knative.dev
     resources:
-      - inmemorychannels
-      - inmemorychannels/status
+      - rabbitmqchannels
+      - rabbitmqchannels/status
     verbs:
       - create
       - get

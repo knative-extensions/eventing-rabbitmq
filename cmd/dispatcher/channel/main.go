@@ -34,10 +34,11 @@ import (
 )
 
 type envConfig struct {
-	QueueName        string `envconfig:"QUEUE_NAME" required:"true"`
-	RabbitURL        string `envconfig:"RABBIT_URL" required:"true"`
-	BrokerIngressURL string `envconfig:"BROKER_INGRESS_URL" required:"true"`
-	SubscriberURL    string `envconfig:"SUBSCRIBER" required:"true"`
+	QueueName string `envconfig:"QUEUE_NAME" required:"true"`
+	RabbitURL string `envconfig:"RABBIT_URL" required:"true"`
+	// For channel, this is where Reply is sent if configured
+	ChannelReplyURL string `envconfig:"REPLY_URL" required:"false"`
+	SubscriberURL   string `envconfig:"SUBSCRIBER" required:"true"`
 	// Should failed deliveries be requeued in the RabbitMQ?
 	Requeue bool `envconfig:"REQUEUE" default:"false" required:"true"`
 
@@ -107,7 +108,7 @@ func main() {
 		logging.FromContext(ctx).Fatal("Failed to create QoS: ", err)
 	}
 
-	d := dispatcher.NewDispatcher(env.BrokerIngressURL, env.SubscriberURL, env.Requeue, env.Retry, backoffDelay, backoffPolicy)
+	d := dispatcher.NewDispatcher(env.ChannelReplyURL, env.SubscriberURL, env.Requeue, env.Retry, backoffDelay, backoffPolicy)
 	if err := d.ConsumeFromQueue(ctx, channel, env.QueueName); err != nil {
 		// ignore ctx cancelled and channel closed errors
 		if errors.Is(err, context.Canceled) || errors.Is(err, amqperr.ErrClosed) {
