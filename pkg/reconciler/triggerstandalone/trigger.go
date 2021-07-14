@@ -204,15 +204,21 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		deadLetterSinkURI, err := r.uriResolver.URIFromDestinationV1(ctx, *t.Spec.Delivery.DeadLetterSink, t)
 		if err != nil {
 			logging.FromContext(ctx).Error("Unable to get the DeadLetterSink URI", zap.Error(err))
-			t.Status.MarkDependencyFailed("DeadLetterSink", fmt.Sprintf("Unable to get the DeadLetterSink URI: %s", err))
+			t.Status.MarkDeadLetterSinkResolvedFailed("Unable to get the DeadLetterSink URI", "%v", err)
+			t.Status.DeadLetterURI = nil
 			return err
 		}
+		t.Status.MarkDeadLetterSinkResolvedSucceeded()
+		t.Status.DeadLetterURI = deadLetterSinkURI
 		_, err = r.reconcileDLXDispatcherDeployment(ctx, broker, t, secretName, deadLetterSinkURI)
 		if err != nil {
 			logging.FromContext(ctx).Error("Problem reconciling DLX dispatcher Deployment", zap.Error(err))
 			t.Status.MarkDependencyFailed("DeploymentFailure", "%v", err)
 			return err
 		}
+	} else {
+		// There's no Delivery spec, so just mark is as there's no DeadLetterSink Configured for it.
+		t.Status.MarkDeadLetterSinkNotConfigured()
 	}
 
 	// Note we use the same name for queue & binding for consistency.

@@ -23,7 +23,7 @@ require (
 	github.com/streadway/amqp v1.0.0
 	github.com/testcontainers/testcontainers-go v0.7.0
 	github.com/tiago4orion/conjure v0.0.0-20150908101743-93cb30b9d218 // indirect
-	go.uber.org/zap v1.17.0
+	go.uber.org/zap v1.18.1
 	gotest.tools v2.2.0+incompatible
 	k8s.io/api v0.20.7
 	k8s.io/apiextensions-apiserver v0.20.7
@@ -31,18 +31,16 @@ require (
 	k8s.io/client-go v0.20.7
 	k8s.io/code-generator v0.21.0
 	k8s.io/kube-openapi v0.0.0-20210305001622-591a79e4bda7
-	knative.dev/eventing v0.24.0
+	knative.dev/eventing v0.24.1-0.20210713221030-0af15fd14a18
 	knative.dev/hack v0.0.0-20210622141627-e28525d8d260
-	knative.dev/pkg v0.0.0-20210622173328-dd0db4b05c80
-	knative.dev/reconciler-test v0.0.0-20210623134345-88c84739abd9
+	knative.dev/pkg v0.0.0-20210713175550-7d1b0f19ef71
+	knative.dev/reconciler-test v0.0.0-20210713145651-ebe91f96fea0
 )
 
 replace (
 	// This branch allows creation of headers exchange.
 	github.com/NeowayLabs/wabbit => github.com/vaikas/wabbit v0.0.0-20201002085521-b5b22698ecc7
 
-	// Grab the latest so we get modifiable retries
-	github.com/cloudevents/sdk-go/v2 => github.com/cloudevents/sdk-go/v2 v2.3.1-0.20201008104108-58f826d67d91
 	github.com/docker/docker => github.com/docker/engine v0.0.0-20190717161051-705d9623b7c1
 	// Somehow mattmoor/bindings causes grief...
 	github.com/google/go-github/v32 => github.com/google/go-github/v32 v32.0.1-0.20200624231906-3d244d3d496e

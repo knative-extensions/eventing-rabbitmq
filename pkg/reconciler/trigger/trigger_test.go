@@ -368,6 +368,7 @@ func TestReconcile(t *testing.T) {
 					WithTriggerUID(triggerUID),
 					WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS),
 					WithTriggerBrokerReady(),
+					WithTriggerDeadLetterSinkNotConfigured(),
 					WithTriggerDependencyReady(),
 					WithTriggerSubscribed(),
 					WithTriggerSubscriberResolvedSucceeded(),
@@ -396,6 +397,7 @@ func TestReconcile(t *testing.T) {
 					WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS),
 					WithInitTriggerConditions,
 					WithTriggerBrokerReady(),
+					WithTriggerDeadLetterSinkNotConfigured(),
 					WithTriggerDependencyReady(),
 					WithTriggerSubscriberResolvedFailed("Unable to get the Subscriber's URI", `address not set for &ObjectReference{Kind:Service,Namespace:test-namespace,Name:subscriber-name,UID:,APIVersion:serving.knative.dev/v1,ResourceVersion:,FieldPath:,}`)),
 			}},
@@ -427,6 +429,7 @@ func TestReconcile(t *testing.T) {
 					WithTriggerSubscriberURI(subscriberURI),
 					WithInitTriggerConditions,
 					WithTriggerBrokerReady(),
+					WithTriggerDeadLetterSinkNotConfigured(),
 					WithTriggerSubscribed(),
 					WithTriggerSubscriberResolvedSucceeded(),
 					WithTriggerStatusSubscriberURI(subscriberURI),
@@ -461,6 +464,7 @@ func TestReconcile(t *testing.T) {
 					WithTriggerSubscriberURI(subscriberURI),
 					WithInitTriggerConditions,
 					WithTriggerBrokerReady(),
+					WithTriggerDeadLetterSinkNotConfigured(),
 					WithTriggerSubscribed(),
 					WithTriggerSubscriberResolvedSucceeded(),
 					WithTriggerStatusSubscriberURI(subscriberURI),
@@ -485,6 +489,7 @@ func TestReconcile(t *testing.T) {
 					WithTriggerSubscriberURI(subscriberURI),
 					WithInitTriggerConditions,
 					WithTriggerBrokerReady(),
+					WithTriggerDeadLetterSinkNotConfigured(),
 					WithTriggerSubscribed(),
 					WithTriggerDependencyReady(),
 					WithTriggerSubscriberResolvedSucceeded(),
@@ -673,6 +678,7 @@ func TestReconcile(t *testing.T) {
 					WithInitTriggerConditions,
 					WithDependencyAnnotation(dependencyAnnotation),
 					WithTriggerBrokerReady(),
+					WithTriggerDeadLetterSinkNotConfigured(),
 					WithTriggerSubscribed(),
 					WithTriggerStatusSubscriberURI(subscriberURI),
 					WithTriggerSubscriberResolvedSucceeded(),
@@ -829,6 +835,7 @@ func triggerWithFilterReady() *eventingv1.Trigger {
 		WithTriggerUID(triggerUID),
 		WithTriggerSubscriberURI(subscriberURI),
 		WithTriggerBrokerReady(),
+		WithTriggerDeadLetterSinkNotConfigured(),
 		WithTriggerDependencyReady(),
 		WithTriggerSubscribed(),
 		WithTriggerSubscriberResolvedSucceeded(),
@@ -845,6 +852,7 @@ func triggerWithQueueCreateFailure() *eventingv1.Trigger {
 		WithInitTriggerConditions,
 		WithTriggerSubscriberURI(subscriberURI),
 		WithTriggerBrokerReady(),
+		WithTriggerDeadLetterSinkNotConfigured(),
 		WithTriggerDependencyReady(),
 		WithTriggerDependencyFailed("QueueFailure", `inducing failure for create queues`))
 
@@ -860,6 +868,7 @@ func triggerWithBindingCreateFailure() *eventingv1.Trigger {
 		WithInitTriggerConditions,
 		WithTriggerSubscriberURI(subscriberURI),
 		WithTriggerBrokerReady(),
+		WithTriggerDeadLetterSinkNotConfigured(),
 		WithTriggerDependencyReady(),
 		WithTriggerDependencyFailed("BindingFailure", `inducing failure for create bindings`))
 
@@ -875,6 +884,7 @@ func triggerWithQueueNotReady() *eventingv1.Trigger {
 		WithInitTriggerConditions,
 		WithTriggerSubscriberURI(subscriberURI),
 		WithTriggerBrokerReady(),
+		WithTriggerDeadLetterSinkNotConfigured(),
 		WithTriggerDependencyReady(),
 		WithTriggerDependencyFailed("QueueFailure", `Queue "t.test-namespace.test-trigger.test-trigger-uid" is not ready`))
 
@@ -890,6 +900,7 @@ func triggerWithBindingNotReady() *eventingv1.Trigger {
 		WithInitTriggerConditions,
 		WithTriggerSubscriberURI(subscriberURI),
 		WithTriggerBrokerReady(),
+		WithTriggerDeadLetterSinkNotConfigured(),
 		WithTriggerDependencyReady(),
 		WithTriggerDependencyFailed("BindingFailure", `Binding "t.test-namespace.test-trigger.test-trigger-uid" is not ready`))
 
