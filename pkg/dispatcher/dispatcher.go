@@ -77,7 +77,7 @@ func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel wabbit.Channe
 		return errors.Wrap(err, "create consumer")
 	}
 
-	ceClient, err := cloudevents.NewDefaultClient(cehttp.WithIsRetriableFunc(isRetriableFunc))
+	ceClient, err := cloudevents.NewClientHTTP(cehttp.WithIsRetriableFunc(isRetriableFunc))
 	if err != nil {
 		return errors.Wrap(err, "create http client")
 	}
