@@ -187,7 +187,7 @@ github.com/go-openapi/spec
 github.com/go-openapi/swag
 # github.com/go-redis/redis v6.15.9+incompatible
 ## explicit
-# github.com/gobuffalo/flect v0.2.2
+# github.com/gobuffalo/flect v0.2.3
 github.com/gobuffalo/flect
 # github.com/gogo/protobuf v1.3.2
 github.com/gogo/protobuf/proto
@@ -402,7 +402,7 @@ go.uber.org/automaxprocs/internal/runtime
 go.uber.org/automaxprocs/maxprocs
 # go.uber.org/multierr v1.6.0
 go.uber.org/multierr
-# go.uber.org/zap v1.17.0
+# go.uber.org/zap v1.18.1
 ## explicit
 go.uber.org/zap
 go.uber.org/zap/buffer
@@ -424,7 +424,7 @@ golang.org/x/crypto/ssh/terminal
 # golang.org/x/mod v0.4.2
 golang.org/x/mod/module
 golang.org/x/mod/semver
-# golang.org/x/net v0.0.0-20210525063256-abc453219eb5
+# golang.org/x/net v0.0.0-20210614182718-04defd469f4e
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/http/httpguts
@@ -436,7 +436,7 @@ golang.org/x/net/internal/socks
 golang.org/x/net/internal/timeseries
 golang.org/x/net/proxy
 golang.org/x/net/trace
-# golang.org/x/oauth2 v0.0.0-20210514164344-f6687ab2804c
+# golang.org/x/oauth2 v0.0.0-20210628180205-a41e5a781914
 golang.org/x/oauth2
 golang.org/x/oauth2/authhandler
 golang.org/x/oauth2/google
@@ -465,7 +465,7 @@ golang.org/x/text/unicode/norm
 golang.org/x/text/width
 # golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba
 golang.org/x/time/rate
-# golang.org/x/tools v0.1.2
+# golang.org/x/tools v0.1.4
 golang.org/x/tools/go/ast/astutil
 golang.org/x/tools/imports
 golang.org/x/tools/internal/event
@@ -476,6 +476,7 @@ golang.org/x/tools/internal/fastwalk
 golang.org/x/tools/internal/gocommand
 golang.org/x/tools/internal/gopathwalk
 golang.org/x/tools/internal/imports
+golang.org/x/tools/internal/typeparams
 # golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 golang.org/x/xerrors
 golang.org/x/xerrors/internal
@@ -1021,7 +1022,7 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/eventing v0.24.0
+# knative.dev/eventing v0.24.1-0.20210713221030-0af15fd14a18
 ## explicit
 knative.dev/eventing/pkg/adapter/v2
 knative.dev/eventing/pkg/adapter/v2/util/crstatusevent
@@ -1086,6 +1087,7 @@ knative.dev/eventing/pkg/client/listers/sources/v1
 knative.dev/eventing/pkg/client/listers/sources/v1beta2
 knative.dev/eventing/pkg/duck
 knative.dev/eventing/pkg/kncloudevents
+knative.dev/eventing/pkg/metrics/source
 knative.dev/eventing/pkg/reconciler/testing
 knative.dev/eventing/pkg/reconciler/testing/scheme
 knative.dev/eventing/pkg/reconciler/testing/v1
@@ -1117,7 +1119,7 @@ knative.dev/eventing/test/test_images/print
 # knative.dev/hack v0.0.0-20210622141627-e28525d8d260
 ## explicit
 knative.dev/hack
-# knative.dev/pkg v0.0.0-20210622173328-dd0db4b05c80
+# knative.dev/pkg v0.0.0-20210713175550-7d1b0f19ef71
 ## explicit
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
@@ -1218,7 +1220,7 @@ knative.dev/pkg/webhook/configmaps
 knative.dev/pkg/webhook/resourcesemantics
 knative.dev/pkg/webhook/resourcesemantics/defaulting
 knative.dev/pkg/webhook/resourcesemantics/validation
-# knative.dev/reconciler-test v0.0.0-20210623134345-88c84739abd9
+# knative.dev/reconciler-test v0.0.0-20210713145651-ebe91f96fea0
 ## explicit
 knative.dev/reconciler-test/cmd/eventshub
 knative.dev/reconciler-test/pkg/environment
