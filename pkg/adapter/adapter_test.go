@@ -34,8 +34,8 @@ import (
 	"go.uber.org/zap"
 	"knative.dev/eventing/pkg/adapter/v2"
 	"knative.dev/eventing/pkg/kncloudevents"
+	"knative.dev/eventing/pkg/metrics/source"
 	"knative.dev/pkg/logging"
-	"knative.dev/pkg/source"
 )
 
 func TestPostMessage_ServeHTTP(t *testing.T) {

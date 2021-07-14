@@ -33,8 +33,8 @@ import (
 	sourcesv1alpha1 "knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 	"knative.dev/eventing/pkg/adapter/v2"
 	"knative.dev/eventing/pkg/kncloudevents"
+	"knative.dev/eventing/pkg/metrics/source"
 	"knative.dev/pkg/logging"
-	"knative.dev/pkg/source"
 )
 
 const (
