@@ -27,6 +27,7 @@ import (
 	"github.com/NeowayLabs/wabbit/amqptest"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
+	cloudevent "github.com/cloudevents/sdk-go/v2/event"
 	"github.com/cloudevents/sdk-go/v2/protocol/http"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/util/uuid"
@@ -302,6 +303,21 @@ func (a *Adapter) PollForMessages(channel *wabbit.Channel,
 	}
 }
 
+func setMsgContentType(msg wabbit.Delivery) string {
+	switch msg.Headers()["content_type"] {
+	case cloudevent.TextPlain:
+		return *cloudevents.StringOfTextPlain()
+	case cloudevent.Base64:
+		return *cloudevents.StringOfBase64()
+	case cloudevent.ApplicationXML:
+		return *cloudevents.StringOfApplicationXML()
+	case cloudevent.ApplicationCloudEventsJSON, cloudevent.ApplicationCloudEventsBatchJSON:
+		return *cloudevent.StringOfApplicationCloudEventsJSON()
+	default:
+		return *cloudevents.StringOfApplicationJSON()
+	}
+}
+
 func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 	a.logger.Info("url ->" + a.httpMessageSender.Target)
 	req, err := a.httpMessageSender.NewCloudEventRequest(a.context)
@@ -309,21 +325,24 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 		return err
 	}
 
-	// TODO: See if the message is already a Cloud Event and if so, do not wrap, just use as is.
+	a.logger.Info(string(fmt.Sprint(msg.Headers())))
+
+	contentType := setMsgContentType(msg)
+
 	event := cloudevents.NewEvent()
 	if msg.MessageId() != "" {
 		event.SetID(msg.MessageId())
 	} else {
 		event.SetID(string(uuid.NewUUID()))
 	}
+
 	event.SetTime(msg.Timestamp())
 	event.SetType(sourcesv1alpha1.RabbitmqEventType)
 	event.SetSource(sourcesv1alpha1.RabbitmqEventSource(a.config.Namespace, a.config.Name, a.config.Topic))
 	event.SetSubject(msg.MessageId())
-	event.SetExtension("key", msg.MessageId())
+	event.SetExtension("key", msg.MessageId()) // add it to all the events
 
-	// TODO: Check the content type and use it instead.
-	err = event.SetData(*cloudevents.StringOfApplicationJSON(), msg.Body())
+	err = event.SetData(contentType, msg.Body())
 	if err != nil {
 		return err
 	}
