@@ -18,6 +18,7 @@ package rabbitmq
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	nethttp "net/http"
 	"strings"
@@ -304,17 +305,14 @@ func (a *Adapter) PollForMessages(channel *wabbit.Channel,
 }
 
 func setMsgContentType(msg wabbit.Delivery) string {
-	switch msg.Headers()["content_type"] {
-	case cloudevent.TextPlain:
-		return *cloudevents.StringOfTextPlain()
-	case cloudevent.Base64:
-		return *cloudevents.StringOfBase64()
-	case cloudevent.ApplicationXML:
-		return *cloudevents.StringOfApplicationXML()
+	contentType := fmt.Sprint(msg.Headers()["content_type"])
+	switch contentType {
+	case cloudevent.ApplicationJSON, cloudevent.TextJSON, "":
+		return cloudevent.ApplicationJSON
 	case cloudevent.ApplicationCloudEventsJSON, cloudevent.ApplicationCloudEventsBatchJSON:
-		return *cloudevent.StringOfApplicationCloudEventsJSON()
+		return cloudevent.ApplicationCloudEventsJSON
 	default:
-		return *cloudevents.StringOfApplicationJSON()
+		return contentType
 	}
 }
 
@@ -328,23 +326,30 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 	a.logger.Info(string(fmt.Sprint(msg.Headers())))
 
 	contentType := setMsgContentType(msg)
+	var event cloudevent.Event
+	if contentType == cloudevent.ApplicationCloudEventsJSON {
+		event := cloudevents.NewEvent()
+		if msg.MessageId() != "" {
+			event.SetID(msg.MessageId())
+		} else {
+			event.SetID(string(uuid.NewUUID()))
+		}
 
-	event := cloudevents.NewEvent()
-	if msg.MessageId() != "" {
-		event.SetID(msg.MessageId())
+		event.SetTime(msg.Timestamp())
+		event.SetType(sourcesv1alpha1.RabbitmqEventType)
+		event.SetSource(sourcesv1alpha1.RabbitmqEventSource(a.config.Namespace, a.config.Name, a.config.Topic))
+		event.SetSubject(msg.MessageId())
+		event.SetExtension("key", msg.MessageId())
+
+		err = event.SetData(contentType, msg.Body())
+		if err != nil {
+			return err
+		}
 	} else {
-		event.SetID(string(uuid.NewUUID()))
-	}
-
-	event.SetTime(msg.Timestamp())
-	event.SetType(sourcesv1alpha1.RabbitmqEventType)
-	event.SetSource(sourcesv1alpha1.RabbitmqEventSource(a.config.Namespace, a.config.Name, a.config.Topic))
-	event.SetSubject(msg.MessageId())
-	event.SetExtension("key", msg.MessageId()) // add it to all the events
-
-	err = event.SetData(contentType, msg.Body())
-	if err != nil {
-		return err
+		err := json.Unmarshal(msg.Body(), &event)
+		if err != nil {
+			return err
+		}
 	}
 
 	err = http.WriteRequest(a.context, binding.ToMessage(&event), req)
