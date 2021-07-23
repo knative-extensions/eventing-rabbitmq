@@ -327,7 +327,13 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 
 	contentType := setMsgContentType(msg)
 	var event cloudevent.Event
+
 	if contentType == cloudevent.ApplicationCloudEventsJSON {
+		err := json.Unmarshal(msg.Body(), &event)
+		if err != nil {
+			return err
+		}
+	} else {
 		event := cloudevents.NewEvent()
 		if msg.MessageId() != "" {
 			event.SetID(msg.MessageId())
@@ -342,11 +348,6 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 		event.SetExtension("key", msg.MessageId())
 
 		err = event.SetData(contentType, msg.Body())
-		if err != nil {
-			return err
-		}
-	} else {
-		err := json.Unmarshal(msg.Body(), &event)
 		if err != nil {
 			return err
 		}
