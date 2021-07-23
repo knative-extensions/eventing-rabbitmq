@@ -326,7 +326,7 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 	a.logger.Info(string(fmt.Sprint(msg.Headers())))
 
 	contentType := setMsgContentType(msg)
-	var event cloudevent.Event
+	event := cloudevents.NewEvent()
 
 	if contentType == cloudevent.ApplicationCloudEventsJSON {
 		err := json.Unmarshal(msg.Body(), &event)
@@ -334,7 +334,6 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 			return err
 		}
 	} else {
-		event := cloudevents.NewEvent()
 		if msg.MessageId() != "" {
 			event.SetID(msg.MessageId())
 		} else {
