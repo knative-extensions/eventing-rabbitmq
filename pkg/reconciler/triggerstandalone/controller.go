@@ -21,6 +21,7 @@ import (
 	"log"
 
 	eventingclient "knative.dev/eventing/pkg/client/injection/client"
+	reconcilersource "knative.dev/eventing/pkg/reconciler/source"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/injection/clients/dynamicclient"
 
@@ -32,6 +33,7 @@ import (
 	v1 "knative.dev/eventing/pkg/apis/eventing/v1"
 
 	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
+	"knative.dev/eventing-rabbitmq/pkg/utils"
 	brokerinformer "knative.dev/eventing/pkg/client/injection/informers/eventing/v1/broker"
 	triggerinformer "knative.dev/eventing/pkg/client/injection/informers/eventing/v1/trigger"
 	brokerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1/broker"
@@ -40,6 +42,7 @@ import (
 	"knative.dev/pkg/client/injection/ducks/duck/v1/addressable"
 	"knative.dev/pkg/client/injection/ducks/duck/v1/source"
 	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
+	configmapinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/configmap"
 
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
@@ -47,7 +50,10 @@ import (
 	"knative.dev/pkg/resolver"
 )
 
-const finalizerName = "rabbitmq.eventing.knative.dev"
+const (
+	finalizerName = "rabbitmq.eventing.knative.dev"
+	component     = "rabbitmq-trigger-controller"
+)
 
 type envConfig struct {
 	DispatcherImage          string `envconfig:"BROKER_DISPATCHER_IMAGE" required:"true"`
@@ -72,6 +78,7 @@ func NewController(
 	brokerInformer := brokerinformer.Get(ctx)
 	deploymentInformer := deploymentinformer.Get(ctx)
 	triggerInformer := triggerinformer.Get(ctx)
+	configmapInformer := configmapinformer.Get(ctx)
 
 	r := &Reconciler{
 		eventingClientSet:            eventingclient.Get(ctx),
@@ -84,6 +91,7 @@ func NewController(
 		dispatcherServiceAccountName: env.DispatcherServiceAccount,
 		brokerClass:                  env.BrokerClass,
 		dialerFunc:                   dialer.RealDialer,
+		configs:                      reconcilersource.WatchConfigurations(ctx, component, cmw),
 	}
 
 	impl := triggerreconciler.NewImpl(ctx, r, func(impl *controller.Impl) controller.Options {
@@ -133,5 +141,11 @@ func NewController(
 			}
 		},
 	))
+
+	configmapInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: utils.SystemConfigMapsFilterFunc(),
+		Handler:    controller.HandleAll(func(interface{}) { impl.GlobalResync(triggerInformer.Informer()) }),
+	})
+
 	return impl
 }

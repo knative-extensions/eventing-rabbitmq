@@ -30,6 +30,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	"knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
+	reconcilersource "knative.dev/eventing/pkg/reconciler/source"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
@@ -82,6 +83,8 @@ type Reconciler struct {
 	addressableTracker duck.ListableTracker
 	uriResolver        *resolver.URIResolver
 	rabbit             broker.RabbitService
+	// config accessor for observability/logging/tracing
+	configs reconcilersource.ConfigAccessor
 }
 
 // Check that our Reconciler implements Interface
@@ -347,6 +350,7 @@ func (r *Reconciler) reconcileDispatcherDeployment(ctx context.Context, t *event
 		BrokerIngressURL:   b.Status.Address.URL,
 		Subscriber:         sub,
 		Delivery:           delivery,
+		Configs:            r.configs,
 	})
 	return r.reconcileDeployment(ctx, expected)
 }
@@ -370,6 +374,7 @@ func (r *Reconciler) reconcileDLXDispatcherDeployment(ctx context.Context, t *ev
 		BrokerIngressURL:   b.Status.Address.URL,
 		Subscriber:         sub,
 		DLX:                true,
+		Configs:            r.configs,
 	})
 	return r.reconcileDeployment(ctx, expected)
 }

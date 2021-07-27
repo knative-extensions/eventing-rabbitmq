@@ -42,7 +42,7 @@ func TestNew(t *testing.T) {
 	os.Setenv("BROKER_INGRESS_IMAGE", "ingressimage")
 	os.Setenv("BROKER_INGRESS_SERVICE_ACCOUNT", "ingresssa")
 	os.Setenv("BROKER_DLQ_DISPATCHER_IMAGE", "dlqdispatcherimage")
-	c := NewController(ctx, configmap.NewStaticWatcher())
+	c := NewController(ctx, &configmap.ManualWatcher{})
 
 	if c == nil {
 		t.Fatal("Expected NewController to return a non-nil value")

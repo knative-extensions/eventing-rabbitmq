@@ -44,6 +44,7 @@ import (
 	clientset "knative.dev/eventing/pkg/client/clientset/versioned"
 	brokerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1/broker"
 	eventinglisters "knative.dev/eventing/pkg/client/listers/eventing/v1"
+	reconcilersource "knative.dev/eventing/pkg/reconciler/source"
 
 	apisduck "knative.dev/pkg/apis/duck"
 
@@ -88,6 +89,9 @@ type Reconciler struct {
 	transport http.RoundTripper
 	// For testing...
 	adminURL string
+
+	// config accessor for observability/logging/tracing
+	configs reconcilersource.ConfigAccessor
 }
 
 // Check that our Reconciler implements Interface
@@ -258,6 +262,7 @@ func (r *Reconciler) reconcileIngressDeployment(ctx context.Context, b *eventing
 		Image:              r.ingressImage,
 		RabbitMQSecretName: resources.SecretName(b.Name),
 		BrokerUrlSecretKey: resources.BrokerURLSecretKey,
+		Configs:            r.configs,
 	})
 	return r.reconcileDeployment(ctx, expected)
 }

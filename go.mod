@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/NeowayLabs/wabbit v0.0.0-20210927194032-73ad61d1620e
+	github.com/cloudevents/sdk-go/observability/opencensus/v2 v2.4.1
 	github.com/cloudevents/sdk-go/v2 v2.4.1
 	github.com/containerd/continuity v0.1.0
 	github.com/docker/docker v20.10.10+incompatible // indirect
@@ -20,6 +21,7 @@ require (
 	github.com/rabbitmq/messaging-topology-operator v1.2.2-0.20211112104201-5a7530880441
 	github.com/testcontainers/testcontainers-go v0.11.1
 	github.com/tiago4orion/conjure v0.0.0-20150908101743-93cb30b9d218 // indirect
+	go.opencensus.io v0.23.0
 	go.uber.org/zap v1.19.1
 	gotest.tools v2.2.0+incompatible
 	k8s.io/api v0.21.4
@@ -52,7 +54,6 @@ require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
 	github.com/cloudevents/conformance v0.2.0 // indirect
-	github.com/cloudevents/sdk-go/observability/opencensus/v2 v2.4.1 // indirect
 	github.com/containerd/cgroups v1.0.2 // indirect
 	github.com/containerd/containerd v1.5.7 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -114,7 +115,6 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/testify v1.7.0 // indirect
 	github.com/tsenart/vegeta/v12 v12.8.4 // indirect
-	go.opencensus.io v0.23.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/automaxprocs v1.4.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect

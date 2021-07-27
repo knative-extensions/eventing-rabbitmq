@@ -45,6 +45,7 @@ import (
 	clientset "knative.dev/eventing/pkg/client/clientset/versioned"
 	brokerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1/broker"
 	eventinglisters "knative.dev/eventing/pkg/client/listers/eventing/v1"
+	reconcilersource "knative.dev/eventing/pkg/reconciler/source"
 
 	apisduck "knative.dev/pkg/apis/duck"
 
@@ -84,6 +85,8 @@ type Reconciler struct {
 	dispatcherImage string
 
 	rabbit RabbitService
+	// config accessor for observability/logging/tracing
+	configs reconcilersource.ConfigAccessor
 }
 
 type RabbitService interface {
@@ -226,6 +229,7 @@ func (r *Reconciler) reconcileIngressDeployment(ctx context.Context, b *eventing
 		Image:              r.ingressImage,
 		RabbitMQSecretName: resources.SecretName(b.Name),
 		BrokerUrlSecretKey: resources.BrokerURLSecretKey,
+		Configs:            r.configs,
 	})
 	return r.reconcileDeployment(ctx, expected)
 }
@@ -249,6 +253,7 @@ func (r *Reconciler) reconcileDLXDispatcherDeployment(ctx context.Context, b *ev
 			BrokerUrlSecretKey: resources.BrokerURLSecretKey,
 			Subscriber:         sub,
 			BrokerIngressURL:   b.Status.Address.URL,
+			Configs:            r.configs,
 		})
 		return r.reconcileDeployment(ctx, expected)
 	}

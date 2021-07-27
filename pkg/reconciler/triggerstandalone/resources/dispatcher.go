@@ -26,6 +26,7 @@ import (
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
+	reconcilersource "knative.dev/eventing/pkg/reconciler/source"
 
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/kmeta"
@@ -50,6 +51,7 @@ type DispatcherArgs struct {
 	BrokerIngressURL   *apis.URL
 	Subscriber         *apis.URL
 	DLX                bool
+	Configs            reconcilersource.ConfigAccessor
 }
 
 // MakeDispatcherDeployment creates the in-memory representation of the Broker's Dispatcher Deployment.
@@ -60,6 +62,32 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 		name = fmt.Sprintf("%s-dlx-dispatcher", args.Trigger.Name)
 	} else {
 		name = fmt.Sprintf("%s-dispatcher", args.Trigger.Name)
+	}
+	envs := []corev1.EnvVar{{
+		Name:  system.NamespaceEnvKey,
+		Value: system.Namespace(),
+	}, {
+		Name: "RABBIT_URL",
+		ValueFrom: &corev1.EnvVarSource{
+			SecretKeyRef: &corev1.SecretKeySelector{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: args.RabbitMQSecretName,
+				},
+				Key: args.BrokerUrlSecretKey,
+			},
+		},
+	}, {
+		Name:  "QUEUE_NAME",
+		Value: args.QueueName,
+	}, {
+		Name:  "SUBSCRIBER",
+		Value: args.Subscriber.String(),
+	}, {
+		Name:  "BROKER_INGRESS_URL",
+		Value: args.BrokerIngressURL.String(),
+	}}
+	if args.Configs != nil {
+		envs = append(envs, args.Configs.ToEnvVars()...)
 	}
 	d := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -84,29 +112,7 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 					Containers: []corev1.Container{{
 						Name:  dispatcherContainerName,
 						Image: args.Image,
-						Env: []corev1.EnvVar{{
-							Name:  system.NamespaceEnvKey,
-							Value: system.Namespace(),
-						}, {
-							Name: "RABBIT_URL",
-							ValueFrom: &corev1.EnvVarSource{
-								SecretKeyRef: &corev1.SecretKeySelector{
-									LocalObjectReference: corev1.LocalObjectReference{
-										Name: args.RabbitMQSecretName,
-									},
-									Key: args.BrokerUrlSecretKey,
-								},
-							},
-						}, {
-							Name:  "QUEUE_NAME",
-							Value: args.QueueName,
-						}, {
-							Name:  "SUBSCRIBER",
-							Value: args.Subscriber.String(),
-						}, {
-							Name:  "BROKER_INGRESS_URL",
-							Value: args.BrokerIngressURL.String(),
-						}},
+						Env:   envs,
 					}},
 				},
 			},

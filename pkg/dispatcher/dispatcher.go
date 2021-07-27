@@ -24,11 +24,14 @@ import (
 	"time"
 
 	"github.com/NeowayLabs/wabbit"
+	"github.com/cloudevents/sdk-go/observability/opencensus/v2/client"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/pkg/errors"
 	amqperr "github.com/rabbitmq/amqp091-go"
+	"go.opencensus.io/plugin/ochttp/propagation/tracecontext"
+	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/eventing/pkg/kncloudevents"
@@ -36,7 +39,8 @@ import (
 )
 
 const (
-	ackMultiple = false // send ack/nack for multiple messages
+	ackMultiple   = false // send ack/nack for multiple messages
+	ComponentName = "rabbitmq-dispatcher"
 )
 
 type Dispatcher struct {
@@ -70,7 +74,7 @@ func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel wabbit.Channe
 		return errors.Wrap(err, "create consumer")
 	}
 
-	ceClient, err := cloudevents.NewClientHTTP(cehttp.WithIsRetriableFunc(isRetriableFunc))
+	ceClient, err := client.NewClientHTTP([]cehttp.Option{cehttp.WithIsRetriableFunc(isRetriableFunc)}, nil)
 	if err != nil {
 		return errors.Wrap(err, "create http client")
 	}
@@ -140,6 +144,11 @@ func (d *Dispatcher) dispatch(ctx context.Context, wg *sync.WaitGroup, queue <-c
 			continue
 		}
 
+		ctx, span := readSpan(ctx, msg)
+		if span.IsRecordingEvents() {
+			span.AddAttributes(client.EventTraceAttributes(&event)...)
+		}
+
 		logging.FromContext(ctx).Debugf("Got event as: %+v", event)
 		ctx = cloudevents.ContextWithTarget(ctx, d.SubscriberURL)
 
@@ -178,5 +187,24 @@ func (d *Dispatcher) dispatch(ctx context.Context, wg *sync.WaitGroup, queue <-c
 		if err != nil {
 			logging.FromContext(ctx).Warn("failed to ACK event: ", err)
 		}
+		span.End()
 	}
+}
+
+func readSpan(ctx context.Context, msg wabbit.Delivery) (context.Context, *trace.Span) {
+	traceparent, ok := msg.Headers()["traceparent"].(string)
+	if !ok {
+		return ctx, nil
+	}
+	tracestate, ok := msg.Headers()["tracestate"].(string)
+	if !ok {
+		return ctx, nil
+	}
+	sc, ok := (&tracecontext.HTTPFormat{}).SpanContextFromHeaders(traceparent, tracestate)
+	var span *trace.Span
+	if ok {
+		ctx, span = trace.StartSpanWithRemoteParent(ctx, ComponentName, sc,
+			trace.WithSpanKind(trace.SpanKindServer))
+	}
+	return ctx, span
 }
