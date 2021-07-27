@@ -304,15 +304,17 @@ func (a *Adapter) PollForMessages(channel *wabbit.Channel,
 	}
 }
 
-func setMsgContentType(msg wabbit.Delivery) string {
+func msgContentType(msg wabbit.Delivery) string {
 	contentType := fmt.Sprint(msg.Headers()["Content-type"])
 	switch contentType {
-	case cloudevent.ApplicationJSON, cloudevent.TextJSON, "":
+	case cloudevent.ApplicationJSON, cloudevent.TextJSON:
 		return cloudevent.ApplicationJSON
 	case cloudevent.ApplicationCloudEventsJSON, cloudevent.ApplicationCloudEventsBatchJSON:
 		return cloudevent.ApplicationCloudEventsJSON
-	default:
+	case cloudevent.ApplicationXML, cloudevent.Base64, cloudevent.TextPlain:
 		return contentType
+	default:
+		return cloudevent.ApplicationJSON
 	}
 }
 
