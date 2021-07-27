@@ -58,9 +58,9 @@ spec:
           - name: BROKER_INGRESS_SERVICE_ACCOUNT
             value: eventing-broker-ingress
           - name: BROKER_DISPATCHER_IMAGE
-            value: ko://knative.dev/eventing-rabbitmq/cmd/dispatcher
+            value: ko://knative.dev/eventing-rabbitmq/cmd/dispatcher/broker
           - name: BROKER_DLQ_DISPATCHER_IMAGE
-            value: ko://knative.dev/eventing-rabbitmq/cmd/dispatcher
+            value: ko://knative.dev/eventing-rabbitmq/cmd/dispatcher/broker
           - name: BROKER_DISPATCHER_SERVICE_ACCOUNT
             value: eventing-broker-filter
           - name: POD_NAME
