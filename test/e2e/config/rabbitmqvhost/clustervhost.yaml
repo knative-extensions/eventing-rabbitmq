@@ -18,6 +18,14 @@ metadata:
   name: rabbitmqc
   namespace: {{ .namespace }}
 spec:
+  replicas: 1
+  resources:
+    limits:
+      cpu: "400m"
+      memory: "400Mi"
+    requests:
+      cpu: "400m"
+      memory: "400Mi"
   rabbitmq:
     additionalConfig: |
       default_vhost = test-vhost
