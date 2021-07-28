@@ -106,6 +106,7 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 			m.Delivery = &origamqp.Delivery{
 				MessageId: "id",
 				Body:      data,
+				Headers:   origamqp.Table{"content-type": "application/json"},
 			}
 			err = a.postMessage(m)
 

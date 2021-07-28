@@ -304,18 +304,66 @@ func (a *Adapter) PollForMessages(channel *wabbit.Channel,
 	}
 }
 
-func msgContentType(msg wabbit.Delivery) string {
-	contentType := fmt.Sprint(msg.Headers()["Content-type"])
-	switch contentType {
-	case cloudevent.ApplicationJSON, cloudevent.TextJSON:
-		return cloudevent.ApplicationJSON
-	case cloudevent.ApplicationCloudEventsJSON, cloudevent.ApplicationCloudEventsBatchJSON:
-		return cloudevent.ApplicationCloudEventsJSON
-	case cloudevent.ApplicationXML, cloudevent.Base64, cloudevent.TextPlain:
-		return contentType
-	default:
-		return cloudevent.ApplicationJSON
+func msgContentType(msg wabbit.Delivery) (string, error) {
+	var contentType string
+	if val, ok := msg.Headers()["content-type"]; ok {
+		contentType = fmt.Sprint(val)
+	} else if val, ok = msg.Headers()["Content-type"]; ok {
+		contentType = fmt.Sprint(val)
+	} else {
+		return "", fmt.Errorf("no content type present on Rabbitmq msg")
 	}
+
+	switch contentType {
+	case cloudevent.ApplicationCloudEventsJSON, cloudevent.ApplicationCloudEventsBatchJSON:
+		return contentType, nil
+	default:
+		return cloudevent.ApplicationJSON, nil
+	}
+}
+
+func setEventContent(a *Adapter, msg wabbit.Delivery, contentType string) (cloudevent.Event, error) {
+	event := cloudevents.NewEvent()
+	if contentType == cloudevent.ApplicationCloudEventsJSON {
+		err := json.Unmarshal(msg.Body(), &event)
+		if err != nil {
+			return event, err
+		}
+	} else {
+		if msg.MessageId() != "" {
+			event.SetID(msg.MessageId())
+		} else {
+			event.SetID(string(uuid.NewUUID()))
+		}
+
+		event.SetTime(msg.Timestamp())
+		event.SetType(sourcesv1alpha1.RabbitmqEventType)
+		event.SetSource(sourcesv1alpha1.RabbitmqEventSource(
+			a.config.Namespace,
+			a.config.Name,
+			a.config.Topic,
+		))
+		event.SetSubject(msg.MessageId())
+		event.SetExtension("key", msg.MessageId())
+
+		err := event.SetData(contentType, msg.Body())
+		if err != nil {
+			return event, err
+		}
+	}
+
+	return event, nil
+}
+
+func setBatchContent(a *Adapter, msg wabbit.Delivery) ([]cloudevent.Event, error) {
+	// Needs a batch size
+	var payload []cloudevent.Event
+	err := json.Unmarshal(msg.Body(), &payload)
+	if err != nil {
+		return payload, err
+	}
+
+	return payload, nil
 }
 
 func (a *Adapter) postMessage(msg wabbit.Delivery) error {
@@ -327,57 +375,53 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 
 	a.logger.Info(string(fmt.Sprint(msg.Headers())))
 
-	contentType := setMsgContentType(msg)
-	event := cloudevents.NewEvent()
+	contentType, err := msgContentType(msg)
+	if err != nil {
+		return err
+	}
 
-	if contentType == cloudevent.ApplicationCloudEventsJSON {
-		err := json.Unmarshal(msg.Body(), &event)
+	var events []cloudevent.Event
+	if contentType == cloudevent.ApplicationCloudEventsBatchJSON {
+		events, err = setBatchContent(a, msg)
 		if err != nil {
 			return err
 		}
+		contentType = cloudevents.ApplicationCloudEventsJSON
 	} else {
-		if msg.MessageId() != "" {
-			event.SetID(msg.MessageId())
-		} else {
-			event.SetID(string(uuid.NewUUID()))
-		}
-
-		event.SetTime(msg.Timestamp())
-		event.SetType(sourcesv1alpha1.RabbitmqEventType)
-		event.SetSource(sourcesv1alpha1.RabbitmqEventSource(a.config.Namespace, a.config.Name, a.config.Topic))
-		event.SetSubject(msg.MessageId())
-		event.SetExtension("key", msg.MessageId())
-
-		err = event.SetData(contentType, msg.Body())
+		event, err := setEventContent(a, msg, contentType)
+		events = append(events, event)
 		if err != nil {
 			return err
 		}
 	}
 
-	err = http.WriteRequest(a.context, binding.ToMessage(&event), req)
-	if err != nil {
-		return err
+	for i, event := range events {
+		err = http.WriteRequest(a.context, binding.ToMessage(&event), req)
+		if err != nil {
+			return err
+		}
+
+		res, err := a.httpMessageSender.Send(req)
+
+		if err != nil {
+			a.logger.Debug(fmt.Sprintf("Error while sending the message #%d", i), zap.Error(err))
+			return err
+		}
+
+		if res.StatusCode/100 != 2 {
+			a.logger.Debug("Unexpected status code", zap.Int("status code", res.StatusCode))
+			return fmt.Errorf("%d %s", res.StatusCode, nethttp.StatusText(res.StatusCode))
+		}
+
+		reportArgs := &source.ReportArgs{
+			Namespace:     a.config.Namespace,
+			Name:          a.config.Name,
+			ResourceGroup: resourceGroup,
+		}
+
+		_ = a.reporter.ReportEventCount(reportArgs, res.StatusCode)
 	}
 
-	res, err := a.httpMessageSender.Send(req)
-
-	if err != nil {
-		a.logger.Debug("Error while sending the message", zap.Error(err))
-		return err
-	}
-
-	if res.StatusCode/100 != 2 {
-		a.logger.Debug("Unexpected status code", zap.Int("status code", res.StatusCode))
-		return fmt.Errorf("%d %s", res.StatusCode, nethttp.StatusText(res.StatusCode))
-	}
-
-	reportArgs := &source.ReportArgs{
-		Namespace:     a.config.Namespace,
-		Name:          a.config.Name,
-		ResourceGroup: resourceGroup,
-	}
-
-	_ = a.reporter.ReportEventCount(reportArgs, res.StatusCode)
 	return nil
 }
 
