@@ -69,6 +69,7 @@ Sources are Kubernetes objects. In addition to the standard Kubernetes
 | Field | Value
 
 | `spec.brokers` | Host+Port of the Broker, with a trailing "/"
+| `spec.vhost` | VHost where the source resources are located
 | `user.secretKeyRef` | Username for Broker authentication; field `key` in a Kubernetes Secret named `name`
 | `password.secretKeyRef` | Password for Broker authentication; field `key` in a Kubernetes Secret named `name`
 | `topic` | The topic for the exchange
