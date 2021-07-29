@@ -359,7 +359,8 @@ func setEventContent(a *Adapter, msg wabbit.Delivery, contentType string) (cloud
 }
 
 func setEventBatchContent(a *Adapter, msg wabbit.Delivery) ([]cloudevent.Event, error) {
-	// Needs a batch size
+	// Would be good to have a batch size parameter
+	// Process all the events, so it does not send any events
 	var payload []cloudevent.Event
 	err := json.Unmarshal(msg.Body(), &payload)
 	if err != nil {
