@@ -358,7 +358,7 @@ func setEventContent(a *Adapter, msg wabbit.Delivery, contentType string) (cloud
 	return event, nil
 }
 
-func setBatchContent(a *Adapter, msg wabbit.Delivery) ([]cloudevent.Event, error) {
+func setEventBatchContent(a *Adapter, msg wabbit.Delivery) ([]cloudevent.Event, error) {
 	// Needs a batch size
 	var payload []cloudevent.Event
 	err := json.Unmarshal(msg.Body(), &payload)
@@ -385,7 +385,7 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 
 	var events []cloudevent.Event
 	if contentType == cloudevent.ApplicationCloudEventsBatchJSON {
-		events, err = setBatchContent(a, msg)
+		events, err = setEventBatchContent(a, msg)
 		if err != nil {
 			return err
 		}
@@ -407,7 +407,7 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 		res, err := a.httpMessageSender.Send(req)
 
 		if err != nil {
-			a.logger.Debug(fmt.Sprintf("Error while sending the message #%d", i), zap.Error(err))
+			a.logger.Debug(fmt.Sprintf("Error while sending the message #%d", i+1), zap.Error(err))
 			return err
 		}
 

@@ -30,8 +30,10 @@ import (
 	"github.com/NeowayLabs/wabbit/amqp"
 	"github.com/NeowayLabs/wabbit/amqptest"
 	"github.com/NeowayLabs/wabbit/amqptest/server"
+	cloudevents "github.com/cloudevents/sdk-go/v2"
 	origamqp "github.com/streadway/amqp"
 	"go.uber.org/zap"
+	sourcesv1alpha1 "knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 	"knative.dev/eventing/pkg/adapter/v2"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/eventing/pkg/metrics/source"
@@ -688,5 +690,138 @@ func TestAdapter_msgContentType(t *testing.T) {
 				t.Errorf("Unexpected error state for msg type want:\n%+s\ngot:\n%+s", tt.want, got)
 			}
 		})
+	}
+}
+
+func TestAdapter_setEventContent(t *testing.T) {
+	statsReporter, _ := source.NewStatsReporter()
+
+	a := &Adapter{
+		config: &adapterConfig{
+			Topic:   "topic",
+			Brokers: "amqp://guest:guest@localhost:5672/",
+		},
+		context:  context.TODO(),
+		logger:   zap.NewNop(),
+		reporter: statsReporter,
+	}
+
+	for _, tt := range []struct {
+		name        string
+		contentType string
+		msgId       string
+	}{{
+		name:        "maintain msg id on message processing",
+		contentType: "application/json",
+		msgId:       "1234",
+	}, {
+		name:        "set new id is message id is empty",
+		contentType: "application/json",
+		msgId:       "",
+	}, {
+		name:        "sent event as it is when its type is cloudevent",
+		contentType: "application/cloudevents+json",
+		msgId:       "1234",
+	}} {
+		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
+			var data []byte
+			var err error
+			var event cloudevents.Event
+
+			msgId := ""
+			if tt.msgId != "" {
+				msgId = tt.msgId
+			}
+
+			if tt.contentType == "application/cloudevents+json" {
+				event = cloudevents.NewEvent()
+				event.SetID(tt.msgId)
+				event.SetType(sourcesv1alpha1.RabbitmqEventType)
+				event.SetSource(sourcesv1alpha1.RabbitmqEventSource(
+					a.config.Namespace,
+					a.config.Name,
+					a.config.Topic,
+				))
+				event.SetSubject(tt.msgId)
+				event.SetExtension("key", tt.msgId)
+				data, err = json.Marshal(event)
+			} else {
+				data, err = json.Marshal(map[string]string{"key": "value"})
+			}
+
+			if err != nil {
+				t.Errorf("unexpected error, %v", err)
+			}
+
+			m := &amqp.Delivery{}
+			m.Delivery = &origamqp.Delivery{
+				MessageId: msgId,
+				Body:      data,
+				Headers:   origamqp.Table{"content-type": tt.contentType},
+			}
+
+			got, _ := setEventContent(a, m, tt.contentType)
+			if tt.msgId != "" && got.Context.GetID() != tt.msgId {
+				t.Errorf("Unexpected message ID want:\n%+s\ngot:\n%+s", tt.msgId, got.Context.GetID())
+			}
+
+			if tt.msgId == "" && got.Context.GetID() == tt.msgId {
+				t.Errorf("Unexpected message ID want:\nany ID\ngot:\n%+s", got.Context.GetID())
+			}
+
+			if tt.contentType == "application/cloudevents+json" && got.String() != event.String() {
+				t.Errorf(
+					"Error passing cloudevent as it is want:\n%+s ID\ngot:\n%+s",
+					event.String(), got.String(),
+				)
+			}
+		})
+	}
+}
+
+func TestAdapter_setEventBatchContent(t *testing.T) {
+	statsReporter, _ := source.NewStatsReporter()
+
+	a := &Adapter{
+		config: &adapterConfig{
+			Topic:   "topic",
+			Brokers: "amqp://guest:guest@localhost:5672/",
+		},
+		context:  context.TODO(),
+		logger:   zap.NewNop(),
+		reporter: statsReporter,
+	}
+	msgId := "1234"
+	event := cloudevents.NewEvent()
+	event.SetID(msgId)
+	event.SetType(sourcesv1alpha1.RabbitmqEventType)
+	event.SetSource(sourcesv1alpha1.RabbitmqEventSource(
+		a.config.Namespace,
+		a.config.Name,
+		a.config.Topic,
+	))
+	event.SetSubject(msgId)
+	event.SetExtension("key", msgId)
+	payload := []cloudevents.Event{event, event.Clone(), event.Clone()}
+
+	data, err := json.Marshal(payload)
+	if err != nil {
+		t.Errorf("unexpected error, %v", err)
+	}
+
+	m := &amqp.Delivery{}
+	m.Delivery = &origamqp.Delivery{
+		MessageId: msgId,
+		Body:      data,
+		Headers:   origamqp.Table{"content-type": "application/cloudevents-batch+json"},
+	}
+
+	got, _ := setEventBatchContent(a, m)
+	for i, event := range got {
+		if event.String() != payload[i].String() {
+			t.Errorf("Error converting event batch want:\n%+s ID\ngot:\n%+s", event.String(), payload[i].String())
+		}
 	}
 }
