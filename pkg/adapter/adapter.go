@@ -377,7 +377,7 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 		return err
 	}
 
-	a.logger.Info(string(fmt.Sprint(msg.Headers())))
+	a.logger.Info(fmt.Sprint(msg.Headers()))
 
 	contentType, err := msgContentType(msg)
 	if err != nil {
