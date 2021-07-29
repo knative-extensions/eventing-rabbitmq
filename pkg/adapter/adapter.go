@@ -390,7 +390,6 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 		if err != nil {
 			return err
 		}
-		contentType = cloudevents.ApplicationCloudEventsJSON
 	} else {
 		event, err := setEventContent(a, msg, contentType)
 		events = append(events, event)
