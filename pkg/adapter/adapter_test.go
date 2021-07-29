@@ -631,57 +631,61 @@ func TestAdapter_NewAdapter(t *testing.T) {
 
 func TestAdapter_msgContentType(t *testing.T) {
 	for _, tt := range []struct {
-		name    string
-		brokers string
-		vhost   string
-		want    string
+		name        string
+		contentType string
+		want        string
+		header      string
+		err         bool
 	}{{
-		name:    "no brokers nor vhost",
-		brokers: "",
-		vhost:   "",
-		want:    "",
+		name:        "cloudevents json message content type",
+		contentType: "application/cloudevents+json",
+		want:        "application/cloudevents+json",
 	}, {
-		name:    "no vhost",
-		brokers: "amqp://localhost:5672",
-		vhost:   "",
-		want:    "amqp://localhost:5672",
+		name:        "clouidevents batch message content type",
+		contentType: "application/cloudevents-batch+json",
+		want:        "application/cloudevents-batch+json",
 	}, {
-		name:    "no brokers",
-		brokers: "",
-		vhost:   "test-vhost",
-		want:    "test-vhost",
+		name:        "text plain message content type",
+		contentType: "text/plain",
+		want:        "text/plain",
 	}, {
-		name:    "brokers and vhost without separating slash",
-		brokers: "amqp://localhost:5672",
-		vhost:   "test-vhost",
-		want:    "amqp://localhost:5672/test-vhost",
+		name:        "case insensitive message conte type",
+		contentType: "Application/XML",
+		want:        "application/xml",
 	}, {
-		name:    "brokers and vhost without separating slash but vhost with ending slash",
-		brokers: "amqp://localhost:5672",
-		vhost:   "test-vhost/",
-		want:    "amqp://localhost:5672/test-vhost/",
+		name:        "case insensitive content type header",
+		contentType: "text/json",
+		want:        "text/json",
+		header:      "Content-Type",
 	}, {
-		name:    "brokers with trailing slash and vhost without the slash",
-		brokers: "amqp://localhost:5672/",
-		vhost:   "test-vhost",
-		want:    "amqp://localhost:5672/test-vhost",
-	}, {
-		name:    "vhost starting with slash and brokers without the slash",
-		brokers: "amqp://localhost:5672",
-		vhost:   "/test-vhost",
-		want:    "amqp://localhost:5672/test-vhost",
-	}, {
-		name:    "brokers and vhost with slash",
-		brokers: "amqp://localhost:5672/",
-		vhost:   "/test-vhost",
-		want:    "amqp://localhost:5672//test-vhost",
+		name:        "empty content type error",
+		contentType: "",
+		want:        "",
+		err:         true,
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
 			tt := tt
 			t.Parallel()
-			got := vhostHandler(tt.brokers, tt.vhost)
-			if got != tt.want {
-				t.Errorf("Unexpected URI for %s/%s want:\n%+s\ngot:\n%+s", tt.brokers, tt.vhost, tt.want, got)
+
+			header := "content-type"
+			if tt.header != "" || tt.err {
+				header = tt.header
+			}
+
+			m := &amqp.Delivery{}
+			m.Delivery = &origamqp.Delivery{
+				MessageId: "id",
+				Body:      nil,
+				Headers:   origamqp.Table{header: tt.contentType},
+			}
+
+			got, err := msgContentType(m)
+			if err != nil && got != tt.want {
+				t.Errorf("Unexpected message content type want:\n%+s\ngot:\n%+s", tt.want, got)
+			}
+
+			if tt.err && err == nil {
+				t.Errorf("Unexpected error state for msg type want:\n%+s\ngot:\n%+s", tt.want, got)
 			}
 		})
 	}

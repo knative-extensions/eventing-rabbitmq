@@ -306,11 +306,14 @@ func (a *Adapter) PollForMessages(channel *wabbit.Channel,
 
 func msgContentType(msg wabbit.Delivery) (string, error) {
 	var contentType string
-	if val, ok := msg.Headers()["content-type"]; ok {
-		contentType = fmt.Sprint(val)
-	} else if val, ok = msg.Headers()["Content-type"]; ok {
-		contentType = fmt.Sprint(val)
-	} else {
+
+	for key, val := range msg.Headers() {
+		if strings.ToLower(key) == "content-type" {
+			contentType = strings.ToLower(fmt.Sprint(val))
+		}
+	}
+
+	if contentType == "" {
 		return "", fmt.Errorf("no content type present on Rabbitmq msg")
 	}
 
