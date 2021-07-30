@@ -804,24 +804,48 @@ func TestAdapter_setEventBatchContent(t *testing.T) {
 	))
 	event.SetSubject(msgId)
 	event.SetExtension("key", msgId)
-	payload := []cloudevents.Event{event, event.Clone(), event.Clone()}
+	payload := []cloudevents.Event{event, event.Clone(), event.Clone(), event.Clone()}
 
 	data, err := json.Marshal(payload)
 	if err != nil {
 		t.Errorf("unexpected error, %v", err)
 	}
 
-	m := &amqp.Delivery{}
-	m.Delivery = &origamqp.Delivery{
-		MessageId: msgId,
-		Body:      data,
-		Headers:   origamqp.Table{"content-type": "application/cloudevents-batch+json"},
-	}
+	for _, tt := range []struct {
+		name string
+		data []byte
+		err  bool
+	}{{
+		name: "send normal batch of cloud events",
+		data: data,
+	}, {
+		name: "dont send any event in case of failure",
+		data: []byte("Not an event"),
+		err:  true,
+	}} {
+		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 
-	got, _ := setEventBatchContent(a, m)
-	for i, event := range got {
-		if event.String() != payload[i].String() {
-			t.Errorf("Error converting event batch want:\n%+s ID\ngot:\n%+s", event.String(), payload[i].String())
-		}
+			m := &amqp.Delivery{}
+			m.Delivery = &origamqp.Delivery{
+				MessageId: msgId,
+				Body:      tt.data,
+				Headers:   origamqp.Table{"content-type": "application/cloudevents-batch+json"},
+			}
+
+			got, err := setEventBatchContent(a, m)
+			if !tt.err {
+				for i, event := range got {
+					if event.String() != payload[i].String() {
+						t.Errorf("Error converting event batch want:\n%+s ID\ngot:\n%+s", event.String(), payload[i].String())
+					}
+				}
+			} else {
+				if err == nil || got != nil {
+					t.Errorf("Error transforming invalid events batch array want:\nempty array \ngot:\n%+s", payload)
+				}
+			}
+		})
 	}
 }
