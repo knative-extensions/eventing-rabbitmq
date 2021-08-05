@@ -41,7 +41,7 @@ func main() {
 	}
 	ctx := cloudevents.ContextWithTarget(context.Background(), env.Sink)
 
-	p, err := cloudevents.NewHTTP()
+	p, err := cloudevents.NewHTTP(cloudevents.WithHeader("Content-Type", cloudevents.ApplicationCloudEventsJSON))
 	if err != nil {
 		log.Fatal("failed to create protocol: ", err.Error())
 	}
