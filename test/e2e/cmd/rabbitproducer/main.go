@@ -77,6 +77,7 @@ func main() {
 			false,  // mandatory
 			false,  // immediate
 			amqp.Publishing{
+				Headers:     amqp.Table{"content-type": "text/plain"},
 				ContentType: "text/plain",
 				Body:        []byte(body),
 			})

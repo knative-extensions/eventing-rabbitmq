@@ -166,6 +166,7 @@ func (a *Adapter) start(stopCh <-chan struct{}) error {
 		zap.String("ExchangeConfigType", a.config.ExchangeConfig.TypeOf),
 		zap.String("RoutingKey", a.config.QueueConfig.RoutingKey),
 		zap.String("SinkURI", a.config.Sink),
+		zap.String("VHost", a.config.Vhost),
 		zap.String("Name", a.config.Name),
 		zap.String("Namespace", a.config.Namespace))
 
@@ -399,14 +400,13 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 		}
 	}
 
-	for i, event := range events {
-		err = http.WriteRequest(a.context, binding.ToMessage(&event), req)
+	for i, ev := range events {
+		err = http.WriteRequest(a.context, binding.ToMessage(&ev), req)
 		if err != nil {
 			return err
 		}
 
 		res, err := a.httpMessageSender.Send(req)
-
 		if err != nil {
 			a.logger.Debug(fmt.Sprintf("Error while sending the message #%d", i+1), zap.Error(err))
 			return err
