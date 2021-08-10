@@ -19,6 +19,7 @@ package rabbitmq
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -633,11 +634,13 @@ func TestAdapter_NewAdapter(t *testing.T) {
 
 func TestAdapter_msgContentType(t *testing.T) {
 	for _, tt := range []struct {
-		name        string
-		contentType string
-		want        string
-		header      string
-		err         bool
+		name             string
+		contentType      string
+		want             string
+		header           string
+		wrongContentType []byte
+		er               error
+		err              bool
 	}{{
 		name:        "cloudevents json message content type",
 		contentType: "application/cloudevents+json",
@@ -664,6 +667,11 @@ func TestAdapter_msgContentType(t *testing.T) {
 		contentType: "",
 		want:        "",
 		err:         true,
+	}, {
+		name:             "wrong type content type error",
+		contentType:      "",
+		wrongContentType: []byte("text/plain"),
+		er:               errors.New("wrong format in content type"),
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
 			tt := tt
@@ -674,11 +682,18 @@ func TestAdapter_msgContentType(t *testing.T) {
 				header = tt.header
 			}
 
+			var headers origamqp.Table
+			if tt.wrongContentType == nil {
+				headers = origamqp.Table{header: tt.contentType}
+			} else {
+				headers = origamqp.Table{header: tt.wrongContentType}
+			}
+
 			m := &amqp.Delivery{}
 			m.Delivery = &origamqp.Delivery{
 				MessageId: "id",
 				Body:      nil,
-				Headers:   origamqp.Table{header: tt.contentType},
+				Headers:   headers,
 			}
 
 			got, err := msgContentType(m)
@@ -688,6 +703,10 @@ func TestAdapter_msgContentType(t *testing.T) {
 
 			if tt.err && err == nil {
 				t.Errorf("Unexpected error state for msg type want:\n%+s\ngot:\n%+s", tt.want, got)
+			}
+
+			if tt.er != nil && err == nil {
+				t.Errorf("Unexpected error state for msg type want:\n%+s\ngot:\n%+s", tt.er, got)
 			}
 		})
 	}
