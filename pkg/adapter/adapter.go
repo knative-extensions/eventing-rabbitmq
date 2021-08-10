@@ -19,6 +19,7 @@ package rabbitmq
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	nethttp "net/http"
 	"strings"
@@ -310,13 +311,17 @@ func msgContentType(msg wabbit.Delivery) (string, error) {
 
 	for key, val := range msg.Headers() {
 		if strings.ToLower(key) == "content-type" {
-			contentType = strings.ToLower(fmt.Sprint(val))
-			break
+			if s, ok := val.(string); ok {
+				contentType = strings.ToLower(s)
+				break
+			} else {
+				return "", errors.New("wrong format in content type")
+			}
 		}
 	}
 
 	if contentType == "" {
-		return "", fmt.Errorf("no content type present on Rabbitmq msg")
+		return "", errors.New("no content type present on Rabbitmq msg")
 	}
 
 	switch contentType {
@@ -373,13 +378,11 @@ func setEventBatchContent(a *Adapter, msg wabbit.Delivery) ([]cloudevent.Event, 
 }
 
 func (a *Adapter) postMessage(msg wabbit.Delivery) error {
-	a.logger.Info("url ->" + a.httpMessageSender.Target)
+	a.logger.Debug("url ->" + a.httpMessageSender.Target)
 	req, err := a.httpMessageSender.NewCloudEventRequest(a.context)
 	if err != nil {
 		return err
 	}
-
-	a.logger.Info(fmt.Sprint(msg.Headers()))
 
 	contentType, err := msgContentType(msg)
 	if err != nil {
