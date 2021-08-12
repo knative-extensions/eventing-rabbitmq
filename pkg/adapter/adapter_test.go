@@ -639,7 +639,7 @@ func TestAdapter_msgContentType(t *testing.T) {
 		want             string
 		header           string
 		wrongContentType []byte
-		er               error
+		errorMsg         error
 		err              bool
 	}{{
 		name:        "cloudevents json message content type",
@@ -665,13 +665,13 @@ func TestAdapter_msgContentType(t *testing.T) {
 	}, {
 		name:        "empty content type error",
 		contentType: "",
-		want:        "",
+		errorMsg:    errors.New("no content type present on Rabbitmq msg"),
 		err:         true,
 	}, {
 		name:             "wrong type content type error",
 		contentType:      "",
 		wrongContentType: []byte("text/plain"),
-		er:               errors.New("wrong format in content type"),
+		errorMsg:         errors.New("wrong format in content type"),
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
 			tt := tt
@@ -702,11 +702,11 @@ func TestAdapter_msgContentType(t *testing.T) {
 			}
 
 			if tt.err && err == nil {
-				t.Errorf("Unexpected error state for msg type want:\n%+s\ngot:\n%+s", tt.want, got)
+				t.Errorf("Unexpected error state for msg type want:\n%+s\ngot:\n%+s", tt.errorMsg, got)
 			}
 
-			if tt.er != nil && err == nil {
-				t.Errorf("Unexpected error state for msg type want:\n%+s\ngot:\n%+s", tt.er, got)
+			if tt.errorMsg != nil && err == nil {
+				t.Errorf("Unexpected error state for msg type want:\n%+s\ngot:\n%+s", tt.errorMsg, got)
 			}
 		})
 	}
