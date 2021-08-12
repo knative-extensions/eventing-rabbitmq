@@ -652,15 +652,15 @@ func TestAdapter_msgContentType(t *testing.T) {
 	}, {
 		name:        "text plain message content type",
 		contentType: "text/plain",
-		want:        "text/plain",
+		want:        "application/json",
 	}, {
 		name:        "case insensitive message conte type",
 		contentType: "Application/XML",
-		want:        "application/xml",
+		want:        "application/json",
 	}, {
 		name:        "case insensitive content type header",
 		contentType: "text/json",
-		want:        "text/json",
+		want:        "application/json",
 		header:      "Content-Type",
 	}, {
 		name:        "empty content type error",
@@ -697,7 +697,7 @@ func TestAdapter_msgContentType(t *testing.T) {
 			}
 
 			got, err := msgContentType(m)
-			if err != nil && got != tt.want {
+			if err == nil && got != tt.want {
 				t.Errorf("Unexpected message content type want:\n%+s\ngot:\n%+s", tt.want, got)
 			}
 
