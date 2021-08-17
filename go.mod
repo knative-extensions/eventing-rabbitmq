@@ -35,6 +35,7 @@ require (
 	knative.dev/hack v0.0.0-20210622141627-e28525d8d260
 	knative.dev/pkg v0.0.0-20210803160015-21eb4c167cc5
 	knative.dev/reconciler-test v0.0.0-20210803183715-b61cc77c06f6
+	sigs.k8s.io/controller-runtime v0.8.3
 )
 
 replace (
