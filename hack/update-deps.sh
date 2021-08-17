@@ -22,8 +22,8 @@ source $(dirname "$0")/../vendor/knative.dev/hack/library.sh
 
 go_update_deps "$@"
 
-rm -rf $(find third_party/ -name '*.mod')
-rm -rf $(find third_party/ -name '*.go')
+rm -rf $(find third_party/VENDOR-LICENSE/ -name '*.mod')
+rm -rf $(find third_party/VENDOR-LICENSE/ -name '*.go')
 
 # Remove the _webhook.go files that cause (unnecessarily) controller-runtime
 # to get pulled in, which in turn causes issues with double-defining 'kubeconfig'

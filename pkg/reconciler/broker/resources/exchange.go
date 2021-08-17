@@ -25,7 +25,7 @@ import (
 
 	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
 
-	rabbitv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
+	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 )
 

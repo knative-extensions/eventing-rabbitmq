@@ -45,9 +45,9 @@ import (
 	"knative.dev/pkg/reconciler/testing"
 
 	rabbitclusterv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
-	rabbitv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
-	fakerabbitclientset "github.com/rabbitmq/messaging-topology-operator/pkg/generated/clientset/versioned/fake"
-	rabbitlisters "github.com/rabbitmq/messaging-topology-operator/pkg/generated/listers/rabbitmq.com/v1beta1"
+	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
+	fakerabbitclientset "knative.dev/eventing-rabbitmq/third_party/pkg/client/clientset/versioned/fake"
+	rabbitlisters "knative.dev/eventing-rabbitmq/third_party/pkg/client/listers/rabbitmq.com/v1beta1"
 )
 
 var subscriberAddToScheme = func(scheme *runtime.Scheme) error {
