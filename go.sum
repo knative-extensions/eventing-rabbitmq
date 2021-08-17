@@ -800,6 +800,7 @@ github.com/prometheus/statsd_exporter v0.20.0 h1:M0hQphnq2WyWKS5CefQL8PqWwBOBPhi
 github.com/prometheus/statsd_exporter v0.20.0/go.mod h1:YL3FWCG8JBBtaUSxAg4Gz2ZYu22bS84XM89ZQXXTWmQ=
 github.com/qri-io/starlib v0.4.2-0.20200213133954-ff2e8cd5ef8d/go.mod h1:7DPO4domFU579Ga6E61sB9VFNaniPVwJP5C4bBCu3wA=
 github.com/quasilyte/go-consistent v0.0.0-20190521200055-c6f3937de18c/go.mod h1:5STLWrekHfjyYwxBRVRXNOSewLJ3PWfDJd1VyTS21fI=
+github.com/rabbitmq/cluster-operator v1.6.0 h1:Z9gAVtxuLLW/g5s9FJhpBhDw323/51qg+dr9YuVFnig=
 github.com/rabbitmq/cluster-operator v1.6.0/go.mod h1:n3k4uzzInXaq4r16Xq3DtC/ihZ5ppl5psndF7p4KDNU=
 github.com/rabbitmq/messaging-topology-operator v0.8.0 h1:48HF2y7x63BnlR/8BxIymjcUiLbJuP5RtrIgPngIuQM=
 github.com/rabbitmq/messaging-topology-operator v0.8.0/go.mod h1:6V+iWlnqndOdwp254Q5JWWRBTpdc7/xdwBR0OX5N/+U=

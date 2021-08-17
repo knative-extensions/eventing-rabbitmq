@@ -44,6 +44,7 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/reconciler/testing"
 
+	rabbitclusterv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
 	rabbitv1beta1 "github.com/rabbitmq/messaging-topology-operator/api/v1beta1"
 	fakerabbitclientset "github.com/rabbitmq/messaging-topology-operator/pkg/generated/clientset/versioned/fake"
 	rabbitlisters "github.com/rabbitmq/messaging-topology-operator/pkg/generated/listers/rabbitmq.com/v1beta1"
@@ -67,6 +68,11 @@ var clientSetSchemes = []func(*runtime.Scheme) error{
 	sourceAddToScheme,
 	eventingduck.AddToScheme,
 	fakerabbitclientset.AddToScheme,
+	rabbitClusterSchemeBuilder.AddToScheme,
+}
+
+var rabbitClusterSchemeBuilder = runtime.SchemeBuilder{
+	rabbitclusterv1beta1.AddToScheme,
 }
 
 type Listers struct {
