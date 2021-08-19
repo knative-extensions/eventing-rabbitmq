@@ -665,8 +665,7 @@ func TestAdapter_msgContentType(t *testing.T) {
 	}, {
 		name:        "empty content type error",
 		contentType: "",
-		errorMsg:    errors.New("no content type present on Rabbitmq msg"),
-		err:         true,
+		want:        "",
 	}, {
 		name:             "wrong type content type error",
 		contentType:      "",
@@ -699,10 +698,6 @@ func TestAdapter_msgContentType(t *testing.T) {
 			got, err := msgContentType(m)
 			if err == nil && got != tt.want {
 				t.Errorf("Unexpected message content type want:\n%+s\ngot:\n%+s", tt.want, got)
-			}
-
-			if tt.err && err == nil {
-				t.Errorf("Unexpected error state for msg type want:\n%+s\ngot:\n%+s", tt.errorMsg, got)
 			}
 
 			if tt.errorMsg != nil && err == nil {
@@ -740,6 +735,10 @@ func TestAdapter_setEventContent(t *testing.T) {
 	}, {
 		name:        "sent event as it is when its type is cloudevent",
 		contentType: "application/cloudevents+json",
+		msgId:       "1234",
+	}, {
+		name:        "set event content with empty content type",
+		contentType: "",
 		msgId:       "1234",
 	}} {
 		t.Run(tt.name, func(t *testing.T) {

@@ -320,12 +320,8 @@ func msgContentType(msg wabbit.Delivery) (string, error) {
 		}
 	}
 
-	if contentType == "" {
-		return "", errors.New("no content type present on Rabbitmq msg")
-	}
-
 	switch contentType {
-	case cloudevent.ApplicationCloudEventsJSON, cloudevent.ApplicationCloudEventsBatchJSON:
+	case cloudevent.ApplicationCloudEventsJSON, cloudevent.ApplicationCloudEventsBatchJSON, "":
 		return contentType, nil
 	default:
 		return cloudevent.ApplicationJSON, nil
