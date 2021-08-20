@@ -205,11 +205,11 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		if err != nil {
 			logging.FromContext(ctx).Error("Unable to get the DeadLetterSink URI", zap.Error(err))
 			t.Status.MarkDeadLetterSinkResolvedFailed("Unable to get the DeadLetterSink URI", "%v", err)
-			t.Status.DeadLetterURI = nil
+			t.Status.DeadLetterSinkURI = nil
 			return err
 		}
 		t.Status.MarkDeadLetterSinkResolvedSucceeded()
-		t.Status.DeadLetterURI = deadLetterSinkURI
+		t.Status.DeadLetterSinkURI = deadLetterSinkURI
 		_, err = r.reconcileDLXDispatcherDeployment(ctx, broker, t, secretName, deadLetterSinkURI)
 		if err != nil {
 			logging.FromContext(ctx).Error("Problem reconciling DLX dispatcher Deployment", zap.Error(err))
