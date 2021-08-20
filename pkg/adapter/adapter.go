@@ -320,12 +320,7 @@ func msgContentType(msg wabbit.Delivery) (string, error) {
 		}
 	}
 
-	switch contentType {
-	case cloudevent.ApplicationCloudEventsJSON, cloudevent.ApplicationCloudEventsBatchJSON, "":
-		return contentType, nil
-	default:
-		return cloudevent.ApplicationJSON, nil
-	}
+	return contentType, nil
 }
 
 func setEventContent(a *Adapter, msg wabbit.Delivery, contentType string) (cloudevent.Event, error) {

@@ -652,15 +652,15 @@ func TestAdapter_msgContentType(t *testing.T) {
 	}, {
 		name:        "text plain message content type",
 		contentType: "text/plain",
-		want:        "application/json",
+		want:        "text/plain",
 	}, {
 		name:        "case insensitive message conte type",
 		contentType: "Application/XML",
-		want:        "application/json",
+		want:        "application/xml",
 	}, {
 		name:        "case insensitive content type header",
 		contentType: "text/json",
-		want:        "application/json",
+		want:        "text/json",
 		header:      "Content-Type",
 	}, {
 		name:        "empty content type error",
