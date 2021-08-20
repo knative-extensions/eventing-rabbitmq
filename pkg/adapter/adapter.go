@@ -312,7 +312,7 @@ func msgContentType(msg wabbit.Delivery) (string, error) {
 	for key, val := range msg.Headers() {
 		if strings.ToLower(key) == "content-type" {
 			if s, ok := val.(string); ok {
-				contentType = strings.ToLower(s)
+				contentType = s
 				break
 			} else {
 				return "", errors.New("wrong format in content type")
