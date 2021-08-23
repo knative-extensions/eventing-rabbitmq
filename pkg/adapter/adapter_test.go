@@ -817,8 +817,8 @@ func TestAdapter_setEventContent(t *testing.T) {
 					)
 				}
 			} else {
-				if err == nil {
-					t.Errorf("Unexpected error state want:\n%+s \ngot:\nnone", err)
+				if err != nil {
+					t.Errorf("Unexpected error state want:\ninvalid character 'w' looking for beginning of value \ngot:\n%+s", err)
 				}
 			}
 		})
