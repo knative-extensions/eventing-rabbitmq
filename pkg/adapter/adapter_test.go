@@ -695,7 +695,7 @@ func TestAdapter_msgContentType(t *testing.T) {
 				Headers:   headers,
 			}
 
-			got, err := msgContentType(m)
+			got, _, err := msgContentType(m)
 			if err == nil && got != tt.want {
 				t.Errorf("Unexpected message content type want:\n%+s\ngot:\n%+s", tt.want, got)
 			}
@@ -845,14 +845,14 @@ func TestAdapter_setEventBatchContent(t *testing.T) {
 			tt := tt
 			t.Parallel()
 
-			m := &amqp.Delivery{}
+			m := amqp.Delivery{}
 			m.Delivery = &origamqp.Delivery{
 				MessageId: msgId,
 				Body:      tt.data,
 				Headers:   origamqp.Table{"content-type": "application/cloudevents-batch+json"},
 			}
 
-			got, err := setEventBatchContent(a, m)
+			got, err := setEventBatchContent(a, &m)
 			if !tt.err {
 				for i, event := range got {
 					if event.String() != payload[i].String() {

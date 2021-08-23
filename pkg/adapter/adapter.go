@@ -306,11 +306,11 @@ func (a *Adapter) PollForMessages(channel *wabbit.Channel,
 	}
 }
 
-func msgContentType(msg *wabbit.Delivery) (string, bool, error) {
+func msgContentType(msg wabbit.Delivery) (string, bool, error) {
 	var contentType string
 	var isBinary bool
 
-	for key, val := range (*msg).Headers() {
+	for key, val := range msg.Headers() {
 		switch strings.ToLower(key) {
 		case "content-type":
 			if s, ok := val.(string); ok {
@@ -332,31 +332,31 @@ func msgContentType(msg *wabbit.Delivery) (string, bool, error) {
 	return contentType, isBinary, nil
 }
 
-func setEventContent(a *Adapter, msg *wabbit.Delivery, contentType string) (cloudevent.Event, error) {
+func setEventContent(a *Adapter, msg wabbit.Delivery, contentType string) (cloudevent.Event, error) {
 	event := cloudevents.NewEvent()
 	if contentType == cloudevent.ApplicationCloudEventsJSON {
-		err := json.Unmarshal((*msg).Body(), &event)
+		err := json.Unmarshal(msg.Body(), &event)
 		if err != nil {
 			return event, err
 		}
 	} else {
-		if (*msg).MessageId() != "" {
-			event.SetID((*msg).MessageId())
+		if msg.MessageId() != "" {
+			event.SetID(msg.MessageId())
 		} else {
 			event.SetID(string(uuid.NewUUID()))
 		}
 
-		event.SetTime((*msg).Timestamp())
+		event.SetTime(msg.Timestamp())
 		event.SetType(sourcesv1alpha1.RabbitmqEventType)
 		event.SetSource(sourcesv1alpha1.RabbitmqEventSource(
 			a.config.Namespace,
 			a.config.Name,
 			a.config.Topic,
 		))
-		event.SetSubject((*msg).MessageId())
-		event.SetExtension("key", (*msg).MessageId())
+		event.SetSubject(msg.MessageId())
+		event.SetExtension("key", msg.MessageId())
 
-		err := event.SetData(contentType, (*msg).Body())
+		err := event.SetData(contentType, msg.Body())
 		if err != nil {
 			return event, err
 		}
@@ -365,11 +365,11 @@ func setEventContent(a *Adapter, msg *wabbit.Delivery, contentType string) (clou
 	return event, nil
 }
 
-func setEventBatchContent(a *Adapter, msg *wabbit.Delivery) ([]cloudevent.Event, error) {
+func setEventBatchContent(a *Adapter, msg wabbit.Delivery) ([]cloudevent.Event, error) {
 	// Would be good to have a batch size parameter
 	// Process all the events, so it does not send any events if any errors occurs
 	var payload []cloudevent.Event
-	err := json.Unmarshal((*msg).Body(), &payload)
+	err := json.Unmarshal(msg.Body(), &payload)
 	if err != nil {
 		return payload, err
 	}
@@ -377,8 +377,8 @@ func setEventBatchContent(a *Adapter, msg *wabbit.Delivery) ([]cloudevent.Event,
 	return payload, nil
 }
 
-func assignCloudeventHeaders(msg *wabbit.Delivery, req *nethttp.Request) {
-	for key, val := range (*msg).Headers() {
+func assignCloudeventHeaders(msg wabbit.Delivery, req *nethttp.Request) {
+	for key, val := range msg.Headers() {
 		if strings.Contains(strings.ToLower(key), "ce-") {
 			req.Header.Add(key, val.(string))
 		}
@@ -391,19 +391,19 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 		return err
 	}
 
-	contentType, isBinary, err := msgContentType(&msg)
+	contentType, isBinary, err := msgContentType(msg)
 	if err != nil {
 		return err
 	}
 
 	var events []cloudevent.Event
 	if contentType == cloudevent.ApplicationCloudEventsBatchJSON {
-		events, err = setEventBatchContent(a, &msg)
+		events, err = setEventBatchContent(a, msg)
 		if err != nil {
 			return err
 		}
 	} else {
-		event, err := setEventContent(a, &msg, contentType)
+		event, err := setEventContent(a, msg, contentType)
 		events = append(events, event)
 		if err != nil {
 			return err
@@ -412,7 +412,7 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 
 	for i, ev := range events {
 		if isBinary {
-			assignCloudeventHeaders(&msg, req)
+			assignCloudeventHeaders(msg, req)
 		}
 
 		err = http.WriteRequest(a.context, binding.ToMessage(&ev), req)
