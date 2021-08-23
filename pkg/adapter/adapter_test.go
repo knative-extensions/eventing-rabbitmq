@@ -907,15 +907,15 @@ func TestAdapter_setCloudeventHeaders(t *testing.T) {
 		name:    "get cloudevent related headers in canonical form and ignore others",
 		headers: origamqp.Table{"test-header": "test", "ce-type": "example.com/type", "ce-id": "1234"},
 		want: http.Header{
-			"Type": []string{"example.com/type"},
-			"Id":   []string{"1234"},
+			"Ce-Type": []string{"example.com/type"},
+			"Ce-Id":   []string{"1234"},
 		},
 	}, {
 		name:    "error if the headers not equals the expected",
 		headers: origamqp.Table{"test-header": "test", "ce-type": "example.com/type", "ce-id": "1234"},
 		want: http.Header{
-			"Types": []string{"example.com/types"},
-			"Id":    []string{"1234"},
+			"Ce-Types": []string{"example.com/types"},
+			"Ce-Id":    []string{"1234"},
 		},
 		err: true,
 	}} {

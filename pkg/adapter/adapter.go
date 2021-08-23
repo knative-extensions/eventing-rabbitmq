@@ -382,7 +382,7 @@ func setEventBatchContent(a *Adapter, msg wabbit.Delivery) ([]cloudevent.Event, 
 func setCloudeventHeaders(msg wabbit.Delivery, req *nethttp.Request) {
 	for key, val := range msg.Headers() {
 		if strings.ToLower(key[:3]) == "ce-" {
-			req.Header.Add(key[3:], val.(string))
+			req.Header.Add(key, val.(string))
 		}
 	}
 }
