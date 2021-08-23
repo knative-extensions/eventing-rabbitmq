@@ -641,6 +641,7 @@ func TestAdapter_msgContentType(t *testing.T) {
 		wrongContentType []byte
 		errorMsg         error
 		err              bool
+		binary           bool
 	}{{
 		name:        "cloudevents json message content type",
 		contentType: "application/cloudevents+json",
@@ -671,6 +672,11 @@ func TestAdapter_msgContentType(t *testing.T) {
 		contentType:      "",
 		wrongContentType: []byte("text/plain"),
 		errorMsg:         errors.New("wrong format in content type"),
+	}, {
+		name:        "binary cloudevents headers",
+		contentType: "application/cloudevents+json",
+		want:        "application/cloudevents+json",
+		binary:      true,
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
 			tt := tt
@@ -688,6 +694,10 @@ func TestAdapter_msgContentType(t *testing.T) {
 				headers = origamqp.Table{header: tt.wrongContentType}
 			}
 
+			if tt.binary {
+				headers["ce-type"] = "example.com/type"
+			}
+
 			m := &amqp.Delivery{}
 			m.Delivery = &origamqp.Delivery{
 				MessageId: "id",
@@ -695,13 +705,17 @@ func TestAdapter_msgContentType(t *testing.T) {
 				Headers:   headers,
 			}
 
-			got, _, err := msgContentType(m)
+			got, isBinary, err := msgContentType(m)
 			if err == nil && got != tt.want {
 				t.Errorf("Unexpected message content type want:\n%+s\ngot:\n%+s", tt.want, got)
 			}
 
 			if tt.errorMsg != nil && err == nil {
 				t.Errorf("Unexpected error state for msg type want:\n%+s\ngot:\n%+s", tt.errorMsg, got)
+			}
+
+			if tt.binary && !isBinary {
+				t.Errorf("Unexpected not binary event from msgContentType: want:\n%t\ngot:\n%t", tt.binary, isBinary)
 			}
 		})
 	}
@@ -863,6 +877,68 @@ func TestAdapter_setEventBatchContent(t *testing.T) {
 				if err == nil || got != nil {
 					t.Errorf("Error transforming invalid events batch array want:\nempty array \ngot:\n%+s", payload)
 				}
+			}
+		})
+	}
+}
+
+// True if headers are equal false otherwise
+func compareHeaders(a, b *http.Header) bool {
+	if len(*a) != len(*b) {
+		return false
+	}
+
+	for key, val := range *a {
+		if s, ok := (*b)[key]; !ok || !reflect.DeepEqual(s, val) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func TestAdapter_setCloudeventHeaders(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		headers origamqp.Table
+		want    http.Header
+		err     bool
+	}{{
+		name:    "get cloudevent related headers in canonical form and ignore others",
+		headers: origamqp.Table{"test-header": "test", "ce-type": "example.com/type", "ce-id": "1234"},
+		want: http.Header{
+			"Type": []string{"example.com/type"},
+			"Id":   []string{"1234"},
+		},
+	}, {
+		name:    "error if the headers not equals the expected",
+		headers: origamqp.Table{"test-header": "test", "ce-type": "example.com/type", "ce-id": "1234"},
+		want: http.Header{
+			"Types": []string{"example.com/types"},
+			"Id":    []string{"1234"},
+		},
+		err: true,
+	}} {
+		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
+
+			req := &http.Request{Header: make(http.Header)}
+			m := &amqp.Delivery{}
+			m.Delivery = &origamqp.Delivery{
+				MessageId: "1234",
+				Body:      nil,
+				Headers:   tt.headers,
+			}
+
+			setCloudeventHeaders(m, req)
+
+			if !tt.err && !compareHeaders(&req.Header, &tt.want) {
+				t.Errorf("Error extracting ce headers want:\n%+s \ngot:\n%+s", tt.want, req.Header)
+			}
+
+			if tt.err && compareHeaders(&req.Header, &tt.want) {
+				t.Errorf("Unexpected error state want:\n%+s \ngot:\n%+s", tt.want, req.Header)
 			}
 		})
 	}

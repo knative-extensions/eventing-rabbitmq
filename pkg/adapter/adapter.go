@@ -329,6 +329,8 @@ func msgContentType(msg wabbit.Delivery) (string, bool, error) {
 		}
 	}
 
+	isBinary = isBinary && contentType == cloudevent.ApplicationCloudEventsJSON
+
 	return contentType, isBinary, nil
 }
 
@@ -377,10 +379,10 @@ func setEventBatchContent(a *Adapter, msg wabbit.Delivery) ([]cloudevent.Event, 
 	return payload, nil
 }
 
-func assignCloudeventHeaders(msg wabbit.Delivery, req *nethttp.Request) {
+func setCloudeventHeaders(msg wabbit.Delivery, req *nethttp.Request) {
 	for key, val := range msg.Headers() {
-		if strings.Contains(strings.ToLower(key), "ce-") {
-			req.Header.Add(key, val.(string))
+		if strings.ToLower(key[:3]) == "ce-" {
+			req.Header.Add(key[3:], val.(string))
 		}
 	}
 }
@@ -412,7 +414,7 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 
 	for i, ev := range events {
 		if isBinary {
-			assignCloudeventHeaders(msg, req)
+			setCloudeventHeaders(msg, req)
 		}
 
 		err = http.WriteRequest(a.context, binding.ToMessage(&ev), req)
