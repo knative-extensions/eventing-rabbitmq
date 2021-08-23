@@ -329,7 +329,7 @@ func msgContentType(msg wabbit.Delivery) (string, bool, error) {
 		}
 	}
 
-	isBinary = isBinary && contentType == cloudevent.ApplicationCloudEventsJSON
+	isBinary = isBinary && strings.ToLower(contentType) == cloudevent.ApplicationCloudEventsJSON
 
 	return contentType, isBinary, nil
 }
@@ -394,18 +394,19 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 	}
 
 	contentType, isBinary, err := msgContentType(msg)
+	lowerCContentType := strings.ToLower(contentType)
 	if err != nil {
 		return err
 	}
 
 	var events []cloudevent.Event
-	if contentType == cloudevent.ApplicationCloudEventsBatchJSON {
+	if lowerCContentType == cloudevent.ApplicationCloudEventsBatchJSON {
 		events, err = setEventBatchContent(a, msg)
 		if err != nil {
 			return err
 		}
 	} else {
-		event, err := setEventContent(a, msg, contentType)
+		event, err := setEventContent(a, msg, lowerCContentType)
 		events = append(events, event)
 		if err != nil {
 			return err

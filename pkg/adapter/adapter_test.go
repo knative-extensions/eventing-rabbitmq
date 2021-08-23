@@ -738,6 +738,7 @@ func TestAdapter_setEventContent(t *testing.T) {
 		name        string
 		contentType string
 		msgId       string
+		err         bool
 	}{{
 		name:        "maintain msg id on message processing",
 		contentType: "application/json",
@@ -754,6 +755,11 @@ func TestAdapter_setEventContent(t *testing.T) {
 		name:        "set event content with empty content type",
 		contentType: "",
 		msgId:       "1234",
+	}, {
+		name:        "invalid data JSON body",
+		contentType: "application/cloudevents+json",
+		msgId:       "1234",
+		err:         true,
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
 			tt := tt
@@ -767,24 +773,24 @@ func TestAdapter_setEventContent(t *testing.T) {
 				msgId = tt.msgId
 			}
 
-			if tt.contentType == "application/cloudevents+json" {
-				event = cloudevents.NewEvent()
-				event.SetID(tt.msgId)
-				event.SetType(sourcesv1alpha1.RabbitmqEventType)
-				event.SetSource(sourcesv1alpha1.RabbitmqEventSource(
-					a.config.Namespace,
-					a.config.Name,
-					a.config.Topic,
-				))
-				event.SetSubject(tt.msgId)
-				event.SetExtension("key", tt.msgId)
-				data, err = json.Marshal(event)
+			if !tt.err {
+				if tt.contentType == "application/cloudevents+json" {
+					event = cloudevents.NewEvent()
+					event.SetID(tt.msgId)
+					event.SetType(sourcesv1alpha1.RabbitmqEventType)
+					event.SetSource(sourcesv1alpha1.RabbitmqEventSource(
+						a.config.Namespace,
+						a.config.Name,
+						a.config.Topic,
+					))
+					event.SetSubject(tt.msgId)
+					event.SetExtension("key", tt.msgId)
+					data, _ = json.Marshal(event)
+				} else {
+					data, _ = json.Marshal(map[string]string{"key": "value"})
+				}
 			} else {
-				data, err = json.Marshal(map[string]string{"key": "value"})
-			}
-
-			if err != nil {
-				t.Errorf("unexpected error, %v", err)
+				data = []byte(`{"name":what?}`)
 			}
 
 			m := &amqp.Delivery{}
@@ -794,20 +800,26 @@ func TestAdapter_setEventContent(t *testing.T) {
 				Headers:   origamqp.Table{"content-type": tt.contentType},
 			}
 
-			got, _ := setEventContent(a, m, tt.contentType)
-			if tt.msgId != "" && got.Context.GetID() != tt.msgId {
-				t.Errorf("Unexpected message ID want:\n%+s\ngot:\n%+s", tt.msgId, got.Context.GetID())
-			}
+			got, err := setEventContent(a, m, tt.contentType)
+			if !tt.err {
+				if tt.msgId != "" && got.Context.GetID() != tt.msgId {
+					t.Errorf("Unexpected message ID want:\n%+s\ngot:\n%+s", tt.msgId, got.Context.GetID())
+				}
 
-			if tt.msgId == "" && got.Context.GetID() == tt.msgId {
-				t.Errorf("Unexpected message ID want:\nany ID\ngot:\n%+s", got.Context.GetID())
-			}
+				if tt.msgId == "" && got.Context.GetID() == tt.msgId {
+					t.Errorf("Unexpected message ID want:\nany ID\ngot:\n%+s", got.Context.GetID())
+				}
 
-			if tt.contentType == "application/cloudevents+json" && got.String() != event.String() {
-				t.Errorf(
-					"Error passing cloudevent as it is want:\n%+s ID\ngot:\n%+s",
-					event.String(), got.String(),
-				)
+				if tt.contentType == "application/cloudevents+json" && got.String() != event.String() {
+					t.Errorf(
+						"Error passing cloudevent as it is want:\n%+s ID\ngot:\n%+s",
+						event.String(), got.String(),
+					)
+				}
+			} else {
+				if err == nil {
+					t.Errorf("Unexpected error state want:\n%+s \ngot:\nnone", err)
+				}
 			}
 		})
 	}
