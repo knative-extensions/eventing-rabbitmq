@@ -56,6 +56,7 @@ import (
 	logtesting "knative.dev/pkg/logging/testing"
 	"knative.dev/pkg/network"
 	"knative.dev/pkg/resolver"
+	"knative.dev/pkg/tracker"
 
 	rtlisters "knative.dev/eventing-rabbitmq/pkg/reconciler/testing"
 	_ "knative.dev/eventing/pkg/client/injection/informers/eventing/v1/trigger/fake"
@@ -997,7 +998,7 @@ func TestReconcile(t *testing.T) {
 			deploymentLister:   listers.GetDeploymentLister(),
 			kresourceTracker:   duck.NewListableTracker(ctx, conditions.Get, func(types.NamespacedName) {}, 0),
 			addressableTracker: duck.NewListableTracker(ctx, v1a1addr.Get, func(types.NamespacedName) {}, 0),
-			uriResolver:        resolver.NewURIResolver(ctx, func(types.NamespacedName) {}),
+			uriResolver:        resolver.NewURIResolverFromTracker(ctx, tracker.New(func(types.NamespacedName) {}, 0)),
 			brokerClass:        "RabbitMQBroker",
 			ingressImage:       ingressImage,
 			dispatcherImage:    dispatcherImage,
