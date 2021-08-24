@@ -26,6 +26,7 @@ import (
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 
 	"knative.dev/pkg/network"
+	"knative.dev/pkg/tracker"
 
 	"github.com/NeowayLabs/wabbit/amqptest/server"
 	appsv1 "k8s.io/api/apps/v1"
@@ -722,7 +723,7 @@ func TestReconcile(t *testing.T) {
 			deploymentLister:   listers.GetDeploymentLister(),
 			sourceTracker:      duck.NewListableTracker(ctx, source.Get, func(types.NamespacedName) {}, 0),
 			addressableTracker: duck.NewListableTracker(ctx, v1addr.Get, func(types.NamespacedName) {}, 0),
-			uriResolver:        resolver.NewURIResolver(ctx, func(types.NamespacedName) {}),
+			uriResolver:        resolver.NewURIResolverFromTracker(ctx, tracker.New(func(types.NamespacedName) {}, 0)),
 			brokerClass:        "RabbitMQBroker",
 			dialerFunc:         dialer.TestDialer,
 			transport:          ts.Client().Transport,

@@ -112,9 +112,9 @@ func NewController(
 
 	logging.FromContext(ctx).Info("Setting up event handlers")
 
-	r.kresourceTracker = duck.NewListableTracker(ctx, conditions.Get, impl.EnqueueKey, controller.GetTrackerLease(ctx))
-	r.addressableTracker = duck.NewListableTracker(ctx, addressable.Get, impl.EnqueueKey, controller.GetTrackerLease(ctx))
-	r.uriResolver = resolver.NewURIResolver(ctx, impl.EnqueueKey)
+	r.kresourceTracker = duck.NewListableTrackerFromTracker(ctx, conditions.Get, impl.Tracker)
+	r.addressableTracker = duck.NewListableTrackerFromTracker(ctx, addressable.Get, impl.Tracker)
+	r.uriResolver = resolver.NewURIResolverFromTracker(ctx, impl.Tracker)
 
 	brokerInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: pkgreconciler.AnnotationFilterFunc(brokerreconciler.ClassAnnotationKey, env.BrokerClass, false /*allowUnset*/),

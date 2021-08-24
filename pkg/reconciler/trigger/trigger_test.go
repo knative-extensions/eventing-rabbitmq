@@ -26,6 +26,7 @@ import (
 
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/network"
+	"knative.dev/pkg/tracker"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -704,7 +705,7 @@ func TestReconcile(t *testing.T) {
 			deploymentLister:   listers.GetDeploymentLister(),
 			sourceTracker:      duck.NewListableTracker(ctx, source.Get, func(types.NamespacedName) {}, 0),
 			addressableTracker: duck.NewListableTracker(ctx, v1addr.Get, func(types.NamespacedName) {}, 0),
-			uriResolver:        resolver.NewURIResolver(ctx, func(types.NamespacedName) {}),
+			uriResolver:        resolver.NewURIResolverFromTracker(ctx, tracker.New(func(types.NamespacedName) {}, 0)),
 			brokerClass:        "RabbitMQBroker",
 			dispatcherImage:    dispatcherImage,
 			rabbitClientSet:    fakerabbitclient.Get(ctx),
