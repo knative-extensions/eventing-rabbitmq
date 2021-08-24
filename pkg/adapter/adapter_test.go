@@ -111,8 +111,8 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 				Body:      data,
 				Headers:   origamqp.Table{"content-type": "application/json"},
 			}
-			err = a.postMessage(m)
 
+			err = a.postMessage(m)
 			if tc.error && err == nil {
 				t.Errorf("expected error, but got %v", err)
 			}
