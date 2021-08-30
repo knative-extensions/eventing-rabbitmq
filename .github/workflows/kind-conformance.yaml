@@ -31,7 +31,7 @@ jobs:
         - v0.23.0
 
         rabbitmq-operator-version:
-        - v1.6.0
+        - v1.8.2
 
         rabbitmq-messaging-topology-operator-version:
         - v0.8.0
@@ -192,7 +192,7 @@ jobs:
         # Get the full templates directory path.
         export BROKER_TEMPLATES=${PWD}/test/conformance/testdata/with-operator
         export BROKER_CLASS=RabbitMQBroker
-        
+
         SYSTEM_NAMESPACE=knative-eventing go test -v -count=1  -parallel=12 -timeout=20m -tags=e2e -run TestBrokerConformance ./test/conformance/...
 
     - name: Gather Failure Data

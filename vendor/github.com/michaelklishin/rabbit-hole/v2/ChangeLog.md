@@ -1,6 +1,62 @@
-## Changes Between 2.8.0 and 2.9.0 (in development)
+## Changes Between 2.10.0 and 2.11.0 (in development)
 
 No changes yet.
+
+
+## Changes Between 2.9.0 and 2.10.0 (Jun 3, 2021)
+
+This release contains very **minor breaking public API changes**.
+
+### `ShovelDefinition.SourceDeleteAfter` Now Matches That of `ShovelDefinition.DeleteAfter`
+
+`ShovelDefinition.SourceDeleteAfter` type has changed to match that of
+`ShovelDefinition.DeleteAfter`.
+
+GitHub issue: [#197](https://github.com/michaelklishin/rabbit-hole/pull/197)
+
+
+## Changes Between 2.8.0 and 2.9.0 (Jun 2, 2021)
+
+This release contains **minor breaking public API changes**.
+
+### Support for Lists of Federation Upstream URIs
+
+Federation definition now uses a dedicated type, `URISet`, to represent
+a set of URIs that will be tried sequentially until the link
+can successfully connect and authenticate:
+
+``` go
+def1 := FederationDefinition{
+            Uri: URISet{"amqp://hostname/%2f"},
+        }
+```
+
+`URISet` has now replaced `ShovelURISet`:
+
+``` go
+sDef := ShovelDefinition{
+            SourceURI:         URISet([]string{"amqp://127.0.0.1/%2f"}),
+            SourceQueue:       "mySourceQueue",
+            DestinationURI:    ShovelURISet([]string{"amqp://host1/%2f"}),
+            DestinationQueue:  "myDestQueue",
+            AddForwardHeaders: true,
+            AckMode:           "on-confirm",
+            DeleteAfter:       "never",
+        }
+```
+
+GitHub issues: [#193](https://github.com/michaelklishin/rabbit-hole/pull/193), [#194](https://github.com/michaelklishin/rabbit-hole/pull/194)
+
+### Support for Operator Policies
+
+Contributed by @MrLuje.
+
+GitHub issues: [#188](https://github.com/michaelklishin/rabbit-hole/issues/188), [#190](https://github.com/michaelklishin/rabbit-hole/pull/190)
+
+### Declared Queue Type is Correctly Propagated
+
+GitHub issue: [#189](https://github.com/michaelklishin/rabbit-hole/pull/189)
+
 
 ## Changes Between 2.7.0 and 2.8.0 (Apr 12, 2021)
 

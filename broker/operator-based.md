@@ -4,10 +4,10 @@
 
 * Install Knative Eventing as documented [here](https://knative.dev/docs/install/).
 
-* Install version 1.6 of the [RabbitMQ Cluster Operator](https://github.com/rabbitmq/cluster-operator).
+* Install version 1.8 of the [RabbitMQ Cluster Operator](https://github.com/rabbitmq/cluster-operator).
 
     ```
-    kubectl apply -f https://github.com/rabbitmq/cluster-operator/releases/download/v1.6.0/cluster-operator.yml
+    kubectl apply -f https://github.com/rabbitmq/cluster-operator/releases/download/v1.8.2/cluster-operator.yml
 
     ```
 * Install version 0.8.0 of the [RabbitMQ Messaging Topology Operator](https://github.com/rabbitmq/messaging-topology-operator/releases/tag/v0.8.0)

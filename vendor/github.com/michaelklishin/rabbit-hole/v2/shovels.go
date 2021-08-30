@@ -66,37 +66,10 @@ func (d *DeleteAfter) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// ShovelURISet represents a set of URIs used by Shovel.
-// The URIs from this set are tried until one of them succeeds
-// (Shovel successfully connects and authenticates with it)
-type ShovelURISet []string
-
-// UnmarshalJSON can unmarshal a single URI string or a list of
-// URI strings
-func (s *ShovelURISet) UnmarshalJSON(b []byte) error {
-	// the value is a single URI, a string
-	if b[0] == '"' {
-		var uri string
-		if err := json.Unmarshal(b, &uri); err != nil {
-			return err
-		}
-		*s = ShovelURISet([]string{uri})
-		return nil
-	}
-
-	// the value is a list
-	var uris []string
-	if err := json.Unmarshal(b, &uris); err != nil {
-		return err
-	}
-	*s = ShovelURISet(uris)
-	return nil
-}
-
 // ShovelDefinition contains the details of the shovel configuration
 type ShovelDefinition struct {
-	DestinationURI ShovelURISet `json:"dest-uri"`
-	SourceURI      ShovelURISet `json:"src-uri"`
+	DestinationURI URISet `json:"dest-uri"`
+	SourceURI      URISet `json:"src-uri"`
 
 	AckMode                          string      `json:"ack-mode,omitempty"`
 	AddForwardHeaders                bool        `json:"add-forward-headers,omitempty"`
@@ -114,7 +87,7 @@ type ShovelDefinition struct {
 	PrefetchCount                    int         `json:"prefetch-count,omitempty"`
 	ReconnectDelay                   int         `json:"reconnect-delay,omitempty"`
 	SourceAddress                    string      `json:"src-address,omitempty"`
-	SourceDeleteAfter                string      `json:"src-delete-after,omitempty"`
+	SourceDeleteAfter                DeleteAfter `json:"src-delete-after,omitempty"`
 	SourceExchange                   string      `json:"src-exchange,omitempty"`
 	SourceExchangeKey                string      `json:"src-exchange-key,omitempty"`
 	SourcePrefetchCount              int         `json:"src-prefetch-count,omitempty"`
