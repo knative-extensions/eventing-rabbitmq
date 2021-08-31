@@ -10,29 +10,29 @@
     kubectl apply -f https://github.com/rabbitmq/cluster-operator/releases/download/v1.8.2/cluster-operator.yml
 
     ```
-* Install version 0.8.0 of the [RabbitMQ Messaging Topology Operator](https://github.com/rabbitmq/messaging-topology-operator/releases/tag/v0.8.0)
+* Install version 0.11.0 of the [RabbitMQ Messaging Topology Operator](https://github.com/rabbitmq/messaging-topology-operator/releases/tag/v0.8.0)
 
     Install Cert manager first:
     ```
-    kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.2.0/cert-manager.yaml
+    kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.5.3/cert-manager.yaml
     ```
 
     Then operator:
     ```
-    kubectl apply -f https://github.com/rabbitmq/messaging-topology-operator/releases/download/v0.8.0/messaging-topology-operator-with-certmanager.yaml
+    kubectl apply -f https://github.com/rabbitmq/messaging-topology-operator/releases/download/v0.11.0/messaging-topology-operator-with-certmanager.yaml
     ```
 
-    If you already have Cert Manager installed, or want more control over the certs used, etc. You can follow the [quickstart here](https://github.com/rabbitmq/messaging-topology-operator#quickstart) but instead of installing the latest version, install version 0.8.0.
+    If you already have Cert Manager installed, or want more control over the certs used, etc. You can follow the [quickstart here](https://github.com/rabbitmq/messaging-topology-operator#quickstart).
 
 ## Installation
 
 You can install a released version of
 [Operator based Knative RabbitMQ Broker](https://github.com/knative-sandbox/eventing-rabbitmq/releases/).
 
-For example, if you wanted to install version v0.23.0 you would run:
+For example, if you wanted to install version v0.25.0 you would run:
 
 ```shell
-kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/download/v0.23.0/rabbitmq-broker.yaml
+kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/download/v0.25.0/rabbitmq-broker.yaml
 ```
 
 You can install a nightly version:

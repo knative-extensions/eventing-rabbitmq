@@ -18,7 +18,7 @@ require (
 	github.com/michaelklishin/rabbit-hole/v2 v2.10.0
 	github.com/pkg/errors v0.9.1
 	github.com/rabbitmq/cluster-operator v1.8.2
-	github.com/rabbitmq/messaging-topology-operator v0.8.0
+	github.com/rabbitmq/messaging-topology-operator v0.11.0
 	github.com/streadway/amqp v1.0.0
 	github.com/testcontainers/testcontainers-go v0.7.0
 	github.com/tiago4orion/conjure v0.0.0-20150908101743-93cb30b9d218 // indirect

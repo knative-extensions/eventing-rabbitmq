@@ -21,6 +21,8 @@ type BindingExpansion interface{}
 
 type ExchangeExpansion interface{}
 
+type FederationExpansion interface{}
+
 type PermissionExpansion interface{}
 
 type PolicyExpansion interface{}
@@ -28,6 +30,8 @@ type PolicyExpansion interface{}
 type QueueExpansion interface{}
 
 type SchemaReplicationExpansion interface{}
+
+type ShovelExpansion interface{}
 
 type UserExpansion interface{}
 

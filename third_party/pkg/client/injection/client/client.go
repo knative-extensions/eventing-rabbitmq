@@ -372,6 +372,137 @@ func (w *wrapRabbitmqV1beta1ExchangeImpl) Watch(ctx context.Context, opts v1.Lis
 	return nil, errors.New("NYI: Watch")
 }
 
+func (w *wrapRabbitmqV1beta1) Federations(namespace string) typedrabbitmqv1beta1.FederationInterface {
+	return &wrapRabbitmqV1beta1FederationImpl{
+		dyn: w.dyn.Resource(schema.GroupVersionResource{
+			Group:    "rabbitmq.com",
+			Version:  "v1beta1",
+			Resource: "federations",
+		}),
+
+		namespace: namespace,
+	}
+}
+
+type wrapRabbitmqV1beta1FederationImpl struct {
+	dyn dynamic.NamespaceableResourceInterface
+
+	namespace string
+}
+
+var _ typedrabbitmqv1beta1.FederationInterface = (*wrapRabbitmqV1beta1FederationImpl)(nil)
+
+func (w *wrapRabbitmqV1beta1FederationImpl) Create(ctx context.Context, in *v1beta1.Federation, opts v1.CreateOptions) (*v1beta1.Federation, error) {
+	in.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "rabbitmq.com",
+		Version: "v1beta1",
+		Kind:    "Federation",
+	})
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err := w.dyn.Namespace(w.namespace).Create(ctx, uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &v1beta1.Federation{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapRabbitmqV1beta1FederationImpl) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
+	return w.dyn.Namespace(w.namespace).Delete(ctx, name, opts)
+}
+
+func (w *wrapRabbitmqV1beta1FederationImpl) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	return w.dyn.Namespace(w.namespace).DeleteCollection(ctx, opts, listOpts)
+}
+
+func (w *wrapRabbitmqV1beta1FederationImpl) Get(ctx context.Context, name string, opts v1.GetOptions) (*v1beta1.Federation, error) {
+	uo, err := w.dyn.Namespace(w.namespace).Get(ctx, name, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &v1beta1.Federation{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapRabbitmqV1beta1FederationImpl) List(ctx context.Context, opts v1.ListOptions) (*v1beta1.FederationList, error) {
+	uo, err := w.dyn.Namespace(w.namespace).List(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &v1beta1.FederationList{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapRabbitmqV1beta1FederationImpl) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1beta1.Federation, err error) {
+	uo, err := w.dyn.Namespace(w.namespace).Patch(ctx, name, pt, data, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &v1beta1.Federation{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapRabbitmqV1beta1FederationImpl) Update(ctx context.Context, in *v1beta1.Federation, opts v1.UpdateOptions) (*v1beta1.Federation, error) {
+	in.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "rabbitmq.com",
+		Version: "v1beta1",
+		Kind:    "Federation",
+	})
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err := w.dyn.Namespace(w.namespace).Update(ctx, uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &v1beta1.Federation{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapRabbitmqV1beta1FederationImpl) UpdateStatus(ctx context.Context, in *v1beta1.Federation, opts v1.UpdateOptions) (*v1beta1.Federation, error) {
+	in.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "rabbitmq.com",
+		Version: "v1beta1",
+		Kind:    "Federation",
+	})
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err := w.dyn.Namespace(w.namespace).UpdateStatus(ctx, uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &v1beta1.Federation{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapRabbitmqV1beta1FederationImpl) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
+	return nil, errors.New("NYI: Watch")
+}
+
 func (w *wrapRabbitmqV1beta1) Permissions(namespace string) typedrabbitmqv1beta1.PermissionInterface {
 	return &wrapRabbitmqV1beta1PermissionImpl{
 		dyn: w.dyn.Resource(schema.GroupVersionResource{
@@ -893,6 +1024,137 @@ func (w *wrapRabbitmqV1beta1SchemaReplicationImpl) UpdateStatus(ctx context.Cont
 }
 
 func (w *wrapRabbitmqV1beta1SchemaReplicationImpl) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
+	return nil, errors.New("NYI: Watch")
+}
+
+func (w *wrapRabbitmqV1beta1) Shovels(namespace string) typedrabbitmqv1beta1.ShovelInterface {
+	return &wrapRabbitmqV1beta1ShovelImpl{
+		dyn: w.dyn.Resource(schema.GroupVersionResource{
+			Group:    "rabbitmq.com",
+			Version:  "v1beta1",
+			Resource: "shovels",
+		}),
+
+		namespace: namespace,
+	}
+}
+
+type wrapRabbitmqV1beta1ShovelImpl struct {
+	dyn dynamic.NamespaceableResourceInterface
+
+	namespace string
+}
+
+var _ typedrabbitmqv1beta1.ShovelInterface = (*wrapRabbitmqV1beta1ShovelImpl)(nil)
+
+func (w *wrapRabbitmqV1beta1ShovelImpl) Create(ctx context.Context, in *v1beta1.Shovel, opts v1.CreateOptions) (*v1beta1.Shovel, error) {
+	in.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "rabbitmq.com",
+		Version: "v1beta1",
+		Kind:    "Shovel",
+	})
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err := w.dyn.Namespace(w.namespace).Create(ctx, uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &v1beta1.Shovel{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapRabbitmqV1beta1ShovelImpl) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
+	return w.dyn.Namespace(w.namespace).Delete(ctx, name, opts)
+}
+
+func (w *wrapRabbitmqV1beta1ShovelImpl) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	return w.dyn.Namespace(w.namespace).DeleteCollection(ctx, opts, listOpts)
+}
+
+func (w *wrapRabbitmqV1beta1ShovelImpl) Get(ctx context.Context, name string, opts v1.GetOptions) (*v1beta1.Shovel, error) {
+	uo, err := w.dyn.Namespace(w.namespace).Get(ctx, name, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &v1beta1.Shovel{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapRabbitmqV1beta1ShovelImpl) List(ctx context.Context, opts v1.ListOptions) (*v1beta1.ShovelList, error) {
+	uo, err := w.dyn.Namespace(w.namespace).List(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &v1beta1.ShovelList{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapRabbitmqV1beta1ShovelImpl) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1beta1.Shovel, err error) {
+	uo, err := w.dyn.Namespace(w.namespace).Patch(ctx, name, pt, data, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &v1beta1.Shovel{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapRabbitmqV1beta1ShovelImpl) Update(ctx context.Context, in *v1beta1.Shovel, opts v1.UpdateOptions) (*v1beta1.Shovel, error) {
+	in.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "rabbitmq.com",
+		Version: "v1beta1",
+		Kind:    "Shovel",
+	})
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err := w.dyn.Namespace(w.namespace).Update(ctx, uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &v1beta1.Shovel{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapRabbitmqV1beta1ShovelImpl) UpdateStatus(ctx context.Context, in *v1beta1.Shovel, opts v1.UpdateOptions) (*v1beta1.Shovel, error) {
+	in.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "rabbitmq.com",
+		Version: "v1beta1",
+		Kind:    "Shovel",
+	})
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err := w.dyn.Namespace(w.namespace).UpdateStatus(ctx, uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &v1beta1.Shovel{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapRabbitmqV1beta1ShovelImpl) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return nil, errors.New("NYI: Watch")
 }
 

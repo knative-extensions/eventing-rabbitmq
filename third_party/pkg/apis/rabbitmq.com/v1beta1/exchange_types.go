@@ -17,16 +17,19 @@ import (
 
 // ExchangeSpec defines the desired state of Exchange
 type ExchangeSpec struct {
+	// Required property; cannot be updated
 	// +kubebuilder:validation:Required
 	Name string `json:"name"`
-	// Default to vhost '/'
+	// Default to vhost '/'; cannot be updated
 	// +kubebuilder:default:=/
 	Vhost string `json:"vhost,omitempty"`
-	// +kubebuilder:validation:Enum=direct;fanout;headers;topic
+	// Cannot be updated
 	// +kubebuilder:default:=direct
-	Type       string `json:"type,omitempty"`
-	Durable    bool   `json:"durable,omitempty"`
-	AutoDelete bool   `json:"autoDelete,omitempty"`
+	Type string `json:"type,omitempty"`
+	// Cannot be updated
+	Durable bool `json:"durable,omitempty"`
+	// Cannot be updated
+	AutoDelete bool `json:"autoDelete,omitempty"`
 	// +kubebuilder:validation:Type=object
 	// +kubebuilder:pruning:PreserveUnknownFields
 	Arguments *runtime.RawExtension `json:"arguments,omitempty"`
