@@ -20,12 +20,13 @@ import (
 )
 
 // +kubebuilder:object:root=true
-
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="AllReplicasReady",type="string",JSONPath=".status.conditions[?(@.type == 'AllReplicasReady')].status"
+// +kubebuilder:printcolumn:name="ReconcileSuccess",type="string",JSONPath=".status.conditions[?(@.type == 'ReconcileSuccess')].status"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
+// +kubebuilder:resource:shortName={"rmq"},categories=all
 // RabbitmqCluster is the Schema for the RabbitmqCluster API. Each instance of this object
 // corresponds to a single RabbitMQ cluster.
-// +kubebuilder:subresource:status
-// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
-// +kubebuilder:resource:shortName={"rmq"}
 type RabbitmqCluster struct {
 	// Embedded metadata identifying a Kind and API Verison of an object.
 	// For more info, see: https://pkg.go.dev/k8s.io/apimachinery/pkg/apis/meta/v1#TypeMeta
@@ -49,7 +50,7 @@ type RabbitmqClusterSpec struct {
 	Replicas *int32 `json:"replicas,omitempty"`
 	// Image is the name of the RabbitMQ docker image to use for RabbitMQ nodes in the RabbitmqCluster.
 	// Must be provided together with ImagePullSecrets in order to use an image in a private registry.
-	// +kubebuilder:default:="rabbitmq:3.8.14-management"
+	// +kubebuilder:default:="rabbitmq:3.8.21-management"
 	Image string `json:"image,omitempty"`
 	// List of Secret resource containing access credentials to the registry for the RabbitMQ image. Required if the docker registry is private.
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`

@@ -1,4 +1,4 @@
-// Copyright 2017 The Prometheus Authors
+// Copyright 2021 The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -11,34 +11,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// +build !go1.8
+// +build !go1.15
 
-package promhttp
+package collectors
 
 import (
-	"io"
-	"net/http"
+	"database/sql"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
-func newDelegator(w http.ResponseWriter, observeWriteHeaderFunc func(int)) delegator {
-	d := &responseWriterDelegator{
-		ResponseWriter:     w,
-		observeWriteHeader: observeWriteHeaderFunc,
-	}
+func (c *dbStatsCollector) describeNewInGo115(ch chan<- *prometheus.Desc) {}
 
-	id := 0
-	if _, ok := w.(http.CloseNotifier); ok {
-		id += closeNotifier
-	}
-	if _, ok := w.(http.Flusher); ok {
-		id += flusher
-	}
-	if _, ok := w.(http.Hijacker); ok {
-		id += hijacker
-	}
-	if _, ok := w.(io.ReaderFrom); ok {
-		id += readerFrom
-	}
-
-	return pickDelegator[id](d)
-}
+func (c *dbStatsCollector) collectNewInGo115(ch chan<- prometheus.Metric, stats sql.DBStats) {}
