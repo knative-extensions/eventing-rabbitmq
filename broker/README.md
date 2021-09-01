@@ -74,7 +74,7 @@ kubectl apply -f - << EOF
     data: '{"message": "Hello world!"}'
     sink:
       ref:
-        apiVersion: eventing.knative.dev/v1beta1
+        apiVersion: eventing.knative.dev/v1
         kind: Broker
         name: default
 EOF
