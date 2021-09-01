@@ -72,6 +72,11 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 			args: dispatcherArgs(withDLX),
 			want: deployment(deploymentNamed("testtrigger-dlx-dispatcher")),
 		},
+		{
+			name: "with prefetch",
+			args: dispatcherArgs(withPrefetch("10")),
+			want: deployment(withEnv(corev1.EnvVar{Name: "PREFETCH_COUNT", Value: "10"})),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -201,6 +206,16 @@ func withDelivery(delivery *eventingduckv1.DeliverySpec) func(*DispatcherArgs) {
 
 func withDLX(args *DispatcherArgs) {
 	args.DLX = true
+}
+
+func withPrefetch(c string) func(*DispatcherArgs) {
+	return func(args *DispatcherArgs) {
+		if args.Trigger.ObjectMeta.Annotations == nil {
+			args.Trigger.ObjectMeta.Annotations = map[string]string{prefetchAnnotation: c}
+		} else {
+			args.Trigger.ObjectMeta.Annotations[prefetchAnnotation] = c
+		}
+	}
 }
 
 func Int32Ptr(i int32) *int32 {
