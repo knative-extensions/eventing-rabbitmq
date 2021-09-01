@@ -27,7 +27,6 @@ import (
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/system"
-
 	_ "knative.dev/pkg/system/testing"
 )
 
@@ -44,37 +43,59 @@ const (
 	subscriberURL    = "http://function.example.com"
 )
 
+var exponentialBackoff = eventingduckv1.BackoffPolicyExponential
+
 func TestMakeDispatcherDeployment(t *testing.T) {
-	var TrueValue = true
-	ingressURL := apis.HTTP("broker.example.com")
-	sURL := apis.HTTP("function.example.com")
-	trigger := &eventingv1.Trigger{
-		ObjectMeta: metav1.ObjectMeta{Name: triggerName, Namespace: ns},
-		Spec:       eventingv1.TriggerSpec{Broker: brokerName},
+	tests := []struct {
+		name string
+		args *DispatcherArgs
+		want *appsv1.Deployment
+	}{
+		{
+			name: "base",
+			args: dispatcherArgs(),
+			want: deployment(),
+		},
+		{
+			name: "with retry and backoff",
+			args: dispatcherArgs(withDelivery(&eventingduckv1.DeliverySpec{
+				Retry:         Int32Ptr(10),
+				BackoffPolicy: &exponentialBackoff,
+			})),
+			want: deployment(
+				withEnv(corev1.EnvVar{Name: "RETRY", Value: "10"}),
+				withEnv(corev1.EnvVar{Name: "BACKOFF_POLICY", Value: "exponential"}),
+			),
+		},
+		{
+			name: "with dlx",
+			args: dispatcherArgs(withDLX),
+			want: deployment(deploymentNamed("testtrigger-dlx-dispatcher")),
+		},
 	}
-	args := &DispatcherArgs{
-		Trigger:            trigger,
-		Image:              image,
-		RabbitMQHost:       rabbitHost,
-		RabbitMQSecretName: secretName,
-		QueueName:          queueName,
-		BrokerUrlSecretKey: brokerURLKey,
-		BrokerIngressURL:   ingressURL,
-		Subscriber:         sURL,
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := MakeDispatcherDeployment(tt.args)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Error("unexpected diff (-want, +got) = ", diff)
+			}
+		})
 	}
+}
 
-	got := MakeDispatcherDeployment(args)
+func deployment(opts ...func(*appsv1.Deployment)) *appsv1.Deployment {
+	trueValue := true
 	one := int32(1)
-	want := &appsv1.Deployment{
+	d := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: args.Trigger.Namespace,
+			Namespace: ns,
 			Name:      "testtrigger-dispatcher",
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         "eventing.knative.dev/v1",
 				Kind:               "Trigger",
 				Name:               triggerName,
-				Controller:         &TrueValue,
-				BlockOwnerDeletion: &TrueValue,
+				Controller:         &trueValue,
+				BlockOwnerDeletion: &trueValue,
 			}},
 			Labels: map[string]string{
 				"eventing.knative.dev/broker":     brokerName,
@@ -131,15 +152,25 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 			},
 		},
 	}
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Error("unexpected diff (-want, +got) = ", diff)
+	for _, o := range opts {
+		o(d)
+	}
+	return d
+}
+
+func withEnv(env corev1.EnvVar) func(*appsv1.Deployment) {
+	return func(d *appsv1.Deployment) {
+		d.Spec.Template.Spec.Containers[0].Env = append(d.Spec.Template.Spec.Containers[0].Env, env)
 	}
 }
 
-func TestMakeDispatcherDeploymentWithDelivery(t *testing.T) {
-	var TrueValue = true
-	ten := int32(10)
-	backoffPolicy := eventingduckv1.BackoffPolicyExponential
+func deploymentNamed(name string) func(*appsv1.Deployment) {
+	return func(d *appsv1.Deployment) {
+		d.ObjectMeta.Name = name
+	}
+}
+
+func dispatcherArgs(opts ...func(*DispatcherArgs)) *DispatcherArgs {
 	ingressURL := apis.HTTP("broker.example.com")
 	sURL := apis.HTTP("function.example.com")
 	trigger := &eventingv1.Trigger{
@@ -155,180 +186,23 @@ func TestMakeDispatcherDeploymentWithDelivery(t *testing.T) {
 		BrokerUrlSecretKey: brokerURLKey,
 		BrokerIngressURL:   ingressURL,
 		Subscriber:         sURL,
-		Delivery: &eventingduckv1.DeliverySpec{
-			Retry:         &ten,
-			BackoffPolicy: &backoffPolicy,
-		},
 	}
+	for _, o := range opts {
+		o(args)
+	}
+	return args
+}
 
-	got := MakeDispatcherDeployment(args)
-	one := int32(1)
-	want := &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: args.Trigger.Namespace,
-			Name:      "testtrigger-dispatcher",
-			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "eventing.knative.dev/v1",
-				Kind:               "Trigger",
-				Name:               triggerName,
-				Controller:         &TrueValue,
-				BlockOwnerDeletion: &TrueValue,
-			}},
-			Labels: map[string]string{
-				"eventing.knative.dev/broker":     brokerName,
-				"eventing.knative.dev/brokerRole": "dispatcher",
-			},
-		},
-		Spec: appsv1.DeploymentSpec{
-			Replicas: &one,
-			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"eventing.knative.dev/broker":     brokerName,
-					"eventing.knative.dev/brokerRole": "dispatcher",
-				},
-			},
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"eventing.knative.dev/broker":     brokerName,
-						"eventing.knative.dev/brokerRole": "dispatcher",
-					},
-				},
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{{
-						Name:  "dispatcher",
-						Image: image,
-						Env: []corev1.EnvVar{{
-							Name:  system.NamespaceEnvKey,
-							Value: system.Namespace(),
-						}, {
-							Name: "RABBIT_URL",
-							ValueFrom: &corev1.EnvVarSource{
-								SecretKeyRef: &corev1.SecretKeySelector{
-									LocalObjectReference: corev1.LocalObjectReference{
-										Name: secretName,
-									},
-									Key: brokerURLKey,
-								},
-							},
-						}, {
-							Name:  "QUEUE_NAME",
-							Value: queueName,
-						}, {
-							Name:  "SUBSCRIBER",
-							Value: subscriberURL,
-						}, {
-							Name:  "BROKER_INGRESS_URL",
-							Value: brokerIngressURL,
-						}, {
-							Name:  "REQUEUE",
-							Value: "false",
-						}, {
-							Name:  "RETRY",
-							Value: "10",
-						}, {
-							Name:  "BACKOFF_POLICY",
-							Value: "exponential",
-						}},
-					}},
-				},
-			},
-		},
-	}
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Error("unexpected diff (-want, +got) = ", diff)
+func withDelivery(delivery *eventingduckv1.DeliverySpec) func(*DispatcherArgs) {
+	return func(args *DispatcherArgs) {
+		args.Delivery = delivery
 	}
 }
 
-func TestMakeDLXDispatcherDeployment(t *testing.T) {
-	var TrueValue = true
-	ingressURL := apis.HTTP("broker.example.com")
-	sURL := apis.HTTP("function.example.com")
-	trigger := &eventingv1.Trigger{
-		ObjectMeta: metav1.ObjectMeta{Name: triggerName, Namespace: ns},
-		Spec:       eventingv1.TriggerSpec{Broker: brokerName},
-	}
-	args := &DispatcherArgs{
-		Trigger:            trigger,
-		Image:              image,
-		RabbitMQHost:       rabbitHost,
-		RabbitMQSecretName: secretName,
-		QueueName:          queueName,
-		BrokerUrlSecretKey: brokerURLKey,
-		BrokerIngressURL:   ingressURL,
-		Subscriber:         sURL,
-		DLX:                true,
-	}
+func withDLX(args *DispatcherArgs) {
+	args.DLX = true
+}
 
-	got := MakeDispatcherDeployment(args)
-	one := int32(1)
-	want := &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: args.Trigger.Namespace,
-			Name:      "testtrigger-dlx-dispatcher",
-			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "eventing.knative.dev/v1",
-				Kind:               "Trigger",
-				Name:               triggerName,
-				Controller:         &TrueValue,
-				BlockOwnerDeletion: &TrueValue,
-			}},
-			Labels: map[string]string{
-				"eventing.knative.dev/broker":     brokerName,
-				"eventing.knative.dev/brokerRole": "dispatcher",
-			},
-		},
-		Spec: appsv1.DeploymentSpec{
-			Replicas: &one,
-			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"eventing.knative.dev/broker":     brokerName,
-					"eventing.knative.dev/brokerRole": "dispatcher",
-				},
-			},
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"eventing.knative.dev/broker":     brokerName,
-						"eventing.knative.dev/brokerRole": "dispatcher",
-					},
-				},
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{{
-						Name:  "dispatcher",
-						Image: image,
-						Env: []corev1.EnvVar{{
-							Name:  system.NamespaceEnvKey,
-							Value: system.Namespace(),
-						}, {
-							Name: "RABBIT_URL",
-							ValueFrom: &corev1.EnvVarSource{
-								SecretKeyRef: &corev1.SecretKeySelector{
-									LocalObjectReference: corev1.LocalObjectReference{
-										Name: secretName,
-									},
-									Key: brokerURLKey,
-								},
-							},
-						}, {
-							Name:  "QUEUE_NAME",
-							Value: queueName,
-						}, {
-							Name:  "SUBSCRIBER",
-							Value: subscriberURL,
-						}, {
-							Name:  "BROKER_INGRESS_URL",
-							Value: brokerIngressURL,
-						}, {
-							Name:  "REQUEUE",
-							Value: "false",
-						}},
-					}},
-				},
-			},
-		},
-	}
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Error("unexpected diff (-want, +got) = ", diff)
-	}
+func Int32Ptr(i int32) *int32 {
+	return &i
 }
