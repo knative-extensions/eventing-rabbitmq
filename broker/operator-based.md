@@ -10,7 +10,7 @@
     kubectl apply -f https://github.com/rabbitmq/cluster-operator/releases/download/v1.8.2/cluster-operator.yml
 
     ```
-* Install version 0.11.0 of the [RabbitMQ Messaging Topology Operator](https://github.com/rabbitmq/messaging-topology-operator/releases/tag/v0.8.0)
+* Install version 1.0.0 of the [RabbitMQ Messaging Topology Operator](https://github.com/rabbitmq/messaging-topology-operator/releases/tag/v1.0.0)
 
     Install Cert manager first:
     ```
@@ -19,7 +19,7 @@
 
     Then operator:
     ```
-    kubectl apply -f https://github.com/rabbitmq/messaging-topology-operator/releases/download/v0.11.0/messaging-topology-operator-with-certmanager.yaml
+    kubectl apply -f https://github.com/rabbitmq/messaging-topology-operator/releases/download/v1.0.0/messaging-topology-operator-with-certmanager.yaml
     ```
 
     If you already have Cert Manager installed, or want more control over the certs used, etc. You can follow the [quickstart here](https://github.com/rabbitmq/messaging-topology-operator#quickstart).

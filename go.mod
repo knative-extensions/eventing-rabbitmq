@@ -9,7 +9,6 @@ require (
 	github.com/docker/docker v1.13.1 // indirect
 	github.com/docker/go-connections v0.4.0
 	github.com/fsouza/go-dockerclient v1.6.5 // indirect
-	github.com/go-openapi/spec v0.19.7 // indirect
 	github.com/go-redis/redis v6.15.9+incompatible // indirect
 	github.com/google/go-cmp v0.5.6
 	github.com/google/licenseclassifier v0.0.0-20200708223521-3d09a0ea2f39
@@ -18,7 +17,7 @@ require (
 	github.com/michaelklishin/rabbit-hole/v2 v2.10.0
 	github.com/pkg/errors v0.9.1
 	github.com/rabbitmq/cluster-operator v1.8.2
-	github.com/rabbitmq/messaging-topology-operator v0.11.0
+	github.com/rabbitmq/messaging-topology-operator v1.0.0
 	github.com/streadway/amqp v1.0.0
 	github.com/testcontainers/testcontainers-go v0.7.0
 	github.com/tiago4orion/conjure v0.0.0-20150908101743-93cb30b9d218 // indirect
@@ -28,9 +27,9 @@ require (
 	k8s.io/apiextensions-apiserver v0.21.4
 	k8s.io/apimachinery v0.21.4
 	k8s.io/client-go v0.21.4
-	k8s.io/code-generator v0.21.4
-	k8s.io/kube-openapi v0.0.0-20210305001622-591a79e4bda7
-	knative.dev/eventing v0.25.1-0.20210902141806-c4acab4141f8
+	k8s.io/code-generator v0.22.1
+	k8s.io/kube-openapi v0.0.0-20210421082810-95288971da7e
+	knative.dev/eventing v0.25.1-0.20210901132733-0b5e37d8cce8
 	knative.dev/hack v0.0.0-20210806075220-815cd312d65c
 	knative.dev/pkg v0.0.0-20210902143306-0482448aac36
 	knative.dev/reconciler-test v0.0.0-20210820180205-a25de6a08087

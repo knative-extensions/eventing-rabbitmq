@@ -136,9 +136,6 @@ github.com/go-logr/logr
 github.com/go-openapi/jsonpointer
 # github.com/go-openapi/jsonreference v0.19.5
 github.com/go-openapi/jsonreference
-# github.com/go-openapi/spec v0.19.7
-## explicit
-github.com/go-openapi/spec
 # github.com/go-openapi/swag v0.19.15
 github.com/go-openapi/swag
 # github.com/go-redis/redis v6.15.9+incompatible
@@ -282,7 +279,7 @@ github.com/prometheus/statsd_exporter/pkg/mapper/fsm
 ## explicit
 github.com/rabbitmq/cluster-operator/api/v1beta1
 github.com/rabbitmq/cluster-operator/internal/status
-# github.com/rabbitmq/messaging-topology-operator v0.11.0
+# github.com/rabbitmq/messaging-topology-operator v1.0.0
 ## explicit
 github.com/rabbitmq/messaging-topology-operator/api/v1beta1
 github.com/rabbitmq/messaging-topology-operator/pkg/generated/clientset/versioned
@@ -917,7 +914,7 @@ k8s.io/client-go/util/jsonpath
 k8s.io/client-go/util/keyutil
 k8s.io/client-go/util/retry
 k8s.io/client-go/util/workqueue
-# k8s.io/code-generator v0.21.4
+# k8s.io/code-generator v0.22.1
 ## explicit
 k8s.io/code-generator
 k8s.io/code-generator/cmd/client-gen
@@ -968,9 +965,9 @@ k8s.io/gengo/parser
 k8s.io/gengo/types
 # k8s.io/klog v1.0.0
 k8s.io/klog
-# k8s.io/klog/v2 v2.8.0
+# k8s.io/klog/v2 v2.9.0
 k8s.io/klog/v2
-# k8s.io/kube-openapi v0.0.0-20210305001622-591a79e4bda7
+# k8s.io/kube-openapi v0.0.0-20210421082810-95288971da7e
 ## explicit
 k8s.io/kube-openapi/cmd/openapi-gen
 k8s.io/kube-openapi/cmd/openapi-gen/args
@@ -979,12 +976,13 @@ k8s.io/kube-openapi/pkg/generators
 k8s.io/kube-openapi/pkg/generators/rules
 k8s.io/kube-openapi/pkg/util/proto
 k8s.io/kube-openapi/pkg/util/sets
+k8s.io/kube-openapi/pkg/validation/spec
 # k8s.io/utils v0.0.0-20210722164352-7f3ee0f31471
 k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/eventing v0.25.1-0.20210902141806-c4acab4141f8
+# knative.dev/eventing v0.25.1-0.20210901132733-0b5e37d8cce8
 ## explicit
 knative.dev/eventing/pkg/adapter/v2
 knative.dev/eventing/pkg/adapter/v2/util/crstatusevent
