@@ -11,9 +11,6 @@ on:
       milestoneEventsTarget:
         description: 'Target Milestone Events to URL'
 
-  schedule:
-  - cron: '0 */2 * * *'
-
 jobs:
 
   ko-resolve:
