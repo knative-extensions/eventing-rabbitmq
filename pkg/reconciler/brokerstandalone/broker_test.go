@@ -35,6 +35,7 @@ import (
 	rabbitmqduck "knative.dev/eventing-rabbitmq/pkg/apis/duck/v1beta1"
 	rabbitduck "knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/brokerstandalone/resources"
+	"knative.dev/eventing-rabbitmq/wabbit/amqptest/server"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
@@ -64,7 +65,6 @@ import (
 	. "knative.dev/pkg/reconciler/testing"
 
 	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
-	"wabbit/amqptest/server"
 )
 
 const (

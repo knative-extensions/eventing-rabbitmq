@@ -28,13 +28,13 @@ import (
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	sourcesv1alpha1 "knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
+	"knative.dev/eventing-rabbitmq/wabbit"
+	"knative.dev/eventing-rabbitmq/wabbit/amqp"
+	"knative.dev/eventing-rabbitmq/wabbit/amqptest"
 	"knative.dev/eventing/pkg/adapter/v2"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/eventing/pkg/metrics/source"
 	"knative.dev/pkg/logging"
-	"wabbit"
-	"wabbit/amqp"
-	"wabbit/amqptest"
 )
 
 const (

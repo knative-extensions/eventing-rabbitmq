@@ -25,10 +25,10 @@ import (
 	"reflect"
 	"testing"
 	"time"
-	"wabbit"
 
 	origamqp "github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"
+	"knative.dev/eventing-rabbitmq/wabbit"
 	"knative.dev/eventing-rabbitmq/wabbit/amqp"
 	"knative.dev/eventing-rabbitmq/wabbit/amqptest"
 	"knative.dev/eventing-rabbitmq/wabbit/amqptest/server"

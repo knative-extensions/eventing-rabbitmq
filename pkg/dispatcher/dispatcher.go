@@ -27,9 +27,9 @@ import (
 	"github.com/pkg/errors"
 	amqperr "github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"
+	"knative.dev/eventing-rabbitmq/wabbit"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/pkg/logging"
-	"wabbit"
 )
 
 const (

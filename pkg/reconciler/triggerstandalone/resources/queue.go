@@ -20,8 +20,7 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/io"
-
-	"wabbit"
+	"knative.dev/eventing-rabbitmq/wabbit"
 
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 )

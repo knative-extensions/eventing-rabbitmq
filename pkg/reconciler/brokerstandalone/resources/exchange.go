@@ -21,12 +21,11 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
-	"wabbit"
-
+	amqp "github.com/rabbitmq/amqp091-go"
 	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
 	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/io"
-	"knative.dev/eventing-rabbitmq/wabbit/amqp"
+	"knative.dev/eventing-rabbitmq/wabbit"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 )
 

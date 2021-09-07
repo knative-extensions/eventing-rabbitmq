@@ -30,11 +30,11 @@ import (
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
-	"wabbit"
-	"wabbit/amqptest/server"
 
 	ce "github.com/cloudevents/sdk-go/v2/event"
 	"github.com/google/go-cmp/cmp"
+	"knative.dev/eventing-rabbitmq/wabbit"
+	"knative.dev/eventing-rabbitmq/wabbit/amqptest/server"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 )
 

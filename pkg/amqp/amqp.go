@@ -17,9 +17,9 @@ limitations under the License.
 package amqp
 
 import (
-	"wabbit"
-	"wabbit/amqp"
-	"wabbit/amqptest"
+	"knative.dev/eventing-rabbitmq/wabbit"
+	"knative.dev/eventing-rabbitmq/wabbit/amqp"
+	"knative.dev/eventing-rabbitmq/wabbit/amqptest"
 )
 
 type DialerFunc func(rabbitURL string) (wabbit.Conn, error)
