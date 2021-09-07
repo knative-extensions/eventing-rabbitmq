@@ -6,18 +6,14 @@ contrib.go.opencensus.io/exporter/ocagent
 contrib.go.opencensus.io/exporter/prometheus
 # contrib.go.opencensus.io/exporter/zipkin v0.1.2
 contrib.go.opencensus.io/exporter/zipkin
+# github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78
+github.com/Azure/go-ansiterm
+github.com/Azure/go-ansiterm/winterm
 # github.com/Microsoft/go-winio v0.4.15-0.20200113171025-3fe6c5262873
 github.com/Microsoft/go-winio
 github.com/Microsoft/go-winio/pkg/guid
 # github.com/Microsoft/hcsshim v0.8.7
 github.com/Microsoft/hcsshim/osversion
-# github.com/NeowayLabs/wabbit v0.0.0-20200409220312-12e68ab5b0c6 => github.com/vaikas/wabbit v0.0.0-20201002085521-b5b22698ecc7
-## explicit
-github.com/NeowayLabs/wabbit
-github.com/NeowayLabs/wabbit/amqp
-github.com/NeowayLabs/wabbit/amqptest
-github.com/NeowayLabs/wabbit/amqptest/server
-github.com/NeowayLabs/wabbit/utils
 # github.com/PuerkitoBio/purell v1.1.1
 github.com/PuerkitoBio/purell
 # github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578
@@ -101,12 +97,17 @@ github.com/docker/docker/client
 github.com/docker/docker/errdefs
 github.com/docker/docker/pkg/archive
 github.com/docker/docker/pkg/fileutils
+github.com/docker/docker/pkg/homedir
 github.com/docker/docker/pkg/idtools
 github.com/docker/docker/pkg/ioutils
+github.com/docker/docker/pkg/jsonmessage
 github.com/docker/docker/pkg/longpath
 github.com/docker/docker/pkg/mount
 github.com/docker/docker/pkg/pools
+github.com/docker/docker/pkg/stdcopy
 github.com/docker/docker/pkg/system
+github.com/docker/docker/pkg/term
+github.com/docker/docker/pkg/term/windows
 # github.com/docker/go-connections v0.4.0
 ## explicit
 github.com/docker/go-connections/nat
@@ -125,6 +126,7 @@ github.com/evanphx/json-patch/v5
 github.com/fsnotify/fsnotify
 # github.com/fsouza/go-dockerclient v1.6.5
 ## explicit
+github.com/fsouza/go-dockerclient
 # github.com/go-kit/log v0.1.0
 github.com/go-kit/log
 github.com/go-kit/log/level
@@ -238,6 +240,8 @@ github.com/michaelklishin/rabbit-hole/v2
 github.com/modern-go/concurrent
 # github.com/modern-go/reflect2 v1.0.1
 github.com/modern-go/reflect2
+# github.com/morikuni/aec v1.0.0
+github.com/morikuni/aec
 # github.com/opencontainers/go-digest v1.0.0-rc1
 github.com/opencontainers/go-digest
 # github.com/opencontainers/image-spec v1.0.1
@@ -254,6 +258,7 @@ github.com/openzipkin/zipkin-go/propagation
 github.com/openzipkin/zipkin-go/reporter
 github.com/openzipkin/zipkin-go/reporter/http
 # github.com/pborman/uuid v1.2.0
+## explicit
 github.com/pborman/uuid
 # github.com/pkg/errors v0.9.1
 ## explicit
@@ -278,6 +283,9 @@ github.com/prometheus/procfs/internal/util
 # github.com/prometheus/statsd_exporter v0.21.0
 github.com/prometheus/statsd_exporter/pkg/mapper
 github.com/prometheus/statsd_exporter/pkg/mapper/fsm
+# github.com/rabbitmq/amqp091-go v0.0.0-20210823000215-c428a6150891
+## explicit
+github.com/rabbitmq/amqp091-go
 # github.com/rabbitmq/cluster-operator v1.8.2
 ## explicit
 github.com/rabbitmq/cluster-operator/api/v1beta1
@@ -309,9 +317,6 @@ github.com/sergi/go-diff/diffmatchpatch
 github.com/sirupsen/logrus
 # github.com/spf13/pflag v1.0.5
 github.com/spf13/pflag
-# github.com/streadway/amqp v1.0.0
-## explicit
-github.com/streadway/amqp
 # github.com/stretchr/testify v1.7.0
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
@@ -321,6 +326,7 @@ github.com/testcontainers/testcontainers-go
 github.com/testcontainers/testcontainers-go/wait
 # github.com/tiago4orion/conjure v0.0.0-20150908101743-93cb30b9d218
 ## explicit
+github.com/tiago4orion/conjure
 # github.com/tsenart/vegeta/v12 v12.8.4
 github.com/tsenart/vegeta/v12/lib
 # go.opencensus.io v0.23.0
@@ -1252,5 +1258,4 @@ sigs.k8s.io/structured-merge-diff/v4/typed
 sigs.k8s.io/structured-merge-diff/v4/value
 # sigs.k8s.io/yaml v1.2.0
 sigs.k8s.io/yaml
-# github.com/NeowayLabs/wabbit => github.com/vaikas/wabbit v0.0.0-20201002085521-b5b22698ecc7
 # github.com/docker/docker => github.com/docker/engine v0.0.0-20190717161051-705d9623b7c1

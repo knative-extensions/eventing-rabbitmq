@@ -17,9 +17,9 @@ limitations under the License.
 package amqp
 
 import (
-	"github.com/NeowayLabs/wabbit"
-	"github.com/NeowayLabs/wabbit/amqp"
-	"github.com/NeowayLabs/wabbit/amqptest"
+	"wabbit"
+	"wabbit/amqp"
+	"wabbit/amqptest"
 )
 
 type DialerFunc func(rabbitURL string) (wabbit.Conn, error)

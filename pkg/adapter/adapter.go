@@ -22,9 +22,6 @@ import (
 	nethttp "net/http"
 	"strings"
 
-	"github.com/NeowayLabs/wabbit"
-	"github.com/NeowayLabs/wabbit/amqp"
-	"github.com/NeowayLabs/wabbit/amqptest"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
 	"github.com/cloudevents/sdk-go/v2/protocol/http"
@@ -35,6 +32,9 @@ import (
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/eventing/pkg/metrics/source"
 	"knative.dev/pkg/logging"
+	"wabbit"
+	"wabbit/amqp"
+	"wabbit/amqptest"
 )
 
 const (

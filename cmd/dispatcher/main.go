@@ -24,13 +24,13 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 
-	"github.com/NeowayLabs/wabbit/amqp"
-	amqperr "github.com/streadway/amqp"
+	amqperr "github.com/rabbitmq/amqp091-go"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/signals"
 
 	"knative.dev/eventing-rabbitmq/pkg/dispatcher"
+	"knative.dev/eventing-rabbitmq/wabbit/amqp"
 )
 
 type envConfig struct {

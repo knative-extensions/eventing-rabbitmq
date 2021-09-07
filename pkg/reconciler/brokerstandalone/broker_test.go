@@ -63,8 +63,8 @@ import (
 
 	. "knative.dev/pkg/reconciler/testing"
 
-	"github.com/NeowayLabs/wabbit/amqptest/server"
 	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
+	"wabbit/amqptest/server"
 )
 
 const (

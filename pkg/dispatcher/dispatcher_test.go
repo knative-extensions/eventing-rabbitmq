@@ -29,9 +29,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/NeowayLabs/wabbit"
-	"github.com/NeowayLabs/wabbit/amqptest/server"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
+	"wabbit"
+	"wabbit/amqptest/server"
 
 	ce "github.com/cloudevents/sdk-go/v2/event"
 	"github.com/google/go-cmp/cmp"

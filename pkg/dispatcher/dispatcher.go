@@ -21,15 +21,15 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/NeowayLabs/wabbit"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/pkg/errors"
-	amqperr "github.com/streadway/amqp"
+	amqperr "github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/pkg/logging"
+	"wabbit"
 )
 
 const (

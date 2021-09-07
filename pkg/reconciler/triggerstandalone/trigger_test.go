@@ -28,7 +28,6 @@ import (
 	"knative.dev/pkg/network"
 	"knative.dev/pkg/tracker"
 
-	"github.com/NeowayLabs/wabbit/amqptest/server"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,6 +35,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
+	"wabbit/amqptest/server"
 
 	clientgotesting "k8s.io/client-go/testing"
 	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
