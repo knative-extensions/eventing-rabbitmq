@@ -139,7 +139,7 @@ jobs:
       run: |
         set -x
 
-        kubectl apply -f https://github.com/rabbitmq/messaging-topology-operator/releases/latest/download/messaging-topology-operator-with-certmanager.yaml
+        kubectl apply -f https://github.com/rabbitmq/messaging-topology-operator/releases/download/v0.7.0/messaging-topology-operator-with-certmanager.yaml
 
     - name: Install Knative Eventing
       run: |
