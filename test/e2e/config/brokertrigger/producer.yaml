@@ -31,7 +31,7 @@ spec:
           image: ko://knative.dev/eventing-rabbitmq/test/e2e/cmd/producer
           env:
             - name: COUNT
-              value: '{{ .producerCount }}'
+              value: '{{ .messageCount }}'
             - name: K_SINK
               value: http://testbroker-broker-ingress.{{ .namespace }}.svc.cluster.local
 

@@ -22,16 +22,16 @@ import (
 	"knative.dev/reconciler-test/pkg/k8s"
 )
 
-func RecorderFeature() *feature.Feature {
-	svc := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"}
+var serviceGVR = schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"}
 
+func RecorderFeature() *feature.Feature {
 	to := "recorder"
 
 	f := new(feature.Feature)
 
 	f.Setup("install recorder", eventshub.Install(to, eventshub.StartReceiver))
 
-	f.Requirement("recorder is addressable", k8s.IsAddressable(svc, to, time.Second, 30*time.Second))
+	f.Requirement("recorder is addressable", k8s.IsAddressable(serviceGVR, to, time.Second, 30*time.Second))
 
 	return f
 }
