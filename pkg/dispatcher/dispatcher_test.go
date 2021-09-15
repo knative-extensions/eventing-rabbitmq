@@ -35,6 +35,7 @@ import (
 
 	ce "github.com/cloudevents/sdk-go/v2/event"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 )
 
@@ -365,10 +366,8 @@ func TestEndToEnd(t *testing.T) {
 			if subscriberHandler.getReceivedCount() != tc.subscriberReceiveCount {
 				t.Errorf("subscriber got %d events, wanted %d", subscriberHandler.getReceivedCount(), tc.subscriberReceiveCount)
 			} else {
-				for i := range tc.expectedSubscriberBodies {
-					if diff := cmp.Diff(tc.expectedSubscriberBodies[i], subscriberHandler.getBodies()[i]); diff != "" {
-						t.Error("unexpected subscriber diff (-want, +got) = ", diff)
-					}
+				if diff := cmp.Diff(tc.expectedSubscriberBodies, subscriberHandler.getBodies(), cmpopts.SortSlices(stringSort)); diff != "" {
+					t.Error("unexpected subscriber diff (-want, +got) = ", diff)
 				}
 			}
 			if brokerHandler.getReceivedCount() != tc.brokerReceiveCount {
@@ -439,4 +438,7 @@ func createEvent(data string) ce.Event {
 	event.SetSubject(fmt.Sprintf("%s-%s", event.Source(), event.Type()))
 	event.SetData(cloudevents.ApplicationJSON, data)
 	return event
+}
+func stringSort(x, y string) bool {
+	return x < y
 }

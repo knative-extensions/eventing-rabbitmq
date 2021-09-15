@@ -41,6 +41,8 @@ type envConfig struct {
 	// Should failed deliveries be requeued in the RabbitMQ?
 	Requeue bool `envconfig:"REQUEUE" default:"false" required:"true"`
 
+	// Number of concurrent messages in flight
+	PrefetchCount int           `envconfig:"PREFETCH_COUNT" default:"10" required:"false"`
 	Retry         int           `envconfig:"RETRY" required:"false"`
 	BackoffPolicy string        `envconfig:"BACKOFF_POLICY" required:"false"`
 	BackoffDelay  time.Duration `envconfig:"BACKOFF_DELAY" required:"false"`
@@ -48,7 +50,6 @@ type envConfig struct {
 
 const (
 	defaultBackoffDelay = 50 * time.Millisecond
-	defaultPrefetch     = 1
 	defaultPrefetchSize = 0
 )
 
@@ -99,7 +100,7 @@ func main() {
 	}()
 
 	err = channel.Qos(
-		defaultPrefetch,     // prefetch count
+		env.PrefetchCount,   // prefetch count
 		defaultPrefetchSize, // prefetch size
 		false,               // global
 	)

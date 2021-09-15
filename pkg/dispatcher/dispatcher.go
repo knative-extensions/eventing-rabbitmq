@@ -96,63 +96,7 @@ func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel wabbit.Channe
 				logging.FromContext(ctx).Warn("message channel closed, stopping message consumer")
 				return amqperr.ErrClosed
 			}
-
-			event := cloudevents.NewEvent()
-			err := json.Unmarshal(msg.Body(), &event)
-			if err != nil {
-				logging.FromContext(ctx).Warn("failed to unmarshal event (NACK-ing and not re-queueing): ", err)
-				err = msg.Nack(ackMultiple, false) // do not requeue
-				if err != nil {
-					logging.FromContext(ctx).Warn("failed to NACK event: ", err)
-				}
-				continue
-			}
-
-			logging.FromContext(ctx).Debugf("Got event as: %+v", event)
-			ctx = cloudevents.ContextWithTarget(ctx, d.subscriberURL)
-
-			// Our dispatcher uses Retries, but cloudevents is the max total tries. So we need
-			// to adjust to initial + retries.
-			// TODO: What happens if I specify 0 to cloudevents. Does it not even retry.
-			retryCount := d.maxRetries
-			if d.backoffPolicy == eventingduckv1.BackoffPolicyLinear {
-				ctx = cloudevents.ContextWithRetriesLinearBackoff(ctx, d.backoffDelay, retryCount)
-			} else {
-				ctx = cloudevents.ContextWithRetriesExponentialBackoff(ctx, d.backoffDelay, retryCount)
-			}
-
-			response, result := ceClient.Request(ctx, event)
-			if !isSuccess(ctx, result) {
-				logging.FromContext(ctx).Warnf("Failed to deliver to %q requeue: %v", d.subscriberURL, d.requeue)
-				err = msg.Nack(ackMultiple, d.requeue)
-				if err != nil {
-					logging.FromContext(ctx).Warn("failed to NACK event: ", err)
-				}
-				continue
-			}
-
-			logging.FromContext(ctx).Debugf("Got Response: %+v", response)
-			if response != nil {
-				logging.FromContext(ctx).Infof("Sending an event: %+v", response)
-				ctx = cloudevents.ContextWithTarget(ctx, d.brokerIngressURL)
-				backoffDelay := 50 * time.Millisecond
-				// Use the retries so we can just parse out the results in a common way.
-				cloudevents.ContextWithRetriesExponentialBackoff(ctx, backoffDelay, 1)
-				result := ceClient.Send(ctx, *response)
-				if !isSuccess(ctx, result) {
-					logging.FromContext(ctx).Warnf("Failed to deliver to %q requeue: %v", d.brokerIngressURL, d.requeue)
-					err = msg.Nack(ackMultiple, d.requeue) // not multiple
-					if err != nil {
-						logging.FromContext(ctx).Warn("failed to NACK event: ", err)
-					}
-					continue
-				}
-			}
-
-			err = msg.Ack(ackMultiple)
-			if err != nil {
-				logging.FromContext(ctx).Warn("failed to ACK event: ", err)
-			}
+			go d.dispatch(ctx, msg, ceClient)
 		}
 	}
 }
@@ -172,10 +116,69 @@ func isSuccess(ctx context.Context, result protocol.Result) bool {
 				return false
 			}
 		}
-		logging.FromContext(ctx).Warnf("Invalid result type, not HTTP Result")
+		logging.FromContext(ctx).Warnf("Invalid result type, not HTTP Result: %v", retriesResult.Result)
 		return false
 	}
 
 	logging.FromContext(ctx).Warnf("Invalid result type, not RetriesResult")
 	return false
+}
+
+func (d *Dispatcher) dispatch(ctx context.Context, msg wabbit.Delivery, ceClient cloudevents.Client) {
+	event := cloudevents.NewEvent()
+	err := json.Unmarshal(msg.Body(), &event)
+	if err != nil {
+		logging.FromContext(ctx).Warn("failed to unmarshal event (NACK-ing and not re-queueing): ", err)
+		err = msg.Nack(ackMultiple, false) // do not requeue
+		if err != nil {
+			logging.FromContext(ctx).Warn("failed to NACK event: ", err)
+		}
+		return
+	}
+
+	logging.FromContext(ctx).Debugf("Got event as: %+v", event)
+	ctx = cloudevents.ContextWithTarget(ctx, d.subscriberURL)
+
+	// Our dispatcher uses Retries, but cloudevents is the max total tries. So we need
+	// to adjust to initial + retries.
+	// TODO: What happens if I specify 0 to cloudevents. Does it not even retry.
+	retryCount := d.maxRetries
+	if d.backoffPolicy == eventingduckv1.BackoffPolicyLinear {
+		ctx = cloudevents.ContextWithRetriesLinearBackoff(ctx, d.backoffDelay, retryCount)
+	} else {
+		ctx = cloudevents.ContextWithRetriesExponentialBackoff(ctx, d.backoffDelay, retryCount)
+	}
+
+	response, result := ceClient.Request(ctx, event)
+	if !isSuccess(ctx, result) {
+		logging.FromContext(ctx).Warnf("Failed to deliver to %q requeue: %v", d.subscriberURL, d.requeue)
+		err = msg.Nack(ackMultiple, d.requeue)
+		if err != nil {
+			logging.FromContext(ctx).Warn("failed to NACK event: ", err)
+		}
+		return
+	}
+
+	logging.FromContext(ctx).Debugf("Got Response: %+v", response)
+	if response != nil {
+		logging.FromContext(ctx).Infof("Sending an event: %+v", response)
+		ctx = cloudevents.ContextWithTarget(ctx, d.brokerIngressURL)
+		backoffDelay := 50 * time.Millisecond
+		// Use the retries so we can just parse out the results in a common way.
+		cloudevents.ContextWithRetriesExponentialBackoff(ctx, backoffDelay, 1)
+		result := ceClient.Send(ctx, *response)
+		if !isSuccess(ctx, result) {
+			logging.FromContext(ctx).Warnf("Failed to deliver to %q requeue: %v", d.brokerIngressURL, d.requeue)
+			err = msg.Nack(ackMultiple, d.requeue) // not multiple
+			if err != nil {
+				logging.FromContext(ctx).Warn("failed to NACK event: ", err)
+			}
+			return
+		}
+	}
+
+	err = msg.Ack(ackMultiple)
+	if err != nil {
+		logging.FromContext(ctx).Warn("failed to ACK event: ", err)
+	}
 }
