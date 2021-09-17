@@ -20,9 +20,9 @@ jobs:
         - v1.22.1
 
         eventing-version:
-        - v0.21.0
-        - v0.22.0
-        - v0.23.0
+        - v0.23.5
+        - v0.24.3
+        - v0.25.1
 
         rabbitmq-operator-version:
         - v1.8.2
