@@ -62,6 +62,7 @@ jobs:
           $(find .
           -path './vendor' -prune
           -o -path './third_party' -prune
+          -o -path './wabbit' -prune
           -o -name '*.pb.go' -prune
           -o -name 'wire_gen.go' -prune
           -o -type f -name '*.go' -print)
