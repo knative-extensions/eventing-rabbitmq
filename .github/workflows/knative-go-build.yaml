@@ -55,6 +55,7 @@ jobs:
                 grep -v '^./vendor/' | \
                 grep -v '^./hack/' | \
                 grep -v '^./third_party' | \
+                grep -v '^./wabbit/' | \
                 cut -f3 -d' ' | \
                 sort | uniq | \
                 grep -v '^!' | \
