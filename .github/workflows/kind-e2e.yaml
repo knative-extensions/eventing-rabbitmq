@@ -20,9 +20,9 @@ jobs:
         - v1.22.1
 
         eventing-version:
-        - v0.21.0
-        - v0.22.0
-        - v0.23.0
+        - v0.23.5
+        - v0.24.3
+        - v0.25.1
 
         rabbitmq-operator-version:
         - v1.8.2
@@ -132,7 +132,7 @@ jobs:
       run: |
         set -x
 
-        kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.2.0/cert-manager.yaml
+        kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.5.3/cert-manager.yaml
 
     - name: Wait for Cert Manager Ready
       working-directory: ./src/knative.dev/${{ github.event.repository.name }}
