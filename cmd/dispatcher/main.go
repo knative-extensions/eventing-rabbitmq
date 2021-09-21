@@ -108,7 +108,14 @@ func main() {
 		logging.FromContext(ctx).Fatal("Failed to create QoS: ", err)
 	}
 
-	d := dispatcher.NewDispatcher(env.BrokerIngressURL, env.SubscriberURL, env.Requeue, env.Retry, backoffDelay, backoffPolicy)
+	d := &dispatcher.Dispatcher{
+		BrokerIngressURL: env.BrokerIngressURL,
+		SubscriberURL:    env.SubscriberURL,
+		Requeue:          env.Requeue,
+		MaxRetries:       env.Retry,
+		BackoffDelay:     backoffDelay,
+		BackoffPolicy:    backoffPolicy,
+	}
 	if err := d.ConsumeFromQueue(ctx, channel, env.QueueName); err != nil {
 		// ignore ctx cancelled and channel closed errors
 		if errors.Is(err, context.Canceled) || errors.Is(err, amqperr.ErrClosed) {

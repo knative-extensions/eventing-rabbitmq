@@ -129,15 +129,11 @@ func TestFailToConsume(t *testing.T) {
 	var buf bytes.Buffer
 	log.SetOutput(&buf)
 
-	backoffDelay, err := time.ParseDuration("1s")
-	if err != nil {
-		t.Error("Failed to parse duration: ", err)
-	}
 	ch, _, err := createRabbitAndQueue()
 	if err != nil {
 		t.Error("Failed to create rabbit and queue")
 	}
-	d := NewDispatcher("", "", false, 1, backoffDelay, eventingduckv1.BackoffPolicyExponential)
+	d := &Dispatcher{}
 	err = d.ConsumeFromQueue(context.TODO(), ch, "nosuchqueue")
 	if err == nil {
 		t.Fatal("Did not fail to consume.", err)
@@ -323,7 +319,14 @@ func TestEndToEnd(t *testing.T) {
 				backoffPolicy = eventingduckv1.BackoffPolicyLinear
 
 			}
-			d := NewDispatcher(broker.URL, subscriber.URL, tc.requeue, tc.maxRetries, backoffDelay, backoffPolicy)
+			d := &Dispatcher{
+				BrokerIngressURL: broker.URL,
+				SubscriberURL:    subscriber.URL,
+				Requeue:          tc.requeue,
+				MaxRetries:       tc.maxRetries,
+				BackoffDelay:     backoffDelay,
+				BackoffPolicy:    backoffPolicy,
+			}
 
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()

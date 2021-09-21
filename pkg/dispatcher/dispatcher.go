@@ -37,27 +37,16 @@ const (
 )
 
 type Dispatcher struct {
-	brokerIngressURL string
-	subscriberURL    string
+	BrokerIngressURL string
+	SubscriberURL    string
 
 	// Upon failure to deliver to sink, should the RabbitMQ messages be requeued.
-	// For example, if the DeadLetterSink has been configured, then do not requeue.
-	requeue bool
+	// For example, if the DeadLetterSink has been configured, then do not Requeue.
+	Requeue bool
 
-	maxRetries    int
-	backoffDelay  time.Duration
-	backoffPolicy eventingduckv1.BackoffPolicyType
-}
-
-func NewDispatcher(brokerIngressURL, subscriberURL string, requeue bool, maxRetries int, backoffDelay time.Duration, backoffPolicy eventingduckv1.BackoffPolicyType) *Dispatcher {
-	return &Dispatcher{
-		brokerIngressURL: brokerIngressURL,
-		subscriberURL:    subscriberURL,
-		requeue:          requeue,
-		maxRetries:       maxRetries,
-		backoffDelay:     backoffDelay,
-		backoffPolicy:    backoffPolicy,
-	}
+	MaxRetries    int
+	BackoffDelay  time.Duration
+	BackoffPolicy eventingduckv1.BackoffPolicyType
 }
 
 // ConsumeFromQueue consumes messages from the given message channel and queue.
@@ -137,22 +126,22 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg wabbit.Delivery, ceClient
 	}
 
 	logging.FromContext(ctx).Debugf("Got event as: %+v", event)
-	ctx = cloudevents.ContextWithTarget(ctx, d.subscriberURL)
+	ctx = cloudevents.ContextWithTarget(ctx, d.SubscriberURL)
 
 	// Our dispatcher uses Retries, but cloudevents is the max total tries. So we need
 	// to adjust to initial + retries.
 	// TODO: What happens if I specify 0 to cloudevents. Does it not even retry.
-	retryCount := d.maxRetries
-	if d.backoffPolicy == eventingduckv1.BackoffPolicyLinear {
-		ctx = cloudevents.ContextWithRetriesLinearBackoff(ctx, d.backoffDelay, retryCount)
+	retryCount := d.MaxRetries
+	if d.BackoffPolicy == eventingduckv1.BackoffPolicyLinear {
+		ctx = cloudevents.ContextWithRetriesLinearBackoff(ctx, d.BackoffDelay, retryCount)
 	} else {
-		ctx = cloudevents.ContextWithRetriesExponentialBackoff(ctx, d.backoffDelay, retryCount)
+		ctx = cloudevents.ContextWithRetriesExponentialBackoff(ctx, d.BackoffDelay, retryCount)
 	}
 
 	response, result := ceClient.Request(ctx, event)
 	if !isSuccess(ctx, result) {
-		logging.FromContext(ctx).Warnf("Failed to deliver to %q requeue: %v", d.subscriberURL, d.requeue)
-		err = msg.Nack(ackMultiple, d.requeue)
+		logging.FromContext(ctx).Warnf("Failed to deliver to %q requeue: %v", d.SubscriberURL, d.Requeue)
+		err = msg.Nack(ackMultiple, d.Requeue)
 		if err != nil {
 			logging.FromContext(ctx).Warn("failed to NACK event: ", err)
 		}
@@ -162,14 +151,14 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg wabbit.Delivery, ceClient
 	logging.FromContext(ctx).Debugf("Got Response: %+v", response)
 	if response != nil {
 		logging.FromContext(ctx).Infof("Sending an event: %+v", response)
-		ctx = cloudevents.ContextWithTarget(ctx, d.brokerIngressURL)
+		ctx = cloudevents.ContextWithTarget(ctx, d.BrokerIngressURL)
 		backoffDelay := 50 * time.Millisecond
 		// Use the retries so we can just parse out the results in a common way.
 		cloudevents.ContextWithRetriesExponentialBackoff(ctx, backoffDelay, 1)
 		result := ceClient.Send(ctx, *response)
 		if !isSuccess(ctx, result) {
-			logging.FromContext(ctx).Warnf("Failed to deliver to %q requeue: %v", d.brokerIngressURL, d.requeue)
-			err = msg.Nack(ackMultiple, d.requeue) // not multiple
+			logging.FromContext(ctx).Warnf("Failed to deliver to %q requeue: %v", d.BrokerIngressURL, d.Requeue)
+			err = msg.Nack(ackMultiple, d.Requeue) // not multiple
 			if err != nil {
 				logging.FromContext(ctx).Warn("failed to NACK event: ", err)
 			}
