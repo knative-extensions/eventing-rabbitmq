@@ -50,7 +50,6 @@ type envConfig struct {
 
 const (
 	defaultBackoffDelay = 50 * time.Millisecond
-	defaultPrefetchSize = 0
 )
 
 func main() {
@@ -100,9 +99,9 @@ func main() {
 	}()
 
 	err = channel.Qos(
-		env.PrefetchCount,   // prefetch count
-		defaultPrefetchSize, // prefetch size
-		false,               // global
+		env.PrefetchCount, // prefetch count
+		0,                 // prefetch size
+		false,             // global
 	)
 	if err != nil {
 		logging.FromContext(ctx).Fatal("Failed to create QoS: ", err)
