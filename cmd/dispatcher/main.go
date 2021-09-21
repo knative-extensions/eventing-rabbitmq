@@ -115,6 +115,7 @@ func main() {
 		MaxRetries:       env.Retry,
 		BackoffDelay:     backoffDelay,
 		BackoffPolicy:    backoffPolicy,
+		WorkerCount:      env.PrefetchCount,
 	}
 	if err := d.ConsumeFromQueue(ctx, channel, env.QueueName); err != nil {
 		// ignore ctx cancelled and channel closed errors

@@ -326,6 +326,7 @@ func TestEndToEnd(t *testing.T) {
 				MaxRetries:       tc.maxRetries,
 				BackoffDelay:     backoffDelay,
 				BackoffPolicy:    backoffPolicy,
+				WorkerCount:      1,
 			}
 
 			ctx, cancel := context.WithCancel(context.Background())
