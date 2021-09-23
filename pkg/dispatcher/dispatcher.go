@@ -144,14 +144,10 @@ func (d *Dispatcher) dispatch(ctx context.Context, wg *sync.WaitGroup, queue <-c
 		logging.FromContext(ctx).Debugf("Got event as: %+v", event)
 		ctx = cloudevents.ContextWithTarget(ctx, d.SubscriberURL)
 
-		// Our dispatcher uses Retries, but cloudevents is the max total tries. So we need
-		// to adjust to initial + retries.
-		// TODO: What happens if I specify 0 to cloudevents. Does it not even retry.
-		retryCount := d.MaxRetries
 		if d.BackoffPolicy == eventingduckv1.BackoffPolicyLinear {
-			ctx = cloudevents.ContextWithRetriesLinearBackoff(ctx, d.BackoffDelay, retryCount)
+			ctx = cloudevents.ContextWithRetriesLinearBackoff(ctx, d.BackoffDelay, d.MaxRetries)
 		} else {
-			ctx = cloudevents.ContextWithRetriesExponentialBackoff(ctx, d.BackoffDelay, retryCount)
+			ctx = cloudevents.ContextWithRetriesExponentialBackoff(ctx, d.BackoffDelay, d.MaxRetries)
 		}
 
 		response, result := ceClient.Request(ctx, event)
@@ -168,9 +164,7 @@ func (d *Dispatcher) dispatch(ctx context.Context, wg *sync.WaitGroup, queue <-c
 		if response != nil {
 			logging.FromContext(ctx).Infof("Sending an event: %+v", response)
 			ctx = cloudevents.ContextWithTarget(ctx, d.BrokerIngressURL)
-			backoffDelay := 50 * time.Millisecond
-			// Use the retries so we can just parse out the results in a common way.
-			cloudevents.ContextWithRetriesExponentialBackoff(ctx, backoffDelay, 1)
+			cloudevents.ContextWithRetriesExponentialBackoff(ctx, d.BackoffDelay, d.MaxRetries)
 			result := ceClient.Send(ctx, *response)
 			if !isSuccess(ctx, result) {
 				logging.FromContext(ctx).Warnf("Failed to deliver to %q requeue: %v", d.BrokerIngressURL, d.Requeue)
