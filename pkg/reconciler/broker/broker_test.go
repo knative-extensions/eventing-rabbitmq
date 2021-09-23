@@ -82,7 +82,7 @@ const (
 
 	deadLetterSinkKind       = "Service"
 	deadLetterSinkName       = "badsink"
-	deadLetterSinkAPIVersion = "serving.knative.dev/v1"
+	deadLetterSinkAPIVersion = "v1"
 
 	dispatcherImage = "dispatcherimage"
 )
@@ -968,13 +968,13 @@ func TestReconcile(t *testing.T) {
 					WithBrokerDelivery(deliveryUnresolvableDeadLetterSink),
 					WithIngressAvailable(),
 					WithDLXReady(),
-					WithDeadLetterSinkFailed("Unable to get the DeadLetterSink's URI", `services.serving.knative.dev "badsink" not found`),
+					WithDeadLetterSinkFailed("Unable to get the DeadLetterSink's URI", `services "badsink" not found`),
 					WithSecretReady(),
 					WithBrokerAddressURI(brokerAddress),
 					WithExchangeReady()),
 			}},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "InternalError", `services.serving.knative.dev "badsink" not found`),
+				Eventf(corev1.EventTypeWarning, "InternalError", `services "badsink" not found`),
 			},
 			WantErr: true,
 		},
