@@ -38,8 +38,5 @@ require (
 )
 
 replace (
-	// This branch allows creation of headers exchange.
-	github.com/NeowayLabs/wabbit => github.com/vaikas/wabbit v0.0.0-20201002085521-b5b22698ecc7
-
 	github.com/docker/docker => github.com/docker/engine v0.0.0-20190717161051-705d9623b7c1
 )
