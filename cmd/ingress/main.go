@@ -27,7 +27,7 @@ import (
 	"github.com/cloudevents/sdk-go/v2/binding"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/kelseyhightower/envconfig"
-	"github.com/streadway/amqp"
+	amqp "github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/pkg/logging"

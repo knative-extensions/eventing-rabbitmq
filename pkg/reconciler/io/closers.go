@@ -20,7 +20,7 @@ import (
 	"io"
 	"log"
 
-	"github.com/streadway/amqp"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 func CloseAmqpResourceAndExitOnError(closer io.Closer) {
