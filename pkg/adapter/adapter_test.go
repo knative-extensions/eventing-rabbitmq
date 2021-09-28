@@ -30,7 +30,7 @@ import (
 	"github.com/NeowayLabs/wabbit/amqp"
 	"github.com/NeowayLabs/wabbit/amqptest"
 	"github.com/NeowayLabs/wabbit/amqptest/server"
-	origamqp "github.com/streadway/amqp"
+	origamqp "github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"
 	"knative.dev/eventing/pkg/adapter/v2"
 	"knative.dev/eventing/pkg/kncloudevents"

@@ -3,7 +3,7 @@ module knative.dev/eventing-rabbitmq
 go 1.16
 
 require (
-	github.com/NeowayLabs/wabbit v0.0.0-20200409220312-12e68ab5b0c6
+	github.com/NeowayLabs/wabbit v0.0.0-20210927194032-73ad61d1620e
 	github.com/cloudevents/sdk-go/v2 v2.4.1
 	github.com/containerd/continuity v0.0.0-20200228182428-0f16d7a0959c
 	github.com/docker/docker v1.13.1 // indirect
@@ -17,9 +17,9 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/michaelklishin/rabbit-hole/v2 v2.10.0
 	github.com/pkg/errors v0.9.1
+	github.com/rabbitmq/amqp091-go v0.0.0-20210921101955-bb8191b6c914
 	github.com/rabbitmq/cluster-operator v1.8.2
 	github.com/rabbitmq/messaging-topology-operator v0.11.0
-	github.com/streadway/amqp v1.0.0
 	github.com/testcontainers/testcontainers-go v0.7.0
 	github.com/tiago4orion/conjure v0.0.0-20150908101743-93cb30b9d218 // indirect
 	go.uber.org/zap v1.19.0
@@ -37,9 +37,4 @@ require (
 	sigs.k8s.io/controller-runtime v0.9.6
 )
 
-replace (
-	// This branch allows creation of headers exchange.
-	github.com/NeowayLabs/wabbit => github.com/vaikas/wabbit v0.0.0-20201002085521-b5b22698ecc7
-
-	github.com/docker/docker => github.com/docker/engine v0.0.0-20190717161051-705d9623b7c1
-)
+replace github.com/docker/docker => github.com/docker/engine v0.0.0-20190717161051-705d9623b7c1

@@ -17,7 +17,7 @@ limitations under the License.
 package resources
 
 import (
-	"github.com/streadway/amqp"
+	amqp "github.com/rabbitmq/amqp091-go"
 	dialer "knative.dev/eventing-rabbitmq/pkg/amqp"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/io"
 
