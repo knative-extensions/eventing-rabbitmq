@@ -21,12 +21,13 @@ package e2e
 import (
 	"context"
 
-	"knative.dev/eventing-rabbitmq/test/e2e/config/direct"
+	"knative.dev/eventing-rabbitmq/test/e2e/config/brokertrigger"
 	"knative.dev/reconciler-test/pkg/eventshub"
 	"knative.dev/reconciler-test/pkg/feature"
 
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	_ "knative.dev/pkg/system/testing"
 )
 
@@ -38,7 +39,15 @@ import (
 func DirectTestBroker() *feature.Feature {
 	f := new(feature.Feature)
 
-	f.Setup("install test resources", direct.Install())
+	f.Setup("install test resources", brokertrigger.Install(brokertrigger.Topology{
+		MessageCount: 5,
+		Triggers: []duckv1.KReference{
+			{
+				Kind: "Service",
+				Name: "recorder",
+			},
+		},
+	}))
 
 	f.Alpha("RabbitMQ broker").Must("goes ready", AllGoReady)
 	f.Alpha("RabbitMQ source").

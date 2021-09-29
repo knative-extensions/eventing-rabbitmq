@@ -14,11 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package direct
+package brokertrigger
 
 import (
 	"context"
 
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/manifest"
@@ -28,9 +29,18 @@ func init() {
 	environment.RegisterPackage(manifest.ImagesLocalYaml()...)
 }
 
-func Install() feature.StepFn {
+type Topology struct {
+	MessageCount int
+	Triggers     []duckv1.KReference
+}
+
+func Install(topology Topology) feature.StepFn {
+	args := map[string]interface{}{
+		"messageCount": topology.MessageCount,
+		"triggers":     topology.Triggers,
+	}
 	return func(ctx context.Context, t feature.T) {
-		if _, err := manifest.InstallLocalYaml(ctx, map[string]interface{}{"producerCount": 5}); err != nil {
+		if _, err := manifest.InstallLocalYaml(ctx, args); err != nil {
 			t.Fatal(err)
 		}
 	}

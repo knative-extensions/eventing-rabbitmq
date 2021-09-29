@@ -41,6 +41,8 @@ type envConfig struct {
 	// Should failed deliveries be requeued in the RabbitMQ?
 	Requeue bool `envconfig:"REQUEUE" default:"false" required:"true"`
 
+	// Number of concurrent messages in flight
+	PrefetchCount int           `envconfig:"PREFETCH_COUNT" default:"10" required:"false"`
 	Retry         int           `envconfig:"RETRY" required:"false"`
 	BackoffPolicy string        `envconfig:"BACKOFF_POLICY" required:"false"`
 	BackoffDelay  time.Duration `envconfig:"BACKOFF_DELAY" required:"false"`
@@ -48,8 +50,6 @@ type envConfig struct {
 
 const (
 	defaultBackoffDelay = 50 * time.Millisecond
-	defaultPrefetch     = 1
-	defaultPrefetchSize = 0
 )
 
 func main() {
@@ -99,15 +99,23 @@ func main() {
 	}()
 
 	err = channel.Qos(
-		defaultPrefetch,     // prefetch count
-		defaultPrefetchSize, // prefetch size
-		false,               // global
+		env.PrefetchCount, // prefetch count
+		0,                 // prefetch size
+		false,             // global
 	)
 	if err != nil {
 		logging.FromContext(ctx).Fatal("Failed to create QoS: ", err)
 	}
 
-	d := dispatcher.NewDispatcher(env.BrokerIngressURL, env.SubscriberURL, env.Requeue, env.Retry, backoffDelay, backoffPolicy)
+	d := &dispatcher.Dispatcher{
+		BrokerIngressURL: env.BrokerIngressURL,
+		SubscriberURL:    env.SubscriberURL,
+		Requeue:          env.Requeue,
+		MaxRetries:       env.Retry,
+		BackoffDelay:     backoffDelay,
+		BackoffPolicy:    backoffPolicy,
+		WorkerCount:      env.PrefetchCount,
+	}
 	if err := d.ConsumeFromQueue(ctx, channel, env.QueueName); err != nil {
 		// ignore ctx cancelled and channel closed errors
 		if errors.Is(err, context.Canceled) || errors.Is(err, amqperr.ErrClosed) {

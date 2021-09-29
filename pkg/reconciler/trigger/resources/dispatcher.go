@@ -34,6 +34,7 @@ import (
 
 const (
 	dispatcherContainerName = "dispatcher"
+	prefetchAnnotation      = "rabbitmq.eventing.knative.dev/prefetchCount"
 )
 
 // DispatcherArgs are the arguments to create a dispatcher deployment. There's
@@ -61,7 +62,76 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 	} else {
 		name = fmt.Sprintf("%s-dispatcher", args.Trigger.Name)
 	}
-	d := &appsv1.Deployment{
+	dispatcher := corev1.Container{
+		Name:  dispatcherContainerName,
+		Image: args.Image,
+		Env: []corev1.EnvVar{{
+			Name:  system.NamespaceEnvKey,
+			Value: system.Namespace(),
+		}, {
+			Name: "RABBIT_URL",
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: args.RabbitMQSecretName,
+					},
+					Key: args.BrokerUrlSecretKey,
+				},
+			},
+		}, {
+			Name:  "QUEUE_NAME",
+			Value: args.QueueName,
+		}, {
+			Name:  "SUBSCRIBER",
+			Value: args.Subscriber.String(),
+		}, {
+			Name:  "BROKER_INGRESS_URL",
+			Value: args.BrokerIngressURL.String(),
+		}},
+	}
+	if args.Delivery != nil {
+		dispatcher.Env = append(dispatcher.Env,
+			corev1.EnvVar{
+				Name:  "REQUEUE",
+				Value: "false",
+			})
+		if args.Delivery.Retry != nil {
+			dispatcher.Env = append(dispatcher.Env,
+				corev1.EnvVar{
+					Name:  "RETRY",
+					Value: fmt.Sprint(*args.Delivery.Retry),
+				})
+
+		} else {
+			dispatcher.Env = append(dispatcher.Env,
+				corev1.EnvVar{
+					Name:  "RETRY",
+					Value: "5",
+				})
+		}
+		if args.Delivery.BackoffPolicy != nil {
+			dispatcher.Env = append(dispatcher.Env,
+				corev1.EnvVar{
+					Name:  "BACKOFF_POLICY",
+					Value: string(*args.Delivery.BackoffPolicy),
+				})
+		}
+	} else {
+		dispatcher.Env = append(dispatcher.Env,
+			// TODO: We should remove REQUEUE, it is not used.
+			corev1.EnvVar{
+				Name:  "REQUEUE",
+				Value: "false",
+			})
+	}
+	if prefetch, ok := args.Trigger.ObjectMeta.Annotations[prefetchAnnotation]; ok {
+		dispatcher.Env = append(dispatcher.Env,
+			corev1.EnvVar{
+				Name:  "PREFETCH_COUNT",
+				Value: prefetch,
+			})
+	}
+	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: args.Trigger.Namespace,
 			Name:      name,
@@ -81,74 +151,12 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 				},
 				Spec: corev1.PodSpec{
 					//ServiceAccountName: args.ServiceAccountName,
-					Containers: []corev1.Container{{
-						Name:  dispatcherContainerName,
-						Image: args.Image,
-						Env: []corev1.EnvVar{{
-							Name:  system.NamespaceEnvKey,
-							Value: system.Namespace(),
-						}, {
-							Name: "RABBIT_URL",
-							ValueFrom: &corev1.EnvVarSource{
-								SecretKeyRef: &corev1.SecretKeySelector{
-									LocalObjectReference: corev1.LocalObjectReference{
-										Name: args.RabbitMQSecretName,
-									},
-									Key: args.BrokerUrlSecretKey,
-								},
-							},
-						}, {
-							Name:  "QUEUE_NAME",
-							Value: args.QueueName,
-						}, {
-							Name:  "SUBSCRIBER",
-							Value: args.Subscriber.String(),
-						}, {
-							Name:  "BROKER_INGRESS_URL",
-							Value: args.BrokerIngressURL.String(),
-						}},
-					}},
+					Containers: []corev1.Container{dispatcher},
 				},
 			},
 		},
 	}
-	if args.Delivery != nil {
-		d.Spec.Template.Spec.Containers[0].Env = append(d.Spec.Template.Spec.Containers[0].Env,
-			corev1.EnvVar{
-				Name:  "REQUEUE",
-				Value: "false",
-			})
-		if args.Delivery.Retry != nil {
-			d.Spec.Template.Spec.Containers[0].Env = append(d.Spec.Template.Spec.Containers[0].Env,
-				corev1.EnvVar{
-					Name:  "RETRY",
-					Value: fmt.Sprint(*args.Delivery.Retry),
-				})
 
-		} else {
-			d.Spec.Template.Spec.Containers[0].Env = append(d.Spec.Template.Spec.Containers[0].Env,
-				corev1.EnvVar{
-					Name:  "RETRY",
-					Value: "5",
-				})
-		}
-		if args.Delivery.BackoffPolicy != nil {
-			d.Spec.Template.Spec.Containers[0].Env = append(d.Spec.Template.Spec.Containers[0].Env,
-				corev1.EnvVar{
-					Name:  "BACKOFF_POLICY",
-					Value: string(*args.Delivery.BackoffPolicy),
-				})
-
-		}
-	} else {
-		d.Spec.Template.Spec.Containers[0].Env = append(d.Spec.Template.Spec.Containers[0].Env,
-			// TODO: We should remove REQUEUE, it is not used.
-			corev1.EnvVar{
-				Name:  "REQUEUE",
-				Value: "false",
-			})
-	}
-	return d
 }
 
 // DispatcherLabels generates the labels present on all resources representing the dispatcher of the given

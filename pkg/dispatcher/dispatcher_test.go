@@ -35,6 +35,7 @@ import (
 
 	ce "github.com/cloudevents/sdk-go/v2/event"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 )
 
@@ -128,15 +129,11 @@ func TestFailToConsume(t *testing.T) {
 	var buf bytes.Buffer
 	log.SetOutput(&buf)
 
-	backoffDelay, err := time.ParseDuration("1s")
-	if err != nil {
-		t.Error("Failed to parse duration: ", err)
-	}
 	ch, _, err := createRabbitAndQueue()
 	if err != nil {
 		t.Error("Failed to create rabbit and queue")
 	}
-	d := NewDispatcher("", "", false, 1, backoffDelay, eventingduckv1.BackoffPolicyExponential)
+	d := &Dispatcher{}
 	err = d.ConsumeFromQueue(context.TODO(), ch, "nosuchqueue")
 	if err == nil {
 		t.Fatal("Did not fail to consume.", err)
@@ -322,7 +319,15 @@ func TestEndToEnd(t *testing.T) {
 				backoffPolicy = eventingduckv1.BackoffPolicyLinear
 
 			}
-			d := NewDispatcher(broker.URL, subscriber.URL, tc.requeue, tc.maxRetries, backoffDelay, backoffPolicy)
+			d := &Dispatcher{
+				BrokerIngressURL: broker.URL,
+				SubscriberURL:    subscriber.URL,
+				Requeue:          tc.requeue,
+				MaxRetries:       tc.maxRetries,
+				BackoffDelay:     backoffDelay,
+				BackoffPolicy:    backoffPolicy,
+				WorkerCount:      1,
+			}
 
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
@@ -365,10 +370,8 @@ func TestEndToEnd(t *testing.T) {
 			if subscriberHandler.getReceivedCount() != tc.subscriberReceiveCount {
 				t.Errorf("subscriber got %d events, wanted %d", subscriberHandler.getReceivedCount(), tc.subscriberReceiveCount)
 			} else {
-				for i := range tc.expectedSubscriberBodies {
-					if diff := cmp.Diff(tc.expectedSubscriberBodies[i], subscriberHandler.getBodies()[i]); diff != "" {
-						t.Error("unexpected subscriber diff (-want, +got) = ", diff)
-					}
+				if diff := cmp.Diff(tc.expectedSubscriberBodies, subscriberHandler.getBodies(), cmpopts.SortSlices(stringSort)); diff != "" {
+					t.Error("unexpected subscriber diff (-want, +got) = ", diff)
 				}
 			}
 			if brokerHandler.getReceivedCount() != tc.brokerReceiveCount {
@@ -439,4 +442,7 @@ func createEvent(data string) ce.Event {
 	event.SetSubject(fmt.Sprintf("%s-%s", event.Source(), event.Type()))
 	event.SetData(cloudevents.ApplicationJSON, data)
 	return event
+}
+func stringSort(x, y string) bool {
+	return x < y
 }
