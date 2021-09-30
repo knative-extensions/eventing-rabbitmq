@@ -28,7 +28,7 @@
 
 ## Installation
 
-You can install the latest released version of [Operator based Knative RabbitMQ Broker](https://github.com/knative-sandbox/eventing-rabbitmq/releases/):
+You can install the latest released version of the [Operator based Knative RabbitMQ Broker](https://github.com/knative-sandbox/eventing-rabbitmq/releases/):
 
 ```shell
 kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/latest/download/rabbitmq-broker.yaml
