@@ -45,12 +45,8 @@ type envConfig struct {
 	PrefetchCount int           `envconfig:"PREFETCH_COUNT" default:"10" required:"false"`
 	Retry         int           `envconfig:"RETRY" required:"false"`
 	BackoffPolicy string        `envconfig:"BACKOFF_POLICY" required:"false"`
-	BackoffDelay  time.Duration `envconfig:"BACKOFF_DELAY" required:"false"`
+	BackoffDelay  time.Duration `envconfig:"BACKOFF_DELAY" default:"50000000" required:"false"`
 }
-
-const (
-	defaultBackoffDelay = 50 * time.Millisecond
-)
 
 func main() {
 	ctx := signals.NewContext()
@@ -70,10 +66,6 @@ func main() {
 	}
 
 	backoffDelay := env.BackoffDelay
-	if backoffDelay == time.Duration(0) {
-		logging.FromContext(ctx).Infow("BackoffDelay is zero, enforcing default", zap.Any("default", defaultBackoffDelay))
-		backoffDelay = defaultBackoffDelay
-	}
 	logging.FromContext(ctx).Infow("Setting BackoffDelay", zap.Any("backoffDelay", backoffDelay))
 
 	conn, err := amqp.Dial(env.RabbitURL)
