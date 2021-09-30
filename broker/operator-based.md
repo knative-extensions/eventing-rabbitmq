@@ -24,7 +24,8 @@
     kubectl apply -f https://github.com/rabbitmq/messaging-topology-operator/releases/latest/download/messaging-topology-operator-with-certmanager.yaml
     ```
 
-    If you already have Cert Manager installed, or want more control over the certs used, etc. You can follow the [quickstart here](https://github.com/rabbitmq/messaging-topology-operator#quickstart).
+    If you already have Cert Manager installed, or want more control over the certs used, etc.
+    You can follow the [quickstart here](https://github.com/rabbitmq/messaging-topology-operator#quickstart).
 
 ## Installation
 
@@ -86,4 +87,6 @@ EOF
 
 ## Next step
 
-Now that you have Knative Eventing integrated with RabbitMQ, a good next step is to use it with the [CloudEvents Player Source](https://knative.dev/docs/getting-started/first-source/) so that you can get a better understanding of how it all fits together.
+Now that you have Knative Eventing integrated with RabbitMQ, a good next step
+is to use it with the [CloudEvents Player Source](https://knative.dev/docs/getting-started/first-source/)
+so that you can get a better understanding of how it all fits together.
