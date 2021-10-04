@@ -45,7 +45,7 @@ type envConfig struct {
 	PrefetchCount int           `envconfig:"PREFETCH_COUNT" default:"10" required:"false"`
 	Retry         int           `envconfig:"RETRY" required:"false"`
 	BackoffPolicy string        `envconfig:"BACKOFF_POLICY" required:"false"`
-	BackoffDelay  time.Duration `envconfig:"BACKOFF_DELAY" default:"50000000" required:"false"`
+	BackoffDelay  time.Duration `envconfig:"BACKOFF_DELAY" default:"50ms" required:"false"`
 }
 
 func main() {
