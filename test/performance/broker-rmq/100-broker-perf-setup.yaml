@@ -1,0 +1,160 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: perf-eventing
+
+---
+
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata:
+  name: rabbitmq-test-cluster
+  namespace: perf-eventing
+spec:
+  replicas: 1
+
+---
+
+apiVersion: eventing.knative.dev/v1
+kind: Broker
+metadata:
+  name: rabbitmq-test-broker
+  namespace: perf-eventing
+  annotations:
+    eventing.knative.dev/broker.class: RabbitMQBroker
+spec:
+  config:
+    apiVersion: rabbitmq.com/v1beta1
+    kind: RabbitmqCluster
+    name: rabbitmq-test-cluster
+
+---
+
+apiVersion: eventing.knative.dev/v1
+kind: Trigger
+metadata:
+  name: rabbitmq-broker-perf
+  namespace: perf-eventing
+  annotations:
+    rabbitmq.eventing.knative.dev/prefetchCount: "80"
+spec:
+  broker: rabbitmq-test-broker
+  subscriber:
+    ref:
+      apiVersion: v1
+      kind: Service
+      name: rabbitmq-broker-perf-consumer
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: eventing-broker-ingress
+  namespace: perf-eventing
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: eventing-broker-filter
+  namespace: perf-eventing
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: perf-eventing
+  namespace: perf-eventing
+
+---
+
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: perf-eventing
+rules:
+  - apiGroups: [""]
+    resources: ["nodes", "pods"]
+    verbs: ["list"]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: perf-eventing
+subjects:
+  - kind: ServiceAccount
+    name: perf-eventing
+    namespace: perf-eventing
+roleRef:
+  kind: ClusterRole
+  name: perf-eventing
+  apiGroup: rbac.authorization.k8s.io
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: eventing-broker-ingress
+  namespace: perf-eventing
+subjects:
+  - kind: ServiceAccount
+    name: eventing-broker-ingress
+    namespace: perf-eventing
+roleRef:
+  kind: ClusterRole
+  name: eventing-broker-ingress
+  apiGroup: rbac.authorization.k8s.io
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: eventing-broker-filter
+  namespace: perf-eventing
+subjects:
+  - kind: ServiceAccount
+    name: eventing-broker-filter
+    namespace: perf-eventing
+roleRef:
+  kind: ClusterRole
+  name: eventing-broker-filter
+  apiGroup: rbac.authorization.k8s.io
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq-broker-perf-consumer
+  namespace: perf-eventing
+spec:
+  selector:
+    role: rabbitmq-broker-perf-consumer
+  ports:
+  - name: http
+    port: 80
+    targetPort: cloudevents
+    protocol: TCP
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq-broker-perf-aggregator
+  namespace: perf-eventing
+spec:
+  selector:
+    role: rabbitmq-broker-perf-aggregator
+  ports:
+  - name: grpc
+    port: 10000
+    targetPort: grpc
+    protocol: TCP
