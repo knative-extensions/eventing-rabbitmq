@@ -35,6 +35,7 @@ import (
 	"knative.dev/pkg/logging"
 
 	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
+	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
 	rabbitclientset "knative.dev/eventing-rabbitmq/third_party/pkg/client/clientset/versioned"
 	rabbitlisters "knative.dev/eventing-rabbitmq/third_party/pkg/client/listers/rabbitmq.com/v1beta1"
@@ -77,6 +78,7 @@ type Reconciler struct {
 	// Dynamic tracker to track AddressableTypes. In particular, it tracks Trigger subscribers.
 	addressableTracker duck.ListableTracker
 	uriResolver        *resolver.URIResolver
+	rabbit             broker.RabbitService
 }
 
 // Check that our Reconciler implements Interface
@@ -140,11 +142,12 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		// as a Queue for it, and Dispatcher that pulls from that queue.
 		if t.Spec.Delivery != nil && t.Spec.Delivery.DeadLetterSink != nil {
 			args := &brokerresources.ExchangeArgs{
-				Broker:  broker,
-				Trigger: t,
-				DLX:     true,
+				Name:      naming.TriggerDLXExchangeName(t),
+				Namespace: t.Namespace,
+				Broker:    broker,
+				Trigger:   t,
 			}
-			dlx, err := r.reconcileExchange(ctx, args)
+			dlx, err := r.rabbit.ReconcileExchange(ctx, args)
 			if err != nil {
 				t.Status.MarkDependencyFailed("ExchangeFailure", fmt.Sprintf("Failed to reconcile DLX exchange %q: %s", naming.TriggerDLXExchangeName(t), err))
 				return err
@@ -398,23 +401,6 @@ func (r *Reconciler) propagateDependencyReadiness(ctx context.Context, t *eventi
 
 func (r *Reconciler) getRabbitmqSecret(ctx context.Context, t *eventingv1.Trigger) (*corev1.Secret, error) {
 	return r.kubeClientSet.CoreV1().Secrets(t.Namespace).Get(ctx, brokerresources.SecretName(t.Spec.Broker), metav1.GetOptions{})
-}
-
-func (r *Reconciler) reconcileExchange(ctx context.Context, args *brokerresources.ExchangeArgs) (*v1beta1.Exchange, error) {
-	want := brokerresources.NewExchange(ctx, args)
-	current, err := r.exchangeLister.Exchanges(args.Trigger.Namespace).Get(naming.TriggerDLXExchangeName(args.Trigger))
-	if apierrs.IsNotFound(err) {
-		logging.FromContext(ctx).Debugw("Creating rabbitmq exchange", zap.String("exchange name", want.Name))
-		return r.rabbitClientSet.RabbitmqV1beta1().Exchanges(args.Trigger.Namespace).Create(ctx, want, metav1.CreateOptions{})
-	} else if err != nil {
-		return nil, err
-	} else if !equality.Semantic.DeepDerivative(want.Spec, current.Spec) {
-		// Don't modify the informers copy.
-		desired := current.DeepCopy()
-		desired.Spec = want.Spec
-		return r.rabbitClientSet.RabbitmqV1beta1().Exchanges(args.Trigger.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
-	}
-	return current, nil
 }
 
 func (r *Reconciler) reconcileQueue(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger) (*v1beta1.Queue, error) {

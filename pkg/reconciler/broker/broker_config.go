@@ -45,6 +45,7 @@ func (r *Reconciler) getExchangeArgs(ctx context.Context, b *eventingv1.Broker) 
 		return nil, err
 	}
 	return &resources.ExchangeArgs{
+		Namespace:   b.Namespace,
 		Broker:      b,
 		RabbitMQURL: rabbitmqURL,
 	}, nil

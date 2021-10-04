@@ -1005,7 +1005,7 @@ func TestReconcile(t *testing.T) {
 			dispatcherImage:    dispatcherImage,
 			rabbitClientSet:    fakerabbitclient.Get(ctx),
 			rabbitLister:       rabbitduck.Get(ctx),
-			rabbit:             services.NewRabbitTest(logger, fakerabbitclient.Get(ctx), listers.GetExchangeLister(), listers.GetQueueLister(), listers.GetBindingLister()),
+			rabbit:             services.NewRabbitTest(fakerabbitclient.Get(ctx), listers.GetExchangeLister(), listers.GetQueueLister(), listers.GetBindingLister()),
 		}
 		return broker.NewReconciler(ctx, logger,
 			fakeeventingclient.Get(ctx), listers.GetBrokerLister(),

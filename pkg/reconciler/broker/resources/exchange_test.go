@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
@@ -23,16 +24,32 @@ const (
 
 func TestNewExchange(t *testing.T) {
 	for _, tt := range []struct {
-		name    string
-		trigger *eventingv1.Trigger
-		dlx     bool
-		want    *rabbitv1beta1.Exchange
+		name string
+		args *resources.ExchangeArgs
+		want *rabbitv1beta1.Exchange
 	}{{
 		name: "broker exchange",
+		args: &resources.ExchangeArgs{
+			Name:            brokerName,
+			Namespace:       namespace,
+			RabbitMQCluster: rabbitmqcluster,
+			Broker: &eventingv1.Broker{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      brokerName,
+					Namespace: namespace,
+					UID:       brokerUID,
+				},
+				Spec: eventingv1.BrokerSpec{
+					Config: &duckv1.KReference{
+						Name: rabbitmqcluster,
+					},
+				},
+			},
+		},
 		want: &rabbitv1beta1.Exchange{
 			ObjectMeta: metav1.ObjectMeta{
+				Name:      brokerName,
 				Namespace: namespace,
-				Name:      "b.foobar.testbroker.broker-test-uid",
 				OwnerReferences: []metav1.OwnerReference{
 					{
 						Kind:       "Broker",
@@ -44,7 +61,7 @@ func TestNewExchange(t *testing.T) {
 				Labels: map[string]string{"eventing.knative.dev/broker": "testbroker"},
 			},
 			Spec: rabbitv1beta1.ExchangeSpec{
-				Name:       "b.foobar.testbroker.broker-test-uid",
+				Name:       brokerName,
 				Type:       "headers",
 				Durable:    true,
 				AutoDelete: false,
@@ -54,46 +71,35 @@ func TestNewExchange(t *testing.T) {
 			},
 		},
 	}, {
-		name: "broker DLX exchange",
-		dlx:  true,
-		want: &rabbitv1beta1.Exchange{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: namespace,
-				Name:      "b.foobar.testbroker.dlx.broker-test-uid",
-				OwnerReferences: []metav1.OwnerReference{
-					{
-						Kind:       "Broker",
-						APIVersion: "eventing.knative.dev/v1",
-						Name:       brokerName,
-						UID:        brokerUID,
+		name: "trigger exchange",
+		args: &resources.ExchangeArgs{
+			Name:            brokerName,
+			Namespace:       namespace,
+			RabbitMQCluster: rabbitmqcluster,
+			Broker: &eventingv1.Broker{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      brokerName,
+					Namespace: namespace,
+					UID:       brokerUID,
+				},
+				Spec: eventingv1.BrokerSpec{
+					Config: &duckv1.KReference{
+						Name: rabbitmqcluster,
 					},
 				},
-				Labels: map[string]string{"eventing.knative.dev/broker": "testbroker"},
 			},
-			Spec: rabbitv1beta1.ExchangeSpec{
-				Name:       "b.foobar.testbroker.dlx.broker-test-uid",
-				Type:       "headers",
-				Durable:    true,
-				AutoDelete: false,
-				RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
-					Name: rabbitmqcluster,
+			Trigger: &eventingv1.Trigger{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: namespace,
+					Name:      triggerName,
+					UID:       triggerUID,
 				},
-			},
-		},
-	}, {
-		name: "trigger DLX exchange",
-		dlx:  true,
-		trigger: &eventingv1.Trigger{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: namespace,
-				Name:      triggerName,
-				UID:       triggerUID,
 			},
 		},
 		want: &rabbitv1beta1.Exchange{
 			ObjectMeta: metav1.ObjectMeta{
+				Name:      brokerName,
 				Namespace: namespace,
-				Name:      "t.foobar.testtrigger.dlx.trigger-test-uid",
 				OwnerReferences: []metav1.OwnerReference{
 					{
 						Kind:       "Trigger",
@@ -108,7 +114,7 @@ func TestNewExchange(t *testing.T) {
 				},
 			},
 			Spec: rabbitv1beta1.ExchangeSpec{
-				Name:       "t.foobar.testtrigger.dlx.trigger-test-uid",
+				Name:       brokerName,
 				Type:       "headers",
 				Durable:    true,
 				AutoDelete: false,
@@ -119,27 +125,9 @@ func TestNewExchange(t *testing.T) {
 		},
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
-			args := &resources.ExchangeArgs{
-				Broker: &eventingv1.Broker{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      brokerName,
-						Namespace: namespace,
-						UID:       brokerUID,
-					},
-					Spec: eventingv1.BrokerSpec{
-						Config: &duckv1.KReference{
-							Name: rabbitmqcluster,
-						},
-					},
-				},
-				RabbitMQCluster: rabbitmqcluster,
-				Trigger:         tt.trigger,
-				DLX:             tt.dlx,
-			}
-
-			got := resources.NewExchange(context.TODO(), args)
+			got := resources.NewExchange(context.TODO(), tt.args)
 			if !equality.Semantic.DeepDerivative(tt.want, got) {
-				t.Errorf("Unexpected Exchange resource: want:\n%+v\ngot:\n%+v", tt.want, got)
+				t.Errorf("Unexpected Exchange resource: want:\n%+v\ngot:\n%+v\ndiff:\n%+v", tt.want, got, cmp.Diff(tt.want, got))
 			}
 		})
 	}

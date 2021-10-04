@@ -264,6 +264,7 @@ func (r *Reconciler) reconcileDLXDispatcherDeployment(ctx context.Context, b *ev
 }
 
 func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker, args *resources.ExchangeArgs) error {
+	args.Name = naming.BrokerExchangeName(b, false)
 	exchange, err := r.rabbit.ReconcileExchange(ctx, args)
 	if err != nil {
 		MarkExchangeFailed(&b.Status, "ExchangeFailure", fmt.Sprintf("Failed to reconcile exchange %q: %s", naming.BrokerExchangeName(args.Broker, false), err))
@@ -276,7 +277,7 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 			return nil
 		}
 	}
-	args.DLX = true
+	args.Name = naming.BrokerExchangeName(b, true)
 	dlxExchange, err := r.rabbit.ReconcileExchange(ctx, args)
 	if err != nil {
 		MarkExchangeFailed(&b.Status, "ExchangeFailure", fmt.Sprintf("Failed to reconcile DLX exchange %q: %s", naming.BrokerExchangeName(args.Broker, true), err))

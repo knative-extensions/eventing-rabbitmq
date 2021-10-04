@@ -40,7 +40,6 @@ import (
 
 func NewRabbit(ctx context.Context) *Rabbit {
 	return &Rabbit{
-		logger:          logging.FromContext(ctx),
 		rabbitClientSet: rabbitmqclient.Get(ctx),
 		exchangeLister:  exchangeinformer.Get(ctx).Lister(),
 		queueLister:     queueinformer.Get(ctx).Lister(),
@@ -49,7 +48,6 @@ func NewRabbit(ctx context.Context) *Rabbit {
 }
 
 func NewRabbitTest(
-	logger *zap.SugaredLogger,
 	rabbitClientSet rabbitclientset.Interface,
 	exchangeLister rabbitlisters.ExchangeLister,
 	queueLister rabbitlisters.QueueLister,
@@ -57,7 +55,6 @@ func NewRabbitTest(
 ) *Rabbit {
 	// TODO(bmo): remove, use mocks
 	return &Rabbit{
-		logger:          logger,
 		rabbitClientSet: rabbitClientSet,
 		exchangeLister:  exchangeLister,
 		queueLister:     queueLister,
@@ -66,7 +63,6 @@ func NewRabbitTest(
 }
 
 type Rabbit struct {
-	logger          *zap.SugaredLogger
 	rabbitClientSet rabbitclientset.Interface
 	exchangeLister  rabbitlisters.ExchangeLister
 	queueLister     rabbitlisters.QueueLister
@@ -74,10 +70,10 @@ type Rabbit struct {
 }
 
 func (r *Rabbit) ReconcileExchange(ctx context.Context, args *resources.ExchangeArgs) (*v1beta1.Exchange, error) {
-	r.logger.Infow("Reconciling exchange", zap.Bool("dlx", args.DLX))
+	logging.FromContext(ctx).Infow("Reconciling exchange", zap.String("name", args.Name))
 
 	want := resources.NewExchange(ctx, args)
-	current, err := r.exchangeLister.Exchanges(args.Broker.Namespace).Get(naming.BrokerExchangeName(args.Broker, args.DLX))
+	current, err := r.exchangeLister.Exchanges(args.Broker.Namespace).Get(args.Name)
 	if apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Debugw("Creating rabbitmq exchange", zap.String("exchange name", want.Name))
 		return r.rabbitClientSet.RabbitmqV1beta1().Exchanges(args.Broker.Namespace).Create(ctx, want, metav1.CreateOptions{})
@@ -93,7 +89,7 @@ func (r *Rabbit) ReconcileExchange(ctx context.Context, args *resources.Exchange
 }
 
 func (r *Rabbit) ReconcileQueue(ctx context.Context, b *eventingv1.Broker) (*v1beta1.Queue, error) {
-	r.logger.Info("Reconciling queue")
+	logging.FromContext(ctx).Info("Reconciling queue")
 
 	queueName := naming.CreateBrokerDeadLetterQueueName(b)
 	want := triggerresources.NewQueue(ctx, b, nil)
@@ -113,7 +109,7 @@ func (r *Rabbit) ReconcileQueue(ctx context.Context, b *eventingv1.Broker) (*v1b
 }
 
 func (r *Rabbit) ReconcileBinding(ctx context.Context, b *eventingv1.Broker) (*v1beta1.Binding, error) {
-	r.logger.Info("Reconciling binding")
+	logging.FromContext(ctx).Info("Reconciling binding")
 
 	// We can use the same name for queue / binding to keep things simpler
 	bindingName := naming.CreateBrokerDeadLetterQueueName(b)
