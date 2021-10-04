@@ -85,6 +85,12 @@ type Reconciler struct {
 
 	// Image to use for the DeadLetterSink dispatcher
 	dispatcherImage string
+
+	rabbit RabbitService
+}
+
+type RabbitService interface {
+	ReconcileExchange(context.Context, *resources.ExchangeArgs) (*v1beta1.Exchange, error)
 }
 
 // Check that our Reconciler implements Interface
@@ -260,23 +266,6 @@ func (r *Reconciler) reconcileDLXDispatcherDeployment(ctx context.Context, b *ev
 	return r.kubeClientSet.AppsV1().Deployments(b.Namespace).Delete(ctx, dispatcherName, metav1.DeleteOptions{})
 }
 
-func (r *Reconciler) reconcileExchange(ctx context.Context, args *resources.ExchangeArgs) (*v1beta1.Exchange, error) {
-	want := resources.NewExchange(ctx, args)
-	current, err := r.exchangeLister.Exchanges(args.Broker.Namespace).Get(naming.BrokerExchangeName(args.Broker, args.DLX))
-	if apierrs.IsNotFound(err) {
-		logging.FromContext(ctx).Debugw("Creating rabbitmq exchange", zap.String("exchange name", want.Name))
-		return r.rabbitClientSet.RabbitmqV1beta1().Exchanges(args.Broker.Namespace).Create(ctx, want, metav1.CreateOptions{})
-	} else if err != nil {
-		return nil, err
-	} else if !equality.Semantic.DeepDerivative(want.Spec, current.Spec) {
-		// Don't modify the informers copy.
-		desired := current.DeepCopy()
-		desired.Spec = want.Spec
-		return r.rabbitClientSet.RabbitmqV1beta1().Exchanges(args.Broker.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
-	}
-	return current, nil
-}
-
 func (r *Reconciler) reconcileQueue(ctx context.Context, b *eventingv1.Broker) (*v1beta1.Queue, error) {
 	queueName := naming.CreateBrokerDeadLetterQueueName(b)
 	want := triggerresources.NewQueue(ctx, b, nil)
@@ -319,8 +308,7 @@ func (r *Reconciler) reconcileBinding(ctx context.Context, b *eventingv1.Broker)
 }
 
 func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker, args *resources.ExchangeArgs) error {
-	logging.FromContext(ctx).Info("Reconciling exchange")
-	exchange, err := r.reconcileExchange(ctx, args)
+	exchange, err := r.rabbit.ReconcileExchange(ctx, args)
 	if err != nil {
 		MarkExchangeFailed(&b.Status, "ExchangeFailure", fmt.Sprintf("Failed to reconcile exchange %q: %s", naming.BrokerExchangeName(args.Broker, false), err))
 		return err
@@ -333,9 +321,7 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 		}
 	}
 	args.DLX = true
-
-	logging.FromContext(ctx).Info("Reconciling DLX exchange")
-	dlxExchange, err := r.reconcileExchange(ctx, args)
+	dlxExchange, err := r.rabbit.ReconcileExchange(ctx, args)
 	if err != nil {
 		MarkExchangeFailed(&b.Status, "ExchangeFailure", fmt.Sprintf("Failed to reconcile DLX exchange %q: %s", naming.BrokerExchangeName(args.Broker, true), err))
 		return err

@@ -21,6 +21,7 @@ import (
 	"log"
 
 	"knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
+	"knative.dev/eventing-rabbitmq/pkg/reconciler/services"
 	rabbitmqclient "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/client"
 	eventingclient "knative.dev/eventing/pkg/client/injection/client"
 
@@ -106,6 +107,7 @@ func NewController(
 		exchangeLister:            exchangeInformer.Lister(),
 		queueLister:               queueInformer.Lister(),
 		bindingLister:             bindingInformer.Lister(),
+		rabbit:                    services.NewRabbit(ctx),
 	}
 
 	impl := brokerreconciler.NewImpl(ctx, r, env.BrokerClass)
