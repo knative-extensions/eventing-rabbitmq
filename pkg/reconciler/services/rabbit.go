@@ -18,6 +18,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -25,6 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
+	triggerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
 	"knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	rabbitclientset "knative.dev/eventing-rabbitmq/third_party/pkg/client/clientset/versioned"
 	rabbitmqclient "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/client"
@@ -32,6 +34,7 @@ import (
 	exchangeinformer "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/informers/rabbitmq.com/v1beta1/exchange"
 	queueinformer "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/informers/rabbitmq.com/v1beta1/queue"
 	rabbitlisters "knative.dev/eventing-rabbitmq/third_party/pkg/client/listers/rabbitmq.com/v1beta1"
+	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	"knative.dev/pkg/logging"
 )
 
@@ -85,6 +88,51 @@ func (r *Rabbit) ReconcileExchange(ctx context.Context, args *resources.Exchange
 		desired := current.DeepCopy()
 		desired.Spec = want.Spec
 		return r.rabbitClientSet.RabbitmqV1beta1().Exchanges(args.Broker.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
+	}
+	return current, nil
+}
+
+func (r *Rabbit) ReconcileQueue(ctx context.Context, b *eventingv1.Broker) (*v1beta1.Queue, error) {
+	r.logger.Info("Reconciling queue")
+
+	queueName := naming.CreateBrokerDeadLetterQueueName(b)
+	want := triggerresources.NewQueue(ctx, b, nil)
+	current, err := r.queueLister.Queues(b.Namespace).Get(queueName)
+	if apierrs.IsNotFound(err) {
+		logging.FromContext(ctx).Debugw("Creating rabbitmq exchange", zap.String("queue name", want.Name))
+		return r.rabbitClientSet.RabbitmqV1beta1().Queues(b.Namespace).Create(ctx, want, metav1.CreateOptions{})
+	} else if err != nil {
+		return nil, err
+	} else if !equality.Semantic.DeepDerivative(want.Spec, current.Spec) {
+		// Don't modify the informers copy.
+		desired := current.DeepCopy()
+		desired.Spec = want.Spec
+		return r.rabbitClientSet.RabbitmqV1beta1().Queues(b.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
+	}
+	return current, nil
+}
+
+func (r *Rabbit) ReconcileBinding(ctx context.Context, b *eventingv1.Broker) (*v1beta1.Binding, error) {
+	r.logger.Info("Reconciling binding")
+
+	// We can use the same name for queue / binding to keep things simpler
+	bindingName := naming.CreateBrokerDeadLetterQueueName(b)
+
+	want, err := triggerresources.NewBinding(ctx, b, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create the binding spec: %w", err)
+	}
+	current, err := r.bindingLister.Bindings(b.Namespace).Get(bindingName)
+	if apierrs.IsNotFound(err) {
+		logging.FromContext(ctx).Infow("Creating rabbitmq binding", zap.String("binding name", want.Name))
+		return r.rabbitClientSet.RabbitmqV1beta1().Bindings(b.Namespace).Create(ctx, want, metav1.CreateOptions{})
+	} else if err != nil {
+		return nil, err
+	} else if !equality.Semantic.DeepDerivative(want.Spec, current.Spec) {
+		// Don't modify the informers copy.
+		desired := current.DeepCopy()
+		desired.Spec = want.Spec
+		return r.rabbitClientSet.RabbitmqV1beta1().Bindings(b.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
 	}
 	return current, nil
 }

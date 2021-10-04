@@ -1004,9 +1004,6 @@ func TestReconcile(t *testing.T) {
 			ingressImage:       ingressImage,
 			dispatcherImage:    dispatcherImage,
 			rabbitClientSet:    fakerabbitclient.Get(ctx),
-			exchangeLister:     listers.GetExchangeLister(),
-			queueLister:        listers.GetQueueLister(),
-			bindingLister:      listers.GetBindingLister(),
 			rabbitLister:       rabbitduck.Get(ctx),
 			rabbit:             services.NewRabbitTest(logger, fakerabbitclient.Get(ctx), listers.GetExchangeLister(), listers.GetQueueLister(), listers.GetBindingLister()),
 		}

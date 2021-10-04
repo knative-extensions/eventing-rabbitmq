@@ -104,9 +104,6 @@ func NewController(
 		brokerClass:               env.BrokerClass,
 		dispatcherImage:           env.DispatcherImage,
 		rabbitClientSet:           rabbitmqclient.Get(ctx),
-		exchangeLister:            exchangeInformer.Lister(),
-		queueLister:               queueInformer.Lister(),
-		bindingLister:             bindingInformer.Lister(),
 		rabbit:                    services.NewRabbit(ctx),
 	}
 

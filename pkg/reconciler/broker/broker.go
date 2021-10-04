@@ -37,10 +37,8 @@ import (
 
 	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
-	triggerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
 	"knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	rabbitclientset "knative.dev/eventing-rabbitmq/third_party/pkg/client/clientset/versioned"
-	rabbitlisters "knative.dev/eventing-rabbitmq/third_party/pkg/client/listers/rabbitmq.com/v1beta1"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	clientset "knative.dev/eventing/pkg/client/clientset/versioned"
 	brokerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1/broker"
@@ -66,9 +64,6 @@ type Reconciler struct {
 	secretLister     corev1listers.SecretLister
 	deploymentLister appsv1listers.DeploymentLister
 	rabbitLister     apisduck.InformerFactory
-	exchangeLister   rabbitlisters.ExchangeLister
-	queueLister      rabbitlisters.QueueLister
-	bindingLister    rabbitlisters.BindingLister
 
 	ingressImage              string
 	ingressServiceAccountName string
@@ -91,6 +86,8 @@ type Reconciler struct {
 
 type RabbitService interface {
 	ReconcileExchange(context.Context, *resources.ExchangeArgs) (*v1beta1.Exchange, error)
+	ReconcileQueue(context.Context, *eventingv1.Broker) (*v1beta1.Queue, error)
+	ReconcileBinding(context.Context, *eventingv1.Broker) (*v1beta1.Binding, error)
 }
 
 // Check that our Reconciler implements Interface
@@ -266,47 +263,6 @@ func (r *Reconciler) reconcileDLXDispatcherDeployment(ctx context.Context, b *ev
 	return r.kubeClientSet.AppsV1().Deployments(b.Namespace).Delete(ctx, dispatcherName, metav1.DeleteOptions{})
 }
 
-func (r *Reconciler) reconcileQueue(ctx context.Context, b *eventingv1.Broker) (*v1beta1.Queue, error) {
-	queueName := naming.CreateBrokerDeadLetterQueueName(b)
-	want := triggerresources.NewQueue(ctx, b, nil)
-	current, err := r.queueLister.Queues(b.Namespace).Get(queueName)
-	if apierrs.IsNotFound(err) {
-		logging.FromContext(ctx).Debugw("Creating rabbitmq exchange", zap.String("queue name", want.Name))
-		return r.rabbitClientSet.RabbitmqV1beta1().Queues(b.Namespace).Create(ctx, want, metav1.CreateOptions{})
-	} else if err != nil {
-		return nil, err
-	} else if !equality.Semantic.DeepDerivative(want.Spec, current.Spec) {
-		// Don't modify the informers copy.
-		desired := current.DeepCopy()
-		desired.Spec = want.Spec
-		return r.rabbitClientSet.RabbitmqV1beta1().Queues(b.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
-	}
-	return current, nil
-}
-
-func (r *Reconciler) reconcileBinding(ctx context.Context, b *eventingv1.Broker) (*v1beta1.Binding, error) {
-	// We can use the same name for queue / binding to keep things simpler
-	bindingName := naming.CreateBrokerDeadLetterQueueName(b)
-
-	want, err := triggerresources.NewBinding(ctx, b, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create the binding spec: %w", err)
-	}
-	current, err := r.bindingLister.Bindings(b.Namespace).Get(bindingName)
-	if apierrs.IsNotFound(err) {
-		logging.FromContext(ctx).Infow("Creating rabbitmq binding", zap.String("binding name", want.Name))
-		return r.rabbitClientSet.RabbitmqV1beta1().Bindings(b.Namespace).Create(ctx, want, metav1.CreateOptions{})
-	} else if err != nil {
-		return nil, err
-	} else if !equality.Semantic.DeepDerivative(want.Spec, current.Spec) {
-		// Don't modify the informers copy.
-		desired := current.DeepCopy()
-		desired.Spec = want.Spec
-		return r.rabbitClientSet.RabbitmqV1beta1().Bindings(b.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
-	}
-	return current, nil
-}
-
 func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker, args *resources.ExchangeArgs) error {
 	exchange, err := r.rabbit.ReconcileExchange(ctx, args)
 	if err != nil {
@@ -335,8 +291,7 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 	}
 	MarkExchangeReady(&b.Status)
 
-	logging.FromContext(ctx).Info("Reconciling queue")
-	queue, err := r.reconcileQueue(ctx, b)
+	queue, err := r.rabbit.ReconcileQueue(ctx, b)
 	if err != nil {
 		MarkDLXFailed(&b.Status, "QueueFailure", fmt.Sprintf("Failed to reconcile Dead Letter Queue %q : %s", naming.CreateBrokerDeadLetterQueueName(b), err))
 		return err
@@ -351,8 +306,7 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 
 	MarkDLXReady(&b.Status)
 
-	logging.FromContext(ctx).Info("Reconciling binding")
-	binding, err := r.reconcileBinding(ctx, b)
+	binding, err := r.rabbit.ReconcileBinding(ctx, b)
 	if err != nil {
 		// NB, binding has the same name as the queue.
 		MarkDeadLetterSinkFailed(&b.Status, "DLQ binding", fmt.Sprintf("Failed to reconcile DLQ binding %q : %s", naming.CreateBrokerDeadLetterQueueName(b), err))
