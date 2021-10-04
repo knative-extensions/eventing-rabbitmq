@@ -23,6 +23,7 @@ import (
 	"go.uber.org/zap"
 	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -32,11 +33,13 @@ import (
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	"knative.dev/pkg/apis"
+	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/network"
 
 	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
+	triggerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
 	"knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	rabbitclientset "knative.dev/eventing-rabbitmq/third_party/pkg/client/clientset/versioned"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
@@ -86,7 +89,7 @@ type Reconciler struct {
 
 type RabbitService interface {
 	ReconcileExchange(context.Context, *resources.ExchangeArgs) (*v1beta1.Exchange, error)
-	ReconcileQueue(context.Context, *eventingv1.Broker) (*v1beta1.Queue, error)
+	ReconcileQueue(context.Context, *triggerresources.QueueArgs) (*v1beta1.Queue, error)
 	ReconcileBinding(context.Context, *eventingv1.Broker) (*v1beta1.Binding, error)
 }
 
@@ -292,7 +295,15 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 	}
 	MarkExchangeReady(&b.Status)
 
-	queue, err := r.rabbit.ReconcileQueue(ctx, b)
+	queue, err := r.rabbit.ReconcileQueue(ctx, &triggerresources.QueueArgs{
+		NamespacedName: types.NamespacedName{
+			Name:      naming.CreateBrokerDeadLetterQueueName(b),
+			Namespace: b.Namespace,
+		},
+		Owner:       *kmeta.NewControllerRef(b),
+		Labels:      triggerresources.QueueLabels(b, nil),
+		ClusterName: b.Spec.Config.Name,
+	})
 	if err != nil {
 		MarkDLXFailed(&b.Status, "QueueFailure", fmt.Sprintf("Failed to reconcile Dead Letter Queue %q : %s", naming.CreateBrokerDeadLetterQueueName(b), err))
 		return err

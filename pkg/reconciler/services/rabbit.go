@@ -88,22 +88,22 @@ func (r *Rabbit) ReconcileExchange(ctx context.Context, args *resources.Exchange
 	return current, nil
 }
 
-func (r *Rabbit) ReconcileQueue(ctx context.Context, b *eventingv1.Broker) (*v1beta1.Queue, error) {
+func (r *Rabbit) ReconcileQueue(ctx context.Context, args *triggerresources.QueueArgs) (*v1beta1.Queue, error) {
 	logging.FromContext(ctx).Info("Reconciling queue")
 
-	queueName := naming.CreateBrokerDeadLetterQueueName(b)
-	want := triggerresources.NewQueue(ctx, b, nil)
-	current, err := r.queueLister.Queues(b.Namespace).Get(queueName)
+	queueName := args.Name
+	want := triggerresources.NewQueue(ctx, args)
+	current, err := r.queueLister.Queues(args.Namespace).Get(queueName)
 	if apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Debugw("Creating rabbitmq exchange", zap.String("queue name", want.Name))
-		return r.rabbitClientSet.RabbitmqV1beta1().Queues(b.Namespace).Create(ctx, want, metav1.CreateOptions{})
+		return r.rabbitClientSet.RabbitmqV1beta1().Queues(args.Namespace).Create(ctx, want, metav1.CreateOptions{})
 	} else if err != nil {
 		return nil, err
 	} else if !equality.Semantic.DeepDerivative(want.Spec, current.Spec) {
 		// Don't modify the informers copy.
 		desired := current.DeepCopy()
 		desired.Spec = want.Spec
-		return r.rabbitClientSet.RabbitmqV1beta1().Queues(b.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
+		return r.rabbitClientSet.RabbitmqV1beta1().Queues(args.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
 	}
 	return current, nil
 }

@@ -26,17 +26,21 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	"knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
+	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
+	"knative.dev/pkg/ptr"
 
 	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
+	triggerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
 	rabbitclientset "knative.dev/eventing-rabbitmq/third_party/pkg/client/clientset/versioned"
 	rabbitlisters "knative.dev/eventing-rabbitmq/third_party/pkg/client/listers/rabbitmq.com/v1beta1"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
@@ -160,7 +164,15 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 				}
 			}
 
-			dlq, err := r.reconcileDLQ(ctx, broker, t)
+			dlq, err := r.rabbit.ReconcileQueue(ctx, &triggerresources.QueueArgs{
+				NamespacedName: types.NamespacedName{
+					Name:      naming.CreateTriggerDeadLetterQueueName(t),
+					Namespace: t.Namespace,
+				},
+				Owner:       *kmeta.NewControllerRef(t),
+				Labels:      triggerresources.QueueLabels(broker, t),
+				ClusterName: broker.Spec.Config.Name,
+			})
 			if err != nil {
 				logging.FromContext(ctx).Error("Problem reconciling Trigger Queue", zap.Error(err))
 				t.Status.MarkDependencyFailed("QueueFailure", "%v", err)
@@ -205,7 +217,22 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 			// There's no Delivery spec, so just mark is as there's no DeadLetterSink Configured for it.
 			t.Status.MarkDeadLetterSinkNotConfigured()
 		}
-		queue, err := r.reconcileQueue(ctx, broker, t)
+		var dlxName *string
+		if t.Spec.Delivery != nil && t.Spec.Delivery.DeadLetterSink != nil {
+			dlxName = ptr.String(naming.TriggerDLXExchangeName(t))
+		} else {
+			dlxName = ptr.String(naming.BrokerExchangeName(broker, true))
+		}
+		queue, err := r.rabbit.ReconcileQueue(ctx, &triggerresources.QueueArgs{
+			NamespacedName: types.NamespacedName{
+				Name:      naming.CreateTriggerQueueName(t),
+				Namespace: t.Namespace,
+			},
+			Owner:       *kmeta.NewControllerRef(t),
+			Labels:      triggerresources.QueueLabels(broker, t),
+			ClusterName: broker.Spec.Config.Name,
+			DLXName:     dlxName,
+		})
 		if err != nil {
 			logging.FromContext(ctx).Error("Problem reconciling Trigger Queue", zap.Error(err))
 			t.Status.MarkDependencyFailed("QueueFailure", "%v", err)
@@ -401,42 +428,6 @@ func (r *Reconciler) propagateDependencyReadiness(ctx context.Context, t *eventi
 
 func (r *Reconciler) getRabbitmqSecret(ctx context.Context, t *eventingv1.Trigger) (*corev1.Secret, error) {
 	return r.kubeClientSet.CoreV1().Secrets(t.Namespace).Get(ctx, brokerresources.SecretName(t.Spec.Broker), metav1.GetOptions{})
-}
-
-func (r *Reconciler) reconcileQueue(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger) (*v1beta1.Queue, error) {
-	queueName := naming.CreateTriggerQueueName(t)
-	want := resources.NewQueue(ctx, b, t)
-	current, err := r.queueLister.Queues(b.Namespace).Get(queueName)
-	if apierrs.IsNotFound(err) {
-		logging.FromContext(ctx).Debugw("Creating rabbitmq queue", zap.String("queue name", want.Name))
-		return r.rabbitClientSet.RabbitmqV1beta1().Queues(b.Namespace).Create(ctx, want, metav1.CreateOptions{})
-	} else if err != nil {
-		return nil, err
-	} else if !equality.Semantic.DeepDerivative(want.Spec, current.Spec) {
-		// Don't modify the informers copy.
-		desired := current.DeepCopy()
-		desired.Spec = want.Spec
-		return r.rabbitClientSet.RabbitmqV1beta1().Queues(b.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
-	}
-	return current, nil
-}
-
-func (r *Reconciler) reconcileDLQ(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger) (*v1beta1.Queue, error) {
-	queueName := naming.CreateTriggerDeadLetterQueueName(t)
-	want := resources.NewTriggerDLQ(ctx, b, t)
-	current, err := r.queueLister.Queues(b.Namespace).Get(queueName)
-	if apierrs.IsNotFound(err) {
-		logging.FromContext(ctx).Debugw("Creating rabbitmq queue", zap.String("queue name", want.Name))
-		return r.rabbitClientSet.RabbitmqV1beta1().Queues(b.Namespace).Create(ctx, want, metav1.CreateOptions{})
-	} else if err != nil {
-		return nil, err
-	} else if !equality.Semantic.DeepDerivative(want.Spec, current.Spec) {
-		// Don't modify the informers copy.
-		desired := current.DeepCopy()
-		desired.Spec = want.Spec
-		return r.rabbitClientSet.RabbitmqV1beta1().Queues(b.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
-	}
-	return current, nil
 }
 
 func (r *Reconciler) reconcileBinding(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger) (*v1beta1.Binding, error) {
