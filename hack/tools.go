@@ -1,3 +1,4 @@
+//go:build tools
 // +build tools
 
 /*
@@ -51,4 +52,7 @@ import (
 
 	// For conformance tests, this needs to be imported.
 	_ "knative.dev/eventing/test/test_images/event-flaker"
+
+	// For performance testing, this needs to be imported
+	_ "knative.dev/pkg/test/mako/stub-sidecar"
 )
