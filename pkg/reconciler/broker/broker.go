@@ -90,7 +90,7 @@ type Reconciler struct {
 type RabbitService interface {
 	ReconcileExchange(context.Context, *resources.ExchangeArgs) (*v1beta1.Exchange, error)
 	ReconcileQueue(context.Context, *triggerresources.QueueArgs) (*v1beta1.Queue, error)
-	ReconcileBinding(context.Context, *eventingv1.Broker) (*v1beta1.Binding, error)
+	ReconcileBinding(context.Context, *triggerresources.BindingArgs) (*v1beta1.Binding, error)
 }
 
 // Check that our Reconciler implements Interface
@@ -318,7 +318,21 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 
 	MarkDLXReady(&b.Status)
 
-	binding, err := r.rabbit.ReconcileBinding(ctx, b)
+	bindingName := naming.CreateBrokerDeadLetterQueueName(b)
+	binding, err := r.rabbit.ReconcileBinding(ctx, &triggerresources.BindingArgs{
+		NamespacedName: types.NamespacedName{
+			Name:      bindingName,
+			Namespace: b.Namespace,
+		},
+		Source:      naming.BrokerExchangeName(b, true),
+		Destination: bindingName,
+		Owner:       *kmeta.NewControllerRef(b),
+		Labels:      triggerresources.BindingLabels(b, nil),
+		ClusterName: b.Spec.Config.Name,
+		Filters: map[string]string{
+			triggerresources.DLQBindingKey: b.Name,
+		},
+	})
 	if err != nil {
 		// NB, binding has the same name as the queue.
 		MarkDeadLetterSinkFailed(&b.Status, "DLQ binding", fmt.Sprintf("Failed to reconcile DLQ binding %q : %s", naming.CreateBrokerDeadLetterQueueName(b), err))

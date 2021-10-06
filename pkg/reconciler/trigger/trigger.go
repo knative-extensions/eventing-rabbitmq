@@ -431,43 +431,43 @@ func (r *Reconciler) getRabbitmqSecret(ctx context.Context, t *eventingv1.Trigge
 }
 
 func (r *Reconciler) reconcileBinding(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger) (*v1beta1.Binding, error) {
-	// We can use the same name for queue / binding to keep things simpler
 	bindingName := naming.CreateTriggerQueueName(t)
+	var filters map[string]string
+	if t.Spec.Filter != nil && t.Spec.Filter.Attributes != nil {
+		filters = t.Spec.Filter.Attributes
+	} else {
+		filters = map[string]string{}
+	}
+	filters[resources.BindingKey] = t.Name
 
-	want, err := resources.NewBinding(ctx, b, t)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create the binding spec: %w", err)
-	}
-	current, err := r.bindingLister.Bindings(b.Namespace).Get(bindingName)
-	if apierrs.IsNotFound(err) {
-		logging.FromContext(ctx).Infow("Creating rabbitmq binding", zap.String("binding name", want.Name))
-		return r.rabbitClientSet.RabbitmqV1beta1().Bindings(b.Namespace).Create(ctx, want, metav1.CreateOptions{})
-	} else if err != nil {
-		return nil, err
-	} else if !equality.Semantic.DeepDerivative(want.Spec, current.Spec) {
-		return nil, fmt.Errorf("binding spec differs and it's immutable")
-	}
-	return current, nil
+	return r.rabbit.ReconcileBinding(ctx, &resources.BindingArgs{
+		NamespacedName: types.NamespacedName{
+			Name:      bindingName,
+			Namespace: t.Namespace,
+		},
+		Source:      naming.BrokerExchangeName(b, false),
+		Destination: bindingName,
+		Owner:       *kmeta.NewControllerRef(t),
+		Labels:      resources.BindingLabels(b, t),
+		Filters:     filters,
+		ClusterName: b.Spec.Config.Name,
+	})
 }
 
 func (r *Reconciler) reconcileDLQBinding(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger) (*v1beta1.Binding, error) {
-	// We can use the same name for queue / binding to keep things simpler
 	bindingName := naming.CreateTriggerDeadLetterQueueName(t)
 
-	want, err := resources.NewTriggerDLQBinding(ctx, b, t)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create the DLQ binding spec: %w", err)
-	}
-	current, err := r.bindingLister.Bindings(b.Namespace).Get(bindingName)
-	if apierrs.IsNotFound(err) {
-		logging.FromContext(ctx).Infow("Creating rabbitmq DLQ binding", zap.String("binding name", want.Name))
-		return r.rabbitClientSet.RabbitmqV1beta1().Bindings(b.Namespace).Create(ctx, want, metav1.CreateOptions{})
-	} else if err != nil {
-		return nil, err
-	} else if !equality.Semantic.DeepDerivative(want.Spec, current.Spec) {
-		return nil, fmt.Errorf("binding spec differs and it's immutable")
-	}
-	return current, nil
+	return r.rabbit.ReconcileBinding(ctx, &resources.BindingArgs{
+		NamespacedName: types.NamespacedName{
+			Name:      bindingName,
+			Namespace: t.Namespace,
+		},
+		Source:      naming.TriggerDLXExchangeName(t),
+		Destination: bindingName,
+		Owner:       *kmeta.NewControllerRef(t),
+		Labels:      resources.BindingLabels(b, t),
+		ClusterName: b.Spec.Config.Name,
+	})
 }
 
 func isReady(conditions []v1beta1.Condition) bool {

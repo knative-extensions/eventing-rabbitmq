@@ -24,7 +24,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
 	triggerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
 	"knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
@@ -34,7 +33,6 @@ import (
 	exchangeinformer "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/informers/rabbitmq.com/v1beta1/exchange"
 	queueinformer "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/informers/rabbitmq.com/v1beta1/queue"
 	rabbitlisters "knative.dev/eventing-rabbitmq/third_party/pkg/client/listers/rabbitmq.com/v1beta1"
-	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	"knative.dev/pkg/logging"
 )
 
@@ -108,27 +106,24 @@ func (r *Rabbit) ReconcileQueue(ctx context.Context, args *triggerresources.Queu
 	return current, nil
 }
 
-func (r *Rabbit) ReconcileBinding(ctx context.Context, b *eventingv1.Broker) (*v1beta1.Binding, error) {
+func (r *Rabbit) ReconcileBinding(ctx context.Context, args *triggerresources.BindingArgs) (*v1beta1.Binding, error) {
 	logging.FromContext(ctx).Info("Reconciling binding")
 
-	// We can use the same name for queue / binding to keep things simpler
-	bindingName := naming.CreateBrokerDeadLetterQueueName(b)
-
-	want, err := triggerresources.NewBinding(ctx, b, nil)
+	want, err := triggerresources.NewBinding(ctx, args)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create the binding spec: %w", err)
 	}
-	current, err := r.bindingLister.Bindings(b.Namespace).Get(bindingName)
+	current, err := r.bindingLister.Bindings(args.Namespace).Get(args.Name)
 	if apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Infow("Creating rabbitmq binding", zap.String("binding name", want.Name))
-		return r.rabbitClientSet.RabbitmqV1beta1().Bindings(b.Namespace).Create(ctx, want, metav1.CreateOptions{})
+		return r.rabbitClientSet.RabbitmqV1beta1().Bindings(args.Namespace).Create(ctx, want, metav1.CreateOptions{})
 	} else if err != nil {
 		return nil, err
 	} else if !equality.Semantic.DeepDerivative(want.Spec, current.Spec) {
 		// Don't modify the informers copy.
 		desired := current.DeepCopy()
 		desired.Spec = want.Spec
-		return r.rabbitClientSet.RabbitmqV1beta1().Bindings(b.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
+		return r.rabbitClientSet.RabbitmqV1beta1().Bindings(args.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
 	}
 	return current, nil
 }
