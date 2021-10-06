@@ -149,6 +149,13 @@ func WithDLXReady() BrokerOption {
 	}
 }
 
+// WithDLXReady() sets DLX condition to ready, but not configured.
+func WithDLXNotConfigured() BrokerOption {
+	return func(b *v1.Broker) {
+		MarkDLXNotConfigured(&b.Status)
+	}
+}
+
 // WithDeadLetterSinkReady() sets DeadLetterSink condition to ready.
 func WithDeadLetterSinkReady() BrokerOption {
 	return func(b *v1.Broker) {
@@ -156,10 +163,17 @@ func WithDeadLetterSinkReady() BrokerOption {
 	}
 }
 
-// WithDeadLetterSinkFailed sets secret condition to ready.
+// WithDeadLetterSinkReady() sets DeadLetterSink condition to failed.
 func WithDeadLetterSinkFailed(reason, msg string) BrokerOption {
 	return func(b *v1.Broker) {
 		MarkDeadLetterSinkFailed(&b.Status, reason, msg)
+	}
+}
+
+// WithDeadLetterSinkNotConfigured sets DeadLetterSink condition to ready, but not configured.
+func WithDeadLetterSinkNotConfigured() BrokerOption {
+	return func(b *v1.Broker) {
+		MarkDeadLetterSinkNotConfigured(&b.Status)
 	}
 }
 

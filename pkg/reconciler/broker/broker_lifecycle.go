@@ -24,6 +24,11 @@ import (
 	"knative.dev/pkg/apis"
 )
 
+const (
+	DeadLetterSinkNotConfigured       = "DeadLetterSinkNotConfigured"
+	DeadLetterSinkNotConfiguredReason = "No dead letter sink is configured."
+)
+
 func MarkIngressFailed(bs *eventingv1.BrokerStatus, reason, format string, args ...interface{}) {
 	bs.GetConditionSet().Manage(bs).MarkFalse(BrokerConditionIngress, reason, format, args...)
 }
@@ -66,6 +71,14 @@ func MarkDeadLetterSinkFailed(bs *eventingv1.BrokerStatus, reason, format string
 
 func MarkDeadLetterSinkReady(bs *eventingv1.BrokerStatus) {
 	bs.GetConditionSet().Manage(bs).MarkTrue(BrokerConditionDeadLetterSink)
+}
+
+func MarkDeadLetterSinkNotConfigured(bs *eventingv1.BrokerStatus) {
+	bs.GetConditionSet().Manage(bs).MarkTrueWithReason(BrokerConditionDeadLetterSink, DeadLetterSinkNotConfigured, DeadLetterSinkNotConfiguredReason)
+}
+
+func MarkDLXNotConfigured(bs *eventingv1.BrokerStatus) {
+	bs.GetConditionSet().Manage(bs).MarkTrueWithReason(BrokerConditionDLX, DeadLetterSinkNotConfigured, DeadLetterSinkNotConfiguredReason)
 }
 
 // SetAddress makes this Broker addressable by setting the URI. It also

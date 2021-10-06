@@ -294,53 +294,56 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 	}
 	MarkExchangeReady(&b.Status)
 
-	queue, err := r.rabbit.ReconcileQueue(ctx, &triggerresources.QueueArgs{
-		Name:        naming.CreateBrokerDeadLetterQueueName(b),
-		Namespace:   b.Namespace,
-		Owner:       *kmeta.NewControllerRef(b),
-		Labels:      triggerresources.QueueLabels(b, nil),
-		ClusterName: b.Spec.Config.Name,
-	})
-	if err != nil {
-		MarkDLXFailed(&b.Status, "QueueFailure", fmt.Sprintf("Failed to reconcile Dead Letter Queue %q : %s", naming.CreateBrokerDeadLetterQueueName(b), err))
-		return err
-	}
-	if queue != nil {
-		if !isReady(queue.Status.Conditions) {
-			logging.FromContext(ctx).Warnf("Queue %q is not ready", queue.Name)
-			MarkDLXFailed(&b.Status, "QueueFailure", fmt.Sprintf("Dead Letter Queue %q is not ready", queue.Name))
-			return nil
+	if b.Spec.Delivery != nil && b.Spec.Delivery.DeadLetterSink != nil {
+		queue, err := r.rabbit.ReconcileQueue(ctx, &triggerresources.QueueArgs{
+			Name:        naming.CreateBrokerDeadLetterQueueName(b),
+			Namespace:   b.Namespace,
+			Owner:       *kmeta.NewControllerRef(b),
+			Labels:      triggerresources.QueueLabels(b, nil),
+			ClusterName: b.Spec.Config.Name,
+		})
+		if err != nil {
+			MarkDLXFailed(&b.Status, "QueueFailure", fmt.Sprintf("Failed to reconcile Dead Letter Queue %q : %s", naming.CreateBrokerDeadLetterQueueName(b), err))
+			return err
 		}
-	}
-
-	MarkDLXReady(&b.Status)
-
-	bindingName := naming.CreateBrokerDeadLetterQueueName(b)
-	binding, err := r.rabbit.ReconcileBinding(ctx, &triggerresources.BindingArgs{
-		Name:        bindingName,
-		Namespace:   b.Namespace,
-		Source:      naming.BrokerExchangeName(b, true),
-		Destination: bindingName,
-		Owner:       *kmeta.NewControllerRef(b),
-		Labels:      triggerresources.BindingLabels(b, nil),
-		ClusterName: b.Spec.Config.Name,
-		Filters: map[string]string{
-			triggerresources.DLQBindingKey: b.Name,
-		},
-	})
-	if err != nil {
-		// NB, binding has the same name as the queue.
-		MarkDeadLetterSinkFailed(&b.Status, "DLQ binding", fmt.Sprintf("Failed to reconcile DLQ binding %q : %s", naming.CreateBrokerDeadLetterQueueName(b), err))
-		return err
-	}
-	if binding != nil {
-		if !isReady(binding.Status.Conditions) {
-			logging.FromContext(ctx).Warnf("Binding %q is not ready", binding.Name)
-			MarkDeadLetterSinkFailed(&b.Status, "DLQ binding", fmt.Sprintf("DLQ binding %q is not ready", binding.Name))
-			return nil
+		if queue != nil {
+			if !isReady(queue.Status.Conditions) {
+				logging.FromContext(ctx).Warnf("Queue %q is not ready", queue.Name)
+				MarkDLXFailed(&b.Status, "QueueFailure", fmt.Sprintf("Dead Letter Queue %q is not ready", queue.Name))
+				return nil
+			}
 		}
+		MarkDLXReady(&b.Status)
+		bindingName := naming.CreateBrokerDeadLetterQueueName(b)
+		binding, err := r.rabbit.ReconcileBinding(ctx, &triggerresources.BindingArgs{
+			Name:        bindingName,
+			Namespace:   b.Namespace,
+			Source:      naming.BrokerExchangeName(b, true),
+			Destination: bindingName,
+			Owner:       *kmeta.NewControllerRef(b),
+			Labels:      triggerresources.BindingLabels(b, nil),
+			ClusterName: b.Spec.Config.Name,
+			Filters: map[string]string{
+				triggerresources.DLQBindingKey: b.Name,
+			},
+		})
+		if err != nil {
+			// NB, binding has the same name as the queue.
+			MarkDeadLetterSinkFailed(&b.Status, "DLQ binding", fmt.Sprintf("Failed to reconcile DLQ binding %q : %s", naming.CreateBrokerDeadLetterQueueName(b), err))
+			return err
+		}
+		if binding != nil {
+			if !isReady(binding.Status.Conditions) {
+				logging.FromContext(ctx).Warnf("Binding %q is not ready", binding.Name)
+				MarkDeadLetterSinkFailed(&b.Status, "DLQ binding", fmt.Sprintf("DLQ binding %q is not ready", binding.Name))
+				return nil
+			}
+		}
+		MarkDeadLetterSinkReady(&b.Status)
+	} else {
+		MarkDLXNotConfigured(&b.Status)
+		MarkDeadLetterSinkNotConfigured(&b.Status)
 	}
-	MarkDeadLetterSinkReady(&b.Status)
 
 	return r.reconcileCommonIngressResources(ctx, resources.MakeSecret(args), b)
 }
