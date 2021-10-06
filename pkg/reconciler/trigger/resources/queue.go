@@ -18,10 +18,10 @@ package resources
 
 import (
 	"context"
+	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	"knative.dev/eventing/pkg/apis/eventing"
 
@@ -31,7 +31,8 @@ import (
 const TriggerLabelKey = "eventing.knative.dev/trigger"
 
 type QueueArgs struct {
-	types.NamespacedName
+	Name        string
+	Namespace   string
 	Owner       metav1.OwnerReference
 	Labels      map[string]string
 	ClusterName string
@@ -60,7 +61,7 @@ func NewQueue(ctx context.Context, args *QueueArgs) *rabbitv1beta1.Queue {
 	}
 	if args.DLXName != nil {
 		q.Spec.Arguments = &runtime.RawExtension{
-			Raw: []byte(`{"x-dead-letter-exchange":"` + *args.DLXName + `"}`),
+			Raw: []byte(fmt.Sprintf(`{"x-dead-letter-exchange":%q}`, *args.DLXName)),
 		}
 	}
 	return q

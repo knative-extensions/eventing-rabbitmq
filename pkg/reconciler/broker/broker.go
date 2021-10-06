@@ -23,7 +23,6 @@ import (
 	"go.uber.org/zap"
 	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -296,10 +295,8 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 	MarkExchangeReady(&b.Status)
 
 	queue, err := r.rabbit.ReconcileQueue(ctx, &triggerresources.QueueArgs{
-		NamespacedName: types.NamespacedName{
-			Name:      naming.CreateBrokerDeadLetterQueueName(b),
-			Namespace: b.Namespace,
-		},
+		Name:        naming.CreateBrokerDeadLetterQueueName(b),
+		Namespace:   b.Namespace,
 		Owner:       *kmeta.NewControllerRef(b),
 		Labels:      triggerresources.QueueLabels(b, nil),
 		ClusterName: b.Spec.Config.Name,
@@ -320,10 +317,8 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 
 	bindingName := naming.CreateBrokerDeadLetterQueueName(b)
 	binding, err := r.rabbit.ReconcileBinding(ctx, &triggerresources.BindingArgs{
-		NamespacedName: types.NamespacedName{
-			Name:      bindingName,
-			Namespace: b.Namespace,
-		},
+		Name:        bindingName,
+		Namespace:   b.Namespace,
 		Source:      naming.BrokerExchangeName(b, true),
 		Destination: bindingName,
 		Owner:       *kmeta.NewControllerRef(b),

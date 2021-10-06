@@ -23,7 +23,6 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 
 	"knative.dev/eventing/pkg/apis/eventing"
@@ -37,7 +36,8 @@ const (
 )
 
 type BindingArgs struct {
-	types.NamespacedName
+	Name        string
+	Namespace   string
 	Source      string
 	Destination string
 	Owner       metav1.OwnerReference

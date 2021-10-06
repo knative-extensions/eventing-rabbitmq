@@ -26,7 +26,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
@@ -165,10 +164,8 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 			}
 
 			dlq, err := r.rabbit.ReconcileQueue(ctx, &triggerresources.QueueArgs{
-				NamespacedName: types.NamespacedName{
-					Name:      naming.CreateTriggerDeadLetterQueueName(t),
-					Namespace: t.Namespace,
-				},
+				Name:        naming.CreateTriggerDeadLetterQueueName(t),
+				Namespace:   t.Namespace,
 				Owner:       *kmeta.NewControllerRef(t),
 				Labels:      triggerresources.QueueLabels(broker, t),
 				ClusterName: broker.Spec.Config.Name,
@@ -224,10 +221,8 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 			dlxName = ptr.String(naming.BrokerExchangeName(broker, true))
 		}
 		queue, err := r.rabbit.ReconcileQueue(ctx, &triggerresources.QueueArgs{
-			NamespacedName: types.NamespacedName{
-				Name:      naming.CreateTriggerQueueName(t),
-				Namespace: t.Namespace,
-			},
+			Name:        naming.CreateTriggerQueueName(t),
+			Namespace:   t.Namespace,
 			Owner:       *kmeta.NewControllerRef(t),
 			Labels:      triggerresources.QueueLabels(broker, t),
 			ClusterName: broker.Spec.Config.Name,
@@ -441,10 +436,8 @@ func (r *Reconciler) reconcileBinding(ctx context.Context, b *eventingv1.Broker,
 	filters[resources.BindingKey] = t.Name
 
 	return r.rabbit.ReconcileBinding(ctx, &resources.BindingArgs{
-		NamespacedName: types.NamespacedName{
-			Name:      bindingName,
-			Namespace: t.Namespace,
-		},
+		Name:        bindingName,
+		Namespace:   t.Namespace,
 		Source:      naming.BrokerExchangeName(b, false),
 		Destination: bindingName,
 		Owner:       *kmeta.NewControllerRef(t),
@@ -458,10 +451,8 @@ func (r *Reconciler) reconcileDLQBinding(ctx context.Context, b *eventingv1.Brok
 	bindingName := naming.CreateTriggerDeadLetterQueueName(t)
 
 	return r.rabbit.ReconcileBinding(ctx, &resources.BindingArgs{
-		NamespacedName: types.NamespacedName{
-			Name:      bindingName,
-			Namespace: t.Namespace,
-		},
+		Name:        bindingName,
+		Namespace:   t.Namespace,
 		Source:      naming.TriggerDLXExchangeName(t),
 		Destination: bindingName,
 		Owner:       *kmeta.NewControllerRef(t),
