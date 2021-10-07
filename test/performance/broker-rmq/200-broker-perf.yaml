@@ -104,7 +104,7 @@ spec:
       - "-p=10001"
     ports:
     - name: quickstore
-      containerPort: 9813
+      containerPort: 10001
     volumeMounts:
       - name: config-mako
         mountPath: /etc/config-mako
