@@ -31,7 +31,6 @@ import (
 const (
 	brokerName      = "testbroker"
 	brokerUID       = "broker-test-uid"
-	triggerUID      = "trigger-test-uid"
 	rabbitmqcluster = "testrabbitmqcluster"
 )
 
