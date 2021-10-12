@@ -87,7 +87,12 @@ func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel wabbit.Channe
 	workerQueue := make(chan wabbit.Delivery, d.WorkerCount)
 
 	for i := 0; i < d.WorkerCount; i++ {
-		go d.dispatch(ctx, wg, workerQueue, ceClient)
+		go func() {
+			defer wg.Done()
+			for msg := range workerQueue {
+				d.dispatch(ctx, msg, ceClient)
+			}
+		}()
 	}
 	for {
 		select {
@@ -129,65 +134,61 @@ func isSuccess(ctx context.Context, result protocol.Result) bool {
 	return false
 }
 
-func (d *Dispatcher) dispatch(ctx context.Context, wg *sync.WaitGroup, queue <-chan wabbit.Delivery, ceClient cloudevents.Client) {
-	defer wg.Done()
-
-	for msg := range queue {
-		event := cloudevents.NewEvent()
-		err := json.Unmarshal(msg.Body(), &event)
+func (d *Dispatcher) dispatch(ctx context.Context, msg wabbit.Delivery, ceClient cloudevents.Client) {
+	event := cloudevents.NewEvent()
+	err := json.Unmarshal(msg.Body(), &event)
+	if err != nil {
+		logging.FromContext(ctx).Warn("failed to unmarshal event (NACK-ing and not re-queueing): ", err)
+		err = msg.Nack(ackMultiple, false) // do not requeue
 		if err != nil {
-			logging.FromContext(ctx).Warn("failed to unmarshal event (NACK-ing and not re-queueing): ", err)
-			err = msg.Nack(ackMultiple, false) // do not requeue
-			if err != nil {
-				logging.FromContext(ctx).Warn("failed to NACK event: ", err)
-			}
-			continue
+			logging.FromContext(ctx).Warn("failed to NACK event: ", err)
 		}
+		return
+	}
 
-		ctx, span := readSpan(ctx, msg)
-		if span.IsRecordingEvents() {
-			span.AddAttributes(client.EventTraceAttributes(&event)...)
+	ctx, span := readSpan(ctx, msg)
+	defer span.End()
+	if span.IsRecordingEvents() {
+		span.AddAttributes(client.EventTraceAttributes(&event)...)
+	}
+
+	logging.FromContext(ctx).Debugf("Got event as: %+v", event)
+	ctx = cloudevents.ContextWithTarget(ctx, d.SubscriberURL)
+
+	if d.BackoffPolicy == eventingduckv1.BackoffPolicyLinear {
+		ctx = cloudevents.ContextWithRetriesLinearBackoff(ctx, d.BackoffDelay, d.MaxRetries)
+	} else {
+		ctx = cloudevents.ContextWithRetriesExponentialBackoff(ctx, d.BackoffDelay, d.MaxRetries)
+	}
+
+	response, result := ceClient.Request(ctx, event)
+	if !isSuccess(ctx, result) {
+		logging.FromContext(ctx).Warnf("Failed to deliver to %q requeue: %v", d.SubscriberURL, d.Requeue)
+		err = msg.Nack(ackMultiple, d.Requeue)
+		if err != nil {
+			logging.FromContext(ctx).Warn("failed to NACK event: ", err)
 		}
+		return
+	}
 
-		logging.FromContext(ctx).Debugf("Got event as: %+v", event)
-		ctx = cloudevents.ContextWithTarget(ctx, d.SubscriberURL)
-
-		if d.BackoffPolicy == eventingduckv1.BackoffPolicyLinear {
-			ctx = cloudevents.ContextWithRetriesLinearBackoff(ctx, d.BackoffDelay, d.MaxRetries)
-		} else {
-			ctx = cloudevents.ContextWithRetriesExponentialBackoff(ctx, d.BackoffDelay, d.MaxRetries)
-		}
-
-		response, result := ceClient.Request(ctx, event)
+	logging.FromContext(ctx).Debugf("Got Response: %+v", response)
+	if response != nil {
+		logging.FromContext(ctx).Infof("Sending an event: %+v", response)
+		ctx = cloudevents.ContextWithTarget(ctx, d.BrokerIngressURL)
+		result := ceClient.Send(ctx, *response)
 		if !isSuccess(ctx, result) {
-			logging.FromContext(ctx).Warnf("Failed to deliver to %q requeue: %v", d.SubscriberURL, d.Requeue)
-			err = msg.Nack(ackMultiple, d.Requeue)
+			logging.FromContext(ctx).Warnf("Failed to deliver to %q requeue: %v", d.BrokerIngressURL, d.Requeue)
+			err = msg.Nack(ackMultiple, d.Requeue) // not multiple
 			if err != nil {
 				logging.FromContext(ctx).Warn("failed to NACK event: ", err)
 			}
-			continue
+			return
 		}
+	}
 
-		logging.FromContext(ctx).Debugf("Got Response: %+v", response)
-		if response != nil {
-			logging.FromContext(ctx).Infof("Sending an event: %+v", response)
-			ctx = cloudevents.ContextWithTarget(ctx, d.BrokerIngressURL)
-			result := ceClient.Send(ctx, *response)
-			if !isSuccess(ctx, result) {
-				logging.FromContext(ctx).Warnf("Failed to deliver to %q requeue: %v", d.BrokerIngressURL, d.Requeue)
-				err = msg.Nack(ackMultiple, d.Requeue) // not multiple
-				if err != nil {
-					logging.FromContext(ctx).Warn("failed to NACK event: ", err)
-				}
-				continue
-			}
-		}
-
-		err = msg.Ack(ackMultiple)
-		if err != nil {
-			logging.FromContext(ctx).Warn("failed to ACK event: ", err)
-		}
-		span.End()
+	err = msg.Ack(ackMultiple)
+	if err != nil {
+		logging.FromContext(ctx).Warn("failed to ACK event: ", err)
 	}
 }
 
