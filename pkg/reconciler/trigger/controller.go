@@ -20,6 +20,7 @@ import (
 	"context"
 	"log"
 
+	"knative.dev/eventing-rabbitmq/pkg/reconciler/services"
 	rabbitmqclient "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/client"
 	eventingclient "knative.dev/eventing/pkg/client/injection/client"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
@@ -92,6 +93,7 @@ func NewController(
 		queueLister:                  queueInformer.Lister(),
 		bindingLister:                bindingInformer.Lister(),
 		rabbitClientSet:              rabbitmqclient.Get(ctx),
+		rabbit:                       services.NewRabbit(ctx),
 	}
 
 	impl := triggerreconciler.NewImpl(ctx, r)

@@ -23,48 +23,39 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/kmeta"
 
-	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
-
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 )
 
 // ExchangeArgs are the arguments to create a RabbitMQ Exchange.
 type ExchangeArgs struct {
+	Name            string
+	Namespace       string
 	Broker          *eventingv1.Broker
 	Trigger         *eventingv1.Trigger
 	RabbitMQURL     *url.URL
 	RabbitMQCluster string
-	// Set to true to create a DLX, which basically just means we're going
-	// to create it with a .dlx at the end..
-	DLX bool
 }
 
 func NewExchange(ctx context.Context, args *ExchangeArgs) *rabbitv1beta1.Exchange {
-	var exchangeName string
 	var or metav1.OwnerReference
-	var namespace string
 
 	if args.Trigger != nil {
 		or = *kmeta.NewControllerRef(args.Trigger)
-		exchangeName = naming.TriggerDLXExchangeName(args.Trigger)
-		namespace = args.Trigger.Namespace
 	} else {
-		exchangeName = naming.BrokerExchangeName(args.Broker, args.DLX)
 		or = *kmeta.NewControllerRef(args.Broker)
-		namespace = args.Broker.Namespace
 	}
 	return &rabbitv1beta1.Exchange{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace:       namespace,
-			Name:            exchangeName,
+			Namespace:       args.Namespace,
+			Name:            args.Name,
 			OwnerReferences: []metav1.OwnerReference{or},
 			Labels:          ExchangeLabels(args.Broker, args.Trigger),
 		},
 		Spec: rabbitv1beta1.ExchangeSpec{
 			// Why is the name in the Spec again? Is this different from the ObjectMeta.Name? If not,
 			// maybe it should be removed?
-			Name:       exchangeName,
+			Name:       args.Name,
 			Type:       "headers",
 			Durable:    true,
 			AutoDelete: false,

@@ -34,6 +34,7 @@ import (
 	rabbitmqduck "knative.dev/eventing-rabbitmq/pkg/apis/duck/v1beta1"
 	rabbitduck "knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
+	"knative.dev/eventing-rabbitmq/pkg/reconciler/services"
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	fakerabbitclient "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/client/fake"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
@@ -1003,10 +1004,8 @@ func TestReconcile(t *testing.T) {
 			ingressImage:       ingressImage,
 			dispatcherImage:    dispatcherImage,
 			rabbitClientSet:    fakerabbitclient.Get(ctx),
-			exchangeLister:     listers.GetExchangeLister(),
-			queueLister:        listers.GetQueueLister(),
-			bindingLister:      listers.GetBindingLister(),
 			rabbitLister:       rabbitduck.Get(ctx),
+			rabbit:             services.NewRabbitTest(fakerabbitclient.Get(ctx), listers.GetExchangeLister(), listers.GetQueueLister(), listers.GetBindingLister()),
 		}
 		return broker.NewReconciler(ctx, logger,
 			fakeeventingclient.Get(ctx), listers.GetBrokerLister(),
