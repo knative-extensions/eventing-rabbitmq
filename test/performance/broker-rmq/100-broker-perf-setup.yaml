@@ -80,6 +80,15 @@ metadata:
   namespace: perf-eventing
 spec:
   replicas: 1
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: cloud.google.com/machine-family
+            operator: In
+            values:
+            - c2
 
 ---
 
