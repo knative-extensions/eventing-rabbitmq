@@ -7,3 +7,4 @@ cover.out
 bin/
 *.swp
 .history
+.envrc
