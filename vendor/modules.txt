@@ -1080,10 +1080,10 @@ knative.dev/eventing/test/test_images/event-sender
 knative.dev/eventing/test/test_images/heartbeats
 knative.dev/eventing/test/test_images/performance
 knative.dev/eventing/test/test_images/print
-# knative.dev/hack v0.0.0-20210806075220-815cd312d65c
+# knative.dev/hack v0.0.0-20211015200324-86876688e735
 ## explicit
 knative.dev/hack
-# knative.dev/pkg v0.0.0-20211013152848-fa2f8f19557b
+# knative.dev/pkg v0.0.0-20211015194524-a5bb75923981
 ## explicit
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
