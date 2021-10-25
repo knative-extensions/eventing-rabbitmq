@@ -24,9 +24,6 @@ jobs:
         - v1.21.2
         - v1.22.1
 
-        eventing-version:
-        - v0.25.1
-
         rabbitmq-operator-version:
         - v1.8.2
 
@@ -127,12 +124,13 @@ jobs:
         kubectl apply -f https://github.com/rabbitmq/cluster-operator/releases/download/${{ matrix.rabbitmq-operator-version }}/cluster-operator.yml
 
     - name: Install Knative Eventing
+      working-directory: ./src/knative.dev/${{ github.event.repository.name }}
       run: |
         set -x
 
-        kubectl apply --filename https://github.com/knative/eventing/releases/download/${{ matrix.eventing-version }}/eventing-crds.yaml
+        kubectl apply --filename ./third_party/eventing-latest/eventing-crds.yaml
         sleep 2 # Wait for the CRDs to be reconciled.
-        kubectl apply --filename https://github.com/knative/eventing/releases/download/${{ matrix.eventing-version }}/eventing-core.yaml
+        kubectl apply --filename ./third_party/eventing-latest/eventing-core.yaml
 
     - name: Install Broker
       working-directory: ./src/knative.dev/${{ github.event.repository.name }}
@@ -205,7 +203,7 @@ jobs:
         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
         SLACK_CHANNEL: 'eventing-delivery'
         MSG_MINIMAL: 'true'
-        SLACK_TITLE: Periodic e2e for RabbitMQ on kind on (${{ matrix.k8s-version }}, ${{ matrix.eventing-version }}) failed.
+        SLACK_TITLE: Periodic e2e for RabbitMQ on kind on (${{ matrix.k8s-version }} failed.
         SLACK_MESSAGE: |
           For detailed logs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
