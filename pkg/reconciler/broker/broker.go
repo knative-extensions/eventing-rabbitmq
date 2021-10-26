@@ -397,12 +397,13 @@ func (r *Reconciler) reconcileCommonIngressResources(ctx context.Context, s *cor
 		dlsURI, err = r.uriResolver.URIFromDestinationV1(ctx, *b.Spec.Delivery.DeadLetterSink, b)
 		if err != nil {
 			logging.FromContext(ctx).Error("Unable to get the DeadLetterSink URI", zap.Error(err))
-			MarkDeadLetterSinkFailed(&b.Status, "Unable to get the DeadLetterSink's URI", "%v", err)
+			b.Status.MarkDeadLetterSinkResolvedFailed("Unable to get the DeadLetterSink's URI", "%v", err)
 			return err
 		}
 
-		// TODO(vaikas): Set the custom annotation for resolved URI?...
-		// TODO(vaikas): Should this be a first level BrokerStatus field?
+		b.Status.MarkDeadLetterSinkResolvedSucceeded(dlsURI)
+	} else {
+		b.Status.MarkDeadLetterSinkNotConfigured()
 	}
 
 	// Note that if we didn't actually resolve the URI above, as in it's left as nil it's ok to pass here

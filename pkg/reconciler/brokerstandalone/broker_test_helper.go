@@ -166,6 +166,24 @@ func WithDeadLetterSinkFailed(reason, msg string) BrokerOption {
 	}
 }
 
+func WithDeadLetterSinkResolvedSucceeded(uri *apis.URL) BrokerOption {
+	return func(b *v1.Broker) {
+		b.Status.MarkDeadLetterSinkResolvedSucceeded(uri)
+	}
+}
+
+func WithDeadLetterSinkResolvedFailed(reason, msg string) BrokerOption {
+	return func(b *v1.Broker) {
+		b.Status.MarkDeadLetterSinkResolvedFailed(reason, msg)
+	}
+}
+
+func WithDeadLetterSinkResolvedNotConfigured() BrokerOption {
+	return func(b *v1.Broker) {
+		b.Status.MarkDeadLetterSinkNotConfigured()
+	}
+}
+
 // WithSecretReady sets secret condition to ready.
 func WithSecretReady() BrokerOption {
 	return func(b *v1.Broker) {
