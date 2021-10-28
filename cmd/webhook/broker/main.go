@@ -35,17 +35,18 @@ import (
 )
 
 var ourTypes = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
-	v1.SchemeGroupVersion.WithKind("Broker"): &rabbitv1.RabbitBroker{},
-}
-
-var callbacks = map[schema.GroupVersionKind]validation.Callback{
-	v1.SchemeGroupVersion.WithKind("Broker"): validation.NewCallback(rabbitv1.ValidateFunc, webhook.Create, webhook.Update),
+	v1.SchemeGroupVersion.WithKind("Broker"):  &rabbitv1.RabbitBroker{},
+	v1.SchemeGroupVersion.WithKind("Trigger"): &v1.Trigger{},
 }
 
 func NewValidationAdmissionController(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
 	// A function that infuses the context passed to ConvertTo/ConvertFrom/SetDefaults with custom metadata.
 	ctxFunc := func(ctx context.Context) context.Context {
 		return ctx
+	}
+	callbacks := map[schema.GroupVersionKind]validation.Callback{
+		v1.SchemeGroupVersion.WithKind("Broker"):  validation.NewCallback(rabbitv1.ValidateBroker, webhook.Create, webhook.Update),
+		v1.SchemeGroupVersion.WithKind("Trigger"): validation.NewCallback(rabbitv1.ValidateTrigger(ctx), webhook.Create, webhook.Update),
 	}
 	return validation.NewAdmissionController(ctx,
 

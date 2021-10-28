@@ -110,15 +110,18 @@ func (b *RabbitBroker) Validate(ctx context.Context) *apis.FieldError {
 	return errs
 }
 
-func ValidateFunc(ctx context.Context, unstructured *unstructured.Unstructured) error {
+func ValidateBroker(ctx context.Context, unstructured *unstructured.Unstructured) error {
+	return validate(ctx, unstructured, &RabbitBroker{})
+}
+
+func validate(ctx context.Context, unstructured *unstructured.Unstructured, t apis.Validatable) error {
 	if unstructured == nil {
 		return nil
 	}
-	var b RabbitBroker
-	if err := duck.FromUnstructured(unstructured, &b); err != nil {
+	if err := duck.FromUnstructured(unstructured, t); err != nil {
 		return err
 	}
-	err := b.Validate(ctx)
+	err := t.Validate(ctx)
 	if err == nil {
 		return nil
 	}

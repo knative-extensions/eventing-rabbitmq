@@ -317,7 +317,7 @@ func TestValidateFunc(t *testing.T) {
 			if test.original != nil {
 				ctx = apis.WithinUpdate(ctx, test.original)
 			}
-			got := ValidateFunc(ctx, test.b)
+			got := ValidateBroker(ctx, test.b)
 			if test.want.Error() != "" && got == nil {
 				t.Errorf("Broker.Validate want: %q got nil", test.want.Error())
 			} else if test.want.Error() == "" && got != nil {

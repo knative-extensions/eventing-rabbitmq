@@ -79,3 +79,13 @@ rules:
     resources:
       - "leases"
     verbs: *everything
+
+    # For validating only our triggers need to lookup the broker
+  - apiGroups:
+      - "eventing.knative.dev"
+    resources:
+      - "brokers"
+    verbs:
+      - "get"
+      - "list"
+      - "watch"
