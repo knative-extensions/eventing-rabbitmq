@@ -3,7 +3,8 @@
 :toc-placement!:
 = RabbitMQ Source
 
-The RabbitMQ source translates messages on a RabbitMQ exchange to CloudEvents,
+The RabbitMQ source translates messages on a RabbitMQ exchange to CloudEvents
+based on the [RabbitMQ Protocol Binding for CloudEvents Spec](../cloudevents-protocol-spec/spec.md),
 which can then be used with Knative Eventing over HTTP. The source can bind to
 an existing RabbitMQ exchange, or create a new exchange if required.
 
