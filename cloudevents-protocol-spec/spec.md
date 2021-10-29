@@ -105,7 +105,8 @@ An extension specification that defines a secondary mapping rule for RabbitMQ, a
 
 ##### 3.1.3.1. RabbitMQ Application Property Names
 
-CloudEvent properties in _structured_ mode are mapped “as is” into the content data field as key:value pairs. 
+CloudEvent properties in _structured_ mode are mapped “as is” into the content data field
+as key:value pairs. 
 
 CloudEvent properties in _binary_ mode are prefixed with "ce-" to use in the content headers section
 
@@ -177,7 +178,7 @@ This example shows a Binary event format encoded event:
     ce-id: “12341234”
     ce-type : "com.example.someevent",
     content-type: "application/cloudevents+json; charset=UTF-8"
-    
+
     ... further attributes omitted ...
 }
 --------------- body --------------------------------------
