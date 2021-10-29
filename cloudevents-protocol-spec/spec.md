@@ -1,14 +1,4 @@
 # RabbitMQ Protocol Binding for CloudEvents - Version 1.0.2-wip
-
-# TASKS
-- [x] Gabriel to do a first pass that will bring this closer to [Kafka Protocol Binding for CloudEvents - Version 1.0.2-wip](https://github.com/cloudevents/spec/blob/master/kafka-protocol-binding.md)
-- [x] Gabriel to check links from [this Slack thread](https://vmware.slack.com/archives/C02BPEY4FU2/p1632151115084800)
-- [x] Gabriel to remove hard line-breaks
-- [x] Gerhard to review
-- [ ] Gerhard to ask the rabbitmq team to add examples for this Spec in the rabbitmq official website
-- [ ] Gabriel to open a https://github.com/cloudevents/spec PR with this document
-- [ ] Gerhard to comment on the PR and ask other RabbitMQ team members to join the discussion
-
 ## Abstract
 
 The RabbitMQ Binding for CloudEvents defines how events are mapped to [RabbitMQ messages][rabbit-msg].
