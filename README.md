@@ -1,5 +1,7 @@
 # RabbitMQ Eventing components
 
+**[These components are BETA](https://github.com/knative/community/tree/main/mechanics/MATURITY-LEVELS.md)**
+
 [![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white)](https://pkg.go.dev/knative.dev/eventing-rabbitmq)
 [![Go Report Card](https://goreportcard.com/badge/knative-sandbox/eventing-rabbitmq)](https://goreportcard.com/report/knative-sandbox/eventing-rabbitmq)
 [![Releases](https://img.shields.io/github/release-pre/knative-sandbox/eventing-rabbitmq.svg)](https://github.com/knative-sandbox/eventing-rabbitmq/releases)
