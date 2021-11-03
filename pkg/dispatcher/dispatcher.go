@@ -19,6 +19,7 @@ package dispatcher
 import (
 	"context"
 	"encoding/json"
+	"net/http"
 	"sync"
 	"time"
 
@@ -30,6 +31,7 @@ import (
 	amqperr "github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
+	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/pkg/logging"
 )
 
@@ -112,11 +114,8 @@ func isSuccess(ctx context.Context, result protocol.Result) bool {
 	if cloudevents.ResultAs(result, &retriesResult) {
 		var httpResult *cehttp.Result
 		if cloudevents.ResultAs(retriesResult.Result, &httpResult) {
-			if httpResult.StatusCode > 199 && httpResult.StatusCode < 300 {
-				return true
-			} else {
-				return false
-			}
+			retry, _ := kncloudevents.SelectiveRetry(ctx, &http.Response{StatusCode: httpResult.StatusCode}, nil)
+			return !retry
 		}
 		logging.FromContext(ctx).Warnf("Invalid result type, not HTTP Result: %v", retriesResult.Result)
 		return false
