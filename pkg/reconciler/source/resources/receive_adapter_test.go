@@ -52,6 +52,7 @@ func TestMakeReceiveAdapter(t *testing.T) {
 					Key: "password",
 				},
 			},
+			Predeclared: true,
 			ExchangeConfig: v1alpha12.RabbitmqSourceExchangeConfigSpec{
 				Name:        "logs",
 				TypeOf:      "topic",
@@ -212,6 +213,10 @@ func TestMakeReceiveAdapter(t *testing.T) {
 								{
 									Name:  "RABBITMQ_QUEUE_CONFIG_NOWAIT",
 									Value: "false",
+								},
+								{
+									Name:  "RABBITMQ_PREDECLARED",
+									Value: "true",
 								},
 								{
 									Name:  "SINK_URI",

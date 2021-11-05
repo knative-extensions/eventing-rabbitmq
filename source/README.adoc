@@ -71,6 +71,7 @@ Sources are Kubernetes objects. In addition to the standard Kubernetes
 
 | `spec.brokers` | Host+Port of the Broker, with a trailing "/"
 | `spec.vhost` | VHost where the source resources are located
+| `spec.predeclared` | Defines if adapter should try to create new queues or use predeclared one (Boolean)
 | `user.secretKeyRef` | Username for Broker authentication; field `key` in a Kubernetes Secret named `name`
 | `password.secretKeyRef` | Password for Broker authentication; field `key` in a Kubernetes Secret named `name`
 | `topic` | The topic for the exchange

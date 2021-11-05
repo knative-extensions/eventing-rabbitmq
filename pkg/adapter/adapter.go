@@ -72,6 +72,7 @@ type adapterConfig struct {
 	User           string `envconfig:"RABBITMQ_USER" required:"false"`
 	Password       string `envconfig:"RABBITMQ_PASSWORD" required:"false"`
 	Vhost          string `envconfig:"RABBITMQ_VHOST" required:"false"`
+	Predeclared    bool   `envconfig:"RABBITMQ_PREDECLARED" required:"false"`
 	ChannelConfig  ChannelConfig
 	ExchangeConfig ExchangeConfig
 	QueueConfig    QueueConfig
@@ -187,6 +188,12 @@ func (a *Adapter) start(stopCh <-chan struct{}) error {
 
 func (a *Adapter) StartAmqpClient(ch *wabbit.Channel) (*wabbit.Queue, error) {
 	logger := a.logger
+
+	if a.config.Predeclared {
+		queue, err := (*ch).QueueInspect(a.config.QueueConfig.Name)
+		return &queue, err
+	}
+
 	exchangeConfig := fillDefaultValuesForExchangeConfig(&a.config.ExchangeConfig, a.config.Topic)
 
 	err := (*ch).ExchangeDeclare(
