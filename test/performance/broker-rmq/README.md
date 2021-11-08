@@ -12,11 +12,11 @@ We install a specific version of Knative - [v1.0.0](https://github.com/knative/e
 While we expect subsequent versions to continue working the same way, in the absence of automated tests that ensure this, we stick to exact versions that we have tested manually.
 
 ```sh
-# Installing Knative Serving ...
+# Installing Knative Serving ... https://github.com/knative/serving/releases
 kubectl apply --filename https://github.com/knative/serving/releases/download/knative-v1.0.0/serving-crds.yaml
 kubectl apply --filename https://github.com/knative/serving/releases/download/knative-v1.0.0/serving-core.yaml
 
-# Installing Knative Serving Kourier networking layer ...
+# Installing Knative Serving Kourier networking layer ... https://github.com/knative/net-kourier/releases
 kubectl apply --filename https://github.com/knative/net-kourier/releases/download/knative-v1.0.0/kourier.yaml
 
 # Patching Knative Serving to use Kourier for the networking layer ...
@@ -30,24 +30,24 @@ kubectl patch configmap/config-network \
 ## 3/5. Install Knative Eventing RabbitMQ
 
 ```sh
-# Installing Knative Eventing ...
+# Installing Knative Eventing ... https://github.com/knative/eventing/releases
 kubectl apply --filename https://github.com/knative/eventing/releases/download/knative-v1.0.0/eventing-crds.yaml
 kubectl apply --filename https://github.com/knative/eventing/releases/download/knative-v1.0.0/eventing-core.yaml
 kubectl apply --filename https://github.com/knative/eventing/releases/download/knative-v1.0.0/in-memory-channel.yaml
 kubectl apply --filename https://github.com/knative/eventing/releases/download/knative-v1.0.0/mt-channel-broker.yaml
 
-# Installing RabbitMQ Operator ...
+# Installing RabbitMQ Operator ... https://github.com/rabbitmq/cluster-operator/releases
 kubectl apply --filename https://github.com/rabbitmq/cluster-operator/releases/download/v1.10.0/cluster-operator.yml
 
-# Installing cert-manager ...
+# Installing cert-manager 1.5.x ... https://github.com/jetstack/cert-manager/releases
 curl -sL https://github.com/jetstack/cert-manager/releases/download/v1.5.3/cert-manager.yaml \
 | sed 's/kube-system/cert-manager/' \
 | kubectl apply --namespace cert-manager --filename -
 
-# Installing RabbitMQ Messaging Topology Operator with cert-manager integration ...
+# Installing RabbitMQ Messaging Topology Operator with cert-manager integration ... https://github.com/rabbitmq/messaging-topology-operator/releases
 kubectl apply --filename https://github.com/rabbitmq/messaging-topology-operator/releases/download/v1.2.1/messaging-topology-operator-with-certmanager.yaml
 
-# Installing Knative Eventing RabbitMQ Broker ...
+# Installing Knative Eventing RabbitMQ Broker ... https://github.com/knative-sandbox/eventing-rabbitmq/releases
 kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/download/knative-v1.0.0/rabbitmq-broker.yaml
 ```
 
