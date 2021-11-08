@@ -209,7 +209,7 @@ This example shows a Binary event format encoded event:
 [amqp091]: https://www.rabbitmq.com/resources/specs/amqp0-9-1.pdf
 [rabbitmq-protocols]: https://www.rabbitmq.com/protocols.html
 [rabbitmq-clients]: https://www.rabbitmq.com/devtools.html
-[ce]: https://github.com/cloudevents/spec/blob/master/spec.md
+[ce]: https://github.com/cloudevents/spec/blob/v1.0.1/spec.md
 [json-format]: https://github.com/cloudevents/spec/blob/master/json-format.md
 [content-type]: https://tools.ietf.org/html/rfc7231#section-3.1.1.5
 [json-value]: https://tools.ietf.org/html/rfc7159#section-3
