@@ -7,3 +7,6 @@ site/
 .direnv/
 src/mkdocs-codeinclude-plugin
 src/pip-delete-this-directory.txt
+.idea/
+
+cover.txt

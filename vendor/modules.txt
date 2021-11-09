@@ -10,12 +10,37 @@ contrib.go.opencensus.io/exporter/prometheus
 # contrib.go.opencensus.io/exporter/zipkin v0.1.2
 ## explicit
 contrib.go.opencensus.io/exporter/zipkin
-# github.com/Microsoft/go-winio v0.4.15-0.20200113171025-3fe6c5262873
+# github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1
+## explicit; go 1.16
+github.com/Azure/go-ansiterm
+github.com/Azure/go-ansiterm/winterm
+# github.com/Microsoft/go-winio v0.5.1
 ## explicit; go 1.12
 github.com/Microsoft/go-winio
 github.com/Microsoft/go-winio/pkg/guid
-# github.com/Microsoft/hcsshim v0.8.7
+github.com/Microsoft/go-winio/pkg/security
+github.com/Microsoft/go-winio/vhd
+# github.com/Microsoft/hcsshim v0.9.0
 ## explicit; go 1.13
+github.com/Microsoft/hcsshim
+github.com/Microsoft/hcsshim/computestorage
+github.com/Microsoft/hcsshim/internal/cow
+github.com/Microsoft/hcsshim/internal/hcs
+github.com/Microsoft/hcsshim/internal/hcs/schema1
+github.com/Microsoft/hcsshim/internal/hcs/schema2
+github.com/Microsoft/hcsshim/internal/hcserror
+github.com/Microsoft/hcsshim/internal/hns
+github.com/Microsoft/hcsshim/internal/interop
+github.com/Microsoft/hcsshim/internal/log
+github.com/Microsoft/hcsshim/internal/logfields
+github.com/Microsoft/hcsshim/internal/longpath
+github.com/Microsoft/hcsshim/internal/mergemaps
+github.com/Microsoft/hcsshim/internal/oc
+github.com/Microsoft/hcsshim/internal/safefile
+github.com/Microsoft/hcsshim/internal/timeout
+github.com/Microsoft/hcsshim/internal/vmcompute
+github.com/Microsoft/hcsshim/internal/wclayer
+github.com/Microsoft/hcsshim/internal/winapi
 github.com/Microsoft/hcsshim/osversion
 # github.com/NeowayLabs/wabbit v0.0.0-20210927194032-73ad61d1620e
 ## explicit
@@ -79,15 +104,23 @@ github.com/cloudevents/sdk-go/v2/protocol
 github.com/cloudevents/sdk-go/v2/protocol/http
 github.com/cloudevents/sdk-go/v2/test
 github.com/cloudevents/sdk-go/v2/types
-# github.com/containerd/continuity v0.0.0-20200228182428-0f16d7a0959c
-## explicit; go 1.11
+# github.com/containerd/cgroups v1.0.2
+## explicit; go 1.16
+github.com/containerd/cgroups/stats/v1
+# github.com/containerd/containerd v1.5.7
+## explicit; go 1.16
+github.com/containerd/containerd/errdefs
+github.com/containerd/containerd/log
+github.com/containerd/containerd/pkg/userns
+github.com/containerd/containerd/platforms
+github.com/containerd/containerd/sys
+# github.com/containerd/continuity v0.1.0
+## explicit; go 1.13
 github.com/containerd/continuity
 github.com/containerd/continuity/devices
 github.com/containerd/continuity/driver
-github.com/containerd/continuity/fs
 github.com/containerd/continuity/pathdriver
 github.com/containerd/continuity/proto
-github.com/containerd/continuity/syscallx
 github.com/containerd/continuity/sysx
 # github.com/davecgh/go-spew v1.1.1
 ## explicit
@@ -97,7 +130,7 @@ github.com/davecgh/go-spew/spew
 github.com/docker/distribution/digestset
 github.com/docker/distribution/reference
 github.com/docker/distribution/registry/api/errcode
-# github.com/docker/docker v1.13.1 => github.com/docker/engine v0.0.0-20190717161051-705d9623b7c1
+# github.com/docker/docker v20.10.10+incompatible
 ## explicit
 github.com/docker/docker/api
 github.com/docker/docker/api/types
@@ -121,8 +154,8 @@ github.com/docker/docker/pkg/archive
 github.com/docker/docker/pkg/fileutils
 github.com/docker/docker/pkg/idtools
 github.com/docker/docker/pkg/ioutils
+github.com/docker/docker/pkg/jsonmessage
 github.com/docker/docker/pkg/longpath
-github.com/docker/docker/pkg/mount
 github.com/docker/docker/pkg/pools
 github.com/docker/docker/pkg/system
 # github.com/docker/go-connections v0.4.0
@@ -170,14 +203,14 @@ github.com/go-openapi/spec
 # github.com/go-openapi/swag v0.19.15
 ## explicit; go 1.11
 github.com/go-openapi/swag
-# github.com/go-redis/redis v6.15.9+incompatible
-## explicit
 # github.com/gobuffalo/flect v0.2.4
 ## explicit; go 1.13
 github.com/gobuffalo/flect
 # github.com/gogo/protobuf v1.3.2
 ## explicit; go 1.15
+github.com/gogo/protobuf/gogoproto
 github.com/gogo/protobuf/proto
+github.com/gogo/protobuf/protoc-gen-gogo/descriptor
 github.com/gogo/protobuf/sortkeys
 # github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 ## explicit
@@ -283,22 +316,34 @@ github.com/matttproud/golang_protobuf_extensions/pbutil
 # github.com/michaelklishin/rabbit-hole/v2 v2.10.0
 ## explicit; go 1.15
 github.com/michaelklishin/rabbit-hole/v2
+# github.com/moby/sys/mount v0.3.0
+## explicit; go 1.16
+github.com/moby/sys/mount
+# github.com/moby/sys/mountinfo v0.5.0
+## explicit; go 1.16
+github.com/moby/sys/mountinfo
+# github.com/moby/term v0.0.0-20210619224110-3f7ff695adc6
+## explicit; go 1.13
+github.com/moby/term
+github.com/moby/term/windows
 # github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
 ## explicit
 github.com/modern-go/concurrent
 # github.com/modern-go/reflect2 v1.0.1
 ## explicit
 github.com/modern-go/reflect2
-# github.com/opencontainers/go-digest v1.0.0-rc1
+# github.com/morikuni/aec v1.0.0
 ## explicit
+github.com/morikuni/aec
+# github.com/opencontainers/go-digest v1.0.0
+## explicit; go 1.13
 github.com/opencontainers/go-digest
 # github.com/opencontainers/image-spec v1.0.1
 ## explicit
 github.com/opencontainers/image-spec/specs-go
 github.com/opencontainers/image-spec/specs-go/v1
-# github.com/opencontainers/runc v0.1.1
-## explicit
-github.com/opencontainers/runc/libcontainer/system
+# github.com/opencontainers/runc v1.0.2
+## explicit; go 1.13
 github.com/opencontainers/runc/libcontainer/user
 # github.com/openzipkin/zipkin-go v0.3.0
 ## explicit; go 1.14
@@ -385,7 +430,7 @@ github.com/spf13/pflag
 ## explicit; go 1.13
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
-# github.com/testcontainers/testcontainers-go v0.7.0
+# github.com/testcontainers/testcontainers-go v0.11.1
 ## explicit; go 1.13
 github.com/testcontainers/testcontainers-go
 github.com/testcontainers/testcontainers-go/wait
@@ -530,7 +575,7 @@ google.golang.org/appengine/internal/modules
 google.golang.org/appengine/internal/remote_api
 google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/urlfetch
-# google.golang.org/genproto v0.0.0-20211021150943-2b146023228c
+# google.golang.org/genproto v0.0.0-20211104193956-4c6863e31247
 ## explicit; go 1.11
 google.golang.org/genproto/googleapis/api/httpbody
 google.golang.org/genproto/googleapis/rpc/status
@@ -1357,4 +1402,3 @@ sigs.k8s.io/structured-merge-diff/v4/value
 # sigs.k8s.io/yaml v1.3.0
 ## explicit; go 1.12
 sigs.k8s.io/yaml
-# github.com/docker/docker => github.com/docker/engine v0.0.0-20190717161051-705d9623b7c1

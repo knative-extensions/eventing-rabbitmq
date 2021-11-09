@@ -5,12 +5,11 @@ go 1.17
 require (
 	github.com/NeowayLabs/wabbit v0.0.0-20210927194032-73ad61d1620e
 	github.com/cloudevents/sdk-go/v2 v2.4.1
-	github.com/containerd/continuity v0.0.0-20200228182428-0f16d7a0959c
-	github.com/docker/docker v1.13.1 // indirect
+	github.com/containerd/continuity v0.1.0
+	github.com/docker/docker v20.10.10+incompatible // indirect
 	github.com/docker/go-connections v0.4.0
 	github.com/fsouza/go-dockerclient v1.6.5 // indirect
 	github.com/go-openapi/spec v0.19.7 // indirect
-	github.com/go-redis/redis v6.15.9+incompatible // indirect
 	github.com/google/go-cmp v0.5.6
 	github.com/google/licenseclassifier v0.0.0-20200708223521-3d09a0ea2f39
 	github.com/influxdata/tdigest v0.0.1 // indirect
@@ -20,7 +19,7 @@ require (
 	github.com/rabbitmq/amqp091-go v1.1.0
 	github.com/rabbitmq/cluster-operator v1.8.2
 	github.com/rabbitmq/messaging-topology-operator v0.11.0
-	github.com/testcontainers/testcontainers-go v0.7.0
+	github.com/testcontainers/testcontainers-go v0.11.1
 	github.com/tiago4orion/conjure v0.0.0-20150908101743-93cb30b9d218 // indirect
 	go.uber.org/zap v1.19.1
 	gotest.tools v2.2.0+incompatible
@@ -42,8 +41,9 @@ require (
 	contrib.go.opencensus.io/exporter/ocagent v0.7.1-0.20200907061046-05415f1de66d // indirect
 	contrib.go.opencensus.io/exporter/prometheus v0.4.0 // indirect
 	contrib.go.opencensus.io/exporter/zipkin v0.1.2 // indirect
-	github.com/Microsoft/go-winio v0.4.15-0.20200113171025-3fe6c5262873 // indirect
-	github.com/Microsoft/hcsshim v0.8.7 // indirect
+	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
+	github.com/Microsoft/go-winio v0.5.1 // indirect
+	github.com/Microsoft/hcsshim v0.9.0 // indirect
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -54,6 +54,8 @@ require (
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
 	github.com/cloudevents/conformance v0.2.0 // indirect
 	github.com/cloudevents/sdk-go/observability/opencensus/v2 v2.4.1 // indirect
+	github.com/containerd/cgroups v1.0.2 // indirect
+	github.com/containerd/containerd v1.5.7 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/go-units v0.4.0 // indirect
@@ -87,11 +89,15 @@ require (
 	github.com/json-iterator/go v1.1.11 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
+	github.com/moby/sys/mount v0.3.0 // indirect
+	github.com/moby/sys/mountinfo v0.5.0 // indirect
+	github.com/moby/term v0.0.0-20210619224110-3f7ff695adc6 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
-	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
+	github.com/morikuni/aec v1.0.0 // indirect
+	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.1 // indirect
-	github.com/opencontainers/runc v0.1.1 // indirect
+	github.com/opencontainers/runc v1.0.2 // indirect
 	github.com/openzipkin/zipkin-go v0.3.0 // indirect
 	github.com/pborman/uuid v1.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
@@ -127,7 +133,7 @@ require (
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	google.golang.org/api v0.60.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20211021150943-2b146023228c // indirect
+	google.golang.org/genproto v0.0.0-20211104193956-4c6863e31247 // indirect
 	google.golang.org/grpc v1.42.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
@@ -141,5 +147,3 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.1.2 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
-
-replace github.com/docker/docker => github.com/docker/engine v0.0.0-20190717161051-705d9623b7c1
