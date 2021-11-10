@@ -117,6 +117,10 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 			Value: strconv.FormatBool(args.Source.Spec.QueueConfig.NoWait),
 		},
 		{
+			Name:  "RABBITMQ_PREDECLARED",
+			Value: strconv.FormatBool(args.Source.Spec.Predeclared),
+		},
+		{
 			Name:  "SINK_URI",
 			Value: args.SinkURI,
 		},

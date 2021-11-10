@@ -119,6 +119,11 @@ type RabbitmqSourceSpec struct {
 	// Password for rabbitmq connection
 	// +optional
 	Password SecretValueFromSource `json:"password,omitempty"`
+	// Predeclared defines if channels and queues are already predeclared and shouldn't be recreated.
+	// This should be used in case the user does not have permission to declare new queues and channels in
+	// RabbitMQ cluster
+	// +optional
+	Predeclared bool `json:"predeclared,omitempty"`
 	// ChannelConfig config for rabbitmq exchange
 	// +optional
 	ChannelConfig RabbitmqChannelConfigSpec `json:"channel_config,omitempty"`

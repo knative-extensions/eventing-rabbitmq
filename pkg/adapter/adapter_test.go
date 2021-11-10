@@ -19,6 +19,7 @@ package rabbitmq
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -372,6 +373,67 @@ func TestAdapter_StartAmqpClient_InvalidExchangeType(t *testing.T) {
 	_, err = a.StartAmqpClient(&channel)
 	if err != nil {
 		t.Logf("Failed to start RabbitMQ")
+	}
+	fakeServer.Stop()
+}
+
+func TestAdapter_StartAmqpClient_PredeclaredQueue(t *testing.T) {
+	/**
+	Test for predeclared queue
+	*/
+	testQueue := "testqueue"
+	fakeServer := server.NewServer("amqp://localhost:5674/%2f")
+	err := fakeServer.Start()
+	if err != nil {
+		t.Errorf("%s: %s", "Failed to connect to RabbitMQ", err)
+	}
+
+	conn, err := amqptest.Dial("amqp://localhost:5674/%2f")
+	if err != nil {
+		t.Errorf("%s: %s", "Failed to connect to RabbitMQ", err)
+	}
+
+	statsReporter, _ := source.NewStatsReporter()
+
+	channel, err := conn.Channel()
+	if err != nil {
+		t.Errorf("Failed to open a channel: %s", err)
+	}
+
+	a := &Adapter{
+		config: &adapterConfig{
+			Topic:       "",
+			Brokers:     "amqp://localhost:5674/%2f",
+			Predeclared: true,
+			QueueConfig: QueueConfig{
+				Name:             testQueue,
+				Durable:          false,
+				DeleteWhenUnused: false,
+				Exclusive:        true,
+				NoWait:           false,
+			},
+		},
+		logger:   zap.NewNop(),
+		reporter: statsReporter,
+	}
+
+	_, err = a.StartAmqpClient(&channel)
+	if err.Error() != fmt.Sprintf("no queue named %s", testQueue) {
+		t.Errorf("Was expecting an error due to invalid queue name, got error: %s", err)
+	}
+
+	_, err = channel.QueueDeclare(testQueue, wabbit.Option{})
+	if err != nil {
+		t.Errorf("Failed to declare new Queue: %s", err)
+	}
+	queue, err := a.StartAmqpClient(&channel)
+	if err != nil {
+		t.Errorf("An error has occurred and it shouldn't: %s", err)
+	}
+
+	_, err = a.ConsumeMessages(&channel, queue, logging.FromContext(context.TODO()).Desugar())
+	if err != nil {
+		t.Errorf("Failed to consume from RabbitMQ: %s", err)
 	}
 	fakeServer.Stop()
 }
