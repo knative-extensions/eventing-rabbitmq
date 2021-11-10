@@ -57,7 +57,7 @@ func NewMessageFromDelivery(msg wabbit.Delivery) *Message {
 	var contentType string
 	headers := make(map[string][]byte, len(msg.Headers()))
 	for key, val := range msg.Headers() {
-		k := strings.ToLower(string(key))
+		k := strings.ToLower(key)
 		if k == contentTypeHeader {
 			contentType = val.(string)
 		}
@@ -123,6 +123,7 @@ func (m *Message) ReadBinary(ctx context.Context, encoder binding.BinaryWriter) 
 		} else if k == contentTypeHeader {
 			err = encoder.SetAttribute(m.version.AttributeFromKind(spec.DataContentType), string(v))
 		}
+
 		if err != nil {
 			return
 		}
@@ -139,6 +140,7 @@ func (m *Message) ReadStructured(ctx context.Context, encoder binding.Structured
 	if m.format != nil {
 		return encoder.SetStructuredEvent(ctx, m.format, bytes.NewReader(m.Value))
 	}
+
 	return binding.ErrNotStructured
 }
 
@@ -147,6 +149,7 @@ func (m *Message) GetAttribute(k spec.Kind) (spec.Attribute, interface{}) {
 	if attr != nil {
 		return attr, string(m.Headers[attr.PrefixedName()])
 	}
+
 	return nil, nil
 }
 

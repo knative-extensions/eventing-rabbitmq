@@ -51,7 +51,7 @@ func VHostSourceTest() *feature.Feature {
 		Must("the recorder received all sent events within the time",
 			func(ctx context.Context, t feature.T) {
 				// TODO: Use constraint matching instead of just counting number of events.
-				eventshub.StoreFromContext(ctx, "recorder").AssertAtLeast(t, 5)
+				eventshub.StoreFromContext(ctx, "recorder").AssertAtLeast(t, 10)
 			})
 
 	return f

@@ -341,12 +341,12 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 
 	res, err := a.httpMessageSender.Send(req)
 	if err != nil {
-		a.logger.Debug("Error while sending the message", zap.Error(err))
+		a.logger.Error("Error while sending the message", zap.Error(err))
 		return err
 	}
 
 	if res.StatusCode/100 != 2 {
-		a.logger.Debug("Unexpected status code", zap.Int("status code", res.StatusCode))
+		a.logger.Error("Unexpected status code", zap.Int("status code", res.StatusCode))
 		return fmt.Errorf("%d %s", res.StatusCode, nethttp.StatusText(res.StatusCode))
 	}
 

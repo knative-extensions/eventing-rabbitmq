@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -30,7 +31,6 @@ import (
 	"github.com/NeowayLabs/wabbit/amqp"
 	"github.com/NeowayLabs/wabbit/amqptest"
 	"github.com/NeowayLabs/wabbit/amqptest/server"
-	cloudevents "github.com/cloudevents/sdk-go/v2"
 	origamqp "github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"
 
@@ -42,12 +42,13 @@ import (
 
 func TestPostMessage_ServeHTTP(t *testing.T) {
 	testCases := map[string]struct {
-		sink              func(http.ResponseWriter, *http.Request)
-		reqBody           string
-		attributes        map[string]string
-		expectedEventType string
-		withMsgId         bool
-		error             bool
+		sink                       func(http.ResponseWriter, *http.Request)
+		reqBody, expectedEventType string
+		reqHeaders                 http.Header
+		data                       map[string]interface{}
+		headers                    wabbit.Option
+		attributes                 map[string]string
+		withMsgId, isCe, error     bool
 	}{
 		"accepted": {
 			sink:    sinkAccepted,
@@ -58,6 +59,44 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 			sink:      sinkAccepted,
 			reqBody:   `{"key":"value"}`,
 			withMsgId: true,
+			data:      map[string]interface{}{"key": "value"},
+		},
+		"accepted with binary cloudevent": {
+			sink:      sinkAccepted,
+			reqBody:   `{"test":"test"}`,
+			withMsgId: true,
+			reqHeaders: http.Header{
+				"Ce-Specversion": []string{"1.0"},
+				"Ce-Source":      []string{"example/source.uri"},
+				"Ce-Testheader":  []string{"testHeader"},
+			},
+			data: map[string]interface{}{
+				"test": "test",
+			},
+			headers: wabbit.Option{
+				"ce-specversion": "1.0",
+				"ce-source":      "example/source.uri",
+				"ce-testheader":  "testHeader",
+				"ignore":         "ignore",
+			},
+			isCe: true,
+		},
+		"accepted with structured cloudevent": {
+			sink: sinkAccepted,
+			reqBody: `{"specversion":"1.0","id":1234,` +
+				`"type":"dev.knative.rabbitmq.event","source":"example/source.uri",` +
+				`"content-type":"text/plain","data":"test"}`,
+			withMsgId: true,
+			headers:   wabbit.Option{"content-type": "application/cloudevents+json"},
+			data: map[string]interface{}{
+				"specversion":  "1.0",
+				"id":           1234,
+				"type":         "dev.knative.rabbitmq.event",
+				"source":       "example/source.uri",
+				"content-type": "text/plain",
+				"data":         "test",
+			},
+			isCe: true,
 		},
 		"rejected": {
 			sink:    sinkRejected,
@@ -128,8 +167,32 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 				t.Errorf("expected error, but got %v", err)
 			}
 
-			if tc.reqBody != string(h.body) {
-				t.Errorf("Expected request body '%q', but got '%q' %s", tc.reqBody, h.body, err)
+			var wantBody, gotBody map[string]interface{}
+			err = json.Unmarshal([]byte(tc.reqBody), &wantBody)
+			if err != nil {
+				t.Errorf("Error unmarshaling wanted request body %s %s", tc.reqBody, err)
+			}
+
+			err = json.Unmarshal([]byte(tc.reqBody), &gotBody)
+			if err != nil {
+				t.Errorf("Error unmarshaling got request body %s %s", h.body, err)
+			}
+
+			if len(wantBody) > 0 && len(wantBody) != len(gotBody) && !reflect.DeepEqual(wantBody, gotBody) {
+				t.Errorf("Expected request body '%s', but got '%s' %s", tc.reqBody, h.body, err)
+			}
+
+			if tc.isCe {
+				ceHeaders := http.Header{}
+				for key, value := range h.header {
+					if strings.HasPrefix(key, "Ce-") {
+						ceHeaders[key] = value
+					}
+				}
+
+				if len(ceHeaders) > 0 && len(ceHeaders) != len(tc.reqHeaders) && !reflect.DeepEqual(ceHeaders, tc.reqHeaders) {
+					t.Errorf("Expected request headers '%s', but got '%s' %s", tc.reqHeaders, ceHeaders, err)
+				}
 			}
 		})
 	}
@@ -640,242 +703,5 @@ func TestAdapter_NewAdapter(t *testing.T) {
 
 	if a == cmpA {
 		t.Errorf("Error in NewnvConfig return Type")
-	}
-}
-
-func TestAdapter_MsgIsBinary(t *testing.T) {
-	for _, tt := range []struct {
-		name       string
-		msgHeaders wabbit.Option
-		want       bool
-	}{{
-		name:       "msg with empty headers",
-		msgHeaders: wabbit.Option{},
-		want:       false,
-	}, {
-		name:       "msg is not binary",
-		msgHeaders: wabbit.Option{"content-type": "test"},
-		want:       false,
-	}, {
-		name:       "msg is binary",
-		msgHeaders: wabbit.Option{"ce-specversion": "1.0"},
-		want:       true,
-	}, {
-		name:       "msg is binary, titlecase",
-		msgHeaders: wabbit.Option{"Ce-Specversion": "1.0"},
-		want:       true,
-	}} {
-		t.Run(tt.name, func(t *testing.T) {
-			tt := tt
-			t.Parallel()
-			got := isBinary(tt.msgHeaders)
-			if got != tt.want {
-				t.Errorf("Unexpected msg encoding for %s want:\n%v\ngot:\n%v", tt.msgHeaders, tt.want, got)
-			}
-		})
-	}
-}
-
-func TestAdapter_MsgIsStructured(t *testing.T) {
-	for _, tt := range []struct {
-		name    string
-		msgBody map[string]interface{}
-		want    bool
-	}{{
-		name:    "msg with empty body",
-		msgBody: map[string]interface{}{},
-		want:    false,
-	}, {
-		name:    "msg is not structured",
-		msgBody: map[string]interface{}{"data": "test"},
-		want:    false,
-	}, {
-		name:    "msg is structured",
-		msgBody: map[string]interface{}{"specversion": "1.0"},
-		want:    true,
-	}, {
-		name:    "msg is structured, titlecase",
-		msgBody: map[string]interface{}{"Specversion": "1.0"},
-		want:    true,
-	}} {
-		t.Run(tt.name, func(t *testing.T) {
-			tt := tt
-			t.Parallel()
-			got := isStructured(tt.msgBody)
-			if got != tt.want {
-				t.Errorf("Unexpected msg encoding for %s want:\n%v\ngot:\n%v", tt.msgBody, tt.want, got)
-			}
-		})
-	}
-}
-
-func TestAdapter_MsgSetEventAttributes(t *testing.T) {
-	// Specversion is mandatory in ce v1.0
-	for _, tt := range []struct {
-		name    string
-		key     string
-		ceKey   string
-		val     interface{}
-		want    string
-		wantErr bool
-	}{{
-		name:  "empty string val",
-		key:   "test",
-		ceKey: "ce-test",
-		val:   "",
-		want:  `{"specversion": "1.0", "test": ""}`,
-	}, {
-		name:    "nil val err",
-		key:     "test",
-		ceKey:   "ce-test",
-		val:     nil,
-		want:    `{"specversion": "1.0"}`,
-		wantErr: true,
-	}, {
-		name:    "wrong cloudevents key with '-'",
-		key:     "wrong-key",
-		ceKey:   "ce-wrong-key",
-		val:     "test",
-		want:    `{"specversion": "1.0"}`,
-		wantErr: true,
-	}, {
-		name:  "set extension attribute",
-		key:   "test",
-		ceKey: "ce-test",
-		val:   "test",
-		want:  `{"specversion": "1.0", "test": "test"}`,
-	}, {
-		name:  "set cloudEvents attribute",
-		key:   "source",
-		ceKey: "ce-source",
-		val:   "example/source.uri",
-		want:  `{"specversion": "1.0", "source": "example/source.uri"}`,
-	}, {
-		name:  "floating numbers aproximation conversion to string",
-		key:   "floatVal",
-		ceKey: "ce-floatVal",
-		val:   0.34,
-		want:  `{"specversion": "1.0", "floatVal": 0}`,
-	}} {
-		t.Run(tt.name, func(t *testing.T) {
-			tt := tt
-			t.Parallel()
-
-			wantEvent := cloudevents.NewEvent()
-			err := json.Unmarshal([]byte(tt.want), &wantEvent)
-			if err != nil {
-				t.Error(err)
-			}
-
-			gotEvent := cloudevents.NewEvent()
-			err = setEventAttributes(&gotEvent, tt.key, tt.ceKey, tt.val)
-			if err != nil && !tt.wantErr {
-				t.Errorf("Unexpected error for:\nkey: %s, ceKey:%s, val: %s\nerr: %s", tt.key, tt.ceKey, tt.val, err)
-			}
-
-			if !tt.wantErr && gotEvent.String() != wantEvent.String() {
-				t.Errorf("Unexpected event translation want:\n%v\ngot:\n%v", wantEvent, gotEvent)
-			}
-		})
-	}
-}
-
-func TestAdapter_SetBinaryMessageProperties(t *testing.T) {
-	for _, tt := range []struct {
-		name       string
-		msgHeaders wabbit.Option
-		want       string
-		wantErr    bool
-	}{{
-		name:       "msg with empty headers",
-		msgHeaders: wabbit.Option{},
-		want:       `{"specversion": "1.0"}`,
-	}, {
-		name:       "malformed cloudevents key",
-		msgHeaders: wabbit.Option{"ce-wrong-key": "test"},
-		want:       `{"specversion": "1.0"}`,
-		wantErr:    true,
-	}, {
-		name:       "msg with one extension with floating value translated to lower key",
-		msgHeaders: wabbit.Option{"Ce-Test": 0.3},
-		want:       `{"specversion": "1.0", "test": "0"}`,
-	}, {
-		name:       "msg with one cloudevent attribute",
-		msgHeaders: wabbit.Option{"ce-source": "example/source.uri"},
-		want:       `{"specversion": "1.0", "source": "example/source.uri"}`,
-	}, {
-		name:       "msg ignore not ce- prefixed headers",
-		msgHeaders: wabbit.Option{"test": "test"},
-		want:       `{"specversion": "1.0"}`,
-	}, {
-		name:       "multi case event translation",
-		msgHeaders: wabbit.Option{"test": "test", "ce-source": "example/source.uri", "ce-test": 0.6},
-		want:       `{"specversion": "1.0", "source": "example/source.uri", "test": "0"}`,
-	}} {
-		t.Run(tt.name, func(t *testing.T) {
-			tt := tt
-			t.Parallel()
-
-			wantEvent := cloudevents.NewEvent()
-			err := json.Unmarshal([]byte(tt.want), &wantEvent)
-			if err != nil {
-				t.Error(err)
-			}
-
-			gotEvent := cloudevents.NewEvent()
-			err = setBinaryMessageProperties(&gotEvent, tt.msgHeaders)
-			if err != nil && !tt.wantErr {
-				t.Errorf("Unexpected error for:\nheaders: %s", tt.msgHeaders)
-			}
-
-			if gotEvent.String() != wantEvent.String() {
-				t.Errorf("Unexpected binary event properties set:\n%v\ngot:\n%v", wantEvent, gotEvent)
-			}
-		})
-	}
-}
-
-func TestAdapter_SetStructuredMessageProperties(t *testing.T) {
-	for _, tt := range []struct {
-		name    string
-		msgBody map[string]interface{}
-		want    string
-	}{{
-		name:    "msg with empty headers",
-		msgBody: map[string]interface{}{},
-		want:    `{"specversion": "1.0"}`,
-	}, {
-		name:    "msg with one extension with floating value",
-		msgBody: map[string]interface{}{"test": 0.3},
-		want:    `{"specversion": "1.0", "test": "0"}`,
-	}, {
-		name:    "msg transalate to lower key valid ce keys",
-		msgBody: map[string]interface{}{"Source": "example/source.uri"},
-		want:    `{"specversion": "1.0", "source": "example/source.uri"}`,
-	}, {
-		name:    "multi case event translation",
-		msgBody: map[string]interface{}{"source": "example/source.uri", "test": 0.6},
-		want:    `{"specversion": "1.0", "source": "example/source.uri", "test": "0"}`,
-	}} {
-		t.Run(tt.name, func(t *testing.T) {
-			tt := tt
-			t.Parallel()
-
-			wantEvent := cloudevents.NewEvent()
-			err := json.Unmarshal([]byte(tt.want), &wantEvent)
-			if err != nil {
-				t.Error(err)
-			}
-
-			gotEvent := cloudevents.NewEvent()
-			err = setStructuredMessageProperties(&gotEvent, tt.msgBody)
-			if err != nil {
-				t.Errorf("Unexpected error for:\nheaders: %s", tt.msgBody)
-			}
-
-			if gotEvent.String() != wantEvent.String() {
-				t.Errorf("Unexpected binary event properties set:\n%v\ngot:\n%v", wantEvent, gotEvent)
-			}
-		})
 	}
 }
