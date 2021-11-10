@@ -19,13 +19,10 @@ This document is a working draft.
 
 2. [Use of CloudEvents Attributes](#2-use-of-cloudevents-attributes)
 
-- 2.1. [data](#21-data)
+3. [RabbitMQ Message Mapping](#3-rabbitmq-message-mapping)
 
-3. [RabbitMQ Message Mapping](#rabbitmq-message-mapping)
-
-- 3.1. [Key Mapping](#31-key-mapping)
-- 3.2. [Binary Content Mode](#32-binary-content-mode)
-- 3.3. [Structured Content Mode](#33-structured-content-mode)
+- 3.1. [Binary Content Mode](#31-binary-content-mode)
+- 3.2. [Structured Content Mode](#32-structured-content-mode)
 
 4. [References](#4-references)
 
