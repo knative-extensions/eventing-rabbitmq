@@ -26,11 +26,15 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
+	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/ptr"
 )
 
-const namespace = "foobar"
-const triggerName = "my-trigger"
+const (
+	namespace   = "foobar"
+	triggerName = "my-trigger"
+)
 
 func TestNewQueue(t *testing.T) {
 	owner := metav1.OwnerReference{
@@ -38,6 +42,20 @@ func TestNewQueue(t *testing.T) {
 		APIVersion: "eventing.knative.dev/v1",
 		Name:       brokerName,
 		UID:        brokerUID,
+	}
+
+	broker := &eventingv1.Broker{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      brokerName,
+			Namespace: namespace,
+			UID:       brokerUID,
+		},
+		Spec: eventingv1.BrokerSpec{
+			Config: &duckv1.KReference{
+				Name:      rabbitmqcluster,
+				Namespace: namespace,
+			},
+		},
 	}
 
 	for _, tt := range []struct {
@@ -49,11 +67,11 @@ func TestNewQueue(t *testing.T) {
 		{
 			name: "creates a queue",
 			args: &resources.QueueArgs{
-				Name:        triggerName,
-				Namespace:   namespace,
-				Owner:       owner,
-				Labels:      map[string]string{"cool": "label"},
-				ClusterName: "rmq-cluster",
+				Name:      triggerName,
+				Namespace: namespace,
+				Broker:    broker,
+				Owner:     owner,
+				Labels:    map[string]string{"cool": "label"},
 			},
 			want: &rabbitv1beta1.Queue{
 				ObjectMeta: metav1.ObjectMeta{
@@ -67,7 +85,7 @@ func TestNewQueue(t *testing.T) {
 					Durable:    true,
 					AutoDelete: false,
 					RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
-						Name: "rmq-cluster",
+						Name: rabbitmqcluster,
 					},
 				},
 			},
@@ -75,12 +93,12 @@ func TestNewQueue(t *testing.T) {
 		{
 			name: "adds a dead letter exchange if that is set",
 			args: &resources.QueueArgs{
-				Name:        triggerName,
-				Namespace:   namespace,
-				Owner:       owner,
-				Labels:      map[string]string{"cool": "label"},
-				ClusterName: "rmq-cluster",
-				DLXName:     ptr.String("dlx"),
+				Name:      triggerName,
+				Namespace: namespace,
+				Broker:    broker,
+				Owner:     owner,
+				Labels:    map[string]string{"cool": "label"},
+				DLXName:   ptr.String("dlx"),
 			},
 			want: &rabbitv1beta1.Queue{
 				ObjectMeta: metav1.ObjectMeta{
@@ -94,7 +112,7 @@ func TestNewQueue(t *testing.T) {
 					Durable:    true,
 					AutoDelete: false,
 					RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
-						Name: "rmq-cluster",
+						Name: rabbitmqcluster,
 					},
 					Arguments: &runtime.RawExtension{Raw: []byte(`{"x-dead-letter-exchange":"dlx"}`)},
 				},

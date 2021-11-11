@@ -23,20 +23,17 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
-	"knative.dev/eventing/pkg/apis/eventing"
 
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 )
 
-const TriggerLabelKey = "eventing.knative.dev/trigger"
-
 type QueueArgs struct {
-	Name        string
-	Namespace   string
-	Owner       metav1.OwnerReference
-	Labels      map[string]string
-	ClusterName string
-	DLXName     *string
+	Name      string
+	Namespace string
+	Broker    *eventingv1.Broker
+	Owner     metav1.OwnerReference
+	Labels    map[string]string
+	DLXName   *string
 }
 
 func NewQueue(ctx context.Context, args *QueueArgs) *rabbitv1beta1.Queue {
@@ -55,8 +52,10 @@ func NewQueue(ctx context.Context, args *QueueArgs) *rabbitv1beta1.Queue {
 			AutoDelete: false,
 			// TODO: We had before also internal / nowait set to false. Are these in Arguments,
 			// or do they get sane defaults that we can just work with?
-			// TODO: This one has to exist in the same namespace as this exchange.
-			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{Name: args.ClusterName},
+			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
+				Name:      args.Broker.Spec.Config.Name,
+				Namespace: args.Broker.Spec.Config.Namespace,
+			},
 		},
 	}
 	if args.DLXName != nil {
@@ -70,14 +69,14 @@ func NewQueue(ctx context.Context, args *QueueArgs) *rabbitv1beta1.Queue {
 // QueueLabels generates the labels present on the Queue linking the Broker / Trigger to the
 // Queue.
 func QueueLabels(b *eventingv1.Broker, t *eventingv1.Trigger) map[string]string {
-	if t == nil {
+	if t != nil {
 		return map[string]string{
-			eventing.BrokerLabelKey: b.Name,
+			"eventing.knative.dev/broker":  b.Name,
+			"eventing.knative.dev/trigger": t.Name,
 		}
 	} else {
 		return map[string]string{
-			eventing.BrokerLabelKey: b.Name,
-			TriggerLabelKey:         t.Name,
+			"eventing.knative.dev/broker": b.Name,
 		}
 	}
 }

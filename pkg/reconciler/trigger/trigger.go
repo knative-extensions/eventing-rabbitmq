@@ -164,11 +164,11 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 			}
 
 			dlq, err := r.rabbit.ReconcileQueue(ctx, &triggerresources.QueueArgs{
-				Name:        naming.CreateTriggerDeadLetterQueueName(t),
-				Namespace:   t.Namespace,
-				Owner:       *kmeta.NewControllerRef(t),
-				Labels:      triggerresources.QueueLabels(broker, t),
-				ClusterName: broker.Spec.Config.Name,
+				Name:      naming.CreateTriggerDeadLetterQueueName(t),
+				Namespace: t.Namespace,
+				Broker:    broker,
+				Owner:     *kmeta.NewControllerRef(t),
+				Labels:    triggerresources.QueueLabels(broker, t),
 			})
 			if err != nil {
 				logging.FromContext(ctx).Error("Problem reconciling Trigger Queue", zap.Error(err))
@@ -221,12 +221,12 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 			dlxName = ptr.String(naming.BrokerExchangeName(broker, true))
 		}
 		queue, err := r.rabbit.ReconcileQueue(ctx, &triggerresources.QueueArgs{
-			Name:        naming.CreateTriggerQueueName(t),
-			Namespace:   t.Namespace,
-			Owner:       *kmeta.NewControllerRef(t),
-			Labels:      triggerresources.QueueLabels(broker, t),
-			ClusterName: broker.Spec.Config.Name,
-			DLXName:     dlxName,
+			Name:      naming.CreateTriggerQueueName(t),
+			Namespace: t.Namespace,
+			Broker:    broker,
+			Owner:     *kmeta.NewControllerRef(t),
+			Labels:    triggerresources.QueueLabels(broker, t),
+			DLXName:   dlxName,
 		})
 		if err != nil {
 			logging.FromContext(ctx).Error("Problem reconciling Trigger Queue", zap.Error(err))

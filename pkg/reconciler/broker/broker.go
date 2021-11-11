@@ -296,11 +296,11 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 
 	if b.Spec.Delivery != nil && b.Spec.Delivery.DeadLetterSink != nil {
 		queue, err := r.rabbit.ReconcileQueue(ctx, &triggerresources.QueueArgs{
-			Name:        naming.CreateBrokerDeadLetterQueueName(b),
-			Namespace:   b.Namespace,
-			Owner:       *kmeta.NewControllerRef(b),
-			Labels:      triggerresources.QueueLabels(b, nil),
-			ClusterName: b.Spec.Config.Name,
+			Name:      naming.CreateBrokerDeadLetterQueueName(b),
+			Namespace: b.Namespace,
+			Broker:    b,
+			Owner:     *kmeta.NewControllerRef(b),
+			Labels:    triggerresources.QueueLabels(b, nil),
 		})
 		if err != nil {
 			MarkDLXFailed(&b.Status, "QueueFailure", fmt.Sprintf("Failed to reconcile Dead Letter Queue %q : %s", naming.CreateBrokerDeadLetterQueueName(b), err))

@@ -1303,7 +1303,8 @@ func createQueue(dlx bool) *rabbitv1beta1.Queue {
 			Durable:    true,
 			AutoDelete: false,
 			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
-				Name: rabbitMQBrokerName,
+				Name:      rabbitMQBrokerName,
+				Namespace: testNS,
 			},
 		},
 	}

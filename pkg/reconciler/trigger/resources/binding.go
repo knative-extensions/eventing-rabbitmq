@@ -25,7 +25,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 
-	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 )
 
@@ -88,14 +87,14 @@ func NewBinding(ctx context.Context, args *BindingArgs) (*rabbitv1beta1.Binding,
 // BindingLabels generates the labels present on the Queue linking the Broker / Trigger to the
 // Binding.
 func BindingLabels(b *eventingv1.Broker, t *eventingv1.Trigger) map[string]string {
-	if t == nil {
+	if t != nil {
 		return map[string]string{
-			eventing.BrokerLabelKey: b.Name,
+			"eventing.knative.dev/broker":  b.Name,
+			"eventing.knative.dev/trigger": t.Name,
 		}
 	} else {
 		return map[string]string{
-			eventing.BrokerLabelKey: b.Name,
-			TriggerLabelKey:         t.Name,
+			"eventing.knative.dev/broker": b.Name,
 		}
 	}
 }
