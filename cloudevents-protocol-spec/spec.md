@@ -137,7 +137,7 @@ The [RabbitMQ `content-type`][content-type] property field is set to the media t
 Example for the [JSON format][json-format]:
 
 ```text
-content-type: application/cloudevents+json; charset=UTF-8
+content-type: application/cloudevents+json
 ```
 #### 3.2.2. Event Data Encoding
 
@@ -166,6 +166,7 @@ This example shows a JSON event format encoded event:
     “id”: “12341234”
     “type” : "com.example.someevent",
     “data-field-1”: “test”
+    “datacontenttype”: “application/cloudevents+json; charset=utf-8”
 
     ... further attributes omitted ...
     “data”: {
@@ -183,7 +184,7 @@ This example shows a Binary event format encoded event:
     ce-specversion : "1.0",
     ce-id: “12341234”
     ce-type : "com.example.someevent",
-    content-type: "application/cloudevents+json; charset=UTF-8"
+    ce-datacontenttype: "application/cloudevents+json; charset=UTF-8"
 
     ... further attributes omitted ...
 }
