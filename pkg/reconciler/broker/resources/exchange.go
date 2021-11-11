@@ -61,9 +61,9 @@ func NewExchange(ctx context.Context, args *ExchangeArgs) *rabbitv1beta1.Exchang
 			AutoDelete: false,
 			// TODO: We had before also internal / nowait set to false. Are these in Arguments,
 			// or do they get sane defaults that we can just work with?
-			// TODO: This one has to exist in the same namespace as this exchange.
 			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
-				Name: args.Broker.Spec.Config.Name,
+				Name:      args.Broker.Spec.Config.Name,
+				Namespace: args.Broker.Spec.Config.Namespace,
 			},
 		},
 	}

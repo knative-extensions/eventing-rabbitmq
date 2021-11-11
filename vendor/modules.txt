@@ -14,6 +14,18 @@ contrib.go.opencensus.io/exporter/zipkin
 ## explicit; go 1.16
 github.com/Azure/go-ansiterm
 github.com/Azure/go-ansiterm/winterm
+# github.com/Azure/go-autorest v14.2.0+incompatible
+## explicit
+# github.com/Azure/go-autorest/autorest v0.11.12
+## explicit; go 1.12
+# github.com/Azure/go-autorest/autorest/adal v0.9.5
+## explicit; go 1.12
+# github.com/Azure/go-autorest/autorest/date v0.3.0
+## explicit; go 1.12
+# github.com/Azure/go-autorest/logger v0.2.0
+## explicit; go 1.12
+# github.com/Azure/go-autorest/tracing v0.6.0
+## explicit; go 1.12
 # github.com/Microsoft/go-winio v0.5.1
 ## explicit; go 1.12
 github.com/Microsoft/go-winio
@@ -177,7 +189,9 @@ github.com/evanphx/json-patch
 # github.com/evanphx/json-patch/v5 v5.6.0
 ## explicit; go 1.12
 github.com/evanphx/json-patch/v5
-# github.com/fsnotify/fsnotify v1.4.9
+# github.com/form3tech-oss/jwt-go v3.2.3+incompatible
+## explicit
+# github.com/fsnotify/fsnotify v1.5.1
 ## explicit; go 1.13
 github.com/fsnotify/fsnotify
 # github.com/fsouza/go-dockerclient v1.6.5
@@ -192,6 +206,8 @@ github.com/go-logfmt/logfmt
 # github.com/go-logr/logr v0.4.0
 ## explicit; go 1.14
 github.com/go-logr/logr
+# github.com/go-logr/zapr v0.4.0
+## explicit
 # github.com/go-openapi/jsonpointer v0.19.5
 ## explicit; go 1.13
 github.com/go-openapi/jsonpointer
@@ -200,7 +216,6 @@ github.com/go-openapi/jsonpointer
 github.com/go-openapi/jsonreference
 # github.com/go-openapi/spec v0.19.7
 ## explicit; go 1.13
-github.com/go-openapi/spec
 # github.com/go-openapi/swag v0.19.15
 ## explicit; go 1.11
 github.com/go-openapi/swag
@@ -213,7 +228,7 @@ github.com/gogo/protobuf/gogoproto
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/protoc-gen-gogo/descriptor
 github.com/gogo/protobuf/sortkeys
-# github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
+# github.com/golang/glog v0.0.0-20210429001901-424d2337a529
 ## explicit
 github.com/golang/glog
 # github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
@@ -314,9 +329,11 @@ github.com/mailru/easyjson/jwriter
 # github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369
 ## explicit; go 1.9
 github.com/matttproud/golang_protobuf_extensions/pbutil
-# github.com/michaelklishin/rabbit-hole/v2 v2.10.0
+# github.com/michaelklishin/rabbit-hole/v2 v2.11.0
 ## explicit; go 1.15
 github.com/michaelklishin/rabbit-hole/v2
+# github.com/moby/spdystream v0.2.0
+## explicit; go 1.13
 # github.com/moby/sys/mount v0.3.0
 ## explicit; go 1.16
 github.com/moby/sys/mount
@@ -389,12 +406,12 @@ github.com/prometheus/statsd_exporter/pkg/mapper/fsm
 # github.com/rabbitmq/amqp091-go v1.1.0
 ## explicit; go 1.15
 github.com/rabbitmq/amqp091-go
-# github.com/rabbitmq/cluster-operator v1.8.2
+# github.com/rabbitmq/cluster-operator v1.10.0
 ## explicit; go 1.17
 github.com/rabbitmq/cluster-operator/api/v1beta1
 github.com/rabbitmq/cluster-operator/internal/status
-# github.com/rabbitmq/messaging-topology-operator v0.11.0
-## explicit; go 1.16
+# github.com/rabbitmq/messaging-topology-operator v1.2.2-0.20211110164549-4a5d3b689fa1
+## explicit; go 1.17
 github.com/rabbitmq/messaging-topology-operator/api/v1beta1
 github.com/rabbitmq/messaging-topology-operator/pkg/generated/clientset/versioned
 github.com/rabbitmq/messaging-topology-operator/pkg/generated/clientset/versioned/fake
@@ -469,8 +486,8 @@ go.uber.org/atomic
 go.uber.org/automaxprocs/internal/cgroups
 go.uber.org/automaxprocs/internal/runtime
 go.uber.org/automaxprocs/maxprocs
-# go.uber.org/multierr v1.6.0
-## explicit; go 1.12
+# go.uber.org/multierr v1.7.0
+## explicit; go 1.14
 go.uber.org/multierr
 # go.uber.org/zap v1.19.1
 ## explicit; go 1.13
@@ -667,6 +684,8 @@ google.golang.org/protobuf/types/known/wrapperspb
 # gopkg.in/inf.v0 v0.9.1
 ## explicit
 gopkg.in/inf.v0
+# gopkg.in/ini.v1 v1.63.2
+## explicit
 # gopkg.in/yaml.v2 v2.4.0
 ## explicit; go 1.15
 gopkg.in/yaml.v2
@@ -1113,10 +1132,10 @@ k8s.io/gengo/types
 # k8s.io/klog v1.0.0
 ## explicit; go 1.12
 k8s.io/klog
-# k8s.io/klog/v2 v2.8.0
+# k8s.io/klog/v2 v2.9.0
 ## explicit; go 1.13
 k8s.io/klog/v2
-# k8s.io/kube-openapi v0.0.0-20210305001622-591a79e4bda7
+# k8s.io/kube-openapi v0.0.0-20210421082810-95288971da7e
 ## explicit; go 1.12
 k8s.io/kube-openapi/cmd/openapi-gen
 k8s.io/kube-openapi/cmd/openapi-gen/args
@@ -1125,6 +1144,7 @@ k8s.io/kube-openapi/pkg/generators
 k8s.io/kube-openapi/pkg/generators/rules
 k8s.io/kube-openapi/pkg/util/proto
 k8s.io/kube-openapi/pkg/util/sets
+k8s.io/kube-openapi/pkg/validation/spec
 # k8s.io/utils v0.0.0-20210722164352-7f3ee0f31471
 ## explicit; go 1.12
 k8s.io/utils/buffer

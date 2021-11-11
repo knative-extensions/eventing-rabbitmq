@@ -1,0 +1,45 @@
+---
+apiVersion: eventing.knative.dev/v1
+kind: Broker
+metadata:
+  name: ping-broker-rabbitmq
+  namespace: ping
+  annotations:
+    eventing.knative.dev/broker.class: RabbitMQBroker
+spec:
+  config:
+    apiVersion: rabbitmq.com/v1beta1
+    kind: RabbitmqCluster
+    name: rabbitmq
+    namespace: knative-eventing
+---
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: ping-cloudevents-player-rabbitmq
+  namespace: ping
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "1"
+    spec:
+      containers:
+        - image: ruromero/cloudevents-player:latest
+          env:
+            - name: BROKER_URL
+              value: http://ping-broker-rabbitmq-broker-ingress.ping.svc.cluster.local
+---
+apiVersion: eventing.knative.dev/v1
+kind: Trigger
+metadata:
+  name: ping-cloudevents-player-trigger-rabbitmq
+  namespace: ping
+spec:
+  broker: ping-broker-rabbitmq
+  subscriber:
+    ref:
+      apiVersion: serving.knative.dev/v1
+      kind: Service
+      name: ping-cloudevents-player-rabbitmq
+      namespace: ping
