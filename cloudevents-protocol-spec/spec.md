@@ -157,7 +157,6 @@ This example shows a JSON event format encoded event:
 --------------- headers ----------------------------------
 {
     content-type: application/cloudevents+json; charset=utf-8
-    ... further headers omitted ...
 }
 --------------- body -------------------------------------
 
@@ -165,12 +164,13 @@ This example shows a JSON event format encoded event:
     “specversion” : "1.0",
     “id”: “12341234”
     “type” : "com.example.someevent",
-    “data-field-1”: “test”
-    “datacontenttype”: “application/cloudevents+json; charset=utf-8”
+    “datacontenttype”: “application/xml; charset=utf-8”
 
     ... further attributes omitted ...
     “data”: {
-        ... application data …
+
+        ... application data encoded in XML ...
+
     }
 }
 
@@ -183,18 +183,19 @@ This example shows a Binary event format encoded event:
 {
     ce-specversion : "1.0",
     ce-id: “12341234”
-    ce-type : "com.example.someevent",
-    ce-datacontenttype: "application/cloudevents+json; charset=UTF-8"
+    ce-type: "com.example.someevent",
+    ce-source: "example/source.uri"
+    ce-extension: "test extension value",
+    ce-datacontenttype: "application/avro; charset=UTF-8"
 
     ... further attributes omitted ...
 }
 --------------- body --------------------------------------
-{
-      ... application data ...
-}
+
+      ... application data encoded in Avro ...
+
 -----------------------------------------------------------
 ```
-
 
 ## 4. References
 
