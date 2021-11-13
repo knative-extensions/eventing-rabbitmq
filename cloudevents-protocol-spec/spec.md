@@ -186,8 +186,8 @@ This example shows a Binary event format encoded event:
     ce-type: "com.example.someevent",
     ce-source: "example/source.uri"
     ce-extension: "test extension value",
-    ce-datacontenttype: "application/avro; charset=UTF-8"
-    content-type: "application/avro; charset=UTF-8"
+    ce-datacontenttype: "application/avro"
+    content-type: "application/avro"
 
     ... further attributes omitted ...
 }
