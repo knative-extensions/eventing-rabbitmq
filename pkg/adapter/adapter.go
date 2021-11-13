@@ -319,11 +319,11 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 		}
 	}()
 
-	// if the msg is a cloudevent we send it as it is to http
+	// if the msg is a cloudevent send it as it is to http
 	if msgBinding.ReadEncoding() != binding.EncodingUnknown {
 		err = http.WriteRequest(a.context, msgBinding, req)
 	} else {
-		// if the rabbitmq msg is not a cloudevent we transform it into one
+		// if the rabbitmq msg is not a cloudevent transform it into one
 		event := cloudevents.NewEvent()
 		err = convertToCloudEvent(&event, msg, a)
 		if err != nil {

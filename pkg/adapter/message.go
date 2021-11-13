@@ -19,6 +19,7 @@ package rabbitmq
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/NeowayLabs/wabbit"
@@ -62,7 +63,7 @@ func NewMessageFromDelivery(msg wabbit.Delivery) *Message {
 			contentType = val.(string)
 		}
 
-		headers[k] = []byte(val.(string))
+		headers[k] = []byte(fmt.Sprint(val))
 	}
 
 	return NewMessage(msg.Body(), contentType, headers)
