@@ -438,12 +438,12 @@ func (r *Reconciler) reconcileBinding(ctx context.Context, b *eventingv1.Broker,
 	return r.rabbit.ReconcileBinding(ctx, &resources.BindingArgs{
 		Name:        bindingName,
 		Namespace:   t.Namespace,
+		Broker:      b,
 		Source:      naming.BrokerExchangeName(b, false),
 		Destination: bindingName,
 		Owner:       *kmeta.NewControllerRef(t),
 		Labels:      resources.BindingLabels(b, t),
 		Filters:     filters,
-		ClusterName: b.Spec.Config.Name,
 	})
 }
 
@@ -453,11 +453,11 @@ func (r *Reconciler) reconcileDLQBinding(ctx context.Context, b *eventingv1.Brok
 	return r.rabbit.ReconcileBinding(ctx, &resources.BindingArgs{
 		Name:        bindingName,
 		Namespace:   t.Namespace,
+		Broker:      b,
 		Source:      naming.TriggerDLXExchangeName(t),
 		Destination: bindingName,
 		Owner:       *kmeta.NewControllerRef(t),
 		Labels:      resources.BindingLabels(b, t),
-		ClusterName: b.Spec.Config.Name,
 	})
 }
 

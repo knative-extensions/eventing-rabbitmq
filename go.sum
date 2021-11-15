@@ -1159,6 +1159,8 @@ github.com/rabbitmq/messaging-topology-operator v0.11.0 h1:7ywzZrz8U/4Ld5aXXst4+
 github.com/rabbitmq/messaging-topology-operator v0.11.0/go.mod h1:tS91pHLW/DA+xwKWZLAVo4W+Jj2Swcc5ppSWjYyUtSo=
 github.com/rabbitmq/messaging-topology-operator v1.2.2-0.20211110164549-4a5d3b689fa1 h1:bpHi/13BMj7gP4tXJat9qgNdBB9SpV/RSMriS8dmzGg=
 github.com/rabbitmq/messaging-topology-operator v1.2.2-0.20211110164549-4a5d3b689fa1/go.mod h1:uHQiUQS0lOzzF3qAAnzfvrq5Vjmac4cOHUrDK06P30U=
+github.com/rabbitmq/messaging-topology-operator v1.2.2-0.20211112104201-5a7530880441 h1:LCthSrkcIfz8IuLIxtiix5BiEwVKOXcogjQIk06tYps=
+github.com/rabbitmq/messaging-topology-operator v1.2.2-0.20211112104201-5a7530880441/go.mod h1:uHQiUQS0lOzzF3qAAnzfvrq5Vjmac4cOHUrDK06P30U=
 github.com/rabbitmq/rabbitmq-stream-go-client v0.0.0-20210422170636-520637be5dde/go.mod h1:smigXgSjihJBEh9pqwqh+vWhNr2JNg7NN/3pX0qYWRQ=
 github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=
 github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=

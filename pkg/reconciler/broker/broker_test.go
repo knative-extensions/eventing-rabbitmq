@@ -1352,7 +1352,8 @@ func createBinding(dlx bool) *rabbitv1beta1.Binding {
 			Destination:     bindingName,
 			Source:          "b.test-namespace.test-broker.dlx.broker-test-uid",
 			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
-				Name: rabbitMQBrokerName,
+				Name:      rabbitMQBrokerName,
+				Namespace: testNS,
 			},
 			Arguments: getBrokerArguments(),
 		},

@@ -1043,7 +1043,6 @@ func createReadyQueue() *rabbitv1beta1.Queue {
 
 func createBinding(withFilter bool) *rabbitv1beta1.Binding {
 	bindingName := fmt.Sprintf("t.%s.%s.test-trigger-uid", testNS, triggerName)
-
 	labels := map[string]string{
 		"eventing.knative.dev/broker":  brokerName,
 		"eventing.knative.dev/trigger": triggerName,
@@ -1064,7 +1063,8 @@ func createBinding(withFilter bool) *rabbitv1beta1.Binding {
 			Destination:     bindingName,
 			Source:          "b.test-namespace.test-broker.broker-test-uid",
 			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
-				Name: rabbitMQBrokerName,
+				Name:      rabbitMQBrokerName,
+				Namespace: testNS,
 			},
 			// We need to know if we need to include the filter in the
 			Arguments: getTriggerArguments(withFilter),

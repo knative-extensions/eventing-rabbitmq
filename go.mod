@@ -18,7 +18,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rabbitmq/amqp091-go v1.1.0
 	github.com/rabbitmq/cluster-operator v1.10.0
-	github.com/rabbitmq/messaging-topology-operator v1.2.2-0.20211110164549-4a5d3b689fa1
+	github.com/rabbitmq/messaging-topology-operator v1.2.2-0.20211112104201-5a7530880441
 	github.com/testcontainers/testcontainers-go v0.11.1
 	github.com/tiago4orion/conjure v0.0.0-20150908101743-93cb30b9d218 // indirect
 	go.uber.org/zap v1.19.1

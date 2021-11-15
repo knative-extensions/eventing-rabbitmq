@@ -410,7 +410,7 @@ github.com/rabbitmq/amqp091-go
 ## explicit; go 1.17
 github.com/rabbitmq/cluster-operator/api/v1beta1
 github.com/rabbitmq/cluster-operator/internal/status
-# github.com/rabbitmq/messaging-topology-operator v1.2.2-0.20211110164549-4a5d3b689fa1
+# github.com/rabbitmq/messaging-topology-operator v1.2.2-0.20211112104201-5a7530880441
 ## explicit; go 1.17
 github.com/rabbitmq/messaging-topology-operator/api/v1beta1
 github.com/rabbitmq/messaging-topology-operator/pkg/generated/clientset/versioned

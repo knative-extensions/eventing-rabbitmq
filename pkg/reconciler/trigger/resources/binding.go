@@ -37,6 +37,7 @@ const (
 type BindingArgs struct {
 	Name        string
 	Namespace   string
+	Broker      *eventingv1.Broker
 	Source      string
 	Destination string
 	Owner       metav1.OwnerReference
@@ -72,12 +73,9 @@ func NewBinding(ctx context.Context, args *BindingArgs) (*rabbitv1beta1.Binding,
 			Arguments: &runtime.RawExtension{
 				Raw: argumentsJson,
 			},
-
-			// TODO: We had before also internal / nowait set to false. Are these in Arguments,
-			// or do they get sane defaults that we can just work with?
-			// TODO: This one has to exist in the same namespace as this exchange.
 			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
-				Name: args.ClusterName,
+				Name:      args.Broker.Spec.Config.Name,
+				Namespace: args.Broker.Spec.Config.Namespace,
 			},
 		},
 	}

@@ -318,11 +318,11 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 		binding, err := r.rabbit.ReconcileBinding(ctx, &triggerresources.BindingArgs{
 			Name:        bindingName,
 			Namespace:   b.Namespace,
+			Broker:      b,
 			Source:      naming.BrokerExchangeName(b, true),
 			Destination: bindingName,
 			Owner:       *kmeta.NewControllerRef(b),
 			Labels:      triggerresources.BindingLabels(b, nil),
-			ClusterName: b.Spec.Config.Name,
 			Filters: map[string]string{
 				triggerresources.DLQBindingKey: b.Name,
 			},
