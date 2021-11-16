@@ -145,10 +145,12 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		// as a Queue for it, and Dispatcher that pulls from that queue.
 		if t.Spec.Delivery != nil && t.Spec.Delivery.DeadLetterSink != nil {
 			args := &brokerresources.ExchangeArgs{
-				Name:      naming.TriggerDLXExchangeName(t),
-				Namespace: t.Namespace,
-				Broker:    broker,
-				Trigger:   t,
+				Name:                     naming.TriggerDLXExchangeName(t),
+				Namespace:                t.Namespace,
+				Broker:                   broker,
+				RabbitMQClusterName:      broker.Spec.Config.Name,
+				RabbitMQClusterNamespace: broker.Spec.Config.Namespace,
+				Trigger:                  t,
 			}
 			dlx, err := r.rabbit.ReconcileExchange(ctx, args)
 			if err != nil {
@@ -164,11 +166,13 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 			}
 
 			dlq, err := r.rabbit.ReconcileQueue(ctx, &triggerresources.QueueArgs{
-				Name:      naming.CreateTriggerDeadLetterQueueName(t),
-				Namespace: t.Namespace,
-				Broker:    broker,
-				Owner:     *kmeta.NewControllerRef(t),
-				Labels:    triggerresources.QueueLabels(broker, t),
+				Name:                     naming.CreateTriggerDeadLetterQueueName(t),
+				Namespace:                t.Namespace,
+				Broker:                   broker,
+				RabbitMQClusterName:      broker.Spec.Config.Name,
+				RabbitMQClusterNamespace: broker.Spec.Config.Namespace,
+				Owner:                    *kmeta.NewControllerRef(t),
+				Labels:                   triggerresources.QueueLabels(broker, t),
 			})
 			if err != nil {
 				logging.FromContext(ctx).Error("Problem reconciling Trigger Queue", zap.Error(err))
@@ -221,12 +225,14 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 			dlxName = ptr.String(naming.BrokerExchangeName(broker, true))
 		}
 		queue, err := r.rabbit.ReconcileQueue(ctx, &triggerresources.QueueArgs{
-			Name:      naming.CreateTriggerQueueName(t),
-			Namespace: t.Namespace,
-			Broker:    broker,
-			Owner:     *kmeta.NewControllerRef(t),
-			Labels:    triggerresources.QueueLabels(broker, t),
-			DLXName:   dlxName,
+			Name:                     naming.CreateTriggerQueueName(t),
+			Namespace:                t.Namespace,
+			Broker:                   broker,
+			RabbitMQClusterName:      broker.Spec.Config.Name,
+			RabbitMQClusterNamespace: broker.Spec.Config.Namespace,
+			Owner:                    *kmeta.NewControllerRef(t),
+			Labels:                   triggerresources.QueueLabels(broker, t),
+			DLXName:                  dlxName,
 		})
 		if err != nil {
 			logging.FromContext(ctx).Error("Problem reconciling Trigger Queue", zap.Error(err))
@@ -436,14 +442,16 @@ func (r *Reconciler) reconcileBinding(ctx context.Context, b *eventingv1.Broker,
 	filters[resources.BindingKey] = t.Name
 
 	return r.rabbit.ReconcileBinding(ctx, &resources.BindingArgs{
-		Name:        bindingName,
-		Namespace:   t.Namespace,
-		Broker:      b,
-		Source:      naming.BrokerExchangeName(b, false),
-		Destination: bindingName,
-		Owner:       *kmeta.NewControllerRef(t),
-		Labels:      resources.BindingLabels(b, t),
-		Filters:     filters,
+		Name:                     bindingName,
+		Namespace:                t.Namespace,
+		Broker:                   b,
+		RabbitMQClusterName:      b.Spec.Config.Name,
+		RabbitMQClusterNamespace: b.Spec.Config.Namespace,
+		Source:                   naming.BrokerExchangeName(b, false),
+		Destination:              bindingName,
+		Owner:                    *kmeta.NewControllerRef(t),
+		Labels:                   resources.BindingLabels(b, t),
+		Filters:                  filters,
 	})
 }
 
@@ -451,13 +459,15 @@ func (r *Reconciler) reconcileDLQBinding(ctx context.Context, b *eventingv1.Brok
 	bindingName := naming.CreateTriggerDeadLetterQueueName(t)
 
 	return r.rabbit.ReconcileBinding(ctx, &resources.BindingArgs{
-		Name:        bindingName,
-		Namespace:   t.Namespace,
-		Broker:      b,
-		Source:      naming.TriggerDLXExchangeName(t),
-		Destination: bindingName,
-		Owner:       *kmeta.NewControllerRef(t),
-		Labels:      resources.BindingLabels(b, t),
+		Name:                     bindingName,
+		Namespace:                t.Namespace,
+		Broker:                   b,
+		RabbitMQClusterName:      b.Spec.Config.Name,
+		RabbitMQClusterNamespace: b.Spec.Config.Namespace,
+		Source:                   naming.TriggerDLXExchangeName(t),
+		Destination:              bindingName,
+		Owner:                    *kmeta.NewControllerRef(t),
+		Labels:                   resources.BindingLabels(b, t),
 	})
 }
 

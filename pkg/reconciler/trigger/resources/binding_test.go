@@ -59,10 +59,11 @@ func TestNewBinding(t *testing.T) {
 		{
 			name: "Creates a binding",
 			args: &resources.BindingArgs{
-				Namespace: namespace,
-				Name:      "name",
-				Broker:    broker,
-				Labels:    map[string]string{"label": "cool"},
+				Namespace:           namespace,
+				Name:                "name",
+				Broker:              broker,
+				RabbitMQClusterName: rabbitmqcluster,
+				Labels:              map[string]string{"label": "cool"},
 				Owner: metav1.OwnerReference{
 					Kind:       "Broker",
 					APIVersion: "eventing.knative.dev/v1",

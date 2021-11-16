@@ -30,9 +30,9 @@ func TestNewExchange(t *testing.T) {
 	}{{
 		name: "broker exchange",
 		args: &resources.ExchangeArgs{
-			Name:            brokerName,
-			Namespace:       namespace,
-			RabbitMQCluster: rabbitmqcluster,
+			Name:                brokerName,
+			Namespace:           namespace,
+			RabbitMQClusterName: rabbitmqcluster,
 			Broker: &eventingv1.Broker{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      brokerName,
@@ -73,9 +73,9 @@ func TestNewExchange(t *testing.T) {
 	}, {
 		name: "trigger exchange",
 		args: &resources.ExchangeArgs{
-			Name:            brokerName,
-			Namespace:       namespace,
-			RabbitMQCluster: rabbitmqcluster,
+			Name:                brokerName,
+			Namespace:           namespace,
+			RabbitMQClusterName: rabbitmqcluster,
 			Broker: &eventingv1.Broker{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      brokerName,

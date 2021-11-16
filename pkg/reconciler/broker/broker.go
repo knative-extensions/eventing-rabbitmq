@@ -144,7 +144,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *eventingv1.Broker) pk
 		MarkExchangeFailed(&b.Status, "ReconcileFailure", "using secret is not supported with this controller")
 		return nil
 	}
-	args.RabbitMQCluster = b.Spec.Config.Name
+	args.RabbitMQClusterName = b.Spec.Config.Name
 	return r.reconcileUsingCRD(ctx, b, args)
 }
 
@@ -296,11 +296,13 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 
 	if b.Spec.Delivery != nil && b.Spec.Delivery.DeadLetterSink != nil {
 		queue, err := r.rabbit.ReconcileQueue(ctx, &triggerresources.QueueArgs{
-			Name:      naming.CreateBrokerDeadLetterQueueName(b),
-			Namespace: b.Namespace,
-			Broker:    b,
-			Owner:     *kmeta.NewControllerRef(b),
-			Labels:    triggerresources.QueueLabels(b, nil),
+			Name:                     naming.CreateBrokerDeadLetterQueueName(b),
+			Namespace:                b.Namespace,
+			Broker:                   b,
+			RabbitMQClusterName:      b.Spec.Config.Name,
+			RabbitMQClusterNamespace: b.Spec.Config.Namespace,
+			Owner:                    *kmeta.NewControllerRef(b),
+			Labels:                   triggerresources.QueueLabels(b, nil),
 		})
 		if err != nil {
 			MarkDLXFailed(&b.Status, "QueueFailure", fmt.Sprintf("Failed to reconcile Dead Letter Queue %q : %s", naming.CreateBrokerDeadLetterQueueName(b), err))
@@ -316,13 +318,15 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 		MarkDLXReady(&b.Status)
 		bindingName := naming.CreateBrokerDeadLetterQueueName(b)
 		binding, err := r.rabbit.ReconcileBinding(ctx, &triggerresources.BindingArgs{
-			Name:        bindingName,
-			Namespace:   b.Namespace,
-			Broker:      b,
-			Source:      naming.BrokerExchangeName(b, true),
-			Destination: bindingName,
-			Owner:       *kmeta.NewControllerRef(b),
-			Labels:      triggerresources.BindingLabels(b, nil),
+			Name:                     bindingName,
+			Namespace:                b.Namespace,
+			Broker:                   b,
+			RabbitMQClusterName:      b.Spec.Config.Name,
+			RabbitMQClusterNamespace: b.Spec.Config.Namespace,
+			Source:                   naming.BrokerExchangeName(b, true),
+			Destination:              bindingName,
+			Owner:                    *kmeta.NewControllerRef(b),
+			Labels:                   triggerresources.BindingLabels(b, nil),
 			Filters: map[string]string{
 				triggerresources.DLQBindingKey: b.Name,
 			},

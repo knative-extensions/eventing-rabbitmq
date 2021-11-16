@@ -28,12 +28,14 @@ import (
 )
 
 type QueueArgs struct {
-	Name      string
-	Namespace string
-	Broker    *eventingv1.Broker
-	Owner     metav1.OwnerReference
-	Labels    map[string]string
-	DLXName   *string
+	Name                     string
+	Namespace                string
+	Broker                   *eventingv1.Broker
+	RabbitMQClusterName      string
+	RabbitMQClusterNamespace string
+	Owner                    metav1.OwnerReference
+	Labels                   map[string]string
+	DLXName                  *string
 }
 
 func NewQueue(ctx context.Context, args *QueueArgs) *rabbitv1beta1.Queue {
@@ -53,8 +55,8 @@ func NewQueue(ctx context.Context, args *QueueArgs) *rabbitv1beta1.Queue {
 			// TODO: We had before also internal / nowait set to false. Are these in Arguments,
 			// or do they get sane defaults that we can just work with?
 			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
-				Name:      args.Broker.Spec.Config.Name,
-				Namespace: args.Broker.Spec.Config.Namespace,
+				Name:      args.RabbitMQClusterName,
+				Namespace: args.RabbitMQClusterNamespace,
 			},
 		},
 	}

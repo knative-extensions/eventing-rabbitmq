@@ -35,15 +35,17 @@ const (
 )
 
 type BindingArgs struct {
-	Name        string
-	Namespace   string
-	Broker      *eventingv1.Broker
-	Source      string
-	Destination string
-	Owner       metav1.OwnerReference
-	Labels      map[string]string
-	Filters     map[string]string
-	ClusterName string
+	Name                     string
+	Namespace                string
+	Broker                   *eventingv1.Broker
+	RabbitMQClusterName      string
+	RabbitMQClusterNamespace string
+	Source                   string
+	Destination              string
+	Owner                    metav1.OwnerReference
+	Labels                   map[string]string
+	Filters                  map[string]string
+	ClusterName              string
 }
 
 func NewBinding(ctx context.Context, args *BindingArgs) (*rabbitv1beta1.Binding, error) {
@@ -74,8 +76,8 @@ func NewBinding(ctx context.Context, args *BindingArgs) (*rabbitv1beta1.Binding,
 				Raw: argumentsJson,
 			},
 			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
-				Name:      args.Broker.Spec.Config.Name,
-				Namespace: args.Broker.Spec.Config.Namespace,
+				Name:      args.RabbitMQClusterName,
+				Namespace: args.RabbitMQClusterNamespace,
 			},
 		},
 	}

@@ -67,11 +67,12 @@ func TestNewQueue(t *testing.T) {
 		{
 			name: "creates a queue",
 			args: &resources.QueueArgs{
-				Name:      triggerName,
-				Namespace: namespace,
-				Broker:    broker,
-				Owner:     owner,
-				Labels:    map[string]string{"cool": "label"},
+				Name:                triggerName,
+				Namespace:           namespace,
+				RabbitMQClusterName: rabbitmqcluster,
+				Broker:              broker,
+				Owner:               owner,
+				Labels:              map[string]string{"cool": "label"},
 			},
 			want: &rabbitv1beta1.Queue{
 				ObjectMeta: metav1.ObjectMeta{
@@ -93,12 +94,13 @@ func TestNewQueue(t *testing.T) {
 		{
 			name: "adds a dead letter exchange if that is set",
 			args: &resources.QueueArgs{
-				Name:      triggerName,
-				Namespace: namespace,
-				Broker:    broker,
-				Owner:     owner,
-				Labels:    map[string]string{"cool": "label"},
-				DLXName:   ptr.String("dlx"),
+				Name:                triggerName,
+				Namespace:           namespace,
+				Broker:              broker,
+				RabbitMQClusterName: rabbitmqcluster,
+				Owner:               owner,
+				Labels:              map[string]string{"cool": "label"},
+				DLXName:             ptr.String("dlx"),
 			},
 			want: &rabbitv1beta1.Queue{
 				ObjectMeta: metav1.ObjectMeta{
