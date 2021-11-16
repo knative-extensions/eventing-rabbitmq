@@ -72,7 +72,9 @@ func main() {
 	var headers amqp.Table
 
 	for i := 0; i < env.Count; i++ {
-		if i < env.Count/3 {
+		switch i % 3 {
+		case 0:
+			contentType = "application/json"
 			headers = amqp.Table{
 				"ce-specversion":     "1.0",
 				"ce-id":              i,
@@ -81,7 +83,7 @@ func main() {
 				"ce-datacontenttype": "application/json; charset=UTF-8",
 			}
 			body = `{ "message": "Hello, BinCEWorld!" }`
-		} else if i < (env.Count/3)*2 {
+		case 1:
 			contentType = "application/cloudevents+json"
 			headers = amqp.Table{}
 			body = fmt.Sprintf(`{
@@ -91,10 +93,8 @@ func main() {
 				"data": "Hello, CEWorld!",
 				"specversion": "1.0",
 				"datacontenttype": "text/plain"
-			}`,
-				i,
-			)
-		} else {
+			}`, i)
+		case 2:
 			contentType = "text/plain"
 			headers = amqp.Table{}
 			body = fmt.Sprintf(`{ "id": %d, "message": "Hello, World!" }`, i)
