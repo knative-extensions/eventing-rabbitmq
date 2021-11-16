@@ -25,11 +25,14 @@ import (
 	"github.com/NeowayLabs/wabbit"
 	"github.com/NeowayLabs/wabbit/amqp"
 	"github.com/NeowayLabs/wabbit/amqptest"
+	"k8s.io/apimachinery/pkg/util/uuid"
+
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
 	"github.com/cloudevents/sdk-go/v2/protocol/http"
+
 	"go.uber.org/zap"
-	"k8s.io/apimachinery/pkg/util/uuid"
+
 	sourcesv1alpha1 "knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 	"knative.dev/eventing/pkg/adapter/v2"
 	"knative.dev/eventing/pkg/kncloudevents"
@@ -37,9 +40,7 @@ import (
 	"knative.dev/pkg/logging"
 )
 
-const (
-	resourceGroup = "rabbitmqsources.sources.knative.dev"
-)
+const resourceGroup = "rabbitmqsources.sources.knative.dev"
 
 type ExchangeConfig struct {
 	Name        string `envconfig:"RABBITMQ_EXCHANGE_CONFIG_NAME" required:"false"`
@@ -316,39 +317,43 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 		return err
 	}
 
-	// TODO: See if the message is already a Cloud Event and if so, do not wrap, just use as is.
-	event := cloudevents.NewEvent()
-	if msg.MessageId() != "" {
-		event.SetID(msg.MessageId())
+	msgBinding := NewMessageFromDelivery(msg)
+
+	defer func() {
+		err := msgBinding.Finish(nil)
+		if err != nil {
+			a.logger.Error("Something went wrong while trying to finalizing the message", zap.Error(err))
+		}
+	}()
+
+	// if the msg is a cloudevent send it as it is to http
+	if msgBinding.ReadEncoding() != binding.EncodingUnknown {
+		err = http.WriteRequest(a.context, msgBinding, req)
 	} else {
-		event.SetID(string(uuid.NewUUID()))
-	}
-	event.SetTime(msg.Timestamp())
-	event.SetType(sourcesv1alpha1.RabbitmqEventType)
-	event.SetSource(sourcesv1alpha1.RabbitmqEventSource(a.config.Namespace, a.config.Name, a.config.Topic))
-	event.SetSubject(msg.MessageId())
-	event.SetExtension("key", msg.MessageId())
+		// if the rabbitmq msg is not a cloudevent transform it into one
+		event := cloudevents.NewEvent()
+		err = convertToCloudEvent(&event, msg, a)
+		if err != nil {
+			a.logger.Error("Error converting RabbitMQ msg to CloudEvent", zap.Error(err))
+			return err
+		}
 
-	// TODO: Check the content type and use it instead.
-	err = event.SetData(*cloudevents.StringOfApplicationJSON(), msg.Body())
-	if err != nil {
-		return err
+		err = http.WriteRequest(a.context, binding.ToMessage(&event), req)
 	}
 
-	err = http.WriteRequest(a.context, binding.ToMessage(&event), req)
 	if err != nil {
+		a.logger.Error(fmt.Sprintf("Error writting event to http, encoding: %s", msgBinding.ReadEncoding()), zap.Error(err))
 		return err
 	}
 
 	res, err := a.httpMessageSender.Send(req)
-
 	if err != nil {
-		a.logger.Debug("Error while sending the message", zap.Error(err))
+		a.logger.Error("Error while sending the message", zap.Error(err))
 		return err
 	}
 
 	if res.StatusCode/100 != 2 {
-		a.logger.Debug("Unexpected status code", zap.Int("status code", res.StatusCode))
+		a.logger.Error("Unexpected status code", zap.Int("status code", res.StatusCode))
 		return fmt.Errorf("%d %s", res.StatusCode, nethttp.StatusText(res.StatusCode))
 	}
 
@@ -359,6 +364,25 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 	}
 
 	_ = a.reporter.ReportEventCount(reportArgs, res.StatusCode)
+	return nil
+}
+
+func convertToCloudEvent(event *cloudevents.Event, msg wabbit.Delivery, a *Adapter) error {
+	if msg.MessageId() != "" {
+		event.SetID(msg.MessageId())
+	} else {
+		event.SetID(string(uuid.NewUUID()))
+	}
+
+	event.SetType(sourcesv1alpha1.RabbitmqEventType)
+	event.SetSource(sourcesv1alpha1.RabbitmqEventSource(a.config.Namespace, a.config.Name, a.config.Topic))
+	event.SetSubject(event.ID())
+	event.SetTime(msg.Timestamp())
+	err := event.SetData(msg.ContentType(), msg.Body())
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

@@ -30,7 +30,7 @@ func init() {
 
 func Install() feature.StepFn {
 	return func(ctx context.Context, t feature.T) {
-		if _, err := manifest.InstallLocalYaml(ctx, map[string]interface{}{"producerCount": 5}); err != nil {
+		if _, err := manifest.InstallLocalYaml(ctx, map[string]interface{}{"producerCount": 10}); err != nil {
 			t.Fatal(err)
 		}
 	}

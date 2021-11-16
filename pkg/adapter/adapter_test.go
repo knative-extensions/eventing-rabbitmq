@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -33,6 +34,7 @@ import (
 	"github.com/NeowayLabs/wabbit/amqptest/server"
 	origamqp "github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"
+
 	"knative.dev/eventing/pkg/adapter/v2"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/eventing/pkg/metrics/source"
@@ -41,20 +43,67 @@ import (
 
 func TestPostMessage_ServeHTTP(t *testing.T) {
 	testCases := map[string]struct {
-		sink              func(http.ResponseWriter, *http.Request)
-		reqBody           string
-		attributes        map[string]string
-		expectedEventType string
-		error             bool
+		sink                       func(http.ResponseWriter, *http.Request)
+		reqBody, expectedEventType string
+		reqHeaders                 http.Header
+		data                       map[string]interface{}
+		headers                    wabbit.Option
+		attributes                 map[string]string
+		withMsgId, isCe, error     bool
 	}{
 		"accepted": {
 			sink:    sinkAccepted,
 			reqBody: `{"key":"value"}`,
+			data:    map[string]interface{}{"key": "value"},
+		},
+		"accepted with msg id": {
+			sink:      sinkAccepted,
+			reqBody:   `{"key":"value"}`,
+			withMsgId: true,
+			data:      map[string]interface{}{"key": "value"},
+		},
+		"accepted with binary cloudevent": {
+			sink:      sinkAccepted,
+			reqBody:   `{"test":"test"}`,
+			withMsgId: true,
+			reqHeaders: http.Header{
+				"Ce-Specversion": []string{"1.0"},
+				"Ce-Source":      []string{"example/source.uri"},
+				"Ce-Testheader":  []string{"testHeader"},
+			},
+			data: map[string]interface{}{
+				"test": "test",
+			},
+			headers: wabbit.Option{
+				"ce-specversion": "1.0",
+				"ce-source":      "example/source.uri",
+				"ce-testheader":  "testHeader",
+				"ignore":         "ignore",
+			},
+			isCe: true,
+		},
+		"accepted with structured cloudevent": {
+			sink: sinkAccepted,
+			reqBody: `{"specversion":"1.0","id":1234,` +
+				`"type":"dev.knative.rabbitmq.event","source":"example/source.uri",` +
+				`"content-type":"text/plain","data":"test"}`,
+			withMsgId: true,
+			headers:   wabbit.Option{"content-type": "application/cloudevents+json"},
+			data: map[string]interface{}{
+				"specversion":  "1.0",
+				"id":           1234,
+				"type":         "dev.knative.rabbitmq.event",
+				"source":       "example/source.uri",
+				"content-type": "text/plain",
+				"data":         "test",
+			},
+			isCe: true,
 		},
 		"rejected": {
 			sink:    sinkRejected,
 			reqBody: `{"key":"value"}`,
 			error:   true,
+			data:    map[string]interface{}{"key": "value"},
 		},
 	}
 
@@ -98,24 +147,53 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 				reporter:          statsReporter,
 			}
 
-			data, err := json.Marshal(map[string]string{"key": "value"})
+			data, err := json.Marshal(tc.data)
 			if err != nil {
 				t.Errorf("unexpected error, %v", err)
 			}
 
 			m := &amqp.Delivery{}
 			m.Delivery = &origamqp.Delivery{
-				MessageId: "id",
-				Body:      data,
+				Body:    data,
+				Headers: origamqp.Table(tc.headers),
 			}
+
+			if tc.withMsgId {
+				m.Delivery.MessageId = "id"
+			}
+
 			err = a.postMessage(m)
 
 			if tc.error && err == nil {
 				t.Errorf("expected error, but got %v", err)
 			}
 
-			if tc.reqBody != string(h.body) {
-				t.Errorf("Expected request body '%q', but got '%q'", tc.reqBody, h.body)
+			var wantBody, gotBody map[string]interface{}
+			err = json.Unmarshal([]byte(tc.reqBody), &wantBody)
+			if err != nil {
+				t.Errorf("Error unmarshaling wanted request body %s %s", tc.reqBody, err)
+			}
+
+			err = json.Unmarshal([]byte(tc.reqBody), &gotBody)
+			if err != nil {
+				t.Errorf("Error unmarshaling got request body %s %s", h.body, err)
+			}
+
+			if len(wantBody) > 0 && len(wantBody) != len(gotBody) && !reflect.DeepEqual(wantBody, gotBody) {
+				t.Errorf("Expected request body '%s', but got '%s' %s", tc.reqBody, h.body, err)
+			}
+
+			if tc.isCe {
+				ceHeaders := http.Header{}
+				for key, value := range h.header {
+					if strings.HasPrefix(key, "Ce-") {
+						ceHeaders[key] = value
+					}
+				}
+
+				if len(ceHeaders) > 0 && len(ceHeaders) != len(tc.reqHeaders) && !reflect.DeepEqual(ceHeaders, tc.reqHeaders) {
+					t.Errorf("Expected request headers '%s', but got '%s' %s", tc.reqHeaders, ceHeaders, err)
+				}
 			}
 		})
 	}
@@ -517,7 +595,7 @@ func sinkRejected(writer http.ResponseWriter, _ *http.Request) {
 	writer.WriteHeader(http.StatusRequestTimeout)
 }
 
-func TestAdapterVhostHandler(t *testing.T) {
+func TestAdapter_VhostHandler(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
 		brokers string

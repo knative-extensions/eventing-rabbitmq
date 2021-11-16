@@ -68,17 +68,47 @@ func main() {
 		nil,      // arguments
 	)
 	failOnError(err, "Failed to declare an exchange")
+	var body, contentType string
+	var headers amqp.Table
 
 	for i := 0; i < env.Count; i++ {
-		body := fmt.Sprintf(`{ "id": %d, "message": "Hello, World!" }`, i)
+		switch i % 3 {
+		case 0:
+			contentType = "application/json"
+			headers = amqp.Table{
+				"ce-specversion":     "1.0",
+				"ce-id":              i,
+				"ce-type":            "knative.producer.e2etest",
+				"ce-source":          "example/source.uri",
+				"ce-datacontenttype": "application/json; charset=UTF-8",
+			}
+			body = `{ "message": "Hello, BinCEWorld!" }`
+		case 1:
+			contentType = "application/cloudevents+json"
+			headers = amqp.Table{}
+			body = fmt.Sprintf(`{
+				"id": %d,
+				"type": "knative.producer.e2etest",
+				"source": "example/source.uri",
+				"data": "Hello, CEWorld!",
+				"specversion": "1.0",
+				"datacontenttype": "text/plain"
+			}`, i)
+		case 2:
+			contentType = "text/plain"
+			headers = amqp.Table{}
+			body = fmt.Sprintf(`{ "id": %d, "message": "Hello, World!" }`, i)
+		}
+
 		err = ch.Publish(
 			"logs", // exchange
 			"",     // routing key
 			false,  // mandatory
 			false,  // immediate
 			amqp.Publishing{
-				ContentType: "text/plain",
+				ContentType: contentType,
 				Body:        []byte(body),
+				Headers:     headers,
 			})
 		failOnError(err, "Failed to publish a message")
 		log.Printf(" [x] Sent %s", body)
