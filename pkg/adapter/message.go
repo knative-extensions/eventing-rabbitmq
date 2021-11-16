@@ -70,7 +70,6 @@ func NewMessageFromDelivery(msg wabbit.Delivery) *Message {
 
 // NewMessage returns a binding.Message that holds the provided rabbitmq message components.
 // The returned binding.Message *can* be read several times safely
-// This function *doesn't* guarantee that the returned binding.Message is always a wabbit.Delivery instance
 func NewMessage(value []byte, contentType string, headers map[string][]byte) *Message {
 	if ft := format.Lookup(contentType); ft != nil {
 		return &Message{
