@@ -51,7 +51,7 @@ type Message struct {
 var _ binding.Message = (*Message)(nil)
 var _ binding.MessageMetadataReader = (*Message)(nil)
 
-// NewMessageFromConsumerMessage returns a binding.Message that holds the provided ConsumerMessage.
+// NewMessageFromDelivery returns a binding.Message that holds the provided RabbitMQ Message.
 // The returned binding.Message *can* be read several times safely
 // This function *doesn't* guarantee that the returned binding.Message is always a rabbitmq.Message instance
 func NewMessageFromDelivery(msg wabbit.Delivery) *Message {
