@@ -53,7 +53,6 @@ var _ binding.MessageMetadataReader = (*Message)(nil)
 
 // NewMessageFromDelivery returns a binding.Message that holds the provided RabbitMQ Message.
 // The returned binding.Message *can* be read several times safely
-// This function *doesn't* guarantee that the returned binding.Message is always a rabbitmq.Message instance
 func NewMessageFromDelivery(msg wabbit.Delivery) *Message {
 	var contentType string
 	headers := make(map[string][]byte, len(msg.Headers()))
