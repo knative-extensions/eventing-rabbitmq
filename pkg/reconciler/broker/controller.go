@@ -60,10 +60,9 @@ type envConfig struct {
 
 	// Which image to use for the DeadLetter dispatcher
 	DispatcherImage string `envconfig:"BROKER_DLQ_DISPATCHER_IMAGE" required:"true"`
-
-	// The default value should match the cluster default in config/core/configmaps/default-broker.yaml
-	BrokerClass string `envconfig:"BROKER_CLASS" default:"RabbitMQBroker"`
 }
+
+const BrokerClass = "RabbitMQBroker"
 
 // NewController initializes the controller and is called by the generated code
 // Registers event handlers to enqueue events
@@ -101,13 +100,13 @@ func NewController(
 		rabbitLister:              rabbitInformer,
 		ingressImage:              env.IngressImage,
 		ingressServiceAccountName: env.IngressServiceAccount,
-		brokerClass:               env.BrokerClass,
+		brokerClass:               BrokerClass,
 		dispatcherImage:           env.DispatcherImage,
 		rabbitClientSet:           rabbitmqclient.Get(ctx),
 		rabbit:                    services.NewRabbit(ctx),
 	}
 
-	impl := brokerreconciler.NewImpl(ctx, r, env.BrokerClass)
+	impl := brokerreconciler.NewImpl(ctx, r, BrokerClass)
 
 	logging.FromContext(ctx).Info("Setting up event handlers")
 
@@ -116,7 +115,7 @@ func NewController(
 	r.uriResolver = resolver.NewURIResolverFromTracker(ctx, impl.Tracker)
 
 	brokerInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: pkgreconciler.AnnotationFilterFunc(brokerreconciler.ClassAnnotationKey, env.BrokerClass, false /*allowUnset*/),
+		FilterFunc: pkgreconciler.AnnotationFilterFunc(brokerreconciler.ClassAnnotationKey, BrokerClass, false /*allowUnset*/),
 		Handler:    controller.HandleAll(impl.Enqueue),
 	})
 

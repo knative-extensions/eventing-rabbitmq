@@ -52,12 +52,11 @@ import (
 	"knative.dev/pkg/resolver"
 )
 
+const BrokerClass = "RabbitMQBroker"
+
 type envConfig struct {
 	DispatcherImage          string `envconfig:"BROKER_DISPATCHER_IMAGE" required:"true"`
 	DispatcherServiceAccount string `envconfig:"BROKER_DISPATCHER_SERVICE_ACCOUNT" required:"true"`
-
-	// The default value should match the cluster default in config/core/configmaps/default-broker.yaml
-	BrokerClass string `envconfig:"BROKER_CLASS" default:"RabbitMQBroker"`
 }
 
 // NewController initializes the controller and is called by the generated code
@@ -88,7 +87,7 @@ func NewController(
 		triggerLister:                triggerInformer.Lister(),
 		dispatcherImage:              env.DispatcherImage,
 		dispatcherServiceAccountName: env.DispatcherServiceAccount,
-		brokerClass:                  env.BrokerClass,
+		brokerClass:                  BrokerClass,
 		exchangeLister:               exchangeInformer.Lister(),
 		queueLister:                  queueInformer.Lister(),
 		bindingLister:                bindingInformer.Lister(),
@@ -146,7 +145,7 @@ func NewController(
 					log.Print("Failed to lookup Broker for Trigger", zap.Error(err))
 				} else {
 					label := broker.ObjectMeta.Annotations[brokerreconciler.ClassAnnotationKey]
-					if label == env.BrokerClass {
+					if label == BrokerClass {
 						impl.Enqueue(obj)
 					}
 				}
