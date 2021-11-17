@@ -19,13 +19,10 @@ This document is a working draft.
 
 2. [Use of CloudEvents Attributes](#2-use-of-cloudevents-attributes)
 
-- 2.1. [data](#21-data)
+3. [RabbitMQ Message Mapping](#3-rabbitmq-message-mapping)
 
-3. [RabbitMQ Message Mapping](#rabbitmq-message-mapping)
-
-- 3.1. [Key Mapping](#31-key-mapping)
-- 3.2. [Binary Content Mode](#32-binary-content-mode)
-- 3.3. [Structured Content Mode](#33-structured-content-mode)
+- 3.1. [Binary Content Mode](#31-binary-content-mode)
+- 3.2. [Structured Content Mode](#32-structured-content-mode)
 
 4. [References](#4-references)
 
@@ -69,9 +66,19 @@ This specification does not introduce any new security features for RabbitMQ, or
 
 This specification does not further define any of the [CloudEvents][ce] event attributes.
 
-One event attribute, `datacontenttype`, is handled specially in _binary_ content mode and mapped onto the RabbitMQ content-type message property. All other attributes are transferred as metadata without further interpretation.
+### 2.1. data
 
-This mapping is intentionally robust against changes, including the addition and removal of event attributes, and also accommodates vendor extensions to the event metadata. Any mention of event attributes other than `datacontenttype` is exemplary.
+`data` is assumed to contain opaque application data that is
+encoded as declared by the `datacontenttype` attribute.
+
+An application is free to hold the information in any in-memory representation
+of its choosing, but as the value is transposed into RabbitMQ as defined in this
+specification, RabbitMQ delivery provides data available as a sequence of bytes.
+
+For instance, if the declared `datacontenttype` is
+`application/json;charset=utf-8`, the expectation is that the `data`
+value is made available as [UTF-8][rfc3629] encoded JSON text.
+
 
 ## 3. RabbitMQ Message Mapping
 
@@ -89,7 +96,7 @@ The _binary_ content mode accommodates any shape of event data, and allows for e
 
 #### 3.1.1. RabbitMQ Content-Type
 
-For the _binary_ mode, the RabbitMQ `content-type` property field value maps to the CloudEvents `datacontenttype` attribute.
+For the _binary_ mode, the RabbitMQ `content-type` property field value MUST be mapped to the CloudEvents `datacontenttype` attribute.
 
 #### 3.1.2. Event Data Encoding
 
@@ -130,7 +137,7 @@ The [RabbitMQ `content-type`][content-type] property field is set to the media t
 Example for the [JSON format][json-format]:
 
 ```text
-content-type: application/cloudevents+json; charset=UTF-8
+content-type: application/cloudevents+json
 ```
 #### 3.2.2. Event Data Encoding
 
@@ -150,7 +157,6 @@ This example shows a JSON event format encoded event:
 --------------- headers ----------------------------------
 {
     content-type: application/cloudevents+json; charset=utf-8
-    ... further headers omitted ...
 }
 --------------- body -------------------------------------
 
@@ -158,11 +164,13 @@ This example shows a JSON event format encoded event:
     “specversion” : "1.0",
     “id”: “12341234”
     “type” : "com.example.someevent",
-    “data-field-1”: “test”
+    “datacontenttype”: “application/xml; charset=utf-8”
 
     ... further attributes omitted ...
     “data”: {
-        ... application data …
+
+        ... application data encoded in XML ...
+
     }
 }
 
@@ -175,18 +183,20 @@ This example shows a Binary event format encoded event:
 {
     ce-specversion : "1.0",
     ce-id: “12341234”
-    ce-type : "com.example.someevent",
-    content-type: "application/cloudevents+json; charset=UTF-8"
+    ce-type: "com.example.someevent",
+    ce-source: "example/source.uri"
+    ce-extension: "test extension value",
+    ce-datacontenttype: "application/avro"
+    content-type: "application/avro"
 
     ... further attributes omitted ...
 }
 --------------- body --------------------------------------
-{
-      ... application data ...
-}
+
+      ... application data encoded in Avro ...
+
 -----------------------------------------------------------
 ```
-
 
 ## 4. References
 
