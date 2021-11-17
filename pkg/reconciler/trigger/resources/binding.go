@@ -37,7 +37,6 @@ const (
 type BindingArgs struct {
 	Name                     string
 	Namespace                string
-	Broker                   *eventingv1.Broker
 	RabbitMQClusterName      string
 	RabbitMQClusterNamespace string
 	Source                   string

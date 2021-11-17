@@ -168,7 +168,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 			dlq, err := r.rabbit.ReconcileQueue(ctx, &triggerresources.QueueArgs{
 				Name:                     naming.CreateTriggerDeadLetterQueueName(t),
 				Namespace:                t.Namespace,
-				Broker:                   broker,
 				RabbitMQClusterName:      broker.Spec.Config.Name,
 				RabbitMQClusterNamespace: broker.Spec.Config.Namespace,
 				Owner:                    *kmeta.NewControllerRef(t),
@@ -227,7 +226,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		queue, err := r.rabbit.ReconcileQueue(ctx, &triggerresources.QueueArgs{
 			Name:                     naming.CreateTriggerQueueName(t),
 			Namespace:                t.Namespace,
-			Broker:                   broker,
 			RabbitMQClusterName:      broker.Spec.Config.Name,
 			RabbitMQClusterNamespace: broker.Spec.Config.Namespace,
 			Owner:                    *kmeta.NewControllerRef(t),
@@ -444,7 +442,6 @@ func (r *Reconciler) reconcileBinding(ctx context.Context, b *eventingv1.Broker,
 	return r.rabbit.ReconcileBinding(ctx, &resources.BindingArgs{
 		Name:                     bindingName,
 		Namespace:                t.Namespace,
-		Broker:                   b,
 		RabbitMQClusterName:      b.Spec.Config.Name,
 		RabbitMQClusterNamespace: b.Spec.Config.Namespace,
 		Source:                   naming.BrokerExchangeName(b, false),
@@ -461,7 +458,6 @@ func (r *Reconciler) reconcileDLQBinding(ctx context.Context, b *eventingv1.Brok
 	return r.rabbit.ReconcileBinding(ctx, &resources.BindingArgs{
 		Name:                     bindingName,
 		Namespace:                t.Namespace,
-		Broker:                   b,
 		RabbitMQClusterName:      b.Spec.Config.Name,
 		RabbitMQClusterNamespace: b.Spec.Config.Namespace,
 		Source:                   naming.TriggerDLXExchangeName(t),

@@ -30,7 +30,6 @@ import (
 type QueueArgs struct {
 	Name                     string
 	Namespace                string
-	Broker                   *eventingv1.Broker
 	RabbitMQClusterName      string
 	RabbitMQClusterNamespace string
 	Owner                    metav1.OwnerReference

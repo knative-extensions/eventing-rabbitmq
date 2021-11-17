@@ -26,8 +26,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
-	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
-	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 const (
@@ -37,19 +35,6 @@ const (
 )
 
 func TestNewBinding(t *testing.T) {
-	broker := &eventingv1.Broker{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      brokerName,
-			Namespace: namespace,
-			UID:       brokerUID,
-		},
-		Spec: eventingv1.BrokerSpec{
-			Config: &duckv1.KReference{
-				Name:      rabbitmqcluster,
-				Namespace: namespace,
-			},
-		},
-	}
 	for _, tt := range []struct {
 		name    string
 		args    *resources.BindingArgs
@@ -61,7 +46,6 @@ func TestNewBinding(t *testing.T) {
 			args: &resources.BindingArgs{
 				Namespace:           namespace,
 				Name:                "name",
-				Broker:              broker,
 				RabbitMQClusterName: rabbitmqcluster,
 				Labels:              map[string]string{"label": "cool"},
 				Owner: metav1.OwnerReference{
@@ -102,7 +86,6 @@ func TestNewBinding(t *testing.T) {
 		{
 			name: "appends to filters if given",
 			args: &resources.BindingArgs{
-				Broker:  broker,
 				Filters: map[string]string{"filter": "this"},
 			},
 			want: &rabbitv1beta1.Binding{

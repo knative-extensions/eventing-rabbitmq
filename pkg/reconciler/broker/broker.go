@@ -298,7 +298,6 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 		queue, err := r.rabbit.ReconcileQueue(ctx, &triggerresources.QueueArgs{
 			Name:                     naming.CreateBrokerDeadLetterQueueName(b),
 			Namespace:                b.Namespace,
-			Broker:                   b,
 			RabbitMQClusterName:      b.Spec.Config.Name,
 			RabbitMQClusterNamespace: b.Spec.Config.Namespace,
 			Owner:                    *kmeta.NewControllerRef(b),
@@ -320,7 +319,6 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 		binding, err := r.rabbit.ReconcileBinding(ctx, &triggerresources.BindingArgs{
 			Name:                     bindingName,
 			Namespace:                b.Namespace,
-			Broker:                   b,
 			RabbitMQClusterName:      b.Spec.Config.Name,
 			RabbitMQClusterNamespace: b.Spec.Config.Namespace,
 			Source:                   naming.BrokerExchangeName(b, true),

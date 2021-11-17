@@ -26,8 +26,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
-	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
-	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/ptr"
 )
 
@@ -44,20 +42,6 @@ func TestNewQueue(t *testing.T) {
 		UID:        brokerUID,
 	}
 
-	broker := &eventingv1.Broker{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      brokerName,
-			Namespace: namespace,
-			UID:       brokerUID,
-		},
-		Spec: eventingv1.BrokerSpec{
-			Config: &duckv1.KReference{
-				Name:      rabbitmqcluster,
-				Namespace: namespace,
-			},
-		},
-	}
-
 	for _, tt := range []struct {
 		name    string
 		args    *resources.QueueArgs
@@ -70,7 +54,6 @@ func TestNewQueue(t *testing.T) {
 				Name:                triggerName,
 				Namespace:           namespace,
 				RabbitMQClusterName: rabbitmqcluster,
-				Broker:              broker,
 				Owner:               owner,
 				Labels:              map[string]string{"cool": "label"},
 			},
@@ -96,7 +79,6 @@ func TestNewQueue(t *testing.T) {
 			args: &resources.QueueArgs{
 				Name:                triggerName,
 				Namespace:           namespace,
-				Broker:              broker,
 				RabbitMQClusterName: rabbitmqcluster,
 				Owner:               owner,
 				Labels:              map[string]string{"cool": "label"},
