@@ -28,7 +28,6 @@ import (
 	"knative.dev/pkg/kmp"
 )
 
-// TODO: This is technically variable, see https://github.com/knative-sandbox/eventing-rabbitmq/issues/466
 const BrokerClass = "RabbitMQBroker"
 
 func ValidateTrigger(ctx context.Context) func(context.Context, *unstructured.Unstructured) error {

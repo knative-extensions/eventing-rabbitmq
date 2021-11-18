@@ -49,6 +49,7 @@ import (
 )
 
 const finalizerName = "rabbitmq.eventing.knative.dev"
+const BrokerClass = "RabbitMQBroker"
 
 type envConfig struct {
 	IngressImage          string `envconfig:"BROKER_INGRESS_IMAGE" required:"true"`
@@ -56,9 +57,6 @@ type envConfig struct {
 
 	// Which image to use for the DeadLetter dispatcher
 	DispatcherImage string `envconfig:"BROKER_DLQ_DISPATCHER_IMAGE" required:"true"`
-
-	// The default value should match the cluster default in config/core/configmaps/default-broker.yaml
-	BrokerClass string `envconfig:"BROKER_CLASS" default:"RabbitMQBroker"`
 }
 
 // NewController initializes the controller and is called by the generated code
@@ -94,12 +92,12 @@ func NewController(
 		rabbitLister:              rabbitInformer,
 		ingressImage:              env.IngressImage,
 		ingressServiceAccountName: env.IngressServiceAccount,
-		brokerClass:               env.BrokerClass,
+		brokerClass:               BrokerClass,
 		dialerFunc:                dialer.RealDialer,
 		dispatcherImage:           env.DispatcherImage,
 	}
 
-	impl := brokerreconciler.NewImpl(ctx, r, env.BrokerClass, func(impl *controller.Impl) controller.Options {
+	impl := brokerreconciler.NewImpl(ctx, r, BrokerClass, func(impl *controller.Impl) controller.Options {
 		return controller.Options{FinalizerName: finalizerName}
 	})
 
@@ -110,7 +108,7 @@ func NewController(
 	r.uriResolver = resolver.NewURIResolverFromTracker(ctx, impl.Tracker)
 
 	brokerInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: pkgreconciler.AnnotationFilterFunc(brokerreconciler.ClassAnnotationKey, env.BrokerClass, false /*allowUnset*/),
+		FilterFunc: pkgreconciler.AnnotationFilterFunc(brokerreconciler.ClassAnnotationKey, BrokerClass, false /*allowUnset*/),
 		Handler:    controller.HandleAll(impl.Enqueue),
 	})
 
