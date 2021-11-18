@@ -75,6 +75,34 @@ func TestNewQueue(t *testing.T) {
 			},
 		},
 		{
+			name: "creates a queue in RabbitMQ cluster namespace",
+			args: &resources.QueueArgs{
+				Name:                     triggerName,
+				Namespace:                namespace,
+				RabbitMQClusterName:      rabbitmqcluster,
+				RabbitMQClusterNamespace: "single-rabbitmq-cluster",
+				Owner:                    owner,
+				Labels:                   map[string]string{"cool": "label"},
+			},
+			want: &rabbitv1beta1.Queue{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:            triggerName,
+					Namespace:       namespace,
+					OwnerReferences: []metav1.OwnerReference{owner},
+					Labels:          map[string]string{"cool": "label"},
+				},
+				Spec: rabbitv1beta1.QueueSpec{
+					Name:       triggerName,
+					Durable:    true,
+					AutoDelete: false,
+					RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
+						Name:      rabbitmqcluster,
+						Namespace: "single-rabbitmq-cluster",
+					},
+				},
+			},
+		},
+		{
 			name: "adds a dead letter exchange if that is set",
 			args: &resources.QueueArgs{
 				Name:                triggerName,

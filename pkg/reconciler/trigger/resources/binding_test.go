@@ -84,6 +84,50 @@ func TestNewBinding(t *testing.T) {
 			},
 		},
 		{
+			name: "Creates a binding in RabbitMQ cluster namespace",
+			args: &resources.BindingArgs{
+				Namespace:                namespace,
+				Name:                     "name",
+				RabbitMQClusterName:      rabbitmqcluster,
+				RabbitMQClusterNamespace: "single-rabbitmq-cluster",
+				Labels:                   map[string]string{"label": "cool"},
+				Owner: metav1.OwnerReference{
+					Kind:       "Broker",
+					APIVersion: "eventing.knative.dev/v1",
+					Name:       brokerName,
+					UID:        brokerUID,
+				},
+				Source:      "source",
+				Destination: "destination",
+			},
+			want: &rabbitv1beta1.Binding{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: namespace,
+					Name:      "name",
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							Kind:       "Broker",
+							APIVersion: "eventing.knative.dev/v1",
+							Name:       brokerName,
+							UID:        brokerUID,
+						},
+					},
+					Labels: map[string]string{"label": "cool"},
+				},
+				Spec: rabbitv1beta1.BindingSpec{
+					Vhost:           "/",
+					Source:          "source",
+					Destination:     "destination",
+					DestinationType: "queue",
+					RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
+						Name:      rabbitmqcluster,
+						Namespace: "single-rabbitmq-cluster",
+					},
+					Arguments: &runtime.RawExtension{Raw: []byte(`{"x-match":"all"}`)},
+				},
+			},
+		},
+		{
 			name: "appends to filters if given",
 			args: &resources.BindingArgs{
 				Filters: map[string]string{"filter": "this"},

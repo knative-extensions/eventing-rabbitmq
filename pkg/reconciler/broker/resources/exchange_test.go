@@ -71,6 +71,51 @@ func TestNewExchange(t *testing.T) {
 			},
 		},
 	}, {
+		name: "broker exchange in RabbitMQ cluster namespace",
+		args: &resources.ExchangeArgs{
+			Name:                     brokerName,
+			Namespace:                namespace,
+			RabbitMQClusterName:      rabbitmqcluster,
+			RabbitMQClusterNamespace: "single-rabbitmq-cluster",
+			Broker: &eventingv1.Broker{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      brokerName,
+					Namespace: namespace,
+					UID:       brokerUID,
+				},
+				Spec: eventingv1.BrokerSpec{
+					Config: &duckv1.KReference{
+						Name: rabbitmqcluster,
+					},
+				},
+			},
+		},
+		want: &rabbitv1beta1.Exchange{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      brokerName,
+				Namespace: namespace,
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						Kind:       "Broker",
+						APIVersion: "eventing.knative.dev/v1",
+						Name:       brokerName,
+						UID:        brokerUID,
+					},
+				},
+				Labels: map[string]string{"eventing.knative.dev/broker": "testbroker"},
+			},
+			Spec: rabbitv1beta1.ExchangeSpec{
+				Name:       brokerName,
+				Type:       "headers",
+				Durable:    true,
+				AutoDelete: false,
+				RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
+					Name:      rabbitmqcluster,
+					Namespace: "single-rabbitmq-cluster",
+				},
+			},
+		},
+	}, {
 		name: "trigger exchange",
 		args: &resources.ExchangeArgs{
 			Name:                brokerName,
