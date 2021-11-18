@@ -25,7 +25,6 @@ import (
 	"github.com/NeowayLabs/wabbit"
 	"github.com/NeowayLabs/wabbit/amqp"
 	"github.com/NeowayLabs/wabbit/amqptest"
-	"k8s.io/apimachinery/pkg/util/uuid"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
@@ -33,7 +32,6 @@ import (
 
 	"go.uber.org/zap"
 
-	sourcesv1alpha1 "knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 	"knative.dev/eventing/pkg/adapter/v2"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/eventing/pkg/metrics/source"
@@ -364,25 +362,6 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 	}
 
 	_ = a.reporter.ReportEventCount(reportArgs, res.StatusCode)
-	return nil
-}
-
-func convertToCloudEvent(event *cloudevents.Event, msg wabbit.Delivery, a *Adapter) error {
-	if msg.MessageId() != "" {
-		event.SetID(msg.MessageId())
-	} else {
-		event.SetID(string(uuid.NewUUID()))
-	}
-
-	event.SetType(sourcesv1alpha1.RabbitmqEventType)
-	event.SetSource(sourcesv1alpha1.RabbitmqEventSource(a.config.Namespace, a.config.Name, a.config.Topic))
-	event.SetSubject(event.ID())
-	event.SetTime(msg.Timestamp())
-	err := event.SetData(msg.ContentType(), msg.Body())
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 

@@ -22,10 +22,16 @@ import (
 	"fmt"
 	"strings"
 
+	sourcesv1alpha1 "knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
+
 	"github.com/NeowayLabs/wabbit"
+
+	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
 	"github.com/cloudevents/sdk-go/v2/binding/format"
 	"github.com/cloudevents/sdk-go/v2/binding/spec"
+
+	"k8s.io/apimachinery/pkg/util/uuid"
 )
 
 const (
@@ -157,5 +163,24 @@ func (m *Message) GetExtension(name string) interface{} {
 }
 
 func (m *Message) Finish(error) error {
+	return nil
+}
+
+func convertToCloudEvent(event *cloudevents.Event, msg wabbit.Delivery, a *Adapter) error {
+	if msg.MessageId() != "" {
+		event.SetID(msg.MessageId())
+	} else {
+		event.SetID(string(uuid.NewUUID()))
+	}
+
+	event.SetType(sourcesv1alpha1.RabbitmqEventType)
+	event.SetSource(sourcesv1alpha1.RabbitmqEventSource(a.config.Namespace, a.config.Name, a.config.Topic))
+	event.SetSubject(event.ID())
+	event.SetTime(msg.Timestamp())
+	err := event.SetData(msg.ContentType(), msg.Body())
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
