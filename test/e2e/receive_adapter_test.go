@@ -3,13 +3,10 @@
 
 /*
 Copyright 2021 The Knative Authors
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
-
     http://www.apache.org/licenses/LICENSE-2.0
-
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,39 +20,36 @@ import (
 	"context"
 	"time"
 
-	"knative.dev/eventing-rabbitmq/test/e2e/config/brokertrigger"
-	duckv1 "knative.dev/pkg/apis/duck/v1"
+	"knative.dev/eventing-rabbitmq/test/e2e/config/source"
+	"knative.dev/eventing-rabbitmq/test/e2e/config/sourceproducer"
+
 	"knative.dev/reconciler-test/pkg/eventshub"
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/k8s"
 )
 
-// TestConcurrentDispatch verifies that the dispatcher sends events
-// concurrently. It does this by sending 2 events to an event recorder that
+// ConcurrentAdapterProcessingTest verifies that the Adapter sends events
+// concurrently. It does this by sending 5 events to an event recorder that
 // takes 1 second to respond to each event. It waits for both events to be
 // received and then calculates the time between events to determine that the
-// dispatcher did not block on receiving a response to the first event before
-// dispatching the second.
-func ConcurrentDispatchTest() *feature.Feature {
+// adapter did not block on receiving a response to the first event before
+// processing the second.
+func ConcurrentAdapterProcessingTest() *feature.Feature {
+	eventsNumber := 2
 	f := new(feature.Feature)
 
+	f.Setup("install test resources", source.Install())
 	f.Setup("install recorder", eventshub.Install("recorder", eventshub.StartReceiver, eventshub.ResponseWaitTime(time.Second)))
-	f.Setup("install test resources", brokertrigger.Install(brokertrigger.Topology{
-		MessageCount: 2,
-		Triggers: []duckv1.KReference{{
-			Kind: "Service",
-			Name: "recorder",
-		}},
-	}))
 
-	f.Requirement("recorder is addressable", k8s.IsAddressable(serviceGVR, "recorder", time.Second, 30*time.Second))
+	f.Requirement("recorder is addressable", k8s.IsAddressable(serviceGVR, "recorder"))
 	f.Requirement("RabbitMQ broker goes ready", AllGoReady)
 
-	f.Assert("the dispatcher sends events concurrently", func(ctx context.Context, t feature.T) {
-		events := eventshub.StoreFromContext(ctx, "recorder").AssertExact(t, 2)
+	f.Setup("install producer", sourceproducer.Install(eventsNumber))
+	f.Assert("the adapter sends events concurrently", func(ctx context.Context, t feature.T) {
+		events := eventshub.StoreFromContext(ctx, "recorder").AssertExact(t, eventsNumber)
 		diff := events[1].Time.Sub(events[0].Time)
 		if diff >= time.Second {
-			t.Fatalf("expected dispatch to happen concurrently but were sequential. time elapsed between events: %v", diff)
+			t.Fatalf("expected processing to happen concurrently but were sequential. time elapsed between events: %v", diff)
 		}
 	})
 

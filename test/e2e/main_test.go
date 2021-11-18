@@ -172,3 +172,31 @@ func TestBrokerInDifferentNamespaceThanRabbitMQCluster(t *testing.T) {
 	env.Test(ctx, t, NamespacedBrokerTest("broker-namespace"))
 	env.Finish()
 }
+
+func TestSourceAdapterConcurrency(t *testing.T) {
+	t.Parallel()
+
+	ctx, env := global.Environment(
+		knative.WithKnativeNamespace(system.Namespace()),
+		knative.WithLoggingConfig,
+		knative.WithTracingConfig,
+		k8s.WithEventListener,
+	)
+	env.Test(ctx, t, RabbitMQCluster())
+	env.Test(ctx, t, ConcurrentAdapterProcessingTest())
+	env.Finish()
+}
+
+func TestDispatcherConcurrency(t *testing.T) {
+	t.Parallel()
+
+	ctx, env := global.Environment(
+		knative.WithKnativeNamespace(system.Namespace()),
+		knative.WithLoggingConfig,
+		knative.WithTracingConfig,
+		k8s.WithEventListener,
+	)
+	env.Test(ctx, t, RabbitMQCluster())
+	env.Test(ctx, t, ConcurrentDispatchTest())
+	env.Finish()
+}

@@ -39,18 +39,19 @@ import (
 
 // DirectSourceTest makes sure an RabbitMQ Source delivers events to a sink.
 func DirectSourceTest() *feature.Feature {
+	eventsNumber := 10
 	f := new(feature.Feature)
 
 	f.Setup("install RabbitMQ source", source.Install())
 	f.Alpha("RabbitMQ source").Must("goes ready", AllGoReady)
 	// Note this is a different producer than events hub because it publishes
 	// directly to RabbitMQ
-	f.Setup("install producer", sourceproducer.Install())
+	f.Setup("install producer", sourceproducer.Install(eventsNumber))
 	f.Alpha("RabbitMQ source").
 		Must("the recorder received all sent events within the time",
 			func(ctx context.Context, t feature.T) {
 				// TODO: Use constraint matching instead of just counting number of events.
-				eventshub.StoreFromContext(ctx, "recorder").AssertAtLeast(t, 10)
+				eventshub.StoreFromContext(ctx, "recorder").AssertAtLeast(t, eventsNumber)
 			})
 
 	return f

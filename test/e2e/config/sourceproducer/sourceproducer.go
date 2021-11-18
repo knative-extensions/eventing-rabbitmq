@@ -28,9 +28,9 @@ func init() {
 	environment.RegisterPackage(manifest.ImagesLocalYaml()...)
 }
 
-func Install() feature.StepFn {
+func Install(producerCount int) feature.StepFn {
 	return func(ctx context.Context, t feature.T) {
-		if _, err := manifest.InstallLocalYaml(ctx, map[string]interface{}{"producerCount": 10}); err != nil {
+		if _, err := manifest.InstallLocalYaml(ctx, map[string]interface{}{"producerCount": producerCount}); err != nil {
 			t.Fatal(err)
 		}
 	}
