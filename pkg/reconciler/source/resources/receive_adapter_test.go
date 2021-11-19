@@ -69,6 +69,9 @@ func TestMakeReceiveAdapter(t *testing.T) {
 				Exclusive:        false,
 				NoWait:           false,
 			},
+			ChannelConfig: v1alpha12.RabbitmqChannelConfigSpec{
+				PrefetchCount: 10,
+			},
 		},
 	}
 
@@ -163,10 +166,6 @@ func TestMakeReceiveAdapter(t *testing.T) {
 									Value: "*.critical",
 								},
 								{
-									Name:  "RABBITMQ_CHANNEL_CONFIG_PREFETCH_COUNT",
-									Value: "0",
-								},
-								{
 									Name:  "RABBITMQ_CHANNEL_CONFIG_QOS_GLOBAL",
 									Value: "false",
 								},
@@ -242,6 +241,10 @@ func TestMakeReceiveAdapter(t *testing.T) {
 								},
 								{
 									Name: "RABBITMQ_VHOST",
+								},
+								{
+									Name:  "RABBITMQ_CHANNEL_CONFIG_PREFETCH_COUNT",
+									Value: "10",
 								},
 							},
 						},
