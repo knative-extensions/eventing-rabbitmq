@@ -21,6 +21,7 @@ import (
 	"fmt"
 	nethttp "net/http"
 	"strings"
+	"sync"
 
 	"github.com/NeowayLabs/wabbit"
 	"github.com/NeowayLabs/wabbit/amqp"
@@ -50,8 +51,8 @@ type ExchangeConfig struct {
 }
 
 type ChannelConfig struct {
-	PrefetchCount int
-	GlobalQos     bool
+	PrefetchCount int  `envconfig:"RABBITMQ_CHANNEL_CONFIG_PREFETCH_COUNT" default:"10" required:"false"`
+	GlobalQos     bool `envconfig:"RABBITMQ_CHANNEL_CONFIG_QOS_GLOBAL" required:"false"`
 }
 
 type QueueConfig struct {
@@ -146,9 +147,11 @@ func (a *Adapter) CreateChannel(conn *amqp.Conn, connTest *amqptest.Conn,
 		return nil, err
 	}
 
-	err = ch.Qos(a.config.ChannelConfig.PrefetchCount,
+	err = ch.Qos(
+		a.config.ChannelConfig.PrefetchCount,
 		0,
-		a.config.ChannelConfig.GlobalQos)
+		a.config.ChannelConfig.GlobalQos,
+	)
 
 	return ch, err
 }
@@ -279,31 +282,51 @@ func (a *Adapter) PollForMessages(channel *wabbit.Channel,
 
 	msgs, _ := a.ConsumeMessages(channel, queue, logger)
 
+	wg := &sync.WaitGroup{}
+	workerCount := a.config.ChannelConfig.PrefetchCount
+	wg.Add(workerCount)
+	workerQueue := make(chan wabbit.Delivery, workerCount)
+
+	for i := 0; i < workerCount; i++ {
+		go a.processMessages(wg, workerQueue)
+	}
+
 	for {
 		select {
-		case msg, ok := <-msgs:
-			if ok {
-				logger.Info("Received: ", zap.Any("value", string(msg.Body())))
-
-				if err := a.postMessage(msg); err == nil {
-					logger.Info("Successfully sent event to sink")
-					err = msg.Ack(false)
-					if err != nil {
-						logger.Error("Sending Ack failed with Delivery Tag")
-					}
-				} else {
-					logger.Error("Sending event to sink failed: ", zap.Error(err))
-					err = msg.Nack(false, true)
-					if err != nil {
-						logger.Error("Sending Nack failed with Delivery Tag")
-					}
-				}
-			} else {
-				return nil
-			}
 		case <-stopCh:
+			close(workerQueue)
+			wg.Wait()
 			logger.Info("Shutting down...")
 			return nil
+		case msg, ok := <-msgs:
+			if !ok {
+				close(workerQueue)
+				wg.Wait()
+				return nil
+			}
+			workerQueue <- msg
+		}
+	}
+}
+
+func (a *Adapter) processMessages(wg *sync.WaitGroup, queue <-chan wabbit.Delivery) {
+	defer wg.Done()
+
+	for msg := range queue {
+		a.logger.Info("Received: ", zap.Any("value", string(msg.Body())))
+
+		if err := a.postMessage(msg); err == nil {
+			a.logger.Info("Successfully sent event to sink")
+			err = msg.Ack(false)
+			if err != nil {
+				a.logger.Error("Sending Ack failed with Delivery Tag")
+			}
+		} else {
+			a.logger.Error("Sending event to sink failed: ", zap.Error(err))
+			err = msg.Nack(false, true)
+			if err != nil {
+				a.logger.Error("Sending Nack failed with Delivery Tag")
+			}
 		}
 	}
 }
