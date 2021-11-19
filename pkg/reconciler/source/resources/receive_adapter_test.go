@@ -247,6 +247,10 @@ func TestMakeReceiveAdapter(t *testing.T) {
 								{
 									Name: "RABBITMQ_VHOST",
 								},
+								{
+									Name:  "RABBITMQ_CHANNEL_CONFIG_PREFETCH_COUNT",
+									Value: "10",
+								},
 							},
 						},
 					},
