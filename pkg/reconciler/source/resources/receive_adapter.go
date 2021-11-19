@@ -65,10 +65,6 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 			Value: args.Source.Spec.QueueConfig.RoutingKey,
 		},
 		{
-			Name:  "RABBITMQ_CHANNEL_CONFIG_PREFETCH_COUNT",
-			Value: strconv.Itoa(args.Source.Spec.ChannelConfig.PrefetchCount),
-		},
-		{
 			Name:  "RABBITMQ_CHANNEL_CONFIG_QOS_GLOBAL",
 			Value: strconv.FormatBool(args.Source.Spec.ChannelConfig.GlobalQos),
 		},
@@ -148,6 +144,13 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 			Name:  "RABBITMQ_VHOST",
 			Value: args.Source.Spec.Vhost,
 		},
+	}
+
+	if args.Source.Spec.ChannelConfig.PrefetchCount > 0 {
+		env = append(env, corev1.EnvVar{
+			Name:  "RABBITMQ_CHANNEL_CONFIG_PREFETCH_COUNT",
+			Value: strconv.Itoa(args.Source.Spec.ChannelConfig.PrefetchCount),
+		})
 	}
 
 	return &v1.Deployment{
