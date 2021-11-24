@@ -8,3 +8,5 @@ bin/
 *.swp
 .history
 .envrc
+.env
+.config
