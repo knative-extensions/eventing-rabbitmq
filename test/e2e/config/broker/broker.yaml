@@ -1,4 +1,4 @@
-# Copyright 2020 The Knative Authors
+# Copyright 2021 The Knative Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,22 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-apiVersion: rabbitmq.com/v1beta1
-kind: RabbitmqCluster
+apiVersion: v1
+kind: Namespace
 metadata:
-  name: rabbitmqc
-  namespace: {{ .namespace }}
+  name: {{ .broker_namespace }}
+---
+apiVersion: eventing.knative.dev/v1
+kind: Broker
+metadata:
+  name: broker
+  namespace: {{ .broker_namespace }}
   annotations:
-    # We allow any Knative Broker of class RabbitMQBroker in any namespace
-    # to declare objects against this RabbitMQ cluster
-    rabbitmq.com/topology-allowed-namespaces: "*"
+    eventing.knative.dev/broker.class: RabbitMQBroker
 spec:
-  replicas: 1
-  resources:
-    limits:
-      cpu: "400m"
-      memory: "600Mi"
-    requests:
-      cpu: "400m"
-      memory: "600Mi"
+  config:
+    apiVersion: rabbitmq.com/v1beta1
+    kind: RabbitmqCluster
+    name: rabbitmqc
+    namespace: {{ .namespace }}

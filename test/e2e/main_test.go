@@ -163,3 +163,12 @@ func TestSourceVhostSetup(t *testing.T) {
 	env.Test(ctx, t, VHostSourceTest())
 	env.Finish()
 }
+
+func TestBrokerInDifferentNamespaceThanRabbitMQCluster(t *testing.T) {
+	t.Parallel()
+
+	ctx, env := global.Environment()
+	env.Test(ctx, t, RabbitMQCluster())
+	env.Test(ctx, t, NamespacedBrokerTest("broker-namespace"))
+	env.Finish()
+}
