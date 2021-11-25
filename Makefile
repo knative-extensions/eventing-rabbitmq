@@ -3,6 +3,11 @@
 SHELL := bash # we want bash behaviour in all shell invocations
 PLATFORM := $(shell uname)
 platform := $(shell echo $(PLATFORM) | tr A-Z a-z)
+ifeq ($(PLATFORM),Darwin)
+platform_alt = macOS
+else
+platform_alt = $(platform)
+endif
 ARCH := $(shell uname -m)
 
 # https://stackoverflow.com/questions/4842424/list-of-ansi-color-escape-sequences
@@ -141,7 +146,7 @@ K_CMD = create --dry-run=client --output=yaml
 endif
 
 K9S_RELEASES := https://github.com/derailed/k9s/releases
-K9S_VERSION := 0.25.4
+K9S_VERSION := 0.25.6
 K9S_BIN_DIR := $(LOCAL_BIN)/k9s-$(K9S_VERSION)-$(platform)-x86_64
 K9S_URL := $(K9S_RELEASES)/download/v$(K9S_VERSION)/k9s_$(platform)_x86_64.tar.gz
 K9S := $(K9S_BIN_DIR)/k9s
@@ -159,6 +164,24 @@ releases-k9s:
 K9S_ARGS ?= --all-namespaces
 k9s: | $(KUBECONFIG) $(K9S) ## Terminal ncurses UI for K8s
 	$(K9S) $(K9S_ARGS)
+
+GH_RELEASES := https://github.com/cli/cli/releases
+GH_VERSION := 2.2.0
+GH_DIR := $(LOCAL_BIN)/gh_$(GH_VERSION)_$(platform_alt)_amd64
+GH_URL := $(GH_RELEASES)/download/v$(GH_VERSION)/$(notdir $(GH_DIR)).tar.gz
+GH := $(GH_DIR)/bin/gh
+$(GH): | $(CURL) $(LOCAL_BIN)
+	$(CURL) --progress-bar --fail --location --output $(GH_DIR).tar.gz $(GH_URL)
+	tar zxf $(GH_DIR).tar.gz -C $(LOCAL_BIN)
+	touch $(GH)
+	chmod +x $(GH)
+	$(GH) version | grep $(GH_VERSION)
+	ln -sf $(GH) $(LOCAL_BIN)/gh
+.PHONY: gh
+gh: $(GH)
+.PHONY: releases-gh
+releases-gh:
+	$(OPEN) $(GH_RELEASES)
 
 
 
