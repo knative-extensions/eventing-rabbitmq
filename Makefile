@@ -205,7 +205,7 @@ curl: $(CURL)
 HELP_TARGET_DEPTH ?= \#\#
 .PHONY: help
 help:
-	@awk -F':+ |$(HELP_TARGET_DEPTH)' '/^[^.][0-9a-zA-Z._%-]+:+.+$(HELP_TARGET_DEPTH).+$$/ { printf "\033[36m%-26s\033[0m %s\n", $$1, $$3 }' $(MAKEFILE_LIST) \
+	@awk -F':+ |$(HELP_TARGET_DEPTH)' '/^[^.][0-9a-zA-Z._%-]+:+.+$(HELP_TARGET_DEPTH).+$$/ { printf "\033[36m%-34s\033[0m %s\n", $$1, $$3 }' $(MAKEFILE_LIST) \
 	| sort
 
 define MAKE_TARGETS
@@ -272,27 +272,27 @@ $(KUBECONFIG): | kind-cluster $(KUBECONFIG_DIR)
 	$(KIND) get kubeconfig --name $(KIND_CLUSTER_NAME) > $(KUBECONFIG)
 
 # https://github.com/rabbitmq/cluster-operator/releases
-RABBITMQ_CLUSTER_OPERATOR_VERSION := 1.10.0
-install-rabbitmq-cluster-operator: | $(KUBECONFIG) $(KUBECTL)
+RABBITMQ_CLUSTER_OPERATOR_VERSION ?= 1.10.0
+install-rabbitmq-cluster-operator: | $(KUBECONFIG) $(KUBECTL) ## Install RabbitMQ Cluster Operator
 	$(KUBECTL) $(K_CMD) --filename \
 		https://github.com/rabbitmq/cluster-operator/releases/download/v$(RABBITMQ_CLUSTER_OPERATOR_VERSION)/cluster-operator.yml
 
 # https://github.com/jetstack/cert-manager/releases
-CERT_MANAGER_VERSION := 1.5.3
-install-cert-manager: | $(KUBECONFIG) $(KUBECTL)
+CERT_MANAGER_VERSION ?= 1.5.3
+install-cert-manager: | $(KUBECONFIG) $(KUBECTL) ## Install Cert Manager - dependency of RabbitMQ Topology Operator
 	$(KUBECTL) $(K_CMD) --filename \
 		https://github.com/jetstack/cert-manager/releases/download/v$(CERT_MANAGER_VERSION)/cert-manager.yaml
 	$(KUBECTL) wait --for=condition=available deploy/cert-manager-webhook --timeout=60s --namespace $(CERT_MANAGER_NAMESPACE)
 
 # https://github.com/rabbitmq/messaging-topology-operator/releases
-RABBITMQ_TOPOLOGY_OPERATOR_VERSION := 1.2.1
-install-rabbitmq-topology-operator: | install-cert-manager $(KUBECTL)
+RABBITMQ_TOPOLOGY_OPERATOR_VERSION ?= 1.2.1
+install-rabbitmq-topology-operator: | install-cert-manager $(KUBECTL) ## Install RabbitMQ Topology Operator
 	$(KUBECTL) $(K_CMD) --filename \
 		https://github.com/rabbitmq/messaging-topology-operator/releases/download/v$(RABBITMQ_TOPOLOGY_OPERATOR_VERSION)/messaging-topology-operator-with-certmanager.yaml
 
 # https://github.com/knative/eventing/releases
-KNATIVE_EVENTING_VERSION := 1.0.0
-install-knative-eventing: | $(KUBECONFIG) $(KUBECTL)
+KNATIVE_EVENTING_VERSION ?= 1.0.0
+install-knative-eventing: | $(KUBECONFIG) $(KUBECTL) ## Install Knative Eventing
 	$(KUBECTL) $(K_CMD) --filename \
 		https://github.com/knative/eventing/releases/download/knative-v$(KNATIVE_EVENTING_VERSION)/eventing-crds.yaml
 	$(KUBECTL) $(K_CMD) --filename \
@@ -300,7 +300,7 @@ install-knative-eventing: | $(KUBECONFIG) $(KUBECTL)
 	$(KUBECTL) wait --for=condition=available deploy/eventing-controller --timeout=30s --namespace $(SYSTEM_NAMESPACE)
 	$(KUBECTL) wait --for=condition=available deploy/eventing-webhook --timeout=30s --namespace $(SYSTEM_NAMESPACE)
 
-install-knative-eventing-rabbitmq: | $(KUBECONFIG) $(KO) install-knative-eventing
+install-knative-eventing-rabbitmq: | $(KUBECONFIG) $(KO) install-knative-eventing ## Install dev Knative Eventing RabbitMQ - also installs Knative Eventing
 	$(KO) apply --filename config/broker
 	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-broker-controller --timeout=30s --namespace $(SYSTEM_NAMESPACE)
 	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-broker-webhook --timeout=30s --namespace $(SYSTEM_NAMESPACE)
