@@ -1,13 +1,16 @@
+The following assumes some knowledge on running Knative tests. If this is your first time, see the [Knative Eventing](https://github.com/knative/eventing/blob/main/test/README.md) test documention first before continuing.
+
 # Running the Tests
 
-Before you can run the tests, you need to export the namespace of your Knative Eventing installation:
+Make sure you export the namespace of your Knative Eventing installation:
 `export SYSTEM_NAMESPACE=knative-eventing`
 
-To run the whole suite of tests:
+Then you can run the whole suite of tests:
 `go test -v -race -count=1 -tags=e2e ./test/e2e`
 
 To run a specific test:
 `go test -v -race -count=1 -tags=e2e -run=NAME_OF_TEST ./test/e2e`
+
 
 ## Debugging a Failed Test
 
