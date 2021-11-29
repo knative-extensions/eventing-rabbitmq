@@ -147,6 +147,10 @@ func (a *Adapter) CreateChannel(conn *amqp.Conn, connTest *amqptest.Conn,
 		return nil, err
 	}
 
+	logger.Info("Initializing Channel with Config: ",
+		zap.Int("PrefetchCount", a.config.ChannelConfig.PrefetchCount),
+		zap.Bool("GlobalQoS", a.config.ChannelConfig.GlobalQos),
+	)
 	err = ch.Qos(
 		a.config.ChannelConfig.PrefetchCount,
 		0,
@@ -286,6 +290,7 @@ func (a *Adapter) PollForMessages(channel *wabbit.Channel,
 	workerCount := a.config.ChannelConfig.PrefetchCount
 	wg.Add(workerCount)
 	workerQueue := make(chan wabbit.Delivery, workerCount)
+	logger.Info("Starting GoRoutines Workers: ", zap.Int("WorkerCount", workerCount))
 
 	for i := 0; i < workerCount; i++ {
 		go a.processMessages(wg, workerQueue)
