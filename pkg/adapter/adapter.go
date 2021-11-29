@@ -51,7 +51,7 @@ type ExchangeConfig struct {
 }
 
 type ChannelConfig struct {
-	PrefetchCount int  `envconfig:"RABBITMQ_CHANNEL_CONFIG_PREFETCH_COUNT" default:"10" required:"false"`
+	PrefetchCount int  `envconfig:"RABBITMQ_CHANNEL_CONFIG_PREFETCH_COUNT" default:"1" required:"false"`
 	GlobalQos     bool `envconfig:"RABBITMQ_CHANNEL_CONFIG_QOS_GLOBAL" required:"false"`
 }
 

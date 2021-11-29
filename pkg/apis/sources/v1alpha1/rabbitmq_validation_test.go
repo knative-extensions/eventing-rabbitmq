@@ -43,6 +43,10 @@ var (
 			Exclusive:        true,
 			NoWait:           false,
 		},
+		ChannelConfig: RabbitmqChannelConfigSpec{
+			PrefetchCount: 1,
+			GlobalQos:     false,
+		},
 		Sink: &duckv1.Destination{
 			Ref: &duckv1.KReference{
 				APIVersion: "foo",
