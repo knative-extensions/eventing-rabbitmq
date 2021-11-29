@@ -177,6 +177,7 @@ func TestRabbitmqSourceCheckImmutableFields(t *testing.T) {
 				orig := &RabbitmqSource{
 					Spec: *tc.orig,
 				}
+
 				ctx = apis.WithinUpdate(ctx, orig)
 			}
 			updated := &RabbitmqSource{
@@ -185,6 +186,84 @@ func TestRabbitmqSourceCheckImmutableFields(t *testing.T) {
 			err := updated.Validate(ctx)
 			if tc.allowed != (err == nil) {
 				t.Fatalf("Unexpected immutable field check. Expected %v. Actual %v", tc.allowed, err)
+			}
+		})
+	}
+}
+
+func TestRabbitmqSourceCheckChannelPrefetchCountValue(t *testing.T) {
+	testCases := map[string]struct {
+		spec                *RabbitmqSourceSpec
+		prefetchCount       int
+		allowed, isInUpdate bool
+	}{
+		"nil spec": {
+			spec:    nil,
+			allowed: true,
+		},
+		"valid prefetch count": {
+			spec:          &fullSpec,
+			prefetchCount: 1,
+			allowed:       true,
+		},
+		"negative prefetch_count in spec": {
+			spec:          &fullSpec,
+			prefetchCount: 0,
+			allowed:       false,
+		},
+		"out of bounds prefetch_count in spec": {
+			spec:          &fullSpec,
+			prefetchCount: 1001,
+			allowed:       false,
+		},
+		"valid prefetch count on update": {
+			spec:          &fullSpec,
+			prefetchCount: 1,
+			isInUpdate:    true,
+			allowed:       true,
+		},
+		"negative prefetch_count in spec on update": {
+			spec:          &fullSpec,
+			prefetchCount: 0,
+			allowed:       false,
+		},
+		"out of bounds prefetch_count in spec on update": {
+			spec:          &fullSpec,
+			prefetchCount: 1001,
+			allowed:       false,
+		},
+	}
+
+	for n, tc := range testCases {
+		t.Run(n, func(t *testing.T) {
+			ctx := context.TODO()
+			if tc.spec != nil {
+				orig := &RabbitmqSource{
+					Spec: *tc.spec,
+				}
+
+				var err *apis.FieldError
+				if tc.isInUpdate {
+					updated := &RabbitmqSource{
+						Spec: *tc.spec,
+					}
+					updated.Spec.ChannelConfig = RabbitmqChannelConfigSpec{
+						PrefetchCount: tc.prefetchCount,
+					}
+					ctx = apis.WithinUpdate(ctx, orig)
+					err = updated.Validate(ctx)
+				} else {
+					orig.Spec.ChannelConfig = RabbitmqChannelConfigSpec{
+						PrefetchCount: tc.prefetchCount,
+					}
+
+					ctx = apis.WithinCreate(ctx)
+					err = orig.Validate(ctx)
+				}
+
+				if tc.allowed != (err == nil) {
+					t.Fatalf("Unexpected prefetch count value check. Expected %v. Actual %v", tc.allowed, err)
+				}
 			}
 		})
 	}
