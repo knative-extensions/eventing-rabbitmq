@@ -183,6 +183,23 @@ gh: $(GH)
 releases-gh:
 	$(OPEN) $(GH_RELEASES)
 
+KN_RELEASES := https://github.com/knative/client/releases
+KN_VERSION = 1.0.0
+KN_BIN := kn-$(KN_VERSION)-$(platform)-amd64
+KN_URL := $(KN_RELEASES)/download/knative-v$(KN_VERSION)/kn-$(platform)-amd64
+KN := $(LOCAL_BIN)/$(KN_BIN)
+$(KN): | $(CURL) $(LOCAL_BIN)
+	$(CURL) --progress-bar --fail --location --output $(KN) "$(KN_URL)"
+	touch $(KN)
+	chmod +x $(KN)
+	$(KN) version | grep $(KN_VERSION)
+	ln -sf $(KN) $(LOCAL_BIN)/kn
+.PHONY: kn
+kn: $(KN)
+.PHONY: releases-kn
+releases-kn:
+	$(OPEN) $(KN_RELEASES)
+
 
 
 ### TARGETS #
