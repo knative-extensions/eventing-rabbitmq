@@ -150,13 +150,6 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 		},
 	}
 
-	if args.Source.Spec.ChannelConfig.PrefetchCount > 0 {
-		env = append(env, corev1.EnvVar{
-			Name:  "RABBITMQ_CHANNEL_CONFIG_PREFETCH_COUNT",
-			Value: strconv.Itoa(args.Source.Spec.ChannelConfig.PrefetchCount),
-		})
-	}
-
 	return &v1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:         kmeta.ChildName(fmt.Sprintf("rabbitmqsource-%s-", args.Source.Name), string(args.Source.UID)),
