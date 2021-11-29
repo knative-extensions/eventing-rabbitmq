@@ -1,24 +1,14 @@
-The following assumes some knowledge on running Knative tests. If this is your first time, see the [Knative Eventing](https://github.com/knative/eventing/blob/main/test/README.md) test documention first before continuing.
+# E2E Tests
 
-# Running the Tests
-
-Make sure you export the namespace of your Knative Eventing installation:
-`export SYSTEM_NAMESPACE=knative-eventing`
-
-Then you can run the whole suite of tests:
-`go test -v -race -count=1 -tags=e2e ./test/e2e`
-
-To run a specific test:
-`go test -v -race -count=1 -tags=e2e -run=NAME_OF_TEST ./test/e2e`
-
+The following assumes some knowledge on running Knative tests. If this is your first time, see the [Eventing Tests](https://github.com/knative/eventing/blob/main/test/README.md) first before continuing. There you'll learn how to run the e2e suite, run specific tests, and create the required test images.
 
 ## Debugging a Failed Test
 
-Each test will run in its own namespace, and the tests clean themselves up when they finish. To keep test namespaces around, simply comment out the `env.Finish()` [line](https://github.com/knative-sandbox/eventing-rabbitmq/blob/main/test/e2e/main_test.go#L164) of the test you wish to focus on. Make sure you delete the namespaces when you're done.
+Each e2e test will run in its own namespace, and the tests clean themselves up when they finish. To keep test namespaces around, simply comment out the `env.Finish()` [line](https://github.com/knative-sandbox/eventing-rabbitmq/blob/main/test/e2e/main_test.go#L164) of the test you wish to focus on. Make sure you delete the namespaces when you're done.
 
 ## Profiling RabbitMQ
 
-RabbitMQ has a dashboard with lots of information available about the cluster that can be useful for debugging tests. 
+RabbitMQ has a dashboard with lots of information available about the cluster that can be useful for debugging tests.
 
 1. Get the credentials out of a secret on the Kubernetes cluster where the tests are running:
   `kubectl -n <test namespace> get secrets rabbitmqc-default-user -o json | jq -r '.data["default_user.conf"]' | base64 -d`
