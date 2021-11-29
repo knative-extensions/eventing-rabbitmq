@@ -17,6 +17,10 @@ kind: RabbitmqCluster
 metadata:
   name: rabbitmqc
   namespace: {{ .namespace }}
+  annotations:
+    # We allow any Knative Broker of class RabbitMQBroker in any namespace
+    # to declare objects against this RabbitMQ cluster
+    rabbitmq.com/topology-allowed-namespaces: "*"
 spec:
   replicas: 1
   resources:

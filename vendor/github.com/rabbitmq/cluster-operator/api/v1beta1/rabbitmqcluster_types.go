@@ -9,6 +9,7 @@
 package v1beta1
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -50,7 +51,6 @@ type RabbitmqClusterSpec struct {
 	Replicas *int32 `json:"replicas,omitempty"`
 	// Image is the name of the RabbitMQ docker image to use for RabbitMQ nodes in the RabbitmqCluster.
 	// Must be provided together with ImagePullSecrets in order to use an image in a private registry.
-	// +kubebuilder:default:="rabbitmq:3.8.21-management"
 	Image string `json:"image,omitempty"`
 	// List of Secret resource containing access credentials to the registry for the RabbitMQ image. Required if the docker registry is private.
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
@@ -84,6 +84,69 @@ type RabbitmqClusterSpec struct {
 	// +kubebuilder:validation:Minimum:=0
 	// +kubebuilder:default:=604800
 	TerminationGracePeriodSeconds *int64 `json:"terminationGracePeriodSeconds,omitempty"`
+	// Secret backend configuration for the RabbitmqCluster.
+	// Enables to fetch default user credentials and certificates from K8s external secret stores.
+	SecretBackend SecretBackend `json:"secretBackend,omitempty"`
+}
+
+// SecretBackend configures a single secret backend.
+// Today, only Vault exists as supported secret backend.
+// Future secret backends could be Secrets Store CSI Driver.
+// If not configured, K8s Secrets will be used.
+type SecretBackend struct {
+	Vault *VaultSpec `json:"vault,omitempty"`
+}
+
+// VaultSpec will add Vault annotations (see https://www.vaultproject.io/docs/platform/k8s/injector/annotations)
+// to RabbitMQ Pods. It requires a Vault Agent Sidecar Injector (https://www.vaultproject.io/docs/platform/k8s/injector)
+// to be installed in the K8s cluster. The injector is a K8s Mutation Webhook Controller that alters RabbitMQ Pod specifications
+// (based on the added Vault annotations) to include Vault Agent containers that render Vault secrets to the volume.
+type VaultSpec struct {
+	// Role in Vault.
+	// If vault.defaultUserPath is set, this role must have capability to read the pre-created default user credential in Vault.
+	// If vault.tls is set, this role must have capability to create and update certificates in the Vault PKI engine for the domains
+	// "<namespace>" and "<namespace>.svc".
+	Role string `json:"role,omitempty"`
+	// Vault annotations that override the Vault annotations set by the cluster-operator.
+	// For a list of valid Vault annotations, see https://www.vaultproject.io/docs/platform/k8s/injector/annotations
+	// +optional
+	Annotations map[string]string `json:"annotations,omitempty"`
+	// Path in Vault to access a KV (Key-Value) secret with the fields username and password for the default user.
+	// For example "secret/data/rabbitmq/config".
+	DefaultUserPath string `json:"defaultUserPath,omitempty"`
+	// Sidecar container that updates the default user's password in RabbitMQ when it changes in Vault.
+	// Additionally, it updates /var/lib/rabbitmq/.rabbitmqadmin.conf (used by rabbitmqadmin CLI).
+	// Set to empty string to disable the sidecar container.
+	DefaultUserUpdaterImage *string      `json:"defaultUserUpdaterImage,omitempty"`
+	TLS                     VaultTLSSpec `json:"tls,omitempty"`
+}
+
+type VaultTLSSpec struct {
+	// Path in Vault PKI engine.
+	// For example "pki/issue/hashicorp-com".
+	// required
+	PKIIssuerPath string `json:"pkiIssuerPath,omitempty"`
+	// Specifies the requested certificate Common Name (CN).
+	// Defaults to <serviceName>.<namespace>.svc if not provided.
+	// +optional
+	CommonName string `json:"commonName,omitempty"`
+	// Specifies the requested Subject Alternative Names (SANs), in a comma-delimited list.
+	// These will be appended to the SANs added by the cluster-operator.
+	// The cluster-operator will add SANs:
+	// "<RabbitmqCluster name>-server-<index>.<RabbitmqCluster name>-nodes.<namespace>" for each pod,
+	// e.g. "myrabbit-server-0.myrabbit-nodes.default".
+	// +optional
+	AltNames string `json:"altNames,omitempty"`
+	// Specifies the requested IP Subject Alternative Names, in a comma-delimited list.
+	// +optional
+	IpSans string `json:"ipSans,omitempty"`
+}
+
+func (spec *VaultSpec) TLSEnabled() bool {
+	return spec.TLS.PKIIssuerPath != ""
+}
+func (spec *VaultSpec) DefaultUserSecretEnabled() bool {
+	return spec.DefaultUserPath != ""
 }
 
 // Provides the ability to override the generated manifest of several child resources.
@@ -323,11 +386,14 @@ type RabbitmqClusterServiceSpec struct {
 }
 
 func (cluster *RabbitmqCluster) TLSEnabled() bool {
+	return cluster.SecretTLSEnabled() || cluster.VaultTLSEnabled()
+}
+func (cluster *RabbitmqCluster) SecretTLSEnabled() bool {
 	return cluster.Spec.TLS.SecretName != ""
 }
 
 func (cluster *RabbitmqCluster) MutualTLSEnabled() bool {
-	return cluster.TLSEnabled() && cluster.Spec.TLS.CaSecretName != ""
+	return (cluster.SecretTLSEnabled() && cluster.Spec.TLS.CaSecretName != "") || cluster.VaultTLSEnabled()
 }
 
 func (cluster *RabbitmqCluster) MemoryLimited() bool {
@@ -349,6 +415,31 @@ func (cluster *RabbitmqCluster) AdditionalPluginEnabled(plugin Plugin) bool {
 		}
 	}
 	return false
+}
+
+// the OSR plugin `rabbitmq_multi_dc_replication` enables `rabbitmq_stream` as a dependency
+func (cluster *RabbitmqCluster) StreamNeeded() bool {
+	return cluster.AdditionalPluginEnabled("rabbitmq_stream") || cluster.AdditionalPluginEnabled("rabbitmq_multi_dc_replication")
+}
+
+func (cluster *RabbitmqCluster) VaultEnabled() bool {
+	return cluster.Spec.SecretBackend.Vault != nil
+}
+
+func (cluster *RabbitmqCluster) UsesDefaultUserUpdaterImage() bool {
+	return cluster.VaultEnabled() && cluster.Spec.SecretBackend.Vault.DefaultUserUpdaterImage == nil
+}
+
+func (cluster *RabbitmqCluster) VaultDefaultUserSecretEnabled() bool {
+	return cluster.VaultEnabled() && cluster.Spec.SecretBackend.Vault.DefaultUserSecretEnabled()
+}
+
+func (cluster *RabbitmqCluster) VaultTLSEnabled() bool {
+	return cluster.VaultEnabled() && cluster.Spec.SecretBackend.Vault.TLSEnabled()
+}
+
+func (cluster *RabbitmqCluster) ServiceSubDomain() string {
+	return fmt.Sprintf("%s.%s.svc", cluster.Name, cluster.Namespace)
 }
 
 // +kubebuilder:object:root=true

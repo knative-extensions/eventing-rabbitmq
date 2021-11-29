@@ -29,27 +29,28 @@ import (
 
 // ExchangeArgs are the arguments to create a RabbitMQ Exchange.
 type ExchangeArgs struct {
-	Name            string
-	Namespace       string
-	Broker          *eventingv1.Broker
-	Trigger         *eventingv1.Trigger
-	RabbitMQURL     *url.URL
-	RabbitMQCluster string
+	Name                     string
+	Namespace                string
+	Broker                   *eventingv1.Broker
+	RabbitMQClusterName      string
+	RabbitMQClusterNamespace string
+	RabbitMQURL              *url.URL
+	Trigger                  *eventingv1.Trigger
 }
 
 func NewExchange(ctx context.Context, args *ExchangeArgs) *rabbitv1beta1.Exchange {
-	var or metav1.OwnerReference
+	var ownerReference metav1.OwnerReference
 
 	if args.Trigger != nil {
-		or = *kmeta.NewControllerRef(args.Trigger)
+		ownerReference = *kmeta.NewControllerRef(args.Trigger)
 	} else {
-		or = *kmeta.NewControllerRef(args.Broker)
+		ownerReference = *kmeta.NewControllerRef(args.Broker)
 	}
 	return &rabbitv1beta1.Exchange{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:       args.Namespace,
 			Name:            args.Name,
-			OwnerReferences: []metav1.OwnerReference{or},
+			OwnerReferences: []metav1.OwnerReference{ownerReference},
 			Labels:          ExchangeLabels(args.Broker, args.Trigger),
 		},
 		Spec: rabbitv1beta1.ExchangeSpec{
@@ -61,9 +62,9 @@ func NewExchange(ctx context.Context, args *ExchangeArgs) *rabbitv1beta1.Exchang
 			AutoDelete: false,
 			// TODO: We had before also internal / nowait set to false. Are these in Arguments,
 			// or do they get sane defaults that we can just work with?
-			// TODO: This one has to exist in the same namespace as this exchange.
 			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
-				Name: args.Broker.Spec.Config.Name,
+				Name:      args.RabbitMQClusterName,
+				Namespace: args.RabbitMQClusterNamespace,
 			},
 		},
 	}

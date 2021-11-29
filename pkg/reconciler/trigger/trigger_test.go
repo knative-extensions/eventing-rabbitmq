@@ -44,7 +44,6 @@ import (
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	fakerabbitclient "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/client/fake"
-	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	sourcesv1beta2 "knative.dev/eventing/pkg/apis/sources/v1beta2"
 	fakeeventingclient "knative.dev/eventing/pkg/client/injection/client/fake"
@@ -1002,8 +1001,8 @@ func makeSubscriberNotAddressableAsUnstructured() *unstructured.Unstructured {
 
 func createQueue() *rabbitv1beta1.Queue {
 	labels := map[string]string{
-		eventing.BrokerLabelKey:   brokerName,
-		resources.TriggerLabelKey: triggerName,
+		"eventing.knative.dev/broker":  brokerName,
+		"eventing.knative.dev/trigger": triggerName,
 	}
 	b := ReadyBroker()
 	t := triggerWithFilter()
@@ -1020,7 +1019,8 @@ func createQueue() *rabbitv1beta1.Queue {
 			Name:    queueName,
 			Durable: true,
 			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
-				Name: rabbitMQBrokerName,
+				Name:      rabbitMQBrokerName,
+				Namespace: testNS,
 			},
 			Arguments: &runtime.RawExtension{
 				Raw: []byte(`{"x-dead-letter-exchange":"` + naming.BrokerExchangeName(b, true) + `"}`),
@@ -1043,10 +1043,9 @@ func createReadyQueue() *rabbitv1beta1.Queue {
 
 func createBinding(withFilter bool) *rabbitv1beta1.Binding {
 	bindingName := fmt.Sprintf("t.%s.%s.test-trigger-uid", testNS, triggerName)
-
 	labels := map[string]string{
-		eventing.BrokerLabelKey:   brokerName,
-		resources.TriggerLabelKey: triggerName,
+		"eventing.knative.dev/broker":  brokerName,
+		"eventing.knative.dev/trigger": triggerName,
 	}
 	trigger := triggerWithFilter()
 	return &rabbitv1beta1.Binding{
@@ -1064,7 +1063,8 @@ func createBinding(withFilter bool) *rabbitv1beta1.Binding {
 			Destination:     bindingName,
 			Source:          "b.test-namespace.test-broker.broker-test-uid",
 			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
-				Name: rabbitMQBrokerName,
+				Name:      rabbitMQBrokerName,
+				Namespace: testNS,
 			},
 			// We need to know if we need to include the filter in the
 			Arguments: getTriggerArguments(withFilter),

@@ -23,20 +23,21 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
-	"knative.dev/eventing/pkg/apis/eventing"
 
+	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 )
 
 const TriggerLabelKey = "eventing.knative.dev/trigger"
 
 type QueueArgs struct {
-	Name        string
-	Namespace   string
-	Owner       metav1.OwnerReference
-	Labels      map[string]string
-	ClusterName string
-	DLXName     *string
+	Name                     string
+	Namespace                string
+	RabbitMQClusterName      string
+	RabbitMQClusterNamespace string
+	Owner                    metav1.OwnerReference
+	Labels                   map[string]string
+	DLXName                  *string
 }
 
 func NewQueue(ctx context.Context, args *QueueArgs) *rabbitv1beta1.Queue {
@@ -55,8 +56,10 @@ func NewQueue(ctx context.Context, args *QueueArgs) *rabbitv1beta1.Queue {
 			AutoDelete: false,
 			// TODO: We had before also internal / nowait set to false. Are these in Arguments,
 			// or do they get sane defaults that we can just work with?
-			// TODO: This one has to exist in the same namespace as this exchange.
-			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{Name: args.ClusterName},
+			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
+				Name:      args.RabbitMQClusterName,
+				Namespace: args.RabbitMQClusterNamespace,
+			},
 		},
 	}
 	if args.DLXName != nil {

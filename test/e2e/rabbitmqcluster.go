@@ -49,7 +49,7 @@ const (
 
 // RabbitMQCluster creates a rabbitmq.com/rabbitmqclusters cluster that the
 // Broker under test will use. This assumes that the RabbitMQ Operator has
-// already been instealled.
+// already been installed.
 func RabbitMQCluster() *feature.Feature {
 	f := new(feature.Feature)
 
