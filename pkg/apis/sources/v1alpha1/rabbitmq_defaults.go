@@ -19,11 +19,11 @@ package v1alpha1
 import "context"
 
 func (r *RabbitmqSource) SetDefaults(ctx context.Context) {
-	if r.Spec.ChannelConfig == (RabbitmqChannelConfigSpec{}) {
-		r.Spec.ChannelConfig.SetDefaults(ctx)
-	}
+	r.Spec.ChannelConfig.SetDefaults(ctx)
 }
 
 func (chConf *RabbitmqChannelConfigSpec) SetDefaults(ctx context.Context) {
-	chConf.PrefetchCount = 1
+	if chConf.PrefetchCount == 0 {
+		chConf.PrefetchCount = 1
+	}
 }
