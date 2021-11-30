@@ -71,8 +71,8 @@ releases-gcloud:
 
 KO_RELEASES := https://github.com/google/ko/releases
 KO_VERSION = 0.9.3
-KO_URL := $(KO_RELEASES)/download/v$(KO_VERSION)/$(notdir $(KO_BIN_DIR)).tar.gz
 KO_BIN_DIR := $(LOCAL_BIN)/ko_$(KO_VERSION)_$(PLATFORM)_x86_64
+KO_URL := $(KO_RELEASES)/download/v$(KO_VERSION)/$(notdir $(KO_BIN_DIR)).tar.gz
 KO := $(KO_BIN_DIR)/ko
 $(KO): | $(CURL) $(LOCAL_BIN) $(GCLOUD)
 	$(CURL) --progress-bar --fail --location --output $(KO_BIN_DIR).tar.gz "$(KO_URL)"
