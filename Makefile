@@ -70,7 +70,7 @@ releases-gcloud:
 	$(OPEN) https://cloud.google.com/sdk/docs/quickstart
 
 KO_RELEASES := https://github.com/google/ko/releases
-KO_VERSION = 0.9.3
+KO_VERSION := 0.9.3
 KO_BIN_DIR := $(LOCAL_BIN)/ko_$(KO_VERSION)_$(PLATFORM)_x86_64
 KO_URL := $(KO_RELEASES)/download/v$(KO_VERSION)/$(notdir $(KO_BIN_DIR)).tar.gz
 KO := $(KO_BIN_DIR)/ko
@@ -88,7 +88,7 @@ releases-ko:
 	$(OPEN) $(KO_RELEASES)
 
 KIND_RELEASES := https://github.com/kubernetes-sigs/kind/releases
-KIND_VERSION = 0.11.1
+KIND_VERSION := 0.11.1
 KIND_URL := $(KIND_RELEASES)/download/v$(KIND_VERSION)/kind-$(platform)-amd64
 KIND := $(LOCAL_BIN)/kind_$(KIND_VERSION)_$(platform)_amd64
 $(KIND): | $(CURL) $(LOCAL_BIN)
@@ -124,7 +124,7 @@ releases-envsubst:
 
 KUBECTL_RELEASES := https://github.com/kubernetes/kubernetes/tags
 # Keep this in sync with KIND_K8s_VERSION
-KUBECTL_VERSION = 1.20.7
+KUBECTL_VERSION := 1.20.7
 KUBECTL_BIN := kubectl-$(KUBECTL_VERSION)-$(platform)-amd64
 KUBECTL_URL := https://storage.googleapis.com/kubernetes-release/release/v$(KUBECTL_VERSION)/bin/$(platform)/amd64/kubectl
 KUBECTL := $(LOCAL_BIN)/$(KUBECTL_BIN)
@@ -184,7 +184,7 @@ releases-gh:
 	$(OPEN) $(GH_RELEASES)
 
 KN_RELEASES := https://github.com/knative/client/releases
-KN_VERSION = 1.0.0
+KN_VERSION := 1.0.0
 KN_BIN := kn-$(KN_VERSION)-$(platform)-amd64
 KN_URL := $(KN_RELEASES)/download/knative-v$(KN_VERSION)/kn-$(platform)-amd64
 KN := $(LOCAL_BIN)/$(KN_BIN)
@@ -267,15 +267,15 @@ KIND_CLUSTER_NAME = eventing-rabbitmq-e2e
 export KIND_CLUSTER_NAME
 env::
 	@echo 'export KIND_CLUSTER_NAME="$(KIND_CLUSTER_NAME)"'
-KO_DOCKER_REPO = kind.local
+KO_DOCKER_REPO := kind.local
 env::
 	@echo 'export KO_DOCKER_REPO="$(KO_DOCKER_REPO)"'
 export KO_DOCKER_REPO
-MIN_SUPPORTED_K8s_VERSION = 1.20
+MIN_SUPPORTED_K8s_VERSION := 1.20
 KIND_K8s_VERSION = $(MIN_SUPPORTED_K8s_VERSION)
 export KIND_K8s_VERSION
 # Find the corresponding version digest in https://github.com/kubernetes-sigs/kind/releases
-KIND_K8s_DIGEST = sha256:cbeaf907fc78ac97ce7b625e4bf0de16e3ea725daf6b04f930bd14c67c671ff9
+KIND_K8s_DIGEST := sha256:cbeaf907fc78ac97ce7b625e4bf0de16e3ea725daf6b04f930bd14c67c671ff9
 export KIND_K8s_DIGEST
 
 .PHONY: kind-cluster
