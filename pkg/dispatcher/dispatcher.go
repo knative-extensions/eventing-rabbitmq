@@ -163,7 +163,6 @@ func (d *Dispatcher) dispatch(ctx context.Context, wg *sync.WaitGroup, queue <-c
 		if response != nil {
 			logging.FromContext(ctx).Infof("Sending an event: %+v", response)
 			ctx = cloudevents.ContextWithTarget(ctx, d.BrokerIngressURL)
-			cloudevents.ContextWithRetriesExponentialBackoff(ctx, d.BackoffDelay, d.MaxRetries)
 			result := ceClient.Send(ctx, *response)
 			if !isSuccess(ctx, result) {
 				logging.FromContext(ctx).Warnf("Failed to deliver to %q requeue: %v", d.BrokerIngressURL, d.Requeue)
