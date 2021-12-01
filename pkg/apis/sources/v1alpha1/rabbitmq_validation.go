@@ -24,26 +24,24 @@ import (
 )
 
 func (current *RabbitmqSource) Validate(ctx context.Context) *apis.FieldError {
-	errs := current.Spec.ChannelConfig.validate(ctx).ViaField("ChannelConfig")
-
 	if apis.IsInUpdate(ctx) {
 		original := apis.GetBaseline(ctx).(*RabbitmqSource)
 		if diff, err := kmp.ShortDiff(original.Spec, current.Spec); err != nil {
-			errs.Also(&apis.FieldError{
+			return &apis.FieldError{
 				Message: "Failed to diff RabbitmqSource",
 				Paths:   []string{"spec"},
 				Details: err.Error(),
-			})
+			}
 		} else if diff != "" {
-			errs.Also(&apis.FieldError{
+			return &apis.FieldError{
 				Message: "Immutable fields changed (-old +new)",
 				Paths:   []string{"spec"},
 				Details: diff,
-			})
+			}
 		}
 	}
 
-	return errs
+	return current.Spec.ChannelConfig.validate(ctx).ViaField("ChannelConfig")
 }
 
 func (chSpec *RabbitmqChannelConfigSpec) validate(ctx context.Context) *apis.FieldError {
