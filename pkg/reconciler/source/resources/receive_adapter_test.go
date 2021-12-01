@@ -27,6 +27,7 @@ import (
 )
 
 func TestMakeReceiveAdapter(t *testing.T) {
+	prefetchCount := 10
 	src := &v1alpha12.RabbitmqSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "source-name",
@@ -70,7 +71,7 @@ func TestMakeReceiveAdapter(t *testing.T) {
 				NoWait:           false,
 			},
 			ChannelConfig: v1alpha12.RabbitmqChannelConfigSpec{
-				PrefetchCount: 10,
+				PrefetchCount: &prefetchCount,
 			},
 		},
 	}

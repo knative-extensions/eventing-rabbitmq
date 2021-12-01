@@ -23,7 +23,8 @@ func (r *RabbitmqSource) SetDefaults(ctx context.Context) {
 }
 
 func (chConf *RabbitmqChannelConfigSpec) SetDefaults(ctx context.Context) {
-	if chConf.PrefetchCount == 0 {
-		chConf.PrefetchCount = 1
+	if chConf.PrefetchCount == nil {
+		defaultPrefetchCount := 1
+		chConf.PrefetchCount = &defaultPrefetchCount
 	}
 }

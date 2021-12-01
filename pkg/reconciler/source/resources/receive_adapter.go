@@ -70,7 +70,7 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 		},
 		{
 			Name:  "RABBITMQ_CHANNEL_CONFIG_PREFETCH_COUNT",
-			Value: strconv.Itoa(args.Source.Spec.ChannelConfig.PrefetchCount),
+			Value: strconv.Itoa(*args.Source.Spec.ChannelConfig.PrefetchCount),
 		},
 		{
 			Name:  "RABBITMQ_EXCHANGE_CONFIG_NAME",

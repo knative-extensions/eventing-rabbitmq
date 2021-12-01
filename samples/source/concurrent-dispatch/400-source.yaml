@@ -18,7 +18,7 @@ spec:
     # prefetch_count default value is 1
     # A value of 0 will default to 1
     # Value must be between 1 and 1000
-    # prefetch_count: 0
+    prefetch_count: 10
     global_qos: false
   exchange_config:
     name: "eventing-rabbitmq-source"

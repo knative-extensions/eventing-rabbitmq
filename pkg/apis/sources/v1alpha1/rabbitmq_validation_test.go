@@ -25,7 +25,8 @@ import (
 )
 
 var (
-	fullSpec = RabbitmqSourceSpec{
+	defaultPrefetchCount = 1
+	fullSpec             = RabbitmqSourceSpec{
 		Brokers: "amqp://guest:guest@localhost:5672/",
 		Topic:   "logs_topic",
 		ExchangeConfig: RabbitmqSourceExchangeConfigSpec{
@@ -44,7 +45,7 @@ var (
 			NoWait:           false,
 		},
 		ChannelConfig: RabbitmqChannelConfigSpec{
-			PrefetchCount: 1,
+			PrefetchCount: &defaultPrefetchCount,
 			GlobalQos:     false,
 		},
 		Sink: &duckv1.Destination{
@@ -252,13 +253,13 @@ func TestRabbitmqSourceCheckChannelPrefetchCountValue(t *testing.T) {
 						Spec: *tc.spec,
 					}
 					updated.Spec.ChannelConfig = RabbitmqChannelConfigSpec{
-						PrefetchCount: tc.prefetchCount,
+						PrefetchCount: &tc.prefetchCount,
 					}
 					ctx = apis.WithinUpdate(ctx, orig)
 					err = updated.Validate(ctx)
 				} else {
 					orig.Spec.ChannelConfig = RabbitmqChannelConfigSpec{
-						PrefetchCount: tc.prefetchCount,
+						PrefetchCount: &tc.prefetchCount,
 					}
 
 					ctx = apis.WithinCreate(ctx)

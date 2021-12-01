@@ -53,7 +53,7 @@ var _ duckv1.KRShaped = (*RabbitmqSource)(nil)
 type RabbitmqChannelConfigSpec struct {
 	// Channel Prefetch count
 	// +optional
-	PrefetchCount int `json:"prefetch_count,omitempty"`
+	PrefetchCount *int `json:"prefetch_count,omitempty"`
 	// Channel Qos global property
 	// +optional
 	GlobalQos bool `json:"global_qos,omitempty"`
