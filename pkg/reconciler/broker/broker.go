@@ -36,10 +36,10 @@ import (
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/network"
 
+	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
 	triggerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
-	"knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	rabbitclientset "knative.dev/eventing-rabbitmq/third_party/pkg/client/clientset/versioned"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	clientset "knative.dev/eventing/pkg/client/clientset/versioned"
@@ -84,15 +84,9 @@ type Reconciler struct {
 	// Image to use for the DeadLetterSink dispatcher
 	dispatcherImage string
 
-	rabbit RabbitService
+	rabbit rabbit.Service
 	// config accessor for observability/logging/tracing
 	configs reconcilersource.ConfigAccessor
-}
-
-type RabbitService interface {
-	ReconcileExchange(context.Context, *resources.ExchangeArgs) (*v1beta1.Exchange, error)
-	ReconcileQueue(context.Context, *triggerresources.QueueArgs) (*v1beta1.Queue, error)
-	ReconcileBinding(context.Context, *triggerresources.BindingArgs) (*v1beta1.Binding, error)
 }
 
 // Check that our Reconciler implements Interface
@@ -277,12 +271,10 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 		MarkExchangeFailed(&b.Status, "ExchangeFailure", fmt.Sprintf("Failed to reconcile exchange %q: %s", naming.BrokerExchangeName(args.Broker, false), err))
 		return err
 	}
-	if exchange != nil {
-		if !isReady(exchange.Status.Conditions) {
-			logging.FromContext(ctx).Warnf("Exchange %q is not ready", exchange.Name)
-			MarkExchangeFailed(&b.Status, "ExchangeFailure", fmt.Sprintf("exchange %q is not ready", exchange.Name))
-			return nil
-		}
+	if !exchange.Ready {
+		logging.FromContext(ctx).Warnf("Exchange %q is not ready", exchange.Name)
+		MarkExchangeFailed(&b.Status, "ExchangeFailure", fmt.Sprintf("exchange %q is not ready", exchange.Name))
+		return nil
 	}
 	args.Name = naming.BrokerExchangeName(b, true)
 	dlxExchange, err := r.rabbit.ReconcileExchange(ctx, args)
@@ -290,12 +282,10 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 		MarkExchangeFailed(&b.Status, "ExchangeFailure", fmt.Sprintf("Failed to reconcile DLX exchange %q: %s", naming.BrokerExchangeName(args.Broker, true), err))
 		return err
 	}
-	if dlxExchange != nil {
-		if !isReady(dlxExchange.Status.Conditions) {
-			logging.FromContext(ctx).Warnf("DLX exchange %q is not ready", dlxExchange.Name)
-			MarkExchangeFailed(&b.Status, "ExchangeFailure", fmt.Sprintf("DLX exchange %q is not ready", dlxExchange.Name))
-			return nil
-		}
+	if !dlxExchange.Ready {
+		logging.FromContext(ctx).Warnf("DLX exchange %q is not ready", dlxExchange.Name)
+		MarkExchangeFailed(&b.Status, "ExchangeFailure", fmt.Sprintf("DLX exchange %q is not ready", dlxExchange.Name))
+		return nil
 	}
 	MarkExchangeReady(&b.Status)
 
@@ -312,12 +302,10 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 			MarkDLXFailed(&b.Status, "QueueFailure", fmt.Sprintf("Failed to reconcile Dead Letter Queue %q : %s", naming.CreateBrokerDeadLetterQueueName(b), err))
 			return err
 		}
-		if queue != nil {
-			if !isReady(queue.Status.Conditions) {
-				logging.FromContext(ctx).Warnf("Queue %q is not ready", queue.Name)
-				MarkDLXFailed(&b.Status, "QueueFailure", fmt.Sprintf("Dead Letter Queue %q is not ready", queue.Name))
-				return nil
-			}
+		if !queue.Ready {
+			logging.FromContext(ctx).Warnf("Queue %q is not ready", queue.Name)
+			MarkDLXFailed(&b.Status, "QueueFailure", fmt.Sprintf("Dead Letter Queue %q is not ready", queue.Name))
+			return nil
 		}
 		MarkDLXReady(&b.Status)
 		bindingName := naming.CreateBrokerDeadLetterQueueName(b)
@@ -339,12 +327,10 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 			MarkDeadLetterSinkFailed(&b.Status, "DLQ binding", fmt.Sprintf("Failed to reconcile DLQ binding %q : %s", naming.CreateBrokerDeadLetterQueueName(b), err))
 			return err
 		}
-		if binding != nil {
-			if !isReady(binding.Status.Conditions) {
-				logging.FromContext(ctx).Warnf("Binding %q is not ready", binding.Name)
-				MarkDeadLetterSinkFailed(&b.Status, "DLQ binding", fmt.Sprintf("DLQ binding %q is not ready", binding.Name))
-				return nil
-			}
+		if !binding.Ready {
+			logging.FromContext(ctx).Warnf("Binding %q is not ready", binding.Name)
+			MarkDeadLetterSinkFailed(&b.Status, "DLQ binding", fmt.Sprintf("DLQ binding %q is not ready", binding.Name))
+			return nil
 		}
 		MarkDeadLetterSinkReady(&b.Status)
 	} else {
@@ -353,20 +339,6 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 	}
 
 	return r.reconcileCommonIngressResources(ctx, resources.MakeSecret(args), b)
-}
-
-func isReady(conditions []v1beta1.Condition) bool {
-	numConditions := len(conditions)
-	// If there are no conditions at all, the resource probably hasn't been reconciled yet => not ready
-	if numConditions == 0 {
-		return false
-	}
-	for _, c := range conditions {
-		if c.Status == corev1.ConditionTrue {
-			numConditions--
-		}
-	}
-	return numConditions == 0
 }
 
 // reconcileCommonIngressResources that are shared between implementations using CRDs or libraries.

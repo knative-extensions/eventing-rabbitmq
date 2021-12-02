@@ -20,8 +20,8 @@ import (
 	"context"
 	"log"
 
-	"knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
-	"knative.dev/eventing-rabbitmq/pkg/reconciler/services"
+	rabbitv1 "knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
+	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	"knative.dev/eventing-rabbitmq/pkg/utils"
 	rabbitmqclient "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/client"
 	eventingclient "knative.dev/eventing/pkg/client/injection/client"
@@ -90,7 +90,7 @@ func NewController(
 	brokerInformer := brokerinformer.Get(ctx)
 	serviceInformer := serviceinformer.Get(ctx)
 	endpointsInformer := endpointsinformer.Get(ctx)
-	rabbitInformer := rabbit.Get(ctx)
+	rabbitInformer := rabbitv1.Get(ctx)
 	exchangeInformer := exchangeinformer.Get(ctx)
 	queueInformer := queueinformer.Get(ctx)
 	bindingInformer := bindinginformer.Get(ctx)
@@ -111,8 +111,8 @@ func NewController(
 		brokerClass:               BrokerClass,
 		dispatcherImage:           env.DispatcherImage,
 		rabbitClientSet:           rabbitmqclient.Get(ctx),
-		rabbit:                    services.NewRabbit(ctx),
 		configs:                   reconcilersource.WatchConfigurations(ctx, ComponentName, cmw),
+		rabbit:                    rabbit.New(ctx),
 	}
 
 	impl := brokerreconciler.NewImpl(ctx, r, BrokerClass)

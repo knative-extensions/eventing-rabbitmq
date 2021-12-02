@@ -14,13 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package services
+package rabbit
 
 import (
 	"context"
 	"fmt"
 
 	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,7 +37,7 @@ import (
 	"knative.dev/pkg/logging"
 )
 
-func NewRabbit(ctx context.Context) *Rabbit {
+func New(ctx context.Context) *Rabbit {
 	return &Rabbit{
 		rabbitClientSet: rabbitmqclient.Get(ctx),
 		exchangeLister:  exchangeinformer.Get(ctx).Lister(),
@@ -45,7 +46,7 @@ func NewRabbit(ctx context.Context) *Rabbit {
 	}
 }
 
-func NewRabbitTest(
+func NewTest(
 	rabbitClientSet rabbitclientset.Interface,
 	exchangeLister rabbitlisters.ExchangeLister,
 	queueLister rabbitlisters.QueueLister,
@@ -60,6 +61,8 @@ func NewRabbitTest(
 	}
 }
 
+var _ Service = (*Rabbit)(nil)
+
 type Rabbit struct {
 	rabbitClientSet rabbitclientset.Interface
 	exchangeLister  rabbitlisters.ExchangeLister
@@ -67,26 +70,32 @@ type Rabbit struct {
 	bindingLister   rabbitlisters.BindingLister
 }
 
-func (r *Rabbit) ReconcileExchange(ctx context.Context, args *resources.ExchangeArgs) (*v1beta1.Exchange, error) {
+func (r *Rabbit) ReconcileExchange(ctx context.Context, args *resources.ExchangeArgs) (Result, error) {
 	logging.FromContext(ctx).Infow("Reconciling exchange", zap.String("name", args.Name))
 
 	want := resources.NewExchange(ctx, args)
 	current, err := r.exchangeLister.Exchanges(args.Broker.Namespace).Get(args.Name)
 	if apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Debugw("Creating rabbitmq exchange", zap.String("exchange name", want.Name))
-		return r.rabbitClientSet.RabbitmqV1beta1().Exchanges(args.Broker.Namespace).Create(ctx, want, metav1.CreateOptions{})
+		current, err = r.rabbitClientSet.RabbitmqV1beta1().Exchanges(args.Broker.Namespace).Create(ctx, want, metav1.CreateOptions{})
 	} else if err != nil {
-		return nil, err
+		return Result{}, err
 	} else if !equality.Semantic.DeepDerivative(want.Spec, current.Spec) {
 		// Don't modify the informers copy.
 		desired := current.DeepCopy()
 		desired.Spec = want.Spec
-		return r.rabbitClientSet.RabbitmqV1beta1().Exchanges(args.Broker.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
+		current, err = r.rabbitClientSet.RabbitmqV1beta1().Exchanges(args.Broker.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
 	}
-	return current, nil
+	if err != nil {
+		return Result{}, err
+	}
+	return Result{
+		Name:  want.Name,
+		Ready: isReady(current.Status.Conditions),
+	}, nil
 }
 
-func (r *Rabbit) ReconcileQueue(ctx context.Context, args *triggerresources.QueueArgs) (*v1beta1.Queue, error) {
+func (r *Rabbit) ReconcileQueue(ctx context.Context, args *triggerresources.QueueArgs) (Result, error) {
 	logging.FromContext(ctx).Info("Reconciling queue")
 
 	queueName := args.Name
@@ -94,36 +103,62 @@ func (r *Rabbit) ReconcileQueue(ctx context.Context, args *triggerresources.Queu
 	current, err := r.queueLister.Queues(args.Namespace).Get(queueName)
 	if apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Debugw("Creating rabbitmq exchange", zap.String("queue name", want.Name))
-		return r.rabbitClientSet.RabbitmqV1beta1().Queues(args.Namespace).Create(ctx, want, metav1.CreateOptions{})
+		current, err = r.rabbitClientSet.RabbitmqV1beta1().Queues(args.Namespace).Create(ctx, want, metav1.CreateOptions{})
 	} else if err != nil {
-		return nil, err
+		return Result{}, err
 	} else if !equality.Semantic.DeepDerivative(want.Spec, current.Spec) {
 		// Don't modify the informers copy.
 		desired := current.DeepCopy()
 		desired.Spec = want.Spec
-		return r.rabbitClientSet.RabbitmqV1beta1().Queues(args.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
+		current, err = r.rabbitClientSet.RabbitmqV1beta1().Queues(args.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
 	}
-	return current, nil
+	if err != nil {
+		return Result{}, err
+	}
+	return Result{
+		Name:  want.Name,
+		Ready: isReady(current.Status.Conditions),
+	}, nil
 }
 
-func (r *Rabbit) ReconcileBinding(ctx context.Context, args *triggerresources.BindingArgs) (*v1beta1.Binding, error) {
+func (r *Rabbit) ReconcileBinding(ctx context.Context, args *triggerresources.BindingArgs) (Result, error) {
 	logging.FromContext(ctx).Info("Reconciling binding")
 
 	want, err := triggerresources.NewBinding(ctx, args)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create the binding spec: %w", err)
+		return Result{}, fmt.Errorf("failed to create the binding spec: %w", err)
 	}
 	current, err := r.bindingLister.Bindings(args.Namespace).Get(args.Name)
 	if apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Infow("Creating rabbitmq binding", zap.String("binding name", want.Name))
-		return r.rabbitClientSet.RabbitmqV1beta1().Bindings(args.Namespace).Create(ctx, want, metav1.CreateOptions{})
+		current, err = r.rabbitClientSet.RabbitmqV1beta1().Bindings(args.Namespace).Create(ctx, want, metav1.CreateOptions{})
 	} else if err != nil {
-		return nil, err
+		return Result{}, err
 	} else if !equality.Semantic.DeepDerivative(want.Spec, current.Spec) {
 		// Don't modify the informers copy.
 		desired := current.DeepCopy()
 		desired.Spec = want.Spec
-		return r.rabbitClientSet.RabbitmqV1beta1().Bindings(args.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
+		current, err = r.rabbitClientSet.RabbitmqV1beta1().Bindings(args.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
 	}
-	return current, nil
+	if err != nil {
+		return Result{}, err
+	}
+	return Result{
+		Name:  want.Name,
+		Ready: isReady(current.Status.Conditions),
+	}, nil
+}
+
+func isReady(conditions []v1beta1.Condition) bool {
+	numConditions := len(conditions)
+	// If there are no conditions at all, the resource probably hasn't been reconciled yet => not ready
+	if numConditions == 0 {
+		return false
+	}
+	for _, c := range conditions {
+		if c.Status == corev1.ConditionTrue {
+			numConditions--
+		}
+	}
+	return numConditions == 0
 }
