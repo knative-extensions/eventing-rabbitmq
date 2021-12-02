@@ -312,13 +312,16 @@ install-rabbitmq-topology-operator: | install-cert-manager $(KUBECTL) ## Install
 KNATIVE_VERSION ?= 1.0.0
 
 # https://github.com/knative/serving/releases
-install-knative-serving: | $(KUBECONFIG) $(KUBECTL) ## Install Knative Eventing
+install-knative-serving: | $(KUBECONFIG) $(KUBECTL) ## Install Knative Serving
 	$(KUBECTL) $(K_CMD) --filename \
 		https://github.com/knative/serving/releases/download/knative-v$(KNATIVE_VERSION)/serving-crds.yaml
 	$(KUBECTL) $(K_CMD) --filename \
 		https://github.com/knative/serving/releases/download/knative-v$(KNATIVE_VERSION)/serving-core.yaml
 	$(KUBECTL) wait --for=condition=available deploy/controller --timeout=30s --namespace $(SERVING_NAMESPACE)
 	$(KUBECTL) wait --for=condition=available deploy/webhook --timeout=30s --namespace $(SERVING_NAMESPACE)
+	$(KUBECTL) apply --filename https://github.com/knative/net-kourier/releases/download/knative-v$(KNATIVE_VERSION)/kourier.yaml
+	$(KUBECTL) patch configmap/config-network --namespace $(SERVING_NAMESPACE) --type merge \
+		--patch '{"data":{"ingress.class":"kourier.ingress.networking.knative.dev"}}'
 
 # https://github.com/knative/eventing/releases
 install-knative-eventing: | $(KUBECONFIG) $(KUBECTL) ## Install Knative Eventing
