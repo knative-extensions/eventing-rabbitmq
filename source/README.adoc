@@ -88,7 +88,7 @@ Sources are Kubernetes objects. In addition to the standard Kubernetes
 | `queue_config.delete_when_unused` {optional} | Boolean
 | `queue_config.exclusive` {optional} | Boolean
 | `queue_config.nowait` {optional} | Boolean
-| `channel_config.prefetch_count` {optional} | Int that limits the https://www.rabbitmq.com/consumer-prefetch.html[Consumer Prefetch Value]. Default value is 1. A value of 0 will default to 1. Value msut be between 1 and 1000.
+| `channel_config.prefetch_count` {optional} | Int that limits the https://www.rabbitmq.com/consumer-prefetch.html[Consumer Prefetch Value]. Default value is 1. Value msut be between 1 and 1000.
 | `channel_config.global_qos` {optional} | Boolean defining how the https://www.rabbitmq.com/consumer-prefetch.html#sharing-the-limit[Consumer Sharing Limit] is handled.
 | `sink` | A reference to an https://knative.dev/docs/eventing/#event-consumers[Addressable] Kubernetes object
 |===
