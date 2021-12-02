@@ -12,7 +12,7 @@ RabbitMQ has a dashboard with lots of information available about the cluster th
 
 1. Get the credentials out of a secret on the Kubernetes cluster where the tests are running:
   `kubectl -n <test namespace> get secrets rabbitmqc-default-user -o json | jq -r '.data["default_user.conf"]' | base64 -d`
-   
+
    **Note:** If you are running the [SourceVHost test](./sourcevhost_test.go), you should use `guest` for both username and password.
 2. Provided you are running your tests locally, you can port forward to get access to the RabbitMQ cluster:
   `kubectl -n TEST-NAMESPACE port-forward rabbitmqc-server-0 8081:15672`
