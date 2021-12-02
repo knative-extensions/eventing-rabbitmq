@@ -255,7 +255,9 @@ test-unit: ## Run unit tests
 test-unit-uncached: GOTEST = -count=1
 test-unit-uncached: test-unit
 
-SYSTEM_NAMESPACE = knative-eventing
+SERVING_NAMESPACE = knative-serving
+EVENTING_NAMESPACE = knative-eventing
+SYSTEM_NAMESPACE = $(EVENTING_NAMESPACE)
 export SYSTEM_NAMESPACE
 RABBITMQ_SYSTEM_NAMESPACE = rabbitmq-system
 export RABBITMQ_SYSTEM_NAMESPACE
@@ -307,20 +309,30 @@ install-rabbitmq-topology-operator: | install-cert-manager $(KUBECTL) ## Install
 	$(KUBECTL) $(K_CMD) --filename \
 		https://github.com/rabbitmq/messaging-topology-operator/releases/download/v$(RABBITMQ_TOPOLOGY_OPERATOR_VERSION)/messaging-topology-operator-with-certmanager.yaml
 
+KNATIVE_VERSION ?= 1.0.0
+
+# https://github.com/knative/serving/releases
+install-knative-serving: | $(KUBECONFIG) $(KUBECTL) ## Install Knative Eventing
+	$(KUBECTL) $(K_CMD) --filename \
+		https://github.com/knative/serving/releases/download/knative-v$(KNATIVE_VERSION)/serving-crds.yaml
+	$(KUBECTL) $(K_CMD) --filename \
+		https://github.com/knative/serving/releases/download/knative-v$(KNATIVE_VERSION)/serving-core.yaml
+	$(KUBECTL) wait --for=condition=available deploy/controller --timeout=30s --namespace $(SERVING_NAMESPACE)
+	$(KUBECTL) wait --for=condition=available deploy/webhook --timeout=30s --namespace $(SERVING_NAMESPACE)
+
 # https://github.com/knative/eventing/releases
-KNATIVE_EVENTING_VERSION ?= 1.0.0
 install-knative-eventing: | $(KUBECONFIG) $(KUBECTL) ## Install Knative Eventing
 	$(KUBECTL) $(K_CMD) --filename \
-		https://github.com/knative/eventing/releases/download/knative-v$(KNATIVE_EVENTING_VERSION)/eventing-crds.yaml
+		https://github.com/knative/eventing/releases/download/knative-v$(KNATIVE_VERSION)/eventing-crds.yaml
 	$(KUBECTL) $(K_CMD) --filename \
-		https://github.com/knative/eventing/releases/download/knative-v$(KNATIVE_EVENTING_VERSION)/eventing-core.yaml
-	$(KUBECTL) wait --for=condition=available deploy/eventing-controller --timeout=30s --namespace $(SYSTEM_NAMESPACE)
-	$(KUBECTL) wait --for=condition=available deploy/eventing-webhook --timeout=30s --namespace $(SYSTEM_NAMESPACE)
+		https://github.com/knative/eventing/releases/download/knative-v$(KNATIVE_VERSION)/eventing-core.yaml
+	$(KUBECTL) wait --for=condition=available deploy/eventing-controller --timeout=30s --namespace $(EVENTING_NAMESPACE)
+	$(KUBECTL) wait --for=condition=available deploy/eventing-webhook --timeout=30s --namespace $(EVENTING_NAMESPACE)
 
-install-knative-eventing-rabbitmq: | $(KUBECONFIG) $(KO) install-knative-eventing ## Install dev Knative Eventing RabbitMQ - also installs Knative Eventing
+install-knative-eventing-rabbitmq: | $(KUBECONFIG) $(KO) install-knative-eventing install-knative-serving ## Install dev Knative Eventing RabbitMQ - also installs Knative Eventing
 	$(KO) apply --filename config/broker
-	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-broker-controller --timeout=30s --namespace $(SYSTEM_NAMESPACE)
-	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-broker-webhook --timeout=30s --namespace $(SYSTEM_NAMESPACE)
+	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-broker-controller --timeout=30s --namespace $(EVENTING_NAMESPACE)
+	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-broker-webhook --timeout=30s --namespace $(EVENTING_NAMESPACE)
 	$(KO) apply --filename config/source
 	$(KUBECTL) wait --for=condition=available deploy/pingsource-mt-adapter --timeout=30s --namespace knative-eventing
 
