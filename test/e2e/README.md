@@ -17,4 +17,3 @@ RabbitMQ has a dashboard with lots of information available about the cluster th
 2. Provided you are running your tests locally, you can port forward to get access to the RabbitMQ cluster:
   `kubectl -n TEST-NAMESPACE port-forward rabbitmqc-server-0 8081:15672`
 3. Point your browser to http://localhost:8081 and log in with the credentials from step 1.
-  
