@@ -179,6 +179,10 @@ kind: Trigger
 metadata:
   name: failer-trigger
   namespace: dlq-demo
+  # Value must be between 1 and 1000
+  # With a value of 1 RabbitMQ Trigger behaves as a FIFO queue
+  # Values above 1 are more oriented to performance
+  # rabbitmq.eventing.knative.dev/prefetchCount: "10"
 spec:
   broker: default
   filter:
@@ -196,7 +200,7 @@ EOF
 ### Create Failer
 
 ```sh
-kubectl apply -f 'https://storage.googleapis.com/knative-nightly/eventing-rabbitmq/latest/failer.yaml'
+kubectl apply -f 'https://storage.googleapis.com/knative-nightly/eventing-rabbitmq/latest/failer.yaml' -n dlq-demo
 ```
 
 ### Check the results
