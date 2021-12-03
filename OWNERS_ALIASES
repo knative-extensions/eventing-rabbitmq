@@ -9,8 +9,7 @@ aliases:
   - julz
   - maximilien
   autoscaling-wg-leads:
-  - markusthoemmes
-  - vagababov
+  - julz
   client-wg-leads:
   - dsimansk
   - navidshaikh
@@ -21,7 +20,6 @@ aliases:
   - rhuss
   container-freezer-approvers:
   - julz
-  - markusthoemmes
   - psschwei
   control-protocol-approvers:
   - devguyio
@@ -163,7 +161,7 @@ aliases:
   - nicolaferraro
   - rhuss
   knative-admin:
-  - bsnchan
+  - csantanapr
   - dprotaso
   - evankanderson
   - julz
@@ -171,9 +169,9 @@ aliases:
   - knative-prow-robot
   - knative-prow-updater-robot
   - knative-test-reporter-robot
+  - lance
   - markusthoemmes
   - matzew
-  - mbehrendt
   - nak3
   - pmorie
   - rhuss
@@ -236,14 +234,13 @@ aliases:
   serving-writers:
   - ZhiminXiang
   - dprotaso
-  - markusthoemmes
+  - julz
   - nak3
-  - vagababov
   source-wg-leads:
   - lionelvillard
   steering-committee:
-  - bsnchan
-  - mbehrendt
+  - csantanapr
+  - lance
   - pmorie
   - thisisnotapril
   - vaikas
