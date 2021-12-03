@@ -18,6 +18,7 @@ package v1_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -29,6 +30,8 @@ import (
 	"knative.dev/eventing/pkg/client/clientset/versioned/fake"
 	"knative.dev/pkg/apis"
 )
+
+const prefetchAnnotation = "rabbitmq.eventing.knative.dev/prefetchCount"
 
 func TestTriggerValidate(t *testing.T) {
 	tests := []struct {
@@ -62,6 +65,34 @@ func TestTriggerValidate(t *testing.T) {
 				Details: "{*v1.TriggerFilter}:\n\t-: \"&{Attributes:map[x:y]}\"\n\t+: \"<nil>\"\n",
 			},
 		},
+		{
+			name:    "out of bounds prefetch count annotation",
+			trigger: trigger(withBroker("foo"), brokerExistsAndIsValid, withPrefetchCount("0")),
+			err:     apis.ErrOutOfBoundsValue(0, 1, 1000, prefetchAnnotation),
+		},
+		{
+			name:    "invalid prefetch count annotation",
+			trigger: trigger(withBroker("foo"), brokerExistsAndIsValid, withPrefetchCount("notAnumber")),
+			err: &apis.FieldError{
+				Message: "Failed to parse valid int from prefetchAnnotation",
+				Paths:   []string{"metadata", "annotations", prefetchAnnotation},
+				Details: `strconv.Atoi: parsing "notAnumber": invalid syntax`,
+			},
+		},
+		{
+			name:     "inmmutable prefetch count annotation",
+			trigger:  trigger(withBroker("foo"), brokerExistsAndIsValid, withPrefetchCount("100")),
+			original: trigger(withBroker("foo"), brokerExistsAndIsValid),
+			err: &apis.FieldError{
+				Message: "Immutable fields changed (-old +new)",
+				Paths:   []string{"metadata", "annotations", prefetchAnnotation},
+				Details: fmt.Sprintf("{string}:\n\t-: %q\n\t+: %q\n", "", "100"),
+			},
+		},
+		{
+			name:    "valid prefetch count annotation",
+			trigger: trigger(withBroker("foo"), brokerExistsAndIsValid, withPrefetchCount("100")),
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -69,6 +100,7 @@ func TestTriggerValidate(t *testing.T) {
 			if tc.original != nil {
 				ctx = apis.WithinUpdate(ctx, &tc.original.Trigger)
 			}
+
 			err := tc.trigger.Validate(ctx)
 			if diff := cmp.Diff(tc.err, err, cmpopts.IgnoreUnexported(apis.FieldError{})); diff != "" {
 				t.Error("Trigger.Validate (-want, +got) =", diff)
@@ -127,5 +159,15 @@ func withFilters(filters ...[]string) triggerOpt {
 		for _, filter := range filters {
 			t.Spec.Filter.Attributes[filter[0]] = filter[1]
 		}
+	}
+}
+
+func withPrefetchCount(prefetchCount string) triggerOpt {
+	return func(t *v1.RabbitTrigger) {
+		if t.Annotations == nil {
+			t.Annotations = map[string]string{}
+		}
+
+		t.Annotations[prefetchAnnotation] = prefetchCount
 	}
 }

@@ -94,6 +94,7 @@ func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel wabbit.Channe
 			}
 		}()
 	}
+
 	for {
 		select {
 		case <-ctx.Done():

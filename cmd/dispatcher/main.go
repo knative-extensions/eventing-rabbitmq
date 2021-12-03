@@ -45,7 +45,7 @@ type envConfig struct {
 	Requeue bool `envconfig:"REQUEUE" default:"false" required:"true"`
 
 	// Number of concurrent messages in flight
-	PrefetchCount int           `envconfig:"PREFETCH_COUNT" default:"10" required:"false"`
+	PrefetchCount int           `envconfig:"PREFETCH_COUNT" default:"1" required:"false"`
 	Retry         int           `envconfig:"RETRY" required:"false"`
 	BackoffPolicy string        `envconfig:"BACKOFF_POLICY" required:"false"`
 	BackoffDelay  time.Duration `envconfig:"BACKOFF_DELAY" default:"50ms" required:"false"`
