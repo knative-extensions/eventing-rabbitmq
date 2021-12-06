@@ -41,6 +41,8 @@ spec:
     delete_when_unused: false
     exclusive: false
     nowait: false
+  channel_config:
+    prefetch_count: 10
   sink:
     ref:
       apiVersion: v1

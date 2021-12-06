@@ -21,11 +21,11 @@ import (
 	"fmt"
 	nethttp "net/http"
 	"strings"
+	"sync"
 
 	"github.com/NeowayLabs/wabbit"
 	"github.com/NeowayLabs/wabbit/amqp"
 	"github.com/NeowayLabs/wabbit/amqptest"
-	"k8s.io/apimachinery/pkg/util/uuid"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
@@ -33,7 +33,6 @@ import (
 
 	"go.uber.org/zap"
 
-	sourcesv1alpha1 "knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 	"knative.dev/eventing/pkg/adapter/v2"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/eventing/pkg/metrics/source"
@@ -52,8 +51,8 @@ type ExchangeConfig struct {
 }
 
 type ChannelConfig struct {
-	PrefetchCount int
-	GlobalQos     bool
+	PrefetchCount int  `envconfig:"RABBITMQ_CHANNEL_CONFIG_PREFETCH_COUNT" default:"1" required:"false"`
+	GlobalQos     bool `envconfig:"RABBITMQ_CHANNEL_CONFIG_QOS_GLOBAL" required:"false"`
 }
 
 type QueueConfig struct {
@@ -148,9 +147,15 @@ func (a *Adapter) CreateChannel(conn *amqp.Conn, connTest *amqptest.Conn,
 		return nil, err
 	}
 
-	err = ch.Qos(a.config.ChannelConfig.PrefetchCount,
+	logger.Info("Initializing Channel with Config: ",
+		zap.Int("PrefetchCount", a.config.ChannelConfig.PrefetchCount),
+		zap.Bool("GlobalQoS", a.config.ChannelConfig.GlobalQos),
+	)
+	err = ch.Qos(
+		a.config.ChannelConfig.PrefetchCount,
 		0,
-		a.config.ChannelConfig.GlobalQos)
+		a.config.ChannelConfig.GlobalQos,
+	)
 
 	return ch, err
 }
@@ -281,31 +286,52 @@ func (a *Adapter) PollForMessages(channel *wabbit.Channel,
 
 	msgs, _ := a.ConsumeMessages(channel, queue, logger)
 
+	wg := &sync.WaitGroup{}
+	workerCount := a.config.ChannelConfig.PrefetchCount
+	wg.Add(workerCount)
+	workerQueue := make(chan wabbit.Delivery, workerCount)
+	logger.Info("Starting GoRoutines Workers: ", zap.Int("WorkerCount", workerCount))
+
+	for i := 0; i < workerCount; i++ {
+		go a.processMessages(wg, workerQueue)
+	}
+
 	for {
 		select {
-		case msg, ok := <-msgs:
-			if ok {
-				logger.Info("Received: ", zap.Any("value", string(msg.Body())))
-
-				if err := a.postMessage(msg); err == nil {
-					logger.Info("Successfully sent event to sink")
-					err = msg.Ack(false)
-					if err != nil {
-						logger.Error("Sending Ack failed with Delivery Tag")
-					}
-				} else {
-					logger.Error("Sending event to sink failed: ", zap.Error(err))
-					err = msg.Nack(false, true)
-					if err != nil {
-						logger.Error("Sending Nack failed with Delivery Tag")
-					}
-				}
-			} else {
-				return nil
-			}
 		case <-stopCh:
+			close(workerQueue)
+			wg.Wait()
 			logger.Info("Shutting down...")
 			return nil
+		case msg, ok := <-msgs:
+			if !ok {
+				close(workerQueue)
+				wg.Wait()
+				return nil
+			}
+			workerQueue <- msg
+		}
+	}
+}
+
+func (a *Adapter) processMessages(wg *sync.WaitGroup, queue <-chan wabbit.Delivery) {
+	defer wg.Done()
+
+	for msg := range queue {
+		a.logger.Info("Received: ", zap.Any("value", string(msg.Body())))
+
+		if err := a.postMessage(msg); err == nil {
+			a.logger.Info("Successfully sent event to sink")
+			err = msg.Ack(false)
+			if err != nil {
+				a.logger.Error("Sending Ack failed with Delivery Tag")
+			}
+		} else {
+			a.logger.Error("Sending event to sink failed: ", zap.Error(err))
+			err = msg.Nack(false, true)
+			if err != nil {
+				a.logger.Error("Sending Nack failed with Delivery Tag")
+			}
 		}
 	}
 }
@@ -364,25 +390,6 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 	}
 
 	_ = a.reporter.ReportEventCount(reportArgs, res.StatusCode)
-	return nil
-}
-
-func convertToCloudEvent(event *cloudevents.Event, msg wabbit.Delivery, a *Adapter) error {
-	if msg.MessageId() != "" {
-		event.SetID(msg.MessageId())
-	} else {
-		event.SetID(string(uuid.NewUUID()))
-	}
-
-	event.SetType(sourcesv1alpha1.RabbitmqEventType)
-	event.SetSource(sourcesv1alpha1.RabbitmqEventSource(a.config.Namespace, a.config.Name, a.config.Topic))
-	event.SetSubject(event.ID())
-	event.SetTime(msg.Timestamp())
-	err := event.SetData(msg.ContentType(), msg.Body())
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 

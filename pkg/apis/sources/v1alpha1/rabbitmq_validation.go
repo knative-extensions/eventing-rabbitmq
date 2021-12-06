@@ -41,5 +41,17 @@ func (current *RabbitmqSource) Validate(ctx context.Context) *apis.FieldError {
 		}
 	}
 
+	return current.Spec.ChannelConfig.validate(ctx).ViaField("ChannelConfig")
+}
+
+func (chSpec *RabbitmqChannelConfigSpec) validate(ctx context.Context) *apis.FieldError {
+	if chSpec.PrefetchCount == nil {
+		return nil
+	}
+
+	if *chSpec.PrefetchCount < 1 || *chSpec.PrefetchCount > 1000 {
+		return apis.ErrOutOfBoundsValue(*chSpec.PrefetchCount, 1, 1000, "prefetch_count")
+	}
+
 	return nil
 }
