@@ -711,7 +711,7 @@ func TestReconcile(t *testing.T) {
 			rabbitClientSet:    fakerabbitclient.Get(ctx),
 			queueLister:        listers.GetQueueLister(),
 			bindingLister:      listers.GetBindingLister(),
-			rabbit:             rabbit.NewTest(fakerabbitclient.Get(ctx), listers.GetExchangeLister(), listers.GetQueueLister(), listers.GetBindingLister()),
+			rabbit:             rabbit.New(ctx),
 		}
 		return trigger.NewReconciler(ctx, logger,
 			fakeeventingclient.Get(ctx), listers.GetTriggerLister(),

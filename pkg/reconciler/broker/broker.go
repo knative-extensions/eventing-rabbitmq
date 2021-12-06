@@ -141,7 +141,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *eventingv1.Broker) pk
 		MarkExchangeFailed(&b.Status, "ReconcileFailure", "using secret is not supported with this controller")
 		return nil
 	}
-	args.RabbitMQClusterName = b.Spec.Config.Name
 	return r.reconcileUsingCRD(ctx, b, args)
 }
 
