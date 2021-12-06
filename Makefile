@@ -25,7 +25,7 @@ XDG_CONFIG_HOME ?= $(CURDIR)/.config
 env::
 	@echo 'export XDG_CONFIG_HOME="$(XDG_CONFIG_HOME)"'
 KUBECONFIG_DIR = $(XDG_CONFIG_HOME)/kubectl
-KUBECONFIG = $(KUBECONFIG_DIR)/config
+KUBECONFIG ?= $(KUBECONFIG_DIR)/config
 $(KUBECONFIG_DIR):
 	mkdir -p $(@)
 env::
@@ -287,7 +287,8 @@ kind-cluster: | $(KIND) $(ENVSUBST)
 	     | $(ENVSUBST_SAFE) \
 	     | $(KIND) create cluster --name $(KIND_CLUSTER_NAME) --config - )
 
-$(KUBECONFIG): | kind-cluster $(KUBECONFIG_DIR)
+$(KUBECONFIG): | $(KUBECONFIG_DIR)
+	$(MAKE) kind-cluster
 	$(KIND) get kubeconfig --name $(KIND_CLUSTER_NAME) > $(KUBECONFIG)
 
 # https://github.com/rabbitmq/cluster-operator/releases
