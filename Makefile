@@ -41,6 +41,11 @@ env::
 
 ### DEPS #
 #
+ifeq ($(PLATFORM),Darwin)
+OPEN := open
+else
+OPEN := xdg-open
+endif
 
 GCLOUD_SDK_VERSION := 365.0.0
 GCLOUD_BIN := gcloud-$(GCLOUD_SDK_VERSION)-$(PLATFORM)-x86_64
