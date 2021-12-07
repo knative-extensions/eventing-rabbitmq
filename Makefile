@@ -17,7 +17,7 @@ YELLOW := \033[0;33m
 MAGENTA := \033[0;35m
 CYAN := \033[0;36m
 BOLD := \033[1m
-RESET := \033[0m
+NORMAL := \033[0m
 INFO := $(CYAN)
 WARN := $(MAGENTA)
 
@@ -61,9 +61,9 @@ $(GCLOUD): | $(CURL) $(LOCAL_BIN)
 	./install.sh --quiet --usage-reporting=false
 	ln -sf $(LOCAL_BIN)/google-cloud-sdk/bin/gcloud $(GCLOUD)
 	ln -sf $(GCLOUD) $(LOCAL_BIN)/gcloud
-	@printf "$(INFO)ko requires $(BOLD)docker-credential-gcloud$(RESET)\n"
+	@printf "$(INFO)ko requires $(BOLD)docker-credential-gcloud$(NORMAL)\n"
 	PATH=$(GOOGLE_CLOUD_SDK_BIN):$$PATH $(GCLOUD) auth configure-docker
-	@printf "$(RED)Remember to run: $(BOLD)make .env -B && . .env$(RESET)\n"
+	@printf "$(RED)Remember to run: $(BOLD)make .env -B && . .env$(NORMAL)\n"
 
 GOOGLE_CLOUD_SDK_BIN := $(CURDIR)/bin/google-cloud-sdk/bin
 env::
@@ -220,13 +220,17 @@ env:: ## Configure shell env - eval "$(make env)" OR rm .env && make .env && sou
 CURL ?= /usr/bin/curl
 $(CURL):
 	@which $(CURL) \
-	|| ( printf "$(RED)$(BOLD)$(CURL)$(RESET)$(RED) is missing, install $(BOLD)curl$(RESET)\n" ; exit 1)
+	|| ( printf "$(RED)$(BOLD)$(CURL)$(NORMAL)$(RED) is missing, install $(BOLD)curl$(NORMAL)\n" ; exit 1)
 .PHONY: curl
 curl: $(CURL)
 
 HELP_TARGET_DEPTH ?= \#\#
 .PHONY: help
 help:
+	@printf "\nIf this is your first time running this, remember to run: $(BOLD)make .env && source .env$(NORMAL)\n"
+	@printf "Now just type $(BOLD)make <TAB>$(NORMAL) to enjoy shell autocompletion\n"
+	@printf "By the way, $(BOLD)m$(NORMAL) is an alias for $(BOLD)make$(NORMAL)\n\n"
+	@printf "Here is a list of all the make targets that you can run, e.g. $(BOLD)make test-e2e$(NORMAL) or $(BOLD)m test-e2e$(NORMAL)\n\n"
 	@awk -F':+ |$(HELP_TARGET_DEPTH)' '/^[^.][0-9a-zA-Z._%-]+:+.+$(HELP_TARGET_DEPTH).+$$/ { printf "\033[36m%-34s\033[0m %s\n", $$1, $$3 }' $(MAKEFILE_LIST) \
 	| sort
 
@@ -245,14 +249,14 @@ env:: bash-autocomplete
 
 .PHONY: go-dep-update
 go-dep-update: ## Update any Go dependency
-	@printf "Update dep in go.mod by running e.g. $(BOLD)go get -d github.com/rabbitmq/messaging-topology-operator@v1.2.1$(RESET)\n" \
+	@printf "Update dep in go.mod by running e.g. $(BOLD)go get -d github.com/rabbitmq/messaging-topology-operator@v1.2.1$(NORMAL)\n" \
 	; read -rp " (press any key when done)" -n 1
 	$(CURDIR)/hack/update-deps.sh
 	$(CURDIR)/hack/update-codegen.sh
 
 .PHONY: test-unit
 test-unit: ## Run unit tests
-	@printf "$(INFO)Starting point: $(BOLD).github/workflows/knative-go-test.yaml$(RESET)\n"
+	@printf "$(INFO)Starting point: $(BOLD).github/workflows/knative-go-test.yaml$(NORMAL)\n"
 	go test -race $(GOTEST) ./... \
 	| grep -v "no test files"
 
@@ -293,7 +297,7 @@ kind-cluster: | $(KIND) $(ENVSUBST)
 	     | $(KIND) create cluster --name $(KIND_CLUSTER_NAME) --config - )
 
 $(KUBECONFIG): | $(KUBECONFIG_DIR)
-	$(MAKE) kind-cluster
+	$(MAKE) --no-print-directory kind-cluster
 	$(KIND) get kubeconfig --name $(KIND_CLUSTER_NAME) > $(KUBECONFIG)
 
 # https://github.com/rabbitmq/cluster-operator/releases
@@ -354,7 +358,7 @@ test-e2e-publish: | $(KUBECONFIG) ## Run TestKoPublish end-to-end tests  - assum
 
 .PHONY: test-e2e-broker
 test-e2e-broker: | $(KUBECONFIG) ## Run Broker end-to-end tests - assumes a K8s with all necessary components installed (Knative & RabbitMQ)
-	@printf "$(WARN)$(BOLD)rabbitmqcluster$(RESET)$(WARN) has large resource requirements 🤔$(RESET)\n"
+	@printf "$(WARN)$(BOLD)rabbitmqcluster$(NORMAL)$(WARN) has large resource requirements 🤔$(NORMAL)\n"
 	go test -v -race -count=1 -timeout=15m -tags=e2e ./test/e2e/... -run 'Test.*Broker.*' \
 	| grep -v "no test files"
 
@@ -369,6 +373,6 @@ test-e2e: install test-e2e-publish test-e2e-broker test-e2e-source ## Run all en
 BUILD_TAGS=e2e
 .PHONY: build
 build: ## Build binaries with e2e tags
-	@printf "$(INFO)Starting point: $(BOLD).github/workflows/knative-go-build.yaml$(RESET)\n"
+	@printf "$(INFO)Starting point: $(BOLD).github/workflows/knative-go-build.yaml$(NORMAL)\n"
 	go test -vet=off -tags "$(BUILD_TAGS)" -exec echo  ./... \
 	| grep -v "no test files"
