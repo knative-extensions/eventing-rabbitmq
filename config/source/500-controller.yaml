@@ -45,6 +45,13 @@ spec:
               value: config-observability
             - name: RABBITMQ_RA_IMAGE
               value: ko://knative.dev/eventing-rabbitmq/cmd/receive_adapter
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - all
           volumeMounts:
           resources:
             limits:
