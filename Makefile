@@ -340,7 +340,7 @@ install-knative-eventing: | $(KUBECONFIG) $(KUBECTL) ## Install Knative Eventing
 	$(KUBECTL) wait --for=condition=available deploy/eventing-controller --timeout=30s --namespace $(EVENTING_NAMESPACE)
 	$(KUBECTL) wait --for=condition=available deploy/eventing-webhook --timeout=30s --namespace $(EVENTING_NAMESPACE)
 
-install-knative-eventing-rabbitmq: | $(KUBECONFIG) $(KO) install-knative-eventing install-knative-serving ## Install dev Knative Eventing RabbitMQ - also installs Knative Eventing
+install: | $(KUBECONFIG) $(KO) install-knative-eventing install-knative-serving ## Install dev Knative Eventing RabbitMQ - also installs Knative Eventing & Serving
 	$(KO) apply --filename config/broker
 	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-broker-controller --timeout=30s --namespace $(EVENTING_NAMESPACE)
 	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-broker-webhook --timeout=30s --namespace $(EVENTING_NAMESPACE)
