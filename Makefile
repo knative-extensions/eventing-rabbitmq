@@ -243,8 +243,8 @@ bash-autocomplete:
 	@echo "$(BASH_AUTOCOMPLETE)"
 env:: bash-autocomplete
 
-.PHONY: dep-update
-dep-update: ## Update any dependency
+.PHONY: go-dep-update
+go-dep-update: ## Update any Go dependency
 	@printf "Update dep in go.mod by running e.g. $(BOLD)go get -d github.com/rabbitmq/messaging-topology-operator@v1.2.1$(RESET)\n" \
 	; read -rp " (press any key when done)" -n 1
 	$(CURDIR)/hack/update-deps.sh
@@ -325,8 +325,8 @@ install-knative-serving: | $(KUBECONFIG) $(KUBECTL) ## Install Knative Serving
 		https://github.com/knative/serving/releases/download/knative-v$(KNATIVE_VERSION)/serving-crds.yaml
 	$(KUBECTL) $(K_CMD) --filename \
 		https://github.com/knative/serving/releases/download/knative-v$(KNATIVE_VERSION)/serving-core.yaml
-	$(KUBECTL) wait --for=condition=available deploy/controller --timeout=30s --namespace $(SERVING_NAMESPACE)
-	$(KUBECTL) wait --for=condition=available deploy/webhook --timeout=30s --namespace $(SERVING_NAMESPACE)
+	$(KUBECTL) wait --for=condition=available deploy/controller --timeout=60s --namespace $(SERVING_NAMESPACE)
+	$(KUBECTL) wait --for=condition=available deploy/webhook --timeout=60s --namespace $(SERVING_NAMESPACE)
 	$(KUBECTL) apply --filename https://github.com/knative/net-kourier/releases/download/knative-v$(KNATIVE_VERSION)/kourier.yaml
 	$(KUBECTL) patch configmap/config-network --namespace $(SERVING_NAMESPACE) --type merge \
 		--patch '{"data":{"ingress.class":"kourier.ingress.networking.knative.dev"}}'
@@ -337,43 +337,34 @@ install-knative-eventing: | $(KUBECONFIG) $(KUBECTL) ## Install Knative Eventing
 		https://github.com/knative/eventing/releases/download/knative-v$(KNATIVE_VERSION)/eventing-crds.yaml
 	$(KUBECTL) $(K_CMD) --filename \
 		https://github.com/knative/eventing/releases/download/knative-v$(KNATIVE_VERSION)/eventing-core.yaml
-	$(KUBECTL) wait --for=condition=available deploy/eventing-controller --timeout=30s --namespace $(EVENTING_NAMESPACE)
-	$(KUBECTL) wait --for=condition=available deploy/eventing-webhook --timeout=30s --namespace $(EVENTING_NAMESPACE)
+	$(KUBECTL) wait --for=condition=available deploy/eventing-controller --timeout=60s --namespace $(EVENTING_NAMESPACE)
+	$(KUBECTL) wait --for=condition=available deploy/eventing-webhook --timeout=60s --namespace $(EVENTING_NAMESPACE)
 
-install: | $(KUBECONFIG) $(KO) install-knative-eventing install-knative-serving ## Install dev Knative Eventing RabbitMQ - also installs Knative Eventing & Serving
+install: | $(KUBECONFIG) $(KO) install-knative-serving install-knative-eventing install-rabbitmq-cluster-operator install-rabbitmq-topology-operator ## Install local dev Knative Eventing RabbitMQ - manages all dependencies, including K8s components
 	$(KO) apply --filename config/broker
-	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-broker-controller --timeout=30s --namespace $(EVENTING_NAMESPACE)
-	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-broker-webhook --timeout=30s --namespace $(EVENTING_NAMESPACE)
+	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-broker-controller --timeout=60s --namespace $(EVENTING_NAMESPACE)
+	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-broker-webhook --timeout=60s --namespace $(EVENTING_NAMESPACE)
 	$(KO) apply --filename config/source
-	$(KUBECTL) wait --for=condition=available deploy/pingsource-mt-adapter --timeout=30s --namespace knative-eventing
-
-.PHONY: e2e-setup
-e2e-setup: install-rabbitmq-cluster-operator install-rabbitmq-topology-operator install-knative-eventing-rabbitmq ## Setup environment for e2e testing
-	@printf "$(INFO)Starting point: $(BOLD).github/workflows/kind-e2e.yaml$(RESET)\n"
-	@printf "$(INFO)This is slow - $(BOLD)33s cached$(RESET)$(INFO) - so it is kept as a non-explicit dependency for any e2e test$(RESET)\n"
-
-.PHONY: e2e-setup-rm
-e2e-setup-rm: | $(KIND)
-	$(KIND) delete cluster --name $(KIND_CLUSTER_NAME)
+	$(KUBECTL) wait --for=condition=available deploy/pingsource-mt-adapter --timeout=60s --namespace knative-eventing
 
 .PHONY: test-e2e-publish
-test-e2e-publish: | $(KUBECONFIG) ## Run TestKoPublish end-to-end tests
+test-e2e-publish: | $(KUBECONFIG) ## Run TestKoPublish end-to-end tests  - assumes a K8s with all necessary components installed (Knative & RabbitMQ)
 	go test -v -race -count=1 -timeout=15m -tags=e2e ./test/e2e/... -run 'TestKoPublish' \
 	| grep -v "no test files"
 
 .PHONY: test-e2e-broker
-test-e2e-broker: | $(KUBECONFIG) ## Run Broker end-to-end tests
+test-e2e-broker: | $(KUBECONFIG) ## Run Broker end-to-end tests - assumes a K8s with all necessary components installed (Knative & RabbitMQ)
 	@printf "$(WARN)$(BOLD)rabbitmqcluster$(RESET)$(WARN) has large resource requirements 🤔$(RESET)\n"
 	go test -v -race -count=1 -timeout=15m -tags=e2e ./test/e2e/... -run 'Test.*Broker.*' \
 	| grep -v "no test files"
 
 .PHONY: test-e2e-source
-test-e2e-source: | $(KUBECONFIG) ## Run Source end-to-end tests
+test-e2e-source: | $(KUBECONFIG) ## Run Source end-to-end tests - assumes a K8s with all necessary components installed (Knative & RabbitMQ)
 	go test -v -race -count=1 -timeout=15m -tags=e2e ./test/e2e/... -run 'Test.*Source.*' \
 	| grep -v "no test files"
 
 .PHONY: test-e2e
-test-e2e: test-e2e-publish test-e2e-broker test-e2e-source
+test-e2e: install test-e2e-publish test-e2e-broker test-e2e-source ## Run all end-to-end tests - manages all dependencies, including K8s components
 
 BUILD_TAGS=e2e
 .PHONY: build
