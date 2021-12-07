@@ -357,21 +357,18 @@ e2e-setup-rm: | $(KIND)
 	$(KIND) delete cluster --name $(KIND_CLUSTER_NAME)
 
 .PHONY: test-e2e-publish
-test-e2e-publish: ## Run TestKoPublish end-to-end tests
-	@printf "$(WARN)Remember to run $(BOLD)make e2e-setup$(RESET)$(WARN) if needed$(RESET)\n"
+test-e2e-publish: | $(KUBECONFIG) ## Run TestKoPublish end-to-end tests
 	go test -v -race -count=1 -timeout=15m -tags=e2e ./test/e2e/... -run 'TestKoPublish' \
 	| grep -v "no test files"
 
 .PHONY: test-e2e-broker
-test-e2e-broker: ## Run Broker end-to-end tests
-	@printf "$(WARN)Remember to run $(BOLD)make e2e-setup$(RESET)$(WARN) if needed$(RESET)\n"
+test-e2e-broker: | $(KUBECONFIG) ## Run Broker end-to-end tests
 	@printf "$(WARN)$(BOLD)rabbitmqcluster$(RESET)$(WARN) has large resource requirements 🤔$(RESET)\n"
 	go test -v -race -count=1 -timeout=15m -tags=e2e ./test/e2e/... -run 'Test.*Broker.*' \
 	| grep -v "no test files"
 
 .PHONY: test-e2e-source
-test-e2e-source: ## Run Source end-to-end tests
-	@printf "$(WARN)Remember to run $(BOLD)make e2e-setup$(RESET)$(WARN) if needed$(RESET)\n"
+test-e2e-source: | $(KUBECONFIG) ## Run Source end-to-end tests
 	go test -v -race -count=1 -timeout=15m -tags=e2e ./test/e2e/... -run 'Test.*Source.*' \
 	| grep -v "no test files"
 
