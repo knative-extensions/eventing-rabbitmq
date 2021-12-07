@@ -298,7 +298,9 @@ install-rabbitmq-cluster-operator: | $(KUBECONFIG) $(KUBECTL) ## Install RabbitM
 		https://github.com/rabbitmq/cluster-operator/releases/download/v$(RABBITMQ_CLUSTER_OPERATOR_VERSION)/cluster-operator.yml
 
 # https://github.com/jetstack/cert-manager/releases
-CERT_MANAGER_VERSION ?= 1.5.3
+# ⚠️  You may want to keep this in sync with RABBITMQ_TOPOLOGY_OPERATOR_VERSION
+# In other words, don't upgrade cert-manager to a version that was released AFTER RABBITMQ_TOPOLOGY_OPERATOR_VERSION
+CERT_MANAGER_VERSION ?= 1.5.4
 install-cert-manager: | $(KUBECONFIG) $(KUBECTL) ## Install Cert Manager - dependency of RabbitMQ Topology Operator
 	$(KUBECTL) $(K_CMD) --filename \
 		https://github.com/jetstack/cert-manager/releases/download/v$(CERT_MANAGER_VERSION)/cert-manager.yaml
