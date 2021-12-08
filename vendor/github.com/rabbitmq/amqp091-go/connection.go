@@ -1,4 +1,5 @@
 // Copyright (c) 2021 VMware, Inc. or its affiliates. All Rights Reserved.
+// Copyright (c) 2012-2021, Sean Treadway, SoundCloud Ltd.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -153,6 +154,23 @@ func DialTLS(url string, amqps *tls.Config) (*Connection, error) {
 		Heartbeat:       defaultHeartbeat,
 		TLSClientConfig: amqps,
 		Locale:          defaultLocale,
+	})
+}
+
+// DialTLS_ExternalAuth accepts a string in the AMQP URI format and returns a
+// new Connection over TCP using EXTERNAL auth. Defaults to a server heartbeat
+// interval of 10 seconds and sets the initial read deadline to 30 seconds.
+//
+// This mechanism is used, when RabbitMQ is configured for EXTERNAL auth with
+// ssl_cert_login plugin for userless/passwordless logons
+//
+// DialTLS_ExternalAuth uses the provided tls.Config when encountering an
+// amqps:// scheme.
+func DialTLS_ExternalAuth(url string, amqps *tls.Config) (*Connection, error) {
+	return DialConfig(url, Config{
+		Heartbeat:       defaultHeartbeat,
+		TLSClientConfig: amqps,
+		SASL:            []Authentication{&ExternalAuth{}},
 	})
 }
 
