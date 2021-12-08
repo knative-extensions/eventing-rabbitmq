@@ -73,26 +73,47 @@ func (r *Rabbit) ReconcileExchange(ctx context.Context, args *resources.Exchange
 func (r *Rabbit) ReconcileQueue(ctx context.Context, args *triggerresources.QueueArgs) (Result, error) {
 	logging.FromContext(ctx).Info("Reconciling queue")
 
-	queueName := args.Name
 	want := triggerresources.NewQueue(ctx, args)
-	current, err := r.RabbitmqV1beta1().Queues(args.Namespace).Get(ctx, queueName, metav1.GetOptions{})
+	queue, err := r.RabbitmqV1beta1().Queues(args.Namespace).Get(ctx, want.Name, metav1.GetOptions{})
 	if apierrs.IsNotFound(err) {
-		logging.FromContext(ctx).Debugw("Creating rabbitmq exchange", zap.String("queue name", want.Name))
-		current, err = r.RabbitmqV1beta1().Queues(args.Namespace).Create(ctx, want, metav1.CreateOptions{})
+		logging.FromContext(ctx).Debugw("Creating rabbitmq queue", zap.String("queue", want.Name))
+		queue, err = r.RabbitmqV1beta1().Queues(args.Namespace).Create(ctx, want, metav1.CreateOptions{})
 	} else if err != nil {
 		return Result{}, err
-	} else if !equality.Semantic.DeepDerivative(want.Spec, current.Spec) {
+	} else if !equality.Semantic.DeepDerivative(want.Spec, queue.Spec) {
 		// Don't modify the informers copy.
-		desired := current.DeepCopy()
+		desired := queue.DeepCopy()
 		desired.Spec = want.Spec
-		current, err = r.RabbitmqV1beta1().Queues(args.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
+		logging.FromContext(ctx).Debugw("Updating rabbitmq queue", zap.String("queue", queue.Name))
+		queue, err = r.RabbitmqV1beta1().Queues(args.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
 	}
 	if err != nil {
 		return Result{}, err
 	}
+
+	policyReady := true
+	if args.DLXName != nil {
+		want := triggerresources.NewPolicy(args)
+		policy, err := r.RabbitmqV1beta1().Policies(args.Namespace).Get(ctx, queue.Name, metav1.GetOptions{})
+		if apierrs.IsNotFound(err) {
+			logging.FromContext(ctx).Debugw("Creating rabbitmq policy", zap.String("name", queue.Name))
+			policy, err = r.RabbitmqV1beta1().Policies(args.Namespace).Create(ctx, want, metav1.CreateOptions{})
+		} else if err != nil {
+			return Result{}, fmt.Errorf("error creating queue policy: %w", err)
+		} else if !equality.Semantic.DeepDerivative(want.Spec, policy.Spec) {
+			desired := policy.DeepCopy()
+			desired.Spec = want.Spec
+			logging.FromContext(ctx).Debugw("Updating rabbitmq policy", zap.String("name", queue.Name))
+			policy, err = r.RabbitmqV1beta1().Policies(args.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
+		}
+		if err != nil {
+			return Result{}, err
+		}
+		policyReady = isReady(policy.Status.Conditions)
+	}
 	return Result{
 		Name:  want.Name,
-		Ready: isReady(current.Status.Conditions),
+		Ready: isReady(queue.Status.Conditions) && policyReady,
 	}, nil
 }
 
