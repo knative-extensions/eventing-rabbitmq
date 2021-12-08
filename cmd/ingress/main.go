@@ -19,9 +19,11 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"sync"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
@@ -45,6 +47,9 @@ type envConfig struct {
 
 	channel *amqp.Channel
 	logger  *zap.SugaredLogger
+
+	pconfirms_chan  chan amqp.Confirmation
+	pconfirms_mutex sync.Mutex
 }
 
 func main() {
@@ -64,6 +69,12 @@ func main() {
 		log.Fatalf("failed to open a channel: %s", err)
 	}
 	defer env.channel.Close()
+
+	env.pconfirms_chan = env.channel.NotifyPublish(make(chan amqp.Confirmation))
+	// noWait is false
+	if err := env.channel.Confirm(false); err != nil {
+		log.Fatalf("faild to switch connection channel to confirm mode: %s", err)
+	}
 
 	env.logger = logging.FromContext(context.Background())
 
@@ -134,6 +145,10 @@ func (env *envConfig) send(event *cloudevents.Event) (int, error) {
 	for key, val := range event.Extensions() {
 		headers[key] = val
 	}
+
+	env.pconfirms_mutex.Lock()
+	defer env.pconfirms_mutex.Unlock()
+
 	if err := env.channel.Publish(
 		env.ExchangeName,
 		"",    // routing key
@@ -146,5 +161,12 @@ func (env *envConfig) send(event *cloudevents.Event) (int, error) {
 		}); err != nil {
 		return http.StatusInternalServerError, fmt.Errorf("failed to publish message")
 	}
-	return http.StatusAccepted, nil
+
+	confirmation := <-env.pconfirms_chan
+
+	if confirmation.Ack {
+		return http.StatusAccepted, nil
+	} else {
+		return http.StatusServiceUnavailable, errors.New("message was not confirmed")
+	}
 }
