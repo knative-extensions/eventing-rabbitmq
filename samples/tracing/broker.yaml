@@ -1,0 +1,13 @@
+apiVersion: eventing.knative.dev/v1
+kind: Broker
+metadata:
+  name: default
+  namespace: rmqbroker
+  annotations:
+    eventing.knative.dev/broker.class: RabbitMQBroker
+spec:
+  config:
+    apiVersion: rabbitmq.com/v1beta1
+    kind: RabbitmqCluster
+    name: cluster
+    namespace: rmqbroker

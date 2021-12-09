@@ -13,7 +13,7 @@ This means that all that is required to start collecting traces from
 eventing-rabbitmq components is to configure your event source which sends events
 to the broker to attach trace headers to the request.
 
-[topology.yaml](./topology.yaml) contains a sample broker/trigger topology similar to the one
+This directory contains a sample broker/trigger topology similar to the one
 found in the distributed tracing blog post, but with the additional creation of
 a RabbitMQ Cluster and with the broker configured to use it. This sample
 assumes you have setup the `otel-collector.observability` service as shown in

@@ -1,0 +1,26 @@
+apiVersion: sources.knative.dev/v1
+kind: ContainerSource
+metadata:
+  name: heartbeats
+  namespace: rmqbroker
+spec:
+  template:
+    spec:
+      containers:
+        - image: gcr.io/knative-nightly/knative.dev/eventing/cmd/heartbeats:latest
+          name: heartbeats
+          args:
+            - --period=1
+          env:
+            - name: POD_NAME
+              value: "heartbeats"
+            - name: POD_NAMESPACE
+              value: "rmqbroker"
+            - name: K_CONFIG_TRACING
+              value: '{"backend":"zipkin","debug":"true","zipkin-endpoint":"http://otel-collector.observability:9411/api/v2/spans"}'
+  sink:
+    ref:
+      apiVersion: eventing.knative.dev/v1
+      kind: Broker
+      name: default
+      namespace: rmqbroker
