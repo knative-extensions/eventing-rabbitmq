@@ -262,7 +262,7 @@ test-unit: ## Run unit tests
 
 .PHONY: test-unit-uncached
 test-unit-uncached: GOTEST = -count=1
-test-unit-uncached: test-unit
+test-unit-uncached: test-unit ## Run unit tests with no cache
 
 SERVING_NAMESPACE = knative-serving
 EVENTING_NAMESPACE = knative-eventing
