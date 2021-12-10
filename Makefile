@@ -370,9 +370,9 @@ test-e2e-source: | $(KUBECONFIG) ## Run Source end-to-end tests - assumes a K8s 
 .PHONY: test-e2e
 test-e2e: install test-e2e-publish test-e2e-broker test-e2e-source ## Run all end-to-end tests - manages all dependencies, including K8s components
 
-BUILD_TAGS=e2e
-.PHONY: build
-build: ## Build binaries with e2e tags
+TEST_COMPILATION_TAGS=e2e
+.PHONY: test-compilation
+test-compilation: ## Build test binaries with e2e tags
 	@printf "$(INFO)Starting point: $(BOLD).github/workflows/knative-go-build.yaml$(NORMAL)\n"
 	go test -vet=off -tags "$(BUILD_TAGS)" -exec echo  ./... \
 	| grep -v "no test files"
