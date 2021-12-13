@@ -97,7 +97,7 @@ EOF
 because the dead letter Sink is not ready.
 
 ```sh
-vaikas-a01:wabbit vaikas$ kubectl -n dlq-demo get brokers
+kubectl -n dlq-demo get brokers
 NAME      URL                                                        AGE   READY   REASON
 default   http://default-broker-ingress.dlq-demo.svc.cluster.local   7s    False   Unable to get the DeadLetterSink's URI
 ```
@@ -125,7 +125,7 @@ Now the Broker will become ready, might take a few seconds to get the Service up
 and running.
 
 ```sh
-vaikas-a01:wabbit vaikas$ kubectl -n dlq-demo get brokers
+kubectl -n dlq-demo get brokers
 NAME      URL                                                        AGE     READY   REASON
 default   http://default-broker-ingress.dlq-demo.svc.cluster.local   2m39s   True
 ```
@@ -179,10 +179,11 @@ kind: Trigger
 metadata:
   name: failer-trigger
   namespace: dlq-demo
-  # Value must be between 1 and 1000
-  # With a value of 1 RabbitMQ Trigger behaves as a FIFO queue
-  # Values above 1 are more oriented to performance
-  # rabbitmq.eventing.knative.dev/prefetchCount: "10"
+  annotations:
+    # Value must be between 1 and 1000
+    # With a value of 1 RabbitMQ Trigger behaves as a FIFO queue
+    # Values above 1 are more oriented to performance
+    # rabbitmq.eventing.knative.dev/prefetchCount: "10"
 spec:
   broker: default
   filter:
@@ -208,7 +209,7 @@ kubectl apply -f 'https://storage.googleapis.com/knative-nightly/eventing-rabbit
 Look at the failer pod logs, you see it's receiving both 200/500 responses.
 
 ```sh
-vaikas-a01:wabbit vaikas$ kubectl -n dlq-demo -l='serving.knative.dev/service=failer' logs -c user-container
+kubectl -n dlq-demo -l='serving.knative.dev/service=failer' logs -c user-container
 2020/10/06 10:35:00 using response code: 200
 2020/10/06 10:35:00 using response code: 500
 2020/10/06 10:35:00 using response code: 500
@@ -227,7 +228,7 @@ However the event-display (the Dead Letter Sink) only sees the failed events
 with the response code set to 500.
 
 ```sh
-vaikas-a01:wabbit vaikas$ kubectl -n dlq-demo -l='serving.knative.dev/service=event-display' logs -c user-container
+kubectl -n dlq-demo -l='serving.knative.dev/service=event-display' logs -c user-container
 ☁️  cloudevents.Event
 Validation: valid
 Context Attributes,
