@@ -43,7 +43,7 @@ func TestNew(t *testing.T) {
 
 	os.Setenv("BROKER_DISPATCHER_IMAGE", "dispatcherimage")
 	os.Setenv("BROKER_DISPATCHER_SERVICE_ACCOUNT", "dispatchersa")
-	c := NewController(ctx, configmap.NewStaticWatcher())
+	c := NewController(ctx, &configmap.ManualWatcher{})
 
 	if c == nil {
 		t.Fatal("Expected NewController to return a non-nil value")

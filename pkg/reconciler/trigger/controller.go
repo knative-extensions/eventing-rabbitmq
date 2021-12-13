@@ -21,8 +21,10 @@ import (
 	"log"
 
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/services"
+	"knative.dev/eventing-rabbitmq/pkg/utils"
 	rabbitmqclient "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/client"
 	eventingclient "knative.dev/eventing/pkg/client/injection/client"
+	reconcilersource "knative.dev/eventing/pkg/reconciler/source"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/injection/clients/dynamicclient"
 
@@ -43,6 +45,7 @@ import (
 	"knative.dev/pkg/client/injection/ducks/duck/v1/addressable"
 	"knative.dev/pkg/client/injection/ducks/duck/v1/source"
 	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
+	configmapinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/configmap"
 
 	queueinformer "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/informers/rabbitmq.com/v1beta1/queue"
 
@@ -52,7 +55,10 @@ import (
 	"knative.dev/pkg/resolver"
 )
 
-const BrokerClass = "RabbitMQBroker"
+const (
+	BrokerClass = "RabbitMQBroker"
+	component   = "rabbitmq-trigger-controller"
+)
 
 type envConfig struct {
 	DispatcherImage          string `envconfig:"BROKER_DISPATCHER_IMAGE" required:"true"`
@@ -77,6 +83,7 @@ func NewController(
 	queueInformer := queueinformer.Get(ctx)
 	bindingInformer := bindinginformer.Get(ctx)
 	exchangeInformer := exchangeinformer.Get(ctx)
+	configmapInformer := configmapinformer.Get(ctx)
 
 	r := &Reconciler{
 		eventingClientSet:            eventingclient.Get(ctx),
@@ -93,6 +100,7 @@ func NewController(
 		bindingLister:                bindingInformer.Lister(),
 		rabbitClientSet:              rabbitmqclient.Get(ctx),
 		rabbit:                       services.NewRabbit(ctx),
+		configs:                      reconcilersource.WatchConfigurations(ctx, component, cmw),
 	}
 
 	impl := triggerreconciler.NewImpl(ctx, r)
@@ -118,6 +126,10 @@ func NewController(
 	bindingInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.FilterControllerGK(v1.Kind("Trigger")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
+	})
+	configmapInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: utils.SystemConfigMapsFilterFunc(),
+		Handler:    controller.HandleAll(func(interface{}) { impl.GlobalResync(triggerInformer.Informer()) }),
 	})
 
 	brokerInformer.Informer().AddEventHandler(controller.HandleAll(

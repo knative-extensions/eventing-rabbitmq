@@ -28,6 +28,7 @@ import (
 
 	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
+	reconcilersource "knative.dev/eventing/pkg/reconciler/source"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/system"
 )
@@ -43,10 +44,32 @@ type IngressArgs struct {
 	//ServiceAccountName string
 	RabbitMQSecretName string
 	BrokerUrlSecretKey string
+	Configs            reconcilersource.ConfigAccessor
 }
 
 // MakeIngress creates the in-memory representation of the Broker's ingress Deployment.
 func MakeIngressDeployment(args *IngressArgs) *appsv1.Deployment {
+	envs := []corev1.EnvVar{{
+		Name:  system.NamespaceEnvKey,
+		Value: system.Namespace(),
+	}, {
+		Name: "BROKER_URL",
+		ValueFrom: &corev1.EnvVarSource{
+			SecretKeyRef: &corev1.SecretKeySelector{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: args.RabbitMQSecretName,
+				},
+				Key: args.BrokerUrlSecretKey,
+			},
+		},
+	}, {
+		Name:  "EXCHANGE_NAME",
+		Value: naming.BrokerExchangeName(args.Broker, false),
+	}}
+	if args.Configs != nil {
+		envs = append(envs, args.Configs.ToEnvVars()...)
+	}
+
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: args.Broker.Namespace,
@@ -79,23 +102,7 @@ func MakeIngressDeployment(args *IngressArgs) *appsv1.Deployment {
 						// 	InitialDelaySeconds: 5,
 						// 	PeriodSeconds:       2,
 						// },
-						Env: []corev1.EnvVar{{
-							Name:  system.NamespaceEnvKey,
-							Value: system.Namespace(),
-						}, {
-							Name: "BROKER_URL",
-							ValueFrom: &corev1.EnvVarSource{
-								SecretKeyRef: &corev1.SecretKeySelector{
-									LocalObjectReference: corev1.LocalObjectReference{
-										Name: args.RabbitMQSecretName,
-									},
-									Key: args.BrokerUrlSecretKey,
-								},
-							},
-						}, {
-							Name:  "EXCHANGE_NAME",
-							Value: naming.BrokerExchangeName(args.Broker, false),
-						}},
+						Env: envs,
 						Ports: []corev1.ContainerPort{{
 							ContainerPort: 8080,
 							Name:          "http",

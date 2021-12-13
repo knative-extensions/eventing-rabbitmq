@@ -21,19 +21,22 @@ import (
 	"errors"
 	"time"
 
-	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 
 	"github.com/NeowayLabs/wabbit/amqp"
+	"github.com/kelseyhightower/envconfig"
 	amqperr "github.com/rabbitmq/amqp091-go"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/signals"
 
 	"knative.dev/eventing-rabbitmq/pkg/dispatcher"
+	"knative.dev/eventing-rabbitmq/pkg/utils"
 )
 
 type envConfig struct {
+	utils.EnvConfig
+
 	QueueName        string `envconfig:"QUEUE_NAME" required:"true"`
 	RabbitURL        string `envconfig:"RABBIT_URL" required:"true"`
 	BrokerIngressURL string `envconfig:"BROKER_INGRESS_URL" required:"true"`
@@ -54,6 +57,16 @@ func main() {
 	var env envConfig
 	if err := envconfig.Process("", &env); err != nil {
 		logging.FromContext(ctx).Fatal("Failed to process env var: ", err)
+	}
+
+	env.SetComponent(dispatcher.ComponentName)
+	logger := env.GetLogger()
+	ctx = logging.WithLogger(ctx, logger)
+	if err := env.SetupTracing(); err != nil {
+		logger.Errorw("Failed setting up trace publishing", zap.Error(err))
+	}
+	if err := env.SetupMetrics(ctx); err != nil {
+		logger.Errorw("Failed to create the metrics exporter", zap.Error(err))
 	}
 
 	var backoffPolicy eventingduckv1.BackoffPolicyType

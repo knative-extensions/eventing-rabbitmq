@@ -17,10 +17,8 @@ limitations under the License.
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
@@ -28,44 +26,60 @@ import (
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/kelseyhightower/envconfig"
 	amqp "github.com/rabbitmq/amqp091-go"
+	"go.opencensus.io/plugin/ochttp/propagation/tracecontext"
+	"go.opencensus.io/trace"
 	"go.uber.org/zap"
+	"knative.dev/eventing-rabbitmq/pkg/utils"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/pkg/logging"
+	"knative.dev/pkg/signals"
 )
 
 const (
 	defaultMaxIdleConnections        = 1000
 	defaultMaxIdleConnectionsPerHost = 1000
+	component                        = "rabbitmq-ingress"
 )
 
 type envConfig struct {
+	utils.EnvConfig
+
 	Port         int    `envconfig:"PORT" default:"8080"`
 	BrokerURL    string `envconfig:"BROKER_URL" required:"true"`
 	ExchangeName string `envconfig:"EXCHANGE_NAME" required:"true"`
 
 	channel *amqp.Channel
-	logger  *zap.SugaredLogger
 }
 
 func main() {
+	ctx := signals.NewContext()
+
 	var env envConfig
 	if err := envconfig.Process("", &env); err != nil {
-		log.Fatal("Failed to process env var", zap.Error(err))
+		logging.FromContext(ctx).Fatal("Failed to process env var: ", err)
+	}
+
+	env.SetComponent(component)
+	logger := env.GetLogger()
+	ctx = logging.WithLogger(ctx, logger)
+	if err := env.SetupTracing(); err != nil {
+		logger.Errorw("Failed setting up trace publishing", zap.Error(err))
+	}
+	if err := env.SetupMetrics(ctx); err != nil {
+		logger.Errorw("Failed to create the metrics exporter", zap.Error(err))
 	}
 
 	conn, err := amqp.Dial(env.BrokerURL)
 	if err != nil {
-		log.Fatalf("failed to connect to RabbitMQ: %s", err)
+		logger.Fatalw("failed to connect to RabbitMQ", zap.Error(err))
 	}
 	defer conn.Close()
 
 	env.channel, err = conn.Channel()
 	if err != nil {
-		log.Fatalf("failed to open a channel: %s", err)
+		logger.Fatalw("failed to open a channel", zap.Error(err))
 	}
 	defer env.channel.Close()
-
-	env.logger = logging.FromContext(context.Background())
 
 	connectionArgs := kncloudevents.ConnectionArgs{
 		MaxIdleConns:        defaultMaxIdleConnections,
@@ -75,15 +89,16 @@ func main() {
 
 	receiver := kncloudevents.NewHTTPMessageReceiver(env.Port)
 
-	if err := receiver.StartListen(context.Background(), &env); err != nil {
-		log.Fatalf("failed to start listen, %v", err)
+	if err := receiver.StartListen(ctx, &env); err != nil {
+		logger.Fatalf("failed to start listen, %v", err)
 	}
 }
 
 func (env *envConfig) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
+	logger := env.GetLogger()
 	// validate request method
 	if request.Method != http.MethodPost {
-		env.logger.Warn("unexpected request method", zap.String("method", request.Method))
+		logger.Warn("unexpected request method", zap.String("method", request.Method))
 		writer.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
@@ -101,7 +116,7 @@ func (env *envConfig) ServeHTTP(writer http.ResponseWriter, request *http.Reques
 
 	event, err := binding.ToEvent(ctx, message)
 	if err != nil {
-		env.logger.Warn("failed to extract event from request", zap.Error(err))
+		logger.Warnw("failed to extract event from request", zap.Error(err))
 		writer.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -109,27 +124,34 @@ func (env *envConfig) ServeHTTP(writer http.ResponseWriter, request *http.Reques
 	// run validation for the extracted event
 	validationErr := event.Validate()
 	if validationErr != nil {
-		env.logger.Warn("failed to validate extracted event", zap.Error(validationErr))
+		logger.Warnw("failed to validate extracted event", zap.Error(validationErr))
 		writer.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	statusCode, err := env.send(event)
+	span := trace.FromContext(ctx)
+	defer span.End()
+
+	statusCode, err := env.send(event, span)
 	if err != nil {
-		env.logger.Error("failed to send event,", err)
+		logger.Errorw("failed to send event", zap.Error(err))
 	}
 	writer.WriteHeader(statusCode)
 }
 
-func (env *envConfig) send(event *cloudevents.Event) (int, error) {
+func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, error) {
 	bytes, err := json.Marshal(event)
 	if err != nil {
 		return http.StatusBadRequest, fmt.Errorf("failed to marshal event, %w", err)
 	}
+	tp, ts := (&tracecontext.HTTPFormat{}).SpanContextToHeaders(span.SpanContext())
+
 	headers := amqp.Table{
-		"type":    event.Type(),
-		"source":  event.Source(),
-		"subject": event.Subject(),
+		"type":        event.Type(),
+		"source":      event.Source(),
+		"subject":     event.Subject(),
+		"traceparent": tp,
+		"tracestate":  ts,
 	}
 	for key, val := range event.Extensions() {
 		headers[key] = val
@@ -144,7 +166,7 @@ func (env *envConfig) send(event *cloudevents.Event) (int, error) {
 			ContentType: "application/json",
 			Body:        bytes,
 		}); err != nil {
-		return http.StatusInternalServerError, fmt.Errorf("failed to publish message")
+		return http.StatusInternalServerError, fmt.Errorf("failed to publish message: %w", err)
 	}
 	return http.StatusAccepted, nil
 }

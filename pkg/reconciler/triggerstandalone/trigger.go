@@ -45,6 +45,7 @@ import (
 	clientset "knative.dev/eventing/pkg/client/clientset/versioned"
 	triggerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1/trigger"
 	eventinglisters "knative.dev/eventing/pkg/client/listers/eventing/v1"
+	reconcilersource "knative.dev/eventing/pkg/reconciler/source"
 
 	"knative.dev/eventing/pkg/duck"
 	pkgreconciler "knative.dev/pkg/reconciler"
@@ -82,6 +83,9 @@ type Reconciler struct {
 	transport http.RoundTripper
 	// For testing...
 	adminURL string
+
+	// config accessor for observability/logging/tracing
+	configs reconcilersource.ConfigAccessor
 }
 
 // Check that our Reconciler implements Interface
@@ -374,6 +378,7 @@ func (r *Reconciler) reconcileDispatcherDeployment(ctx context.Context, b *event
 		BrokerIngressURL:   b.Status.Address.URL,
 		Subscriber:         sub,
 		Delivery:           delivery,
+		Configs:            r.configs,
 	})
 	return r.reconcileDeployment(ctx, expected)
 }
@@ -389,6 +394,7 @@ func (r *Reconciler) reconcileDLXDispatcherDeployment(ctx context.Context, b *ev
 		BrokerIngressURL:   b.Status.Address.URL,
 		Subscriber:         sub,
 		DLX:                true,
+		Configs:            r.configs,
 	})
 	return r.reconcileDeployment(ctx, expected)
 }

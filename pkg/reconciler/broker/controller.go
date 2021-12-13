@@ -22,6 +22,7 @@ import (
 
 	"knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/services"
+	"knative.dev/eventing-rabbitmq/pkg/utils"
 	rabbitmqclient "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/client"
 	eventingclient "knative.dev/eventing/pkg/client/injection/client"
 
@@ -31,6 +32,7 @@ import (
 
 	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
+	reconcilersource "knative.dev/eventing/pkg/reconciler/source"
 
 	bindinginformer "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/informers/rabbitmq.com/v1beta1/binding"
 	exchangeinformer "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/informers/rabbitmq.com/v1beta1/exchange"
@@ -42,6 +44,7 @@ import (
 	"knative.dev/pkg/client/injection/ducks/duck/v1/conditions"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
+	configmapinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/configmap"
 	endpointsinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/endpoints"
 	secretinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/secret"
 	serviceinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/service"
@@ -52,6 +55,10 @@ import (
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/resolver"
+)
+
+const (
+	ComponentName = "rabbitmq-broker-controller"
 )
 
 type envConfig struct {
@@ -87,6 +94,7 @@ func NewController(
 	exchangeInformer := exchangeinformer.Get(ctx)
 	queueInformer := queueinformer.Get(ctx)
 	bindingInformer := bindinginformer.Get(ctx)
+	configmapInformer := configmapinformer.Get(ctx)
 
 	r := &Reconciler{
 		eventingClientSet:         eventingclient.Get(ctx),
@@ -104,6 +112,7 @@ func NewController(
 		dispatcherImage:           env.DispatcherImage,
 		rabbitClientSet:           rabbitmqclient.Get(ctx),
 		rabbit:                    services.NewRabbit(ctx),
+		configs:                   reconcilersource.WatchConfigurations(ctx, ComponentName, cmw),
 	}
 
 	impl := brokerreconciler.NewImpl(ctx, r, BrokerClass)
@@ -151,6 +160,10 @@ func NewController(
 	bindingInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.FilterControllerGK(eventingv1.Kind("Broker")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
+	})
+	configmapInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: utils.SystemConfigMapsFilterFunc(),
+		Handler:    controller.HandleAll(func(interface{}) { impl.GlobalResync(brokerInformer.Informer()) }),
 	})
 	return impl
 }

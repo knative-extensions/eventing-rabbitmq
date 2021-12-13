@@ -26,7 +26,7 @@ import (
 )
 
 func main() {
-	sharedmain.Main("rabbitmq-broker-controller",
+	sharedmain.Main(broker.ComponentName,
 		broker.NewController,
 		trigger.NewController,
 	)

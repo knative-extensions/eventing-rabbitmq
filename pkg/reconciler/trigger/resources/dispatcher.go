@@ -26,6 +26,7 @@ import (
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
+	reconcilersource "knative.dev/eventing/pkg/reconciler/source"
 
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/kmeta"
@@ -51,6 +52,7 @@ type DispatcherArgs struct {
 	BrokerIngressURL   *apis.URL
 	Subscriber         *apis.URL
 	DLX                bool
+	Configs            reconcilersource.ConfigAccessor
 }
 
 // MakeDispatcherDeployment creates the in-memory representation of the Broker's Dispatcher Deployment.
@@ -88,6 +90,9 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 			Name:  "BROKER_INGRESS_URL",
 			Value: args.BrokerIngressURL.String(),
 		}},
+	}
+	if args.Configs != nil {
+		dispatcher.Env = append(dispatcher.Env, args.Configs.ToEnvVars()...)
 	}
 	if args.Delivery != nil {
 		dispatcher.Env = append(dispatcher.Env,
@@ -156,7 +161,6 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 			},
 		},
 	}
-
 }
 
 // DispatcherLabels generates the labels present on all resources representing the dispatcher of the given

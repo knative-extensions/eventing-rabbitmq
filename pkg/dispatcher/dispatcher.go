@@ -24,11 +24,14 @@ import (
 	"time"
 
 	"github.com/NeowayLabs/wabbit"
+	"github.com/cloudevents/sdk-go/observability/opencensus/v2/client"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/pkg/errors"
 	amqperr "github.com/rabbitmq/amqp091-go"
+	"go.opencensus.io/plugin/ochttp/propagation/tracecontext"
+	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/eventing/pkg/kncloudevents"
@@ -36,7 +39,8 @@ import (
 )
 
 const (
-	ackMultiple = false // send ack/nack for multiple messages
+	ackMultiple   = false // send ack/nack for multiple messages
+	ComponentName = "rabbitmq-dispatcher"
 )
 
 type Dispatcher struct {
@@ -70,7 +74,7 @@ func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel wabbit.Channe
 		return errors.Wrap(err, "create consumer")
 	}
 
-	ceClient, err := cloudevents.NewClientHTTP(cehttp.WithIsRetriableFunc(isRetriableFunc))
+	ceClient, err := client.NewClientHTTP([]cehttp.Option{cehttp.WithIsRetriableFunc(isRetriableFunc)}, nil)
 	if err != nil {
 		return errors.Wrap(err, "create http client")
 	}
@@ -83,7 +87,12 @@ func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel wabbit.Channe
 	workerQueue := make(chan wabbit.Delivery, d.WorkerCount)
 
 	for i := 0; i < d.WorkerCount; i++ {
-		go d.dispatch(ctx, wg, workerQueue, ceClient)
+		go func() {
+			defer wg.Done()
+			for msg := range workerQueue {
+				d.dispatch(ctx, msg, ceClient)
+			}
+		}()
 	}
 	for {
 		select {
@@ -125,58 +134,78 @@ func isSuccess(ctx context.Context, result protocol.Result) bool {
 	return false
 }
 
-func (d *Dispatcher) dispatch(ctx context.Context, wg *sync.WaitGroup, queue <-chan wabbit.Delivery, ceClient cloudevents.Client) {
-	defer wg.Done()
-
-	for msg := range queue {
-		event := cloudevents.NewEvent()
-		err := json.Unmarshal(msg.Body(), &event)
+func (d *Dispatcher) dispatch(ctx context.Context, msg wabbit.Delivery, ceClient cloudevents.Client) {
+	event := cloudevents.NewEvent()
+	err := json.Unmarshal(msg.Body(), &event)
+	if err != nil {
+		logging.FromContext(ctx).Warn("failed to unmarshal event (NACK-ing and not re-queueing): ", err)
+		err = msg.Nack(ackMultiple, false) // do not requeue
 		if err != nil {
-			logging.FromContext(ctx).Warn("failed to unmarshal event (NACK-ing and not re-queueing): ", err)
-			err = msg.Nack(ackMultiple, false) // do not requeue
-			if err != nil {
-				logging.FromContext(ctx).Warn("failed to NACK event: ", err)
-			}
-			continue
+			logging.FromContext(ctx).Warn("failed to NACK event: ", err)
 		}
+		return
+	}
 
-		logging.FromContext(ctx).Debugf("Got event as: %+v", event)
-		ctx = cloudevents.ContextWithTarget(ctx, d.SubscriberURL)
+	ctx, span := readSpan(ctx, msg)
+	defer span.End()
+	if span.IsRecordingEvents() {
+		span.AddAttributes(client.EventTraceAttributes(&event)...)
+	}
 
-		if d.BackoffPolicy == eventingduckv1.BackoffPolicyLinear {
-			ctx = cloudevents.ContextWithRetriesLinearBackoff(ctx, d.BackoffDelay, d.MaxRetries)
-		} else {
-			ctx = cloudevents.ContextWithRetriesExponentialBackoff(ctx, d.BackoffDelay, d.MaxRetries)
+	logging.FromContext(ctx).Debugf("Got event as: %+v", event)
+	ctx = cloudevents.ContextWithTarget(ctx, d.SubscriberURL)
+
+	if d.BackoffPolicy == eventingduckv1.BackoffPolicyLinear {
+		ctx = cloudevents.ContextWithRetriesLinearBackoff(ctx, d.BackoffDelay, d.MaxRetries)
+	} else {
+		ctx = cloudevents.ContextWithRetriesExponentialBackoff(ctx, d.BackoffDelay, d.MaxRetries)
+	}
+
+	response, result := ceClient.Request(ctx, event)
+	if !isSuccess(ctx, result) {
+		logging.FromContext(ctx).Warnf("Failed to deliver to %q requeue: %v", d.SubscriberURL, d.Requeue)
+		err = msg.Nack(ackMultiple, d.Requeue)
+		if err != nil {
+			logging.FromContext(ctx).Warn("failed to NACK event: ", err)
 		}
+		return
+	}
 
-		response, result := ceClient.Request(ctx, event)
+	logging.FromContext(ctx).Debugf("Got Response: %+v", response)
+	if response != nil {
+		logging.FromContext(ctx).Infof("Sending an event: %+v", response)
+		ctx = cloudevents.ContextWithTarget(ctx, d.BrokerIngressURL)
+		result := ceClient.Send(ctx, *response)
 		if !isSuccess(ctx, result) {
-			logging.FromContext(ctx).Warnf("Failed to deliver to %q requeue: %v", d.SubscriberURL, d.Requeue)
-			err = msg.Nack(ackMultiple, d.Requeue)
+			logging.FromContext(ctx).Warnf("Failed to deliver to %q requeue: %v", d.BrokerIngressURL, d.Requeue)
+			err = msg.Nack(ackMultiple, d.Requeue) // not multiple
 			if err != nil {
 				logging.FromContext(ctx).Warn("failed to NACK event: ", err)
 			}
-			continue
-		}
-
-		logging.FromContext(ctx).Debugf("Got Response: %+v", response)
-		if response != nil {
-			logging.FromContext(ctx).Infof("Sending an event: %+v", response)
-			ctx = cloudevents.ContextWithTarget(ctx, d.BrokerIngressURL)
-			result := ceClient.Send(ctx, *response)
-			if !isSuccess(ctx, result) {
-				logging.FromContext(ctx).Warnf("Failed to deliver to %q requeue: %v", d.BrokerIngressURL, d.Requeue)
-				err = msg.Nack(ackMultiple, d.Requeue) // not multiple
-				if err != nil {
-					logging.FromContext(ctx).Warn("failed to NACK event: ", err)
-				}
-				continue
-			}
-		}
-
-		err = msg.Ack(ackMultiple)
-		if err != nil {
-			logging.FromContext(ctx).Warn("failed to ACK event: ", err)
+			return
 		}
 	}
+
+	err = msg.Ack(ackMultiple)
+	if err != nil {
+		logging.FromContext(ctx).Warn("failed to ACK event: ", err)
+	}
+}
+
+func readSpan(ctx context.Context, msg wabbit.Delivery) (context.Context, *trace.Span) {
+	traceparent, ok := msg.Headers()["traceparent"].(string)
+	if !ok {
+		return ctx, nil
+	}
+	tracestate, ok := msg.Headers()["tracestate"].(string)
+	if !ok {
+		return ctx, nil
+	}
+	sc, ok := (&tracecontext.HTTPFormat{}).SpanContextFromHeaders(traceparent, tracestate)
+	var span *trace.Span
+	if ok {
+		ctx, span = trace.StartSpanWithRemoteParent(ctx, ComponentName, sc,
+			trace.WithSpanKind(trace.SpanKindServer))
+	}
+	return ctx, span
 }
