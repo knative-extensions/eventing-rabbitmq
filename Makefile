@@ -92,21 +92,21 @@ ko: $(KO)
 releases-ko:
 	$(OPEN) $(KO_RELEASES)
 
-KiND_RELEASES := https://github.com/kubernetes-sigs/kind/releases
-KiND_VERSION := 0.11.1
-KiND_URL := $(KiND_RELEASES)/download/v$(KiND_VERSION)/kind-$(platform)-amd64
-KiND := $(LOCAL_BIN)/kind_$(KiND_VERSION)_$(platform)_amd64
-$(KiND): | $(CURL) $(LOCAL_BIN)
-	$(CURL) --progress-bar --fail --location --output $(KiND) "$(KiND_URL)"
-	touch $(KiND)
-	chmod +x $(KiND)
-	$(KiND) version | grep $(KiND_VERSION)
-	ln -sf $(KiND) $(LOCAL_BIN)/kind
+KIND_RELEASES := https://github.com/kubernetes-sigs/kind/releases
+KIND_VERSION := 0.11.1
+KIND_URL := $(KIND_RELEASES)/download/v$(KIND_VERSION)/kind-$(platform)-amd64
+KIND := $(LOCAL_BIN)/kind_$(KIND_VERSION)_$(platform)_amd64
+$(KIND): | $(CURL) $(LOCAL_BIN)
+	$(CURL) --progress-bar --fail --location --output $(KIND) "$(KIND_URL)"
+	touch $(KIND)
+	chmod +x $(KIND)
+	$(KIND) version | grep $(KIND_VERSION)
+	ln -sf $(KIND) $(LOCAL_BIN)/kind
 .PHONY: kind
-kind: $(KiND)
+kind: $(KIND)
 .PHONY: releases-kind
 releases-kind:
-	$(OPEN) $(KiND_RELEASES)
+	$(OPEN) $(KIND_RELEASES)
 
 # The envsubst that comes with gettext does not support this,
 # using this Go version instead: https://github.com/a8m/envsubst#docs
@@ -128,7 +128,7 @@ releases-envsubst:
 	$(OPEN) $(ENVSUBST_RELEASES)
 
 KUBECTL_RELEASES := https://github.com/kubernetes/kubernetes/tags
-# Keep this in sync with KiND_K8s_VERSION
+# Keep this in sync with KIND_K8S_VERSION
 KUBECTL_VERSION := 1.20.7
 KUBECTL_BIN := kubectl-$(KUBECTL_VERSION)-$(platform)-amd64
 KUBECTL_URL := https://storage.googleapis.com/kubernetes-release/release/v$(KUBECTL_VERSION)/bin/$(platform)/amd64/kubectl
@@ -167,7 +167,7 @@ releases-k9s:
 	$(OPEN) $(K9S_RELEASES)
 .PHONY: k9s
 K9S_ARGS ?= --all-namespaces
-k9s: | $(KUBECONFIG) $(K9S) ## Terminal ncurses UI for K8s
+k9s: | $(KUBECONFIG) $(K9S) ## Terminal ncurses UI for K8S
 	$(K9S) $(K9S_ARGS)
 
 GH_RELEASES := https://github.com/cli/cli/releases
@@ -274,31 +274,31 @@ RABBITMQ_SOURCE_NAMESPACE = knative-sources
 export RABBITMQ_SOURCE_NAMESPACE
 CERT_MANAGER_NAMESPACE = cert-manager
 export CERT_MANAGER_NAMESPACE
-KiND_CLUSTER_NAME ?= eventing-rabbitmq-e2e
-export KiND_CLUSTER_NAME
+KIND_CLUSTER_NAME ?= eventing-rabbitmq-e2e
+export KIND_CLUSTER_NAME
 env::
-	@echo 'export KiND_CLUSTER_NAME="$(KiND_CLUSTER_NAME)"'
+	@echo 'export KIND_CLUSTER_NAME="$(KIND_CLUSTER_NAME)"'
 KO_DOCKER_REPO := kind.local
 env::
 	@echo 'export KO_DOCKER_REPO="$(KO_DOCKER_REPO)"'
 export KO_DOCKER_REPO
-MIN_SUPPORTED_K8s_VERSION := 1.20
-KiND_K8s_VERSION ?= $(MIN_SUPPORTED_K8s_VERSION)
-export KiND_K8s_VERSION
+MIN_SUPPORTED_K8S_VERSION := 1.20
+KIND_K8S_VERSION ?= $(MIN_SUPPORTED_K8S_VERSION)
+export KIND_K8S_VERSION
 # Find the corresponding version digest in https://github.com/kubernetes-sigs/kind/releases
-KiND_K8s_DIGEST ?= sha256:cbeaf907fc78ac97ce7b625e4bf0de16e3ea725daf6b04f930bd14c67c671ff9
-export KiND_K8s_DIGEST
+KIND_K8S_DIGEST ?= sha256:cbeaf907fc78ac97ce7b625e4bf0de16e3ea725daf6b04f930bd14c67c671ff9
+export KIND_K8S_DIGEST
 
 .PHONY: kind-cluster
-kind-cluster: | $(KiND) $(ENVSUBST)
-	( $(KiND) get clusters | grep $(KiND_CLUSTER_NAME) ) \
+kind-cluster: | $(KIND) $(ENVSUBST)
+	( $(KIND) get clusters | grep $(KIND_CLUSTER_NAME) ) \
 	|| ( cat $(CURDIR)/test/e2e/kind.yaml \
 	     | $(ENVSUBST_SAFE) \
-	     | $(KiND) create cluster --name $(KiND_CLUSTER_NAME) --config - )
+	     | $(KIND) create cluster --name $(KIND_CLUSTER_NAME) --config - )
 
 $(KUBECONFIG): | $(KUBECONFIG_DIR)
 	$(MAKE) --no-print-directory kind-cluster
-	$(KiND) get kubeconfig --name $(KiND_CLUSTER_NAME) > $(KUBECONFIG)
+	$(KIND) get kubeconfig --name $(KIND_CLUSTER_NAME) > $(KUBECONFIG)
 
 # https://github.com/rabbitmq/cluster-operator/releases
 RABBITMQ_CLUSTER_OPERATOR_VERSION ?= 1.10.0
@@ -344,7 +344,7 @@ install-knative-eventing: | $(KUBECONFIG) $(KUBECTL) ## Install Knative Eventing
 	$(KUBECTL) wait --for=condition=available deploy/eventing-controller --timeout=60s --namespace $(EVENTING_NAMESPACE)
 	$(KUBECTL) wait --for=condition=available deploy/eventing-webhook --timeout=60s --namespace $(EVENTING_NAMESPACE)
 
-install: | $(KUBECONFIG) $(KO) install-knative-serving install-knative-eventing install-rabbitmq-cluster-operator install-rabbitmq-topology-operator ## Install local dev Knative Eventing RabbitMQ - manages all dependencies, including K8s components
+install: | $(KUBECONFIG) $(KO) install-knative-serving install-knative-eventing install-rabbitmq-cluster-operator install-rabbitmq-topology-operator ## Install local dev Knative Eventing RabbitMQ - manages all dependencies, including K8S components
 	$(KO) apply --filename config/broker
 	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-broker-controller --timeout=60s --namespace $(EVENTING_NAMESPACE)
 	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-broker-webhook --timeout=60s --namespace $(EVENTING_NAMESPACE)
@@ -352,23 +352,23 @@ install: | $(KUBECONFIG) $(KO) install-knative-serving install-knative-eventing 
 	$(KUBECTL) wait --for=condition=available deploy/pingsource-mt-adapter --timeout=60s --namespace knative-eventing
 
 .PHONY: test-e2e-publish
-test-e2e-publish: | $(KUBECONFIG) ## Run TestKoPublish end-to-end tests  - assumes a K8s with all necessary components installed (Knative & RabbitMQ)
+test-e2e-publish: | $(KUBECONFIG) ## Run TestKoPublish end-to-end tests  - assumes a K8S with all necessary components installed (Knative & RabbitMQ)
 	go test -v -race -count=1 -timeout=15m -tags=e2e ./test/e2e/... -run 'TestKoPublish' \
 	| grep -v "no test files"
 
 .PHONY: test-e2e-broker
-test-e2e-broker: | $(KUBECONFIG) ## Run Broker end-to-end tests - assumes a K8s with all necessary components installed (Knative & RabbitMQ)
+test-e2e-broker: | $(KUBECONFIG) ## Run Broker end-to-end tests - assumes a K8S with all necessary components installed (Knative & RabbitMQ)
 	@printf "$(WARN)$(BOLD)rabbitmqcluster$(NORMAL)$(WARN) has large resource requirements 🤔$(NORMAL)\n"
 	go test -v -race -count=1 -timeout=15m -tags=e2e ./test/e2e/... -run 'Test.*Broker.*' \
 	| grep -v "no test files"
 
 .PHONY: test-e2e-source
-test-e2e-source: | $(KUBECONFIG) ## Run Source end-to-end tests - assumes a K8s with all necessary components installed (Knative & RabbitMQ)
+test-e2e-source: | $(KUBECONFIG) ## Run Source end-to-end tests - assumes a K8S with all necessary components installed (Knative & RabbitMQ)
 	go test -v -race -count=1 -timeout=15m -tags=e2e ./test/e2e/... -run 'Test.*Source.*' \
 	| grep -v "no test files"
 
 .PHONY: test-e2e
-test-e2e: install test-e2e-publish test-e2e-broker test-e2e-source ## Run all end-to-end tests - manages all dependencies, including K8s components
+test-e2e: install test-e2e-publish test-e2e-broker test-e2e-source ## Run all end-to-end tests - manages all dependencies, including K8S components
 
 BROKER_TEMPLATES=$(CURDIR)/test/conformance/testdata/with-secret
 export BROKER_TEMPLATES

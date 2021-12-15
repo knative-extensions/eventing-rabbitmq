@@ -24,7 +24,7 @@ jobs:
         - v1.21.2
         - v1.22.1
 
-        # Map between K8s and KinD versions.
+        # Map between K8S and KinD versions.
         # This is attempting to make it a bit clearer what's being tested.
         # See: https://github.com/kubernetes-sigs/kind/releases/tag/v0.11.0
         include:
@@ -57,12 +57,12 @@ jobs:
       with:
         path: ./src/knative.dev/${{ github.event.repository.name }}
 
-    - name: Setup a local KiND Cluster with everything that is needed to run tests
+    - name: Setup a local KIND Cluster with everything that is needed to run tests
       working-directory: ./src/knative.dev/${{ github.event.repository.name }}
       run: |
         make install \
-          KiND_K8s_VERSION=${{ matrix.k8s-version }} \
-          KiND_K8s_DIGEST=${{ matrix.kind-image-sha }}
+          KIND_K8S_VERSION=${{ matrix.k8s-version }} \
+          KIND_K8S_DIGEST=${{ matrix.kind-image-sha }}
 
       # Run conformance tests
     - name: Run conformance Tests
@@ -84,7 +84,7 @@ jobs:
         echo "===================== RabbitMQClusters ====================="
         kubectl get RabbitMQCluster --all-namespaces=true -oyaml
 
-        echo "===================== K8s Events ==========================="
+        echo "===================== K8S Events ==========================="
         kubectl get events --all-namespaces=true -oyaml
 
         echo "===================== Pod Logs ============================="
