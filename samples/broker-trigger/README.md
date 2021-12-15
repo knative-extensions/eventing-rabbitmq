@@ -181,9 +181,9 @@ metadata:
   namespace: dlq-demo
   annotations:
     # Value must be between 1 and 1000
-    # With a value of 1 RabbitMQ Trigger behaves as a FIFO queue
-    # Values above 1 are more oriented to performance
-    # rabbitmq.eventing.knative.dev/prefetchCount: "10"
+    # A value of 1 RabbitMQ Trigger behaves as a FIFO queue
+    # Values above 1 break message ordering guarantees and can be seen as more performance oriented.
+    rabbitmq.eventing.knative.dev/prefetchCount: "10"
 spec:
   broker: default
   filter:
