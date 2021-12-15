@@ -153,7 +153,7 @@ K_CMD = create --dry-run=client --output=yaml
 endif
 
 K9S_RELEASES := https://github.com/derailed/k9s/releases
-K9S_VERSION := 0.25.7
+K9S_VERSION := 0.25.12
 K9S_BIN_DIR := $(LOCAL_BIN)/k9s-$(K9S_VERSION)-$(platform)-x86_64
 K9S_URL := $(K9S_RELEASES)/download/v$(K9S_VERSION)/k9s_$(platform)_x86_64.tar.gz
 K9S := $(K9S_BIN_DIR)/k9s
@@ -173,7 +173,7 @@ k9s: | $(KUBECONFIG) $(K9S) ## Terminal ncurses UI for K8S
 	$(K9S) $(K9S_ARGS)
 
 GH_RELEASES := https://github.com/cli/cli/releases
-GH_VERSION := 2.2.0
+GH_VERSION := 2.3.0
 GH_DIR := $(LOCAL_BIN)/gh_$(GH_VERSION)_$(platform_alt)_amd64
 GH_URL := $(GH_RELEASES)/download/v$(GH_VERSION)/$(notdir $(GH_DIR)).tar.gz
 GH := $(GH_DIR)/bin/gh
@@ -191,7 +191,7 @@ releases-gh:
 	$(OPEN) $(GH_RELEASES)
 
 KN_RELEASES := https://github.com/knative/client/releases
-KN_VERSION := 1.0.0
+KN_VERSION := 1.1.0
 KN_BIN := kn-$(KN_VERSION)-$(platform)-amd64
 KN_URL := $(KN_RELEASES)/download/knative-v$(KN_VERSION)/kn-$(platform)-amd64
 KN := $(LOCAL_BIN)/$(KN_BIN)
@@ -323,7 +323,7 @@ install-rabbitmq-topology-operator: | install-cert-manager $(KUBECTL) ## Install
 	$(KUBECTL) $(K_CMD) --filename \
 		https://github.com/rabbitmq/messaging-topology-operator/releases/download/v$(RABBITMQ_TOPOLOGY_OPERATOR_VERSION)/messaging-topology-operator-with-certmanager.yaml
 
-KNATIVE_VERSION ?= 1.0.0
+KNATIVE_VERSION ?= 1.1.0
 
 # https://github.com/knative/serving/releases
 install-knative-serving: | $(KUBECONFIG) $(KUBECTL) ## Install Knative Serving
