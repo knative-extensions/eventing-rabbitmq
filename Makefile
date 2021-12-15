@@ -47,7 +47,7 @@ else
 OPEN := xdg-open
 endif
 
-GCLOUD_SDK_VERSION := 365.0.0
+GCLOUD_SDK_VERSION := 367.0.0
 GCLOUD_BIN := gcloud-$(GCLOUD_SDK_VERSION)-$(PLATFORM)-x86_64
 GCLOUD := $(LOCAL_BIN)/$(GCLOUD_BIN)
 GCLOUD_SDK_FILE := google-cloud-sdk-$(GCLOUD_SDK_VERSION)-$(PLATFORM)-x86_64.tar.gz
@@ -79,7 +79,7 @@ KO_VERSION := 0.9.3
 KO_BIN_DIR := $(LOCAL_BIN)/ko_$(KO_VERSION)_$(PLATFORM)_x86_64
 KO_URL := $(KO_RELEASES)/download/v$(KO_VERSION)/$(notdir $(KO_BIN_DIR)).tar.gz
 KO := $(KO_BIN_DIR)/ko
-$(KO): | $(CURL) $(LOCAL_BIN) $(GCLOUD)
+$(KO): | $(CURL) $(LOCAL_BIN)
 	$(CURL) --progress-bar --fail --location --output $(KO_BIN_DIR).tar.gz "$(KO_URL)"
 	mkdir -p $(KO_BIN_DIR) && tar zxvf $(KO_BIN_DIR).tar.gz -C $(KO_BIN_DIR)
 	touch $(KO)
