@@ -32,10 +32,12 @@ env::
 	@echo 'export KUBECONFIG="$(KUBECONFIG)"'
 
 LOCAL_BIN := $(CURDIR)/bin
+PATH := $(LOCAL_BIN):$(PATH)
+export PATH
 $(LOCAL_BIN):
 	mkdir -p $@
 env::
-	@echo 'export PATH="$(LOCAL_BIN):$$PATH"'
+	@echo 'export PATH="$(PATH)"'
 
 
 
@@ -52,6 +54,9 @@ GCLOUD_BIN := gcloud-$(GCLOUD_SDK_VERSION)-$(PLATFORM)-x86_64
 GCLOUD := $(LOCAL_BIN)/$(GCLOUD_BIN)
 GCLOUD_SDK_FILE := google-cloud-sdk-$(GCLOUD_SDK_VERSION)-$(PLATFORM)-x86_64.tar.gz
 GCLOUD_SDK_URL := https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/$(GCLOUD_SDK_FILE)
+GOOGLE_CLOUD_SDK_BIN := $(LOCAL_BIN)/google-cloud-sdk/bin
+PATH := $(GOOGLE_CLOUD_SDK_BIN):$(PATH)
+export PATH
 $(GCLOUD): | $(CURL) $(LOCAL_BIN)
 	$(CURL) --progress-bar --fail --location --output $(LOCAL_BIN)/$(GCLOUD_SDK_FILE) "$(GCLOUD_SDK_URL)"
 	cd $(LOCAL_BIN) && \
@@ -62,12 +67,9 @@ $(GCLOUD): | $(CURL) $(LOCAL_BIN)
 	ln -sf $(LOCAL_BIN)/google-cloud-sdk/bin/gcloud $(GCLOUD)
 	ln -sf $(GCLOUD) $(LOCAL_BIN)/gcloud
 	@printf "$(INFO)ko requires $(BOLD)docker-credential-gcloud$(NORMAL)\n"
-	PATH=$(GOOGLE_CLOUD_SDK_BIN):$$PATH $(GCLOUD) auth configure-docker
+	$(GCLOUD) auth configure-docker
 	@printf "$(RED)Remember to run: $(BOLD)make .env -B && . .env$(NORMAL)\n"
 
-GOOGLE_CLOUD_SDK_BIN := $(CURDIR)/bin/google-cloud-sdk/bin
-env::
-	@echo 'export PATH="$(GOOGLE_CLOUD_SDK_BIN):$$PATH"'
 .PHONY: gcloud
 gcloud: $(GCLOUD)
 .PHONY: releases-gcloud
