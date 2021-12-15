@@ -18,7 +18,7 @@ spec:
     # Value must be between 1 and 1000
     # A value of 1 RabbitMQ Source behaves as a FIFO queue
     # Values above 1 break message ordering guarantees and can be seen as more performance oriented
-    # prefetch_count: "10"
+    # prefetch_count: 10
     global_qos: false
   exchange_config:
     name: "eventing-rabbitmq-source"
@@ -36,6 +36,7 @@ spec:
     delete_when_unused: true
     # TODO: SHORT-TERM FIX
     # Ensures that the queue is deleted when the Source is deleted
+    # While exclusive is true, channel_config.prefetch_count cannot be updated
     exclusive: true
     nowait: false
   sink:

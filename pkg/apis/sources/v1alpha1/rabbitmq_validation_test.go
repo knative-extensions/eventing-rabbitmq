@@ -213,7 +213,7 @@ func TestRabbitmqSourceCheckChannelPrefetchCountValue(t *testing.T) {
 		},
 		"negative prefetch_count in spec": {
 			spec:          &fullSpec,
-			prefetchCount: 0,
+			prefetchCount: -1,
 			allowed:       false,
 		},
 		"out of bounds prefetch_count in spec": {
@@ -221,13 +221,13 @@ func TestRabbitmqSourceCheckChannelPrefetchCountValue(t *testing.T) {
 			prefetchCount: 1001,
 			allowed:       false,
 		},
-		"valid prefetch count on update": {
+		"invalid update to prefetch count": {
 			spec:          &fullSpec,
-			prefetchCount: 1,
+			prefetchCount: 111,
 			isInUpdate:    true,
-			allowed:       true,
+			allowed:       false,
 		},
-		"negative prefetch_count in spec on update": {
+		"zero prefetch_count in spec on update": {
 			spec:          &fullSpec,
 			prefetchCount: 0,
 			allowed:       false,
@@ -236,6 +236,27 @@ func TestRabbitmqSourceCheckChannelPrefetchCountValue(t *testing.T) {
 			spec:          &fullSpec,
 			prefetchCount: 1001,
 			allowed:       false,
+		},
+		"valid channel prefetch_count update on a non exclusive source queue": {
+			spec: &RabbitmqSourceSpec{
+				Brokers:        fullSpec.Brokers,
+				Topic:          fullSpec.Topic,
+				ExchangeConfig: fullSpec.ExchangeConfig,
+				QueueConfig: RabbitmqSourceQueueConfigSpec{
+					Name:             "",
+					RoutingKey:       "*.critical",
+					Durable:          false,
+					DeleteWhenUnused: false,
+					Exclusive:        false,
+					NoWait:           false,
+				},
+				ChannelConfig:      fullSpec.ChannelConfig,
+				Sink:               fullSpec.Sink,
+				ServiceAccountName: fullSpec.ServiceAccountName,
+			},
+			prefetchCount: 102,
+			allowed:       true,
+			isInUpdate:    true,
 		},
 	}
 

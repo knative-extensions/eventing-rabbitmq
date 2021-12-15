@@ -18,7 +18,6 @@ package v1_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -80,14 +79,9 @@ func TestTriggerValidate(t *testing.T) {
 			},
 		},
 		{
-			name:     "inmmutable prefetch count annotation",
+			name:     "update prefetch count annotation",
 			trigger:  trigger(withBroker("foo"), brokerExistsAndIsValid, withPrefetchCount("100")),
 			original: trigger(withBroker("foo"), brokerExistsAndIsValid),
-			err: &apis.FieldError{
-				Message: "Immutable fields changed (-old +new)",
-				Paths:   []string{"metadata", "annotations", prefetchAnnotation},
-				Details: fmt.Sprintf("{string}:\n\t-: %q\n\t+: %q\n", "", "100"),
-			},
 		},
 		{
 			name:    "valid prefetch count annotation",

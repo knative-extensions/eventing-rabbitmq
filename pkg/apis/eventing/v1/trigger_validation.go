@@ -18,7 +18,6 @@ package v1
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -82,15 +81,6 @@ func (t *RabbitTrigger) Validate(ctx context.Context) *apis.FieldError {
 
 	if apis.IsInUpdate(ctx) {
 		original := apis.GetBaseline(ctx).(*eventingv1.Trigger)
-		origPrefetch, origOk := original.GetAnnotations()[prefetchAnnotation]
-		if origPrefetch != prefetch || ok != origOk {
-			return &apis.FieldError{
-				Message: "Immutable fields changed (-old +new)",
-				Paths:   []string{"metadata", "annotations", prefetchAnnotation},
-				Details: fmt.Sprintf("{string}:\n\t-: %q\n\t+: %q\n", origPrefetch, prefetch),
-			}
-		}
-
 		if diff, err := kmp.ShortDiff(original.Spec.Filter, t.Spec.Filter); err != nil {
 			return &apis.FieldError{
 				Message: "Failed to diff Trigger",
