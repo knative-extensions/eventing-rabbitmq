@@ -304,6 +304,7 @@ $(KUBECONFIG): | $(KUBECONFIG_DIR)
 
 # https://github.com/rabbitmq/cluster-operator/releases
 RABBITMQ_CLUSTER_OPERATOR_VERSION ?= 1.10.0
+.PHONY: install-rabbitmq-cluster-operator
 install-rabbitmq-cluster-operator: | $(KUBECONFIG) $(KUBECTL) ## Install RabbitMQ Cluster Operator
 	$(KUBECTL) $(K_CMD) --filename \
 		https://github.com/rabbitmq/cluster-operator/releases/download/v$(RABBITMQ_CLUSTER_OPERATOR_VERSION)/cluster-operator.yml
@@ -312,6 +313,7 @@ install-rabbitmq-cluster-operator: | $(KUBECONFIG) $(KUBECTL) ## Install RabbitM
 # ⚠️  You may want to keep this in sync with RABBITMQ_TOPOLOGY_OPERATOR_VERSION
 # In other words, don't upgrade cert-manager to a version that was released AFTER RABBITMQ_TOPOLOGY_OPERATOR_VERSION
 CERT_MANAGER_VERSION ?= 1.5.4
+.PHONY: install-cert-manager
 install-cert-manager: | $(KUBECONFIG) $(KUBECTL) ## Install Cert Manager - dependency of RabbitMQ Topology Operator
 	$(KUBECTL) $(K_CMD) --filename \
 		https://github.com/jetstack/cert-manager/releases/download/v$(CERT_MANAGER_VERSION)/cert-manager.yaml
@@ -319,6 +321,7 @@ install-cert-manager: | $(KUBECONFIG) $(KUBECTL) ## Install Cert Manager - depen
 
 # https://github.com/rabbitmq/messaging-topology-operator/releases
 RABBITMQ_TOPOLOGY_OPERATOR_VERSION ?= 1.2.1
+.PHONY: install-rabbitmq-topology-operator
 install-rabbitmq-topology-operator: | install-cert-manager $(KUBECTL) ## Install RabbitMQ Topology Operator
 	$(KUBECTL) $(K_CMD) --filename \
 		https://github.com/rabbitmq/messaging-topology-operator/releases/download/v$(RABBITMQ_TOPOLOGY_OPERATOR_VERSION)/messaging-topology-operator-with-certmanager.yaml
@@ -326,6 +329,7 @@ install-rabbitmq-topology-operator: | install-cert-manager $(KUBECTL) ## Install
 KNATIVE_VERSION ?= 1.1.0
 
 # https://github.com/knative/serving/releases
+.PHONY: install-knative-serving
 install-knative-serving: | $(KUBECONFIG) $(KUBECTL) ## Install Knative Serving
 	$(KUBECTL) $(K_CMD) --filename \
 		https://github.com/knative/serving/releases/download/knative-v$(KNATIVE_VERSION)/serving-crds.yaml
@@ -338,6 +342,7 @@ install-knative-serving: | $(KUBECONFIG) $(KUBECTL) ## Install Knative Serving
 		--patch '{"data":{"ingress.class":"kourier.ingress.networking.knative.dev"}}'
 
 # https://github.com/knative/eventing/releases
+.PHONY: install-knative-eventing
 install-knative-eventing: | $(KUBECONFIG) $(KUBECTL) ## Install Knative Eventing
 	$(KUBECTL) $(K_CMD) --filename \
 		https://github.com/knative/eventing/releases/download/knative-v$(KNATIVE_VERSION)/eventing-crds.yaml
@@ -346,12 +351,20 @@ install-knative-eventing: | $(KUBECONFIG) $(KUBECTL) ## Install Knative Eventing
 	$(KUBECTL) wait --for=condition=available deploy/eventing-controller --timeout=60s --namespace $(EVENTING_NAMESPACE)
 	$(KUBECTL) wait --for=condition=available deploy/eventing-webhook --timeout=60s --namespace $(EVENTING_NAMESPACE)
 
+.PHONY: install
 install: | $(KUBECONFIG) $(KO) install-knative-serving install-knative-eventing install-rabbitmq-cluster-operator install-rabbitmq-topology-operator ## Install local dev Knative Eventing RabbitMQ - manages all dependencies, including K8S components
 	$(KO) apply --filename config/broker
 	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-broker-controller --timeout=60s --namespace $(EVENTING_NAMESPACE)
 	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-broker-webhook --timeout=60s --namespace $(EVENTING_NAMESPACE)
 	$(KO) apply --filename config/source
 	$(KUBECTL) wait --for=condition=available deploy/pingsource-mt-adapter --timeout=60s --namespace knative-eventing
+
+.PHONY: install-standalone
+install-standalone: | install
+	$(KO) delete --filename config/broker
+	$(KO) apply --filename config/brokerstandalone
+	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-standalone-broker-controller --timeout=60s --namespace $(EVENTING_NAMESPACE)
+	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-broker-webhook --timeout=60s --namespace $(EVENTING_NAMESPACE)
 
 .PHONY: test-e2e-publish
 test-e2e-publish: | $(KUBECONFIG) ## Run TestKoPublish end-to-end tests  - assumes a K8S with all necessary components installed (Knative & RabbitMQ)

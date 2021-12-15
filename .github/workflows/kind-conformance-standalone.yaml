@@ -60,7 +60,7 @@ jobs:
     - name: Setup a local KIND Cluster with everything that is needed to run tests
       working-directory: ./src/knative.dev/${{ github.event.repository.name }}
       run: |
-        make install \
+        make install-standalone \
           KIND_K8S_VERSION=${{ matrix.k8s-version }} \
           KIND_K8S_DIGEST=${{ matrix.kind-image-sha }}
 
