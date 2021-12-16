@@ -302,6 +302,9 @@ $(KUBECONFIG): | $(KUBECONFIG_DIR)
 	$(MAKE) --no-print-directory kind-cluster
 	$(KIND) get kubeconfig --name $(KIND_CLUSTER_NAME) > $(KUBECONFIG)
 
+.PHONY: kubeconfig
+kubeconfig: $(KUBECONFIG)
+
 # https://github.com/rabbitmq/cluster-operator/releases
 RABBITMQ_CLUSTER_OPERATOR_VERSION ?= 1.10.0
 .PHONY: install-rabbitmq-cluster-operator
@@ -352,7 +355,7 @@ install-knative-eventing: | $(KUBECONFIG) $(KUBECTL) ## Install Knative Eventing
 	$(KUBECTL) wait --for=condition=available deploy/eventing-webhook --timeout=60s --namespace $(EVENTING_NAMESPACE)
 
 .PHONY: install
-install: | $(KUBECONFIG) $(KO) install-knative-serving install-knative-eventing install-rabbitmq-cluster-operator install-rabbitmq-topology-operator ## Install local dev Knative Eventing RabbitMQ - manages all dependencies, including K8S components
+install: | $(KUBECTL) $(KO) install-knative-eventing install-rabbitmq-cluster-operator install-rabbitmq-topology-operator ## Install local dev Knative Eventing RabbitMQ - manages all dependencies, including K8S components
 	$(KO) apply --filename config/broker
 	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-broker-controller --timeout=60s --namespace $(EVENTING_NAMESPACE)
 	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-broker-webhook --timeout=60s --namespace $(EVENTING_NAMESPACE)
@@ -360,11 +363,12 @@ install: | $(KUBECONFIG) $(KO) install-knative-serving install-knative-eventing 
 	$(KUBECTL) wait --for=condition=available deploy/pingsource-mt-adapter --timeout=60s --namespace knative-eventing
 
 .PHONY: install-standalone
-install-standalone: | install
-	$(KO) delete --filename config/broker
+install-standalone: | $(KUBECTL) $(KO) install-knative-eventing install-rabbitmq-cluster-operator ## Install local dev Knative Eventing RabbitMQ Standalone - manages all dependencies, including K8S components
 	$(KO) apply --filename config/brokerstandalone
 	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-standalone-broker-controller --timeout=60s --namespace $(EVENTING_NAMESPACE)
 	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-broker-webhook --timeout=60s --namespace $(EVENTING_NAMESPACE)
+	$(KO) apply --filename config/source
+	$(KUBECTL) wait --for=condition=available deploy/pingsource-mt-adapter --timeout=60s --namespace knative-eventing
 
 .PHONY: test-e2e-publish
 test-e2e-publish: | $(KUBECONFIG) ## Run TestKoPublish end-to-end tests  - assumes a K8S with all necessary components installed (Knative & RabbitMQ)
@@ -385,13 +389,21 @@ test-e2e-source: | $(KUBECONFIG) ## Run Source end-to-end tests - assumes a K8S 
 .PHONY: test-e2e
 test-e2e: install test-e2e-publish test-e2e-broker test-e2e-source ## Run all end-to-end tests - manages all dependencies, including K8S components
 
-.PHONY: test-conformance-standalone
-test-conformance-standalone: | $(KUBECONFIG)
-	BROKER_TEMPLATES=$(CURDIR)/test/conformance/testdata/with-secret \
+.PHONY: _test-conformance
+_test-conformance:
+	BROKER_TEMPLATES=$(BROKER_TEMPLATES) \
 	BROKER_CLASS=RabbitMQBroker \
 	go test -v -tags=e2e \
 		-count=1 -parallel=12 -timeout=20m \
 		-run TestBrokerConformance $(CURDIR)/test/conformance/...
+
+.PHONY: test-conformance
+test-conformance: BROKER_TEMPLATES = $(CURDIR)/test/conformance/testdata/with-operator
+test-conformance: | _test-conformance ## Run conformance tests
+
+.PHONY: test-conformance-standalone
+test-conformance-standalone: BROKER_TEMPLATES = $(CURDIR)/test/conformance/testdata/with-secret
+test-conformance-standalone: _test-conformance ## Run conformance tests for standalone broker
 
 TEST_COMPILATION_TAGS=e2e
 .PHONY: test-compilation

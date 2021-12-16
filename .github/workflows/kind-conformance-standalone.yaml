@@ -57,18 +57,14 @@ jobs:
       with:
         path: ./src/knative.dev/${{ github.event.repository.name }}
 
-    - name: Setup a local KIND Cluster with everything that is needed to run tests
+    - name: Run conformance tests & install all required deps
       working-directory: ./src/knative.dev/${{ github.event.repository.name }}
       run: |
-        make install-standalone \
+        make kubeconfig \
+          install-standalone \
+          test-conformance-standalone \
           KIND_K8S_VERSION=${{ matrix.k8s-version }} \
           KIND_K8S_DIGEST=${{ matrix.kind-image-sha }}
-
-      # Run conformance tests
-    - name: Run conformance Tests
-      working-directory: ./src/knative.dev/${{ github.event.repository.name }}
-      run: |
-        make test-conformance-standalone
 
     - name: Gather Failure Data
       if: ${{ failure() }}
