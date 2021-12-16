@@ -1,0 +1,8 @@
+# RabbitMQ cluster used by the Broker
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata:
+  name: rabbitmq
+  namespace: broker-trigger-demo
+spec:
+  replicas: 1
