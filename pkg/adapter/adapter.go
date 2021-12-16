@@ -151,6 +151,7 @@ func (a *Adapter) CreateChannel(conn *amqp.Conn, connTest *amqptest.Conn,
 		zap.Int("PrefetchCount", a.config.ChannelConfig.PrefetchCount),
 		zap.Bool("GlobalQoS", a.config.ChannelConfig.GlobalQos),
 	)
+
 	err = ch.Qos(
 		a.config.ChannelConfig.PrefetchCount,
 		0,

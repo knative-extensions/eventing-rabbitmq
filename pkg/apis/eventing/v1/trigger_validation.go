@@ -18,6 +18,7 @@ package v1
 
 import (
 	"context"
+	"strconv"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -28,7 +29,10 @@ import (
 	"knative.dev/pkg/kmp"
 )
 
-const BrokerClass = "RabbitMQBroker"
+const (
+	BrokerClass        = "RabbitMQBroker"
+	prefetchAnnotation = "rabbitmq.eventing.knative.dev/prefetchCount"
+)
 
 func ValidateTrigger(ctx context.Context) func(context.Context, *unstructured.Unstructured) error {
 	c := client.Get(ctx)
@@ -43,20 +47,38 @@ type RabbitTrigger struct {
 	Client versioned.Interface
 }
 
-var (
-	_ apis.Validatable = (*RabbitTrigger)(nil)
-)
+var _ apis.Validatable = (*RabbitTrigger)(nil)
 
 func (t *RabbitTrigger) Validate(ctx context.Context) *apis.FieldError {
 	broker, err := t.Client.EventingV1().Brokers(t.Namespace).Get(ctx, t.Spec.Broker, metav1.GetOptions{})
 	if err != nil {
 		return nil
 	}
+
 	bc, ok := broker.GetAnnotations()[eventingv1.BrokerClassAnnotationKey]
 	if !ok || bc != BrokerClass {
 		// Not my broker
 		return nil
 	}
+
+	// if prefetch is set, validate it
+	// if it isn't then the default value (1) is used
+	prefetch, ok := t.GetAnnotations()[prefetchAnnotation]
+	if ok {
+		prefetchInt, err := strconv.Atoi(prefetch)
+		if err != nil {
+			return &apis.FieldError{
+				Message: "Failed to parse valid int from prefetchAnnotation",
+				Paths:   []string{"metadata", "annotations", prefetchAnnotation},
+				Details: err.Error(),
+			}
+		}
+
+		if prefetchInt < 1 || prefetchInt > 1000 {
+			return apis.ErrOutOfBoundsValue(prefetchInt, 1, 1000, prefetchAnnotation)
+		}
+	}
+
 	if apis.IsInUpdate(ctx) {
 		original := apis.GetBaseline(ctx).(*eventingv1.Trigger)
 		if diff, err := kmp.ShortDiff(original.Spec.Filter, t.Spec.Filter); err != nil {
@@ -73,5 +95,6 @@ func (t *RabbitTrigger) Validate(ctx context.Context) *apis.FieldError {
 			}
 		}
 	}
+
 	return nil
 }
