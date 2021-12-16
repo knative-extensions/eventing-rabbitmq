@@ -13,8 +13,7 @@ on:
 
 jobs:
 
-  ko-resolve:
-    name: conformance tests
+  run:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false # Keep running if one leg fails.
@@ -24,36 +23,18 @@ jobs:
         - v1.21.2
         - v1.22.1
 
-        rabbitmq-operator-version:
-        - v1.10.0
-
-        rabbitmq-messaging-topology-operator-version:
-        - v1.2.1
-
         # Map between K8s and KinD versions.
         # This is attempting to make it a bit clearer what's being tested.
         # See: https://github.com/kubernetes-sigs/kind/releases/tag/v0.9.0
         include:
         - k8s-version: v1.20.7
-          kind-version: v0.11.1
           kind-image-sha: sha256:cbeaf907fc78ac97ce7b625e4bf0de16e3ea725daf6b04f930bd14c67c671ff9
         - k8s-version: v1.21.2
-          kind-version: v0.11.1
           kind-image-sha: sha256:0fda882e43d425622f045b492f8bd83c2e0b4984fc03e2e05ec101ca1a685fb7
         - k8s-version: v1.22.1
-          kind-version: v0.11.1
           kind-image-sha: sha256:e0bf222d7dd1589075117c51740903017b328c59ffb0c3d97187a2b3de1f92b3
     env:
       GOPATH: ${{ github.workspace }}
-      KO_DOCKER_REPO: kind.local
-      SYSTEM_NAMESPACE: knative-eventing
-      # Where the Rabbitmq cluster operator is installed
-      RABBITMQ_SYSTEM_NAMESPACE: rabbitmq-system
-      # Where the Rabbitmq source is installed
-      RABBITMQ_SOURCE_NAMESPACE: knative-sources
-      # Where the Cert Manager gets installed
-      CERT_MANAGER_NAMESPACE: cert-manager
-      KIND_CLUSTER_NAME: kind
 
     steps:
     - name: Defaults
@@ -70,129 +51,27 @@ jobs:
       with:
         go-version: 1.17.x
 
-    - name: Install Dependencies
-      run: |
-        curl -L https://github.com/google/ko/releases/download/v0.9.1/ko_0.9.1_Linux_x86_64.tar.gz | tar xzf - ko
-        sudo mv ko /usr/local/bin
-
     - name: Check out code onto GOPATH
       uses: actions/checkout@v2
       with:
         path: ./src/knative.dev/${{ github.event.repository.name }}
 
-    - name: Install KinD
-      working-directory: ./src/knative.dev/${{ github.event.repository.name }}
-      env:
-        KIND_VERSION: ${{ matrix.kind-version }}
-      run: |
-        set -x
-
-        curl -Lo ./kind https://github.com/kubernetes-sigs/kind/releases/download/${{ matrix.kind-version }}/kind-$(uname)-amd64
-        chmod +x ./kind
-        sudo mv kind /usr/local/bin
-
-    - name: Create KinD Cluster
+    - name: Run conformance tests & install all required deps
       working-directory: ./src/knative.dev/${{ github.event.repository.name }}
       run: |
-        set -x
-
-        # KinD configuration.
-        cat > kind.yaml <<EOF
-        apiVersion: kind.x-k8s.io/v1alpha4
-        kind: Cluster
-
-        # This is needed in order to support projected volumes with service account tokens.
-        # See: https://kubernetes.slack.com/archives/CEKK1KTN2/p1600268272383600
-        kubeadmConfigPatches:
-          - |
-            apiVersion: kubeadm.k8s.io/v1beta2
-            kind: ClusterConfiguration
-            metadata:
-              name: config
-            apiServer:
-              extraArgs:
-                "service-account-issuer": "kubernetes.default.svc"
-                "service-account-signing-key-file": "/etc/kubernetes/pki/sa.key"
-        nodes:
-        - role: control-plane
-          image: kindest/node:${{ matrix.k8s-version }}@${{ matrix.kind-image-sha }}
-        - role: worker
-          image: kindest/node:${{ matrix.k8s-version }}@${{ matrix.kind-image-sha }}
-
-        EOF
-
-        # Create a cluster!
-        kind create cluster --config kind.yaml
-
-    - name: Install rabbitmq/cluster-operator
-      run: |
-        set -x
-
-        kubectl apply -f https://github.com/rabbitmq/cluster-operator/releases/download/${{ matrix.rabbitmq-operator-version }}/cluster-operator.yml
-
-    - name: Install Cert Manager
-      run: |
-        set -x
-
-        kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.5.3/cert-manager.yaml
-
-    - name: Wait for Cert Manager Ready
-      working-directory: ./src/knative.dev/${{ github.event.repository.name }}
-      run: |
-        set -e
-        source ./vendor/knative.dev/hack/infra-library.sh
-        wait_until_pods_running ${CERT_MANAGER_NAMESPACE}
-        # Even though pods are running, seems like every now and then things are not ready in the next step.
-        sleep 15
-
-    - name: Install RabbitMQ Messaging Topology Operator
-      run: |
-        set -x
-
-        kubectl apply -f https://github.com/rabbitmq/messaging-topology-operator/releases/download/${{ matrix.rabbitmq-messaging-topology-operator-version }}/messaging-topology-operator-with-certmanager.yaml
-
-    - name: Install Knative Eventing
-      working-directory: ./src/knative.dev/${{ github.event.repository.name }}
-      run: |
-        set -x
-
-        kubectl apply --filename ./third_party/eventing-latest/eventing-crds.yaml
-        sleep 2 # Wait for the CRDs to be reconciled.
-        kubectl apply --filename ./third_party/eventing-latest/eventing-core.yaml
-
-    - name: Install Broker
-      working-directory: ./src/knative.dev/${{ github.event.repository.name }}
-      run: |
-        set -x
-        # TODO: this should use the release script and then apply the newly created release yaml in the future.
-
-        # Install Broker.
-        ko apply -f ./config/broker/
-
-    - name: Wait for Ready
-      working-directory: ./src/knative.dev/${{ github.event.repository.name }}
-      run: |
-        set -e
-        source ./vendor/knative.dev/hack/infra-library.sh
-        wait_until_pods_running ${SYSTEM_NAMESPACE}
-        wait_until_pods_running ${RABBITMQ_SYSTEM_NAMESPACE}
-
-      # Run conformance tests
-    - name: Run conformance Tests
-      working-directory: ./src/knative.dev/${{ github.event.repository.name }}
-      run: |
-        set -x
-
-        # Get the full templates directory path.
-        export BROKER_TEMPLATES=${PWD}/test/conformance/testdata/with-operator
-        export BROKER_CLASS=RabbitMQBroker
-
-        SYSTEM_NAMESPACE=knative-eventing go test -v -count=1  -parallel=12 -timeout=20m -tags=e2e -run TestBrokerConformance ./test/conformance/...
+        make kubeconfig \
+          install \
+          test-conformance \
+          KIND_K8S_VERSION=${{ matrix.k8s-version }} \
+          KIND_K8S_DIGEST=${{ matrix.kind-image-sha }}
 
     - name: Gather Failure Data
       if: ${{ failure() }}
       run: |
         set -x
+        make .env
+        . .env
+        make kubectl
 
         echo "===================== Brokers =============================="
         kubectl get broker --all-namespaces=true -oyaml
@@ -243,5 +122,3 @@ jobs:
         SLACK_TITLE: Periodic e2e for RabbitMQ on kind on (${{ matrix.k8s-version }} failed.
         SLACK_MESSAGE: |
           For detailed logs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-
-
