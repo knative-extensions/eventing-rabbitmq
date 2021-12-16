@@ -1,4 +1,4 @@
-name: KinD conformance tests
+name: KinD conformance tests standalone
 
 on:
   push:
@@ -13,8 +13,7 @@ on:
 
 jobs:
 
-  ko-resolve:
-    name: conformance tests for stand alone broker
+  run:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false # Keep running if one leg fails.
@@ -70,6 +69,9 @@ jobs:
       if: ${{ failure() }}
       run: |
         set -x
+        make .env
+        . .env
+        make kubectl
 
         echo "===================== Brokers =============================="
         kubectl get broker --all-namespaces=true -oyaml
