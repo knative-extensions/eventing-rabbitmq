@@ -3,6 +3,6 @@ apiVersion: rabbitmq.com/v1beta1
 kind: RabbitmqCluster
 metadata:
   name: rabbitmq
-  namespace: concurrent-dispatch
+  namespace: source-demo
 spec:
   replicas: 1

@@ -1,8 +1,8 @@
-# RabbitMQ Knative Eventing Broker DLQ Example
+# RabbitMQ Knative Eventing Broker with Trigger and DLQ Example
 
 ## Prerequisites
 
-install the Broker as per [here](../../../broker/README.md)
+install the Broker as per [here](../../broker/README.md)
 
 ## Overview
 
@@ -12,7 +12,7 @@ Sink while successfully processed events do not.
 
 ## Components
 
-- [failer](../../../cmd/failer/main.go) is a function which takes in a
+- [failer](../../cmd/failer/main.go) is a function which takes in a
   CloudEvent and depending on what the specified HTTP response code in the
   message data is will respond with that. So, to simulate a failure, we just
   send it a CloudEvent with a payload of 500 and it's going to simulate a
@@ -25,7 +25,7 @@ Sink while successfully processed events do not.
 - [event-display](https://github.com/knative/eventing/tree/master/cmd/event_display]
   which is a tool that logs the CloudEvent that it receives formatted nicely.
 
-- [RabbitMQ Broker](../../../broker/README.md)
+- [RabbitMQ Broker](../../broker/README.md)
 
 ## Configuration
 
