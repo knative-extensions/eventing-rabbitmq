@@ -68,7 +68,7 @@ jobs:
     - name: Run conformance Tests
       working-directory: ./src/knative.dev/${{ github.event.repository.name }}
       run: |
-        make test-conformance
+        make test-conformance-standalone
 
     - name: Gather Failure Data
       if: ${{ failure() }}

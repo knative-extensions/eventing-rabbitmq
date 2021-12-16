@@ -385,12 +385,10 @@ test-e2e-source: | $(KUBECONFIG) ## Run Source end-to-end tests - assumes a K8S 
 .PHONY: test-e2e
 test-e2e: install test-e2e-publish test-e2e-broker test-e2e-source ## Run all end-to-end tests - manages all dependencies, including K8S components
 
-BROKER_TEMPLATES=$(CURDIR)/test/conformance/testdata/with-secret
-export BROKER_TEMPLATES
-BROKER_CLASS=RabbitMQBroker
-export BROKER_CLASS
-.PHONY: test-conformance
-test-conformance: | $(KUBECONFIG)
+.PHONY: test-conformance-standalone
+test-conformance-standalone: | $(KUBECONFIG)
+	BROKER_TEMPLATES=$(CURDIR)/test/conformance/testdata/with-secret \
+	BROKER_CLASS=RabbitMQBroker \
 	go test -v -tags=e2e \
 		-count=1 -parallel=12 -timeout=20m \
 		-run TestBrokerConformance $(CURDIR)/test/conformance/...
