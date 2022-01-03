@@ -162,9 +162,10 @@ func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, err
 		false, // mandatory
 		false, // immediate
 		amqp.Publishing{
-			Headers:     headers,
-			ContentType: "application/json",
-			Body:        bytes,
+			Headers:      headers,
+			ContentType:  "application/json",
+			Body:         bytes,
+			DeliveryMode: amqp.Persistent,
 		}); err != nil {
 		return http.StatusInternalServerError, fmt.Errorf("failed to publish message: %w", err)
 	}
