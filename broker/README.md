@@ -18,7 +18,7 @@ RabbitMQ *is a Messaging Broker* - an intermediary for messaging. It gives your 
 We provide two versions of the RabbitMQ Knative Eventing Broker.
 
 1. [Standalone Broker](#standalone-broker)
-2. RabbitMQ operator based Broker
+2. [RabbitMQ operator based Broker](#rabbitmq-operator-based-broker)
 
 ### Standalone Broker
 

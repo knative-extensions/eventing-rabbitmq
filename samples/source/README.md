@@ -2,24 +2,27 @@
 
 ## Prerequisites
 
-install the Source as per [here](../../source/DEVELOPMENT.md)
+install the Source running:
+`kubectl apply -f https://github.com/knative-sandbox/eventing-rabbitmq/releases/latest/download/rabbitmq-source.yaml`
+
+or as per [here](../../source/DEVELOPMENT.md)
 
 ## Overview
 
-What this demo shows is how the RabbitMQ Source translates messages in any format (in this case json) sent to a RabbitMQ Exchange into [CloudEvents](https://cloudevents.io/), showing the basic topology that it useas and how it handles different workloads. It's recommended for the dev to play with the Source's config parameters, shown [here](../../source/README.md)
+This demo will use a RabbitMQ Source to fetch messages from a RabbitMQ Exchange, convert them into [CloudEvents](https://cloudevents.io/) and send them to a [Sink](https://knative.dev/docs/eventing/sinks/#about-sinks). The complete list of the Source's config parameters are shown [here](../../source/README.md)
 
 ## Components
 
-- [perf-test](https://github.com/rabbitmq/rabbitmq-perf-test) RabbitMQ has a throughput testing tool, PerfTest, that is based on the Java client and can be configured to simulate from basic to advanced workloads of messages flowing to a RabbitMQ Cluster.
+- [perf-test](https://github.com/rabbitmq/rabbitmq-perf-test) RabbitMQ has a throughput testing tool, PerfTest, that is based on the Java client and can be configured to simulate basic to advanced workloads of messages sent to a RabbitMQ Cluster.
 
-- [event-display](https://github.com/knative/eventing/tree/master/cmd/event_display]
+- [event-display](https://github.com/knative/eventing/tree/master/cmd/event_display)
   which is a tool that logs the CloudEvent that it receives formatted nicely.
 
 - [RabbitMQ Source](../../source/README.md)
 
 ## Configuration
 
-Demo creates a `PerfTest` and has it send 1 event for 30 seconds, and then 0 events for 30 seconds to the `RabbitMQ Cluster` `eventing-rabbitmq-source` `Exchange`, this in a loop.
+Demo creates a `PerfTest` and has it executes a loop where it send 1 event per second for 30 seconds, and then no events for 30 seconds to the `RabbitMQ Cluster Exchange` called `eventing-rabbitmq-source`, created by the `RabbitMQ Source`.
 
 Demo creates a `Source` with and exchange configuration for it to read messages from the `eventing-rabbitmq-source` `Exchange` and to send them to the `event-display` `sink` after the translation to CloudEvents.
 
@@ -60,13 +63,13 @@ EOF
 
 ### Create the Perf Test Service
 
-This will send events to the RabbitMQ Cluster Exchange
+This will create a Kubernetes Deployment which sends events to the RabbitMQ Cluster Exchange
 
 ```sh
 kubectl apply -f samples/source/300-perf-test.yaml
 ```
 
-Right now, the events are not been sent to the Exchange cause the Source is not created, and is the Source the one that creates the Exchange, Channel and Queues needed for the message Translation to CloudEvents
+Messages from the `rabbitmq-perf-test` deployment won't reach the RabbitMQ Cluster until the Source is created, which results in the creation of the Exchange and Queue where the messages are going to be sent
 
 ### Create the RabbitMQ Source's Sink
 

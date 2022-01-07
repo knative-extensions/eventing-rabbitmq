@@ -70,7 +70,7 @@ Source parameters
 |--------|--------|
 | `spec.brokers` | Host+Port of the Broker, with a trailing "/" |
 | `spec.vhost` * | VHost where the source resources are located |
-| `spec.predeclared` | Defines if adapter should try to create new queues or use predeclared one (Boolean) |
+| `spec.predeclared` | Defines if the source should try to create new queue or use predeclared one (Boolean) |
 | `user.secretKeyRef` | Username for Broker authentication; field `key` in a Kubernetes Secret named `name` |
 | `password.secretKeyRef` | Password for Broker authentication; field `key` in a Kubernetes Secret named `name` |
 | `topic` | The topic for the exchange |
@@ -87,7 +87,7 @@ Source parameters
 | `queue_config.delete_when_unused` * | Boolean |
 | `queue_config.exclusive` * | Boolean |
 | `queue_config.nowait` * | Boolean |
-| `channel_config.prefetch_count` * | Int that limits the [Consumer Prefetch Value](https://www.rabbitmq.com/consumer-prefetch.html). Default value is 1. Value must be between 1 and 1000. With a value of 1 the RabbitMQ Source behaves a FIFO queue, values above 1 break message ordering guarantees and can be seen as more performance oriented. |
+| `channel_config.prefetch_count` * | Int that limits the [Consumer Prefetch Value](https://www.rabbitmq.com/consumer-prefetch.html). Default value is `1`. Value must be between `1` and `1000`. With a value of `1` the RabbitMQ Source process events in FIFO order, values above `1` break message ordering guarantees and can be seen as more performance oriented. |
 | `channel_config.global_qos` * | Boolean defining how the [Consumer Sharing Limit](https://www.rabbitmq.com/consumer-prefetch.html#sharing-the-limit) is handled. |
 | `sink` | A reference to an [Addressable](https://knative.dev/docs/eventing/#event-consumers) Kubernetes object |
 
@@ -152,11 +152,12 @@ operator](https://www.rabbitmq.com/kubernetes/operator/operator-overview.html) t
 
 ### Installation
 
-* Install the source from the nightly build:
-
+*  Install the source from the latest release:
 ```sh
-kubectl apply -f https://storage.googleapis.com/knative-nightly/eventing-rabbitmq/latest/rabbitmq-source.yaml
+kubectl apply -f https://github.com/knative-sandbox/eventing-rabbitmq/releases/latest/download/rabbitmq-source.yaml
 ```
+
+Go to the [Development Guide](./DEVELOPMENT.md) for more detailed info about installation and basic configuration.
 
 ### Configuration Options
 

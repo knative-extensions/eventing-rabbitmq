@@ -2,7 +2,10 @@
 
 ## Prerequisites
 
-install the Broker as per [here](../../broker/README.md)
+install the Broker running:
+`kubectl apply -f https://github.com/knative-sandbox/eventing-rabbitmq/releases/latest/download/rabbitmq-broker.yaml`
+
+or as per [here](../../broker/README.md)
 
 ## Overview
 
@@ -133,7 +136,7 @@ and running.
 
 ```sh
 kubectl -n broker-trigger-demo get brokers
-NAME      URL                                                        AGE     READY   REASON
+NAME      URL                                                                   AGE     READY   REASON
 default   http://default-broker-ingress.broker-trigger-demo.svc.cluster.local   2m39s   True
 ```
 
