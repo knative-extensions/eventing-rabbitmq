@@ -99,6 +99,7 @@ aliases:
   - matzew
   eventing-rabbitmq-approvers:
   - benmoss
+  - gvmw
   - salaboy
   - xtreme-sameer-vohra
   eventing-redis-approvers:
@@ -174,15 +175,14 @@ aliases:
   - knative-prow-updater-robot
   - knative-test-reporter-robot
   - lance
-  - matzew
-  - nak3
   - pmorie
+  - psschwei
   - rhuss
   - thisisnotapril
   - vaikas
   knative-release-leads:
-  - matzew
-  - nak3
+  - dprotaso
+  - psschwei
   knative-robots:
   - knative-prow-releaser-robot
   - knative-prow-robot
@@ -195,9 +195,11 @@ aliases:
   - ZhiminXiang
   - tcnghia
   net-contour-approvers:
+  - carlisia
   - dprotaso
   - tcnghia
   net-gateway-api-approvers:
+  - carlisia
   - nak3
   - tcnghia
   net-http01-approvers:
