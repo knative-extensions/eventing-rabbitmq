@@ -20,7 +20,7 @@ import (
 	"context"
 	"log"
 
-	"knative.dev/eventing-rabbitmq/pkg/reconciler/services"
+	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	"knative.dev/eventing-rabbitmq/pkg/utils"
 	rabbitmqclient "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/client"
 	eventingclient "knative.dev/eventing/pkg/client/injection/client"
@@ -99,8 +99,8 @@ func NewController(
 		queueLister:                  queueInformer.Lister(),
 		bindingLister:                bindingInformer.Lister(),
 		rabbitClientSet:              rabbitmqclient.Get(ctx),
-		rabbit:                       services.NewRabbit(ctx),
 		configs:                      reconcilersource.WatchConfigurations(ctx, component, cmw),
+		rabbit:                       rabbit.New(ctx),
 	}
 
 	impl := triggerreconciler.NewImpl(ctx, r)

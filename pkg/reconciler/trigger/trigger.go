@@ -29,7 +29,6 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
-	"knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	reconcilersource "knative.dev/eventing/pkg/reconciler/source"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -37,8 +36,8 @@ import (
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/ptr"
 
+	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
-	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
 	triggerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
 	rabbitclientset "knative.dev/eventing-rabbitmq/third_party/pkg/client/clientset/versioned"
@@ -82,9 +81,9 @@ type Reconciler struct {
 	// Dynamic tracker to track AddressableTypes. In particular, it tracks Trigger subscribers.
 	addressableTracker duck.ListableTracker
 	uriResolver        *resolver.URIResolver
-	rabbit             broker.RabbitService
 	// config accessor for observability/logging/tracing
 	configs reconcilersource.ConfigAccessor
+	rabbit  rabbit.Service
 }
 
 // Check that our Reconciler implements Interface
@@ -160,12 +159,10 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 				t.Status.MarkDependencyFailed("ExchangeFailure", fmt.Sprintf("Failed to reconcile DLX exchange %q: %s", naming.TriggerDLXExchangeName(t), err))
 				return err
 			}
-			if dlx != nil {
-				if !isReady(dlx.Status.Conditions) {
-					logging.FromContext(ctx).Warnf("DLX exchange %q is not ready", dlx.Name)
-					t.Status.MarkDependencyFailed("ExchangeFailure", fmt.Sprintf("DLX exchange %q is not ready", dlx.Name))
-					return nil
-				}
+			if !dlx.Ready {
+				logging.FromContext(ctx).Warnf("DLX exchange %q is not ready", dlx.Name)
+				t.Status.MarkDependencyFailed("ExchangeFailure", fmt.Sprintf("DLX exchange %q is not ready", dlx.Name))
+				return nil
 			}
 
 			dlq, err := r.rabbit.ReconcileQueue(ctx, &triggerresources.QueueArgs{
@@ -181,12 +178,10 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 				t.Status.MarkDependencyFailed("QueueFailure", "%v", err)
 				return err
 			}
-			if dlq != nil {
-				if !isReady(dlq.Status.Conditions) {
-					logging.FromContext(ctx).Warnf("DLQ %q is not ready", dlq.Name)
-					t.Status.MarkDependencyFailed("QueueFailure", "DLQ %q is not ready", dlq.Name)
-					return nil
-				}
+			if !dlq.Ready {
+				logging.FromContext(ctx).Warnf("DLQ %q is not ready", dlq.Name)
+				t.Status.MarkDependencyFailed("QueueFailure", "DLQ %q is not ready", dlq.Name)
+				return nil
 			}
 			dlqBinding, err := r.reconcileDLQBinding(ctx, broker, t)
 			if err != nil {
@@ -194,12 +189,10 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 				t.Status.MarkDependencyFailed("BindingFailure", "%v", err)
 				return err
 			}
-			if dlqBinding != nil {
-				if !isReady(dlqBinding.Status.Conditions) {
-					logging.FromContext(ctx).Warnf("DLQ Binding %q is not ready", dlqBinding.Name)
-					t.Status.MarkDependencyFailed("BindingFailure", "DLQ Binding %q is not ready", dlqBinding.Name)
-					return nil
-				}
+			if !dlq.Ready {
+				logging.FromContext(ctx).Warnf("DLQ Binding %q is not ready", dlqBinding.Name)
+				t.Status.MarkDependencyFailed("BindingFailure", "DLQ Binding %q is not ready", dlqBinding.Name)
+				return nil
 			}
 			deadLetterSinkURI, err := r.uriResolver.URIFromDestinationV1(ctx, *t.Spec.Delivery.DeadLetterSink, t)
 			if err != nil {
@@ -240,12 +233,10 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 			t.Status.MarkDependencyFailed("QueueFailure", "%v", err)
 			return err
 		}
-		if queue != nil {
-			if !isReady(queue.Status.Conditions) {
-				logging.FromContext(ctx).Warnf("Queue %q is not ready", queue.Name)
-				t.Status.MarkDependencyFailed("QueueFailure", "Queue %q is not ready", queue.Name)
-				return nil
-			}
+		if !queue.Ready {
+			logging.FromContext(ctx).Warnf("Queue %q is not ready", queue.Name)
+			t.Status.MarkDependencyFailed("QueueFailure", "Queue %q is not ready", queue.Name)
+			return nil
 		}
 
 		logging.FromContext(ctx).Info("Reconciled rabbitmq queue", zap.Any("queue", queue))
@@ -256,12 +247,10 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 			t.Status.MarkDependencyFailed("BindingFailure", "%v", err)
 			return err
 		}
-		if binding != nil {
-			if !isReady(binding.Status.Conditions) {
-				logging.FromContext(ctx).Warnf("Binding %q is not ready", binding.Name)
-				t.Status.MarkDependencyFailed("BindingFailure", "Binding %q is not ready", binding.Name)
-				return nil
-			}
+		if !binding.Ready {
+			logging.FromContext(ctx).Warnf("Binding %q is not ready", binding.Name)
+			t.Status.MarkDependencyFailed("BindingFailure", "Binding %q is not ready", binding.Name)
+			return nil
 		}
 		logging.FromContext(ctx).Info("Reconciled rabbitmq binding", zap.Any("binding", binding))
 		t.Status.MarkDependencySucceeded()
@@ -434,7 +423,7 @@ func (r *Reconciler) getRabbitmqSecret(ctx context.Context, t *eventingv1.Trigge
 	return r.kubeClientSet.CoreV1().Secrets(t.Namespace).Get(ctx, brokerresources.SecretName(t.Spec.Broker), metav1.GetOptions{})
 }
 
-func (r *Reconciler) reconcileBinding(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger) (*v1beta1.Binding, error) {
+func (r *Reconciler) reconcileBinding(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger) (rabbit.Result, error) {
 	bindingName := naming.CreateTriggerQueueName(t)
 	var filters map[string]string
 	if t.Spec.Filter != nil && t.Spec.Filter.Attributes != nil {
@@ -457,7 +446,7 @@ func (r *Reconciler) reconcileBinding(ctx context.Context, b *eventingv1.Broker,
 	})
 }
 
-func (r *Reconciler) reconcileDLQBinding(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger) (*v1beta1.Binding, error) {
+func (r *Reconciler) reconcileDLQBinding(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger) (rabbit.Result, error) {
 	bindingName := naming.CreateTriggerDeadLetterQueueName(t)
 
 	return r.rabbit.ReconcileBinding(ctx, &resources.BindingArgs{
@@ -470,18 +459,4 @@ func (r *Reconciler) reconcileDLQBinding(ctx context.Context, b *eventingv1.Brok
 		Owner:                    *kmeta.NewControllerRef(t),
 		Labels:                   resources.BindingLabels(b, t),
 	})
-}
-
-func isReady(conditions []v1beta1.Condition) bool {
-	numConditions := len(conditions)
-	// If there are no conditions at all, the resource probably hasn't been reconciled yet => not ready
-	if numConditions == 0 {
-		return false
-	}
-	for _, c := range conditions {
-		if c.Status == corev1.ConditionTrue {
-			numConditions--
-		}
-	}
-	return numConditions == 0
 }
