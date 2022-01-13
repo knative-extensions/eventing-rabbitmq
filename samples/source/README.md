@@ -2,10 +2,10 @@
 
 ## Prerequisites
 
+Same as listed [here](../../source/DEVELOPMENT.md#prerequisites)
+
 install the Source running:
 `kubectl apply -f https://github.com/knative-sandbox/eventing-rabbitmq/releases/latest/download/rabbitmq-source.yaml`
-
-or as per [here](../../source/DEVELOPMENT.md)
 
 ## Overview
 
