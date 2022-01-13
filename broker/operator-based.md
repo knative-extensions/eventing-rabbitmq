@@ -85,8 +85,6 @@ kubectl apply -f - << EOF
 EOF
 ```
 
-## Next step
+## Next steps
 
-Now that you have Knative Eventing integrated with RabbitMQ, a good next step
-is to use it with the [CloudEvents Player Source](https://knative.dev/docs/getting-started/first-source/)
-so that you can get a better understanding of how it all fits together.
+- Now that you have Knative Eventing integrated with RabbitMQ, a good next step is to use it with the [CloudEvents Player Source](https://knative.dev/docs/getting-started/first-source/) so that you can get a better understanding of how it all fits together.

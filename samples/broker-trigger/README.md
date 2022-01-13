@@ -1,11 +1,8 @@
 # RabbitMQ Knative Eventing Broker with Trigger and DLQ Example
 
-## Prerequisites
+## Prerequisites and installation
 
-Same as listed [here](../../broker/README.md#prerequisites)
-
-Now install the Broker running:
-`kubectl apply -f https://github.com/knative-sandbox/eventing-rabbitmq/releases/latest/download/rabbitmq-broker.yaml`
+Same as listed [here](../../broker/operator-based.md#prerequisites)
 
 ## Overview
 

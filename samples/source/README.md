@@ -4,9 +4,6 @@
 
 Same as listed [here](../../source/DEVELOPMENT.md#prerequisites)
 
-install the Source running:
-`kubectl apply -f https://github.com/knative-sandbox/eventing-rabbitmq/releases/latest/download/rabbitmq-source.yaml`
-
 ## Overview
 
 This demo will use a RabbitMQ Source to fetch messages from a RabbitMQ Exchange, convert them into [CloudEvents](https://cloudevents.io/) and send them to a [Sink](https://knative.dev/docs/eventing/sinks/#about-sinks). The complete list of the Source's config parameters are shown [here](../../source/README.md)

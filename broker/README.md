@@ -9,7 +9,7 @@ RabbitMQ *is a Messaging Broker* - an intermediary for messaging. It gives your 
 - [Installation](#installation)
   - [Standalone Broker](#standalone-broker)
   - [RabbitMQ Operator Based Broker](#rabbitmq-operator-based-broker)
-- [Autoscaling](#autoscaling)
+- [Autoscaling](#autoscaling-optional)
 - [Next Steps](#next-steps)
 - [Additional Resources](#additional-resources)
 
