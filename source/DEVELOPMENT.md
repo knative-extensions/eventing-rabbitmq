@@ -129,7 +129,7 @@ an Event Display Service.
 
 #### Rabbitmq Event Source
 
-1. Optinally a secret named `rabbitmq-source-key` can be created to store rabbitmq broker
+1. Optionally a secret named `rabbitmq-source-key` can be created to store rabbitmq broker
    credentials with following command
 
    ```shell script
@@ -382,4 +382,3 @@ an Event Display Service.
    service "rabbitmq-controller" deleted
    statefulset.apps "rabbitmq-controller-manager" deleted
    ```
-   
