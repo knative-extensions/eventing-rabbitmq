@@ -95,7 +95,7 @@ func WithBrokerDeletionTimestamp(b *v1.Broker) {
 	b.ObjectMeta.SetDeletionTimestamp(&t)
 }
 
-// WithBrokerChannel sets the Broker's ChannelTemplateSpec to the specified CRD.
+// WithBrokerConfig sets the Broker's config KReference.
 func WithBrokerConfig(config *duckv1.KReference) BrokerOption {
 	return func(b *v1.Broker) {
 		b.Spec.Config = config
