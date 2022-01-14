@@ -18,6 +18,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -78,6 +79,11 @@ func main() {
 	env.channel, err = conn.Channel()
 	if err != nil {
 		logger.Fatalw("failed to open a channel", zap.Error(err))
+	}
+
+	// noWait is false
+	if err := env.channel.Confirm(false); err != nil {
+		logger.Fatalf("faild to switch connection channel to confirm mode: %s", err)
 	}
 	defer env.channel.Close()
 
@@ -156,7 +162,8 @@ func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, err
 	for key, val := range event.Extensions() {
 		headers[key] = val
 	}
-	if err := env.channel.Publish(
+
+	dc, err := env.channel.PublishWithDeferredConfirm(
 		env.ExchangeName,
 		"",    // routing key
 		false, // mandatory
@@ -166,8 +173,14 @@ func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, err
 			ContentType:  "application/json",
 			Body:         bytes,
 			DeliveryMode: amqp.Persistent,
-		}); err != nil {
+		})
+	if err != nil {
 		return http.StatusInternalServerError, fmt.Errorf("failed to publish message: %w", err)
+	}
+
+	ack := dc.Wait()
+	if !ack {
+		return http.StatusInternalServerError, errors.New("failed to publish message: nacked")
 	}
 	return http.StatusAccepted, nil
 }

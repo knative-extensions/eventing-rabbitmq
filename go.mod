@@ -16,7 +16,7 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/michaelklishin/rabbit-hole/v2 v2.11.0
 	github.com/pkg/errors v0.9.1
-	github.com/rabbitmq/amqp091-go v1.1.0
+	github.com/rabbitmq/amqp091-go v1.3.0
 	github.com/rabbitmq/cluster-operator v1.10.0
 	github.com/rabbitmq/messaging-topology-operator v1.2.2-0.20211112104201-5a7530880441
 	github.com/testcontainers/testcontainers-go v0.11.1
