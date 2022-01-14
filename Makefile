@@ -258,9 +258,7 @@ go-dep-update: ## Update any Go dependency
 
 .PHONY: test-unit
 test-unit: ## Run unit tests
-	@printf "$(INFO)Starting point: $(BOLD).github/workflows/knative-go-test.yaml$(NORMAL)\n"
-	go test -race $(GOTEST) ./... \
-	| grep -v "no test files"
+	go test -race $(GOTEST) ./...
 
 .PHONY: test-unit-uncached
 test-unit-uncached: GOTEST = -count=1
@@ -372,19 +370,16 @@ install-standalone: | $(KUBECTL) $(KO) install-knative-eventing install-rabbitmq
 
 .PHONY: test-e2e-publish
 test-e2e-publish: | $(KUBECONFIG) ## Run TestKoPublish end-to-end tests  - assumes a K8S with all necessary components installed (Knative & RabbitMQ)
-	go test -v -race -count=1 -timeout=15m -tags=e2e ./test/e2e/... -run 'TestKoPublish' \
-	| grep -v "no test files"
+	go test -v -race -count=1 -timeout=15m -tags=e2e ./test/e2e/... -run 'TestKoPublish'
 
 .PHONY: test-e2e-broker
 test-e2e-broker: | $(KUBECONFIG) ## Run Broker end-to-end tests - assumes a K8S with all necessary components installed (Knative & RabbitMQ)
 	@printf "$(WARN)$(BOLD)rabbitmqcluster$(NORMAL)$(WARN) has large resource requirements 🤔$(NORMAL)\n"
-	go test -v -race -count=1 -timeout=15m -tags=e2e ./test/e2e/... -run 'Test.*Broker.*' \
-	| grep -v "no test files"
+	go test -v -race -count=1 -timeout=15m -tags=e2e ./test/e2e/... -run 'Test.*Broker.*'
 
 .PHONY: test-e2e-source
 test-e2e-source: | $(KUBECONFIG) ## Run Source end-to-end tests - assumes a K8S with all necessary components installed (Knative & RabbitMQ)
-	go test -v -race -count=1 -timeout=15m -tags=e2e ./test/e2e/... -run 'Test.*Source.*' \
-	| grep -v "no test files"
+	go test -v -race -count=1 -timeout=15m -tags=e2e ./test/e2e/... -run 'Test.*Source.*'
 
 .PHONY: test-e2e
 test-e2e: install test-e2e-publish test-e2e-broker test-e2e-source ## Run all end-to-end tests - manages all dependencies, including K8S components
@@ -408,6 +403,4 @@ test-conformance-standalone: _test-conformance ## Run conformance tests for stan
 TEST_COMPILATION_TAGS=e2e
 .PHONY: test-compilation
 test-compilation: ## Build test binaries with e2e tags
-	@printf "$(INFO)Starting point: $(BOLD).github/workflows/knative-go-build.yaml$(NORMAL)\n"
-	go test -vet=off -tags "$(BUILD_TAGS)" -exec echo  ./... \
-	| grep -v "no test files"
+	go test -vet=off -tags "$(BUILD_TAGS)" -exec echo  ./...
