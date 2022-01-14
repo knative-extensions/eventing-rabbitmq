@@ -138,21 +138,21 @@ func WithExchangeReady() BrokerOption {
 	}
 }
 
-// WithDLXFailed() sets DLX condition to failed.
+// WithDLXFailed sets DLX condition to failed.
 func WithDLXFailed(reason, msg string) BrokerOption {
 	return func(b *v1.Broker) {
 		MarkDLXFailed(&b.Status, reason, msg)
 	}
 }
 
-// WithDLXReady() sets DLX condition to ready.
+// WithDLXReady sets DLX condition to ready.
 func WithDLXReady() BrokerOption {
 	return func(b *v1.Broker) {
 		MarkDLXReady(&b.Status)
 	}
 }
 
-// WithDeadLetterSinkReady() sets DeadLetterSink condition to ready.
+// WithDeadLetterSinkReady sets DeadLetterSink condition to ready.
 func WithDeadLetterSinkReady() BrokerOption {
 	return func(b *v1.Broker) {
 		MarkDeadLetterSinkReady(&b.Status)
