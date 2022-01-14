@@ -19,7 +19,6 @@ package main
 import (
 	"context"
 	"log"
-	"os"
 	"time"
 
 	"github.com/kelseyhightower/envconfig"
@@ -36,8 +35,7 @@ type envConfig struct {
 func main() {
 	var env envConfig
 	if err := envconfig.Process("", &env); err != nil {
-		log.Print("[ERROR] Failed to process env var: ", err)
-		os.Exit(1)
+		log.Fatal("[ERROR] Failed to process env var: ", err.Error())
 	}
 	ctx := cloudevents.ContextWithTarget(context.Background(), env.Sink)
 

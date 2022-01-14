@@ -18,12 +18,10 @@ package main
 
 import (
 	"context"
-	"log"
-	"os"
-
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/kelseyhightower/envconfig"
+	"log"
 )
 
 /*
@@ -71,8 +69,7 @@ func (f *failer) gotEvent(inputEvent event.Event) (*event.Event, error) {
 
 func main() {
 	if err := envconfig.Process("", &env); err != nil {
-		log.Println("[ERROR] Failed to process env var: ", err)
-		os.Exit(1)
+		log.Fatal("[ERROR] Failed to process env var: ", err)
 	}
 
 	c, err := cloudevents.NewClientHTTP()
