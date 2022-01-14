@@ -232,6 +232,7 @@ The Source will provide output information about readiness or errors via the
 ### Configuration Options
 
 - Event source parameters.
+
   - Configure channel config properties based on this documentation.
 
     ```
