@@ -350,9 +350,9 @@ The Source will provide output information about readiness or errors via the
     or attempting to modify an existing queue from a different connection.
     ```
 
-- [`config-observability`](https://github.com/knative/eventing/blob/master/config/core/configmaps/observability.yaml)
+- [Observability Configuration](https://github.com/knative/eventing/blob/main/config/core/configmaps/observability.yaml)
 
-- [`config-logging`](https://github.com/knative/eventing/blob/master/config/core/configmaps/logging.yaml)
+- [Logging Configuration](https://github.com/knative/eventing/blob/main/config/core/configmaps/logging.yaml)
 ConfigMaps may be used to manage the logging and metrics configuration.
 
 ## Next Steps

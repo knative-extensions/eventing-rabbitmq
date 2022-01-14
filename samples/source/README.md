@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-Same as listed [here](../../source/DEVELOPMENT.md#prerequisites)
+Same as listed [here](../../source/README.md#prerequisites)
 
 ## Overview
 
@@ -12,7 +12,7 @@ This demo will use a RabbitMQ Source to fetch messages from a RabbitMQ Exchange,
 
 - [perf-test](https://github.com/rabbitmq/rabbitmq-perf-test) RabbitMQ has a throughput testing tool, PerfTest, that is based on the Java client and can be configured to simulate basic to advanced workloads of messages sent to a RabbitMQ Cluster.
 
-- [event-display](https://github.com/knative/eventing/tree/master/cmd/event_display)
+- [event-display](https://github.com/knative/eventing/tree/main/cmd/event_display)
   which is a tool that logs the CloudEvent that it receives formatted nicely.
 
 - [RabbitMQ Source](../../source/README.md)

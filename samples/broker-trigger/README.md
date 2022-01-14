@@ -22,7 +22,7 @@ Sink while successfully processed events do not.
 - [pingsource](https://knative.dev/docs/eventing/samples/ping-source/index.html)
   is a Knative source which sends a CloudEvent on pre-defined intervals.
 
-- [event-display](https://github.com/knative/eventing/tree/master/cmd/event_display]
+- [event-display](https://github.com/knative/eventing/tree/main/cmd/event_display)
   which is a tool that logs the CloudEvent that it receives formatted nicely.
 
 - [RabbitMQ Broker](../../broker/README.md)
