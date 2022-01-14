@@ -847,7 +847,7 @@ func triggerWithFilter() *eventingv1.Trigger {
 		WithTriggerUID(triggerUID),
 		WithTriggerSubscriberURI(subscriberURI))
 	t.Spec.Filter = &eventingv1.TriggerFilter{
-		Attributes: eventingv1.TriggerFilterAttributes(map[string]string{"type": "dev.knative.sources.ping"}),
+		Attributes: map[string]string{"type": "dev.knative.sources.ping"},
 	}
 	return t
 }
@@ -863,7 +863,7 @@ func triggerWithFilterReady() *eventingv1.Trigger {
 		WithTriggerSubscriberResolvedSucceeded(),
 		WithTriggerStatusSubscriberURI(subscriberURI))
 	t.Spec.Filter = &eventingv1.TriggerFilter{
-		Attributes: eventingv1.TriggerFilterAttributes(map[string]string{"type": "dev.knative.sources.ping"}),
+		Attributes: map[string]string{"type": "dev.knative.sources.ping"},
 	}
 	return t
 }
@@ -880,7 +880,7 @@ func triggerWithFinalizerReady() *eventingv1.Trigger {
 		WithTriggerSubscriberResolvedSucceeded(),
 		WithTriggerStatusSubscriberURI(subscriberURI))
 	t.Spec.Filter = &eventingv1.TriggerFilter{
-		Attributes: eventingv1.TriggerFilterAttributes(map[string]string{"type": "dev.knative.sources.ping"}),
+		Attributes: map[string]string{"type": "dev.knative.sources.ping"},
 	}
 	t.Finalizers = []string{finalizerName}
 	return t

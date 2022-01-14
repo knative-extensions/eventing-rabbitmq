@@ -91,7 +91,7 @@ func MakeFactory(ctor Ctor, unstructured bool, logger *zap.SugaredLogger) Factor
 		ctx = controller.WithEventRecorder(ctx, eventRecorder)
 
 		// Configure the ConfigMap static watcher
-		configMaps := []*corev1.ConfigMap{}
+		var configMaps []*corev1.ConfigMap
 		for _, obj := range r.Objects {
 			if cm, ok := obj.(*corev1.ConfigMap); ok {
 				configMaps = append(configMaps, cm)
