@@ -20,7 +20,7 @@ See [Install and Demo](./broker/README.md)
 
 ## RabbitMQ Source
 
-See [Install and Demo](./source/README.adoc)
+See [Install and Demo](./source/README.md)
 
 ---
 

@@ -1,8 +1,8 @@
-# RabbitMQ Knative Eventing Broker DLQ Example
+# RabbitMQ Knative Eventing Broker with Trigger and DLQ Example
 
-## Prerequisites
+## Prerequisites and installation
 
-install the Broker as per [here](../../../broker/README.md)
+Same as listed [here](../../broker/operator-based.md#prerequisites)
 
 ## Overview
 
@@ -12,7 +12,7 @@ Sink while successfully processed events do not.
 
 ## Components
 
-- [failer](../../../cmd/failer/main.go) is a function which takes in a
+- [failer](../../cmd/failer/main.go) is a function which takes in a
   CloudEvent and depending on what the specified HTTP response code in the
   message data is will respond with that. So, to simulate a failure, we just
   send it a CloudEvent with a payload of 500 and it's going to simulate a
@@ -22,10 +22,10 @@ Sink while successfully processed events do not.
 - [pingsource](https://knative.dev/docs/eventing/samples/ping-source/index.html)
   is a Knative source which sends a CloudEvent on pre-defined intervals.
 
-- [event-display](https://github.com/knative/eventing/tree/master/cmd/event_display]
+- [event-display](https://github.com/knative/eventing/tree/main/cmd/event_display)
   which is a tool that logs the CloudEvent that it receives formatted nicely.
 
-- [RabbitMQ Broker](../../../broker/README.md)
+- [RabbitMQ Broker](../../broker/README.md)
 
 ## Configuration
 
@@ -47,20 +47,28 @@ Create a new namespace for the demo. All the commands are expected to be
 executed from the root of this repo.
 
 ```sh
-kubectl create ns dlq-demo
+kubectl apply -f samples/broker-trigger/100-namespace.yaml
+```
+or
+```sh
+kubectl create ns broker-trigger-demo
 ```
 
 ### Create a RabbitMQ Cluster
 
 Create a RabbitMQ Cluster:
 
+```sh
+kubectl apply -f samples/broker-trigger/200-rabbitmq.yaml
+```
+or
 ```
 kubectl apply -f - << EOF
 apiVersion: rabbitmq.com/v1beta1
 kind: RabbitmqCluster
 metadata:
-  name: rokn
-  namespace: dlq-demo
+  name: rabbitmq
+  namespace: broker-trigger-demo
 spec:
   replicas: 1
 EOF
@@ -68,38 +76,33 @@ EOF
 
 ### Create the RabbitMQ Broker
 
-```Sh
-kubectl apply -f - << EOF
-  apiVersion: eventing.knative.dev/v1
-  kind: Broker
-  metadata:
-    name: default
-    namespace: dlq-demo
-    annotations:
-      eventing.knative.dev/broker.class: RabbitMQBroker
-  spec:
-    config:
-      apiVersion: rabbitmq.com/v1beta1
-      kind: RabbitmqCluster
-      name: rokn
-    delivery:
-      deadLetterSink:
-        ref:
-          apiVersion: serving.knative.dev/v1
-          kind: Service
-          name: event-display
-          namespace: dlq-demo
-      retry: 5
-EOF
-```
-
-**Note** If you at this point look at the status of the Broker, it's not ready,
-because the dead letter Sink is not ready.
-
 ```sh
-kubectl -n dlq-demo get brokers
-NAME      URL                                                        AGE   READY   REASON
-default   http://default-broker-ingress.dlq-demo.svc.cluster.local   7s    False   Unable to get the DeadLetterSink's URI
+kubectl apply -f samples/broker-trigger/300-broker.yaml
+```
+or
+```sh
+kubectl apply -f - << EOF
+apiVersion: eventing.knative.dev/v1
+kind: Broker
+metadata:
+  name: default
+  namespace: broker-trigger-demo
+  annotations:
+    eventing.knative.dev/broker.class: RabbitMQBroker
+spec:
+  config:
+    apiVersion: rabbitmq.com/v1beta1
+    kind: RabbitmqCluster
+    name: rabbitmq
+  delivery:
+    deadLetterSink:
+      ref:
+        apiVersion: serving.knative.dev/v1
+        kind: Service
+        name: event-display
+        namespace: broker-trigger-demo
+    retry: 5
+EOF
 ```
 
 ### Create the Dead Letter Sink
@@ -107,12 +110,16 @@ default   http://default-broker-ingress.dlq-demo.svc.cluster.local   7s    False
 Then create the Knative Serving Service which will receive any failed events.
 
 ```sh
+kubectl apply -f samples/broker-trigger/400-sink.yaml
+```
+or
+```sh
 kubectl apply -f - << EOF
 apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
   name: event-display
-  namespace: dlq-demo
+  namespace: broker-trigger-demo
 spec:
   template:
     spec:
@@ -125,20 +132,24 @@ Now the Broker will become ready, might take a few seconds to get the Service up
 and running.
 
 ```sh
-kubectl -n dlq-demo get brokers
-NAME      URL                                                        AGE     READY   REASON
-default   http://default-broker-ingress.dlq-demo.svc.cluster.local   2m39s   True
+kubectl -n broker-trigger-demo get brokers
+NAME      URL                                                                   AGE     READY   REASON
+default   http://default-broker-ingress.broker-trigger-demo.svc.cluster.local   2m39s   True
 ```
 
 ### Create the Ping Sources
 
+```sh
+kubectl apply -f samples/broker-trigger/500-ping-sources.yaml
+```
+or
 ```sh
 kubectl apply -f - << EOF
 apiVersion: sources.knative.dev/v1
 kind: PingSource
 metadata:
   name: ping-source
-  namespace: dlq-demo
+  namespace: broker-trigger-demo
 spec:
   schedule: "*/1 * * * *"
   data: '{"responsecode": 200}'
@@ -147,7 +158,7 @@ spec:
       apiVersion: eventing.knative.dev/v1
       kind: Broker
       name: default
-      namespace: dlq-demo
+      namespace: broker-trigger-demo
 EOF
 ```
 
@@ -157,7 +168,7 @@ apiVersion: sources.knative.dev/v1
 kind: PingSource
 metadata:
   name: ping-source-2
-  namespace: dlq-demo
+  namespace: broker-trigger-demo
 spec:
   schedule: "*/1 * * * *"
   data: '{"responsecode": 500}'
@@ -166,24 +177,28 @@ spec:
       apiVersion: eventing.knative.dev/v1
       kind: Broker
       name: default
-      namespace: dlq-demo
+      namespace: broker-trigger-demo
 EOF
 ```
 
 ### Create Trigger
 
 ```sh
+kubectl apply -f samples/broker-trigger/600-trigger.yaml
+```
+or
+```sh
 kubectl apply -f - << EOF
 apiVersion: eventing.knative.dev/v1
 kind: Trigger
 metadata:
   name: failer-trigger
-  namespace: dlq-demo
+  namespace: broker-trigger-demo
   annotations:
     # Value must be between 1 and 1000
     # A value of 1 RabbitMQ Trigger behaves as a FIFO queue
     # Values above 1 break message ordering guarantees and can be seen as more performance oriented.
-    rabbitmq.eventing.knative.dev/prefetchCount: "10"
+    # rabbitmq.eventing.knative.dev/prefetchCount: "10"
 spec:
   broker: default
   filter:
@@ -194,14 +209,18 @@ spec:
       apiVersion: serving.knative.dev/v1
       kind: Service
       name: failer
-      namespace: dlq-demo
+      namespace: broker-trigger-demo
 EOF
 ```
 
 ### Create Failer
 
 ```sh
-kubectl apply -f 'https://storage.googleapis.com/knative-nightly/eventing-rabbitmq/latest/failer.yaml' -n dlq-demo
+kubectl apply -f samples/broker-trigger/700-failer.yaml
+```
+or
+```sh
+kubectl apply -f 'https://storage.googleapis.com/knative-nightly/eventing-rabbitmq/latest/failer.yaml' -n broker-trigger-demo
 ```
 
 ### Check the results
@@ -209,7 +228,7 @@ kubectl apply -f 'https://storage.googleapis.com/knative-nightly/eventing-rabbit
 Look at the failer pod logs, you see it's receiving both 200/500 responses.
 
 ```sh
-kubectl -n dlq-demo -l='serving.knative.dev/service=failer' logs -c user-container
+kubectl -n broker-trigger-demo -l='serving.knative.dev/service=failer' logs -c user-container
 2020/10/06 10:35:00 using response code: 200
 2020/10/06 10:35:00 using response code: 500
 2020/10/06 10:35:00 using response code: 500
@@ -228,13 +247,13 @@ However the event-display (the Dead Letter Sink) only sees the failed events
 with the response code set to 500.
 
 ```sh
-kubectl -n dlq-demo -l='serving.knative.dev/service=event-display' logs -c user-container
+kubectl -n broker-trigger-demo -l='serving.knative.dev/service=event-display' logs -c user-container
 ☁️  cloudevents.Event
 Validation: valid
 Context Attributes,
   specversion: 1.0
   type: dev.knative.sources.ping
-  source: /apis/v1/namespaces/dlq-demo/pingsources/ping-source-2
+  source: /apis/v1/namespaces/broker-trigger-demo/pingsources/ping-source-2
   id: 166e89ff-19c7-4e9a-a593-9ed30dca0d7d
   time: 2020-10-06T10:35:00.307531386Z
   datacontenttype: application/json
@@ -242,4 +261,10 @@ Data,
   {
     "responsecode": 500
   }
+```
+
+### Cleanup
+
+```sh
+kubectl delete ns broker-trigger-demo
 ```

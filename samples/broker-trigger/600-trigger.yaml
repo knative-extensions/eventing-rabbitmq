@@ -1,0 +1,21 @@
+apiVersion: eventing.knative.dev/v1
+kind: Trigger
+metadata:
+  name: failer-trigger
+  namespace: broker-trigger-demo
+  annotations:
+    # Value must be between 1 and 1000
+    # A value of 1 RabbitMQ Trigger behaves as a FIFO queue
+    # Values above 1 break message ordering guarantees and can be seen as more performance oriented.
+    rabbitmq.eventing.knative.dev/prefetchCount: "10"
+spec:
+  broker: default
+  filter:
+    attributes:
+      type: dev.knative.sources.ping
+  subscriber:
+    ref:
+      apiVersion: serving.knative.dev/v1
+      kind: Service
+      name: failer
+      namespace: broker-trigger-demo

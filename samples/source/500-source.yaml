@@ -2,7 +2,7 @@ apiVersion: sources.knative.dev/v1alpha1
 kind: RabbitmqSource
 metadata:
   name: rabbitmq-source
-  namespace: concurrent-dispatch
+  namespace: source-demo
 spec:
   brokers: "rabbitmq:5672/"
   topic: ""
@@ -44,4 +44,4 @@ spec:
       apiVersion: serving.knative.dev/v1
       kind: Service
       name: rabbitmq-source-sink
-      namespace: concurrent-dispatch
+      namespace: source-demo

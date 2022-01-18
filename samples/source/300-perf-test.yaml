@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: rabbitmq-perf-test
-  namespace: concurrent-dispatch
+  namespace: source-demo
 spec:
   replicas: 1
   selector:

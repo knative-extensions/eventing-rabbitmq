@@ -2,7 +2,7 @@ apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
   name: rabbitmq-source-sink
-  namespace: concurrent-dispatch
+  namespace: source-demo
 spec:
   template:
     spec:
