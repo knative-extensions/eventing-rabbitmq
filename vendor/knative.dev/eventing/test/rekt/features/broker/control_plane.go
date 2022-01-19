@@ -51,7 +51,7 @@ func ControlPlaneConformance(brokerName string) *feature.FeatureSet {
 	fs := &feature.FeatureSet{
 		Name: "Knative Broker Specification - Control Plane",
 		Features: []feature.Feature{
-			*ControlPlaneBroker(brokerName),
+			*ControlPlaneBroker(),
 			*ControlPlaneTrigger_GivenBroker(brokerName),
 			*ControlPlaneTrigger_GivenBrokerTriggerReady(brokerName),
 			*ControlPlaneTrigger_WithBrokerLifecycle(),
@@ -75,7 +75,7 @@ func setBrokerName(name string) feature.StepFn {
 	}
 }
 
-func ControlPlaneBroker(brokerName string) *feature.Feature {
+func ControlPlaneBroker() *feature.Feature {
 	f := feature.NewFeatureNamed("Broker")
 	bName := feature.MakeRandomK8sName("broker")
 	sink := feature.MakeRandomK8sName("sink")
@@ -89,7 +89,7 @@ func ControlPlaneBroker(brokerName string) *feature.Feature {
 
 	f.Stable("Conformance").
 		Should("Broker objects SHOULD include a Ready condition in their status",
-			knconf.KResourceHasReadyInConditions(brokerresources.GVR(), brokerName)).
+			knconf.KResourceHasReadyInConditions(brokerresources.GVR(), bName)).
 		Should("The Broker SHOULD indicate Ready=True when its ingress is available to receive events.",
 			readyBrokerHasIngressAvailable).
 		Should("While a Broker is Ready, it SHOULD be a valid Addressable and its `status.address.url` field SHOULD indicate the address of its ingress.",
