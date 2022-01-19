@@ -18,10 +18,11 @@ package main
 
 import (
 	"context"
+	"log"
+
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/kelseyhightower/envconfig"
-	"log"
 )
 
 /*
