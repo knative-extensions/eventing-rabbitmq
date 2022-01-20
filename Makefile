@@ -191,7 +191,7 @@ releases-gh:
 	$(OPEN) $(GH_RELEASES)
 
 KN_RELEASES := https://github.com/knative/client/releases
-KN_VERSION := 1.1.0
+KN_VERSION := 1.0.2
 KN_BIN := kn-$(KN_VERSION)-$(platform)-amd64
 KN_URL := $(KN_RELEASES)/download/knative-v$(KN_VERSION)/kn-$(platform)-amd64
 KN := $(LOCAL_BIN)/$(KN_BIN)
@@ -327,7 +327,7 @@ install-rabbitmq-topology-operator: | install-cert-manager $(KUBECTL) ## Install
 	$(KUBECTL) $(K_CMD) --filename \
 		https://github.com/rabbitmq/messaging-topology-operator/releases/download/v$(RABBITMQ_TOPOLOGY_OPERATOR_VERSION)/messaging-topology-operator-with-certmanager.yaml
 
-KNATIVE_VERSION ?= 1.0.3
+KNATIVE_VERSION ?= 1.0.2
 
 # https://github.com/knative/serving/releases
 .PHONY: install-knative-serving
