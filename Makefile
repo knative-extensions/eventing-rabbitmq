@@ -131,7 +131,7 @@ releases-envsubst:
 
 KUBECTL_RELEASES := https://github.com/kubernetes/kubernetes/tags
 # Keep this in sync with KIND_K8S_VERSION
-KUBECTL_VERSION := 1.20.7
+KUBECTL_VERSION := 1.21.10
 KUBECTL_BIN := kubectl-$(KUBECTL_VERSION)-$(platform)-amd64
 KUBECTL_URL := https://storage.googleapis.com/kubernetes-release/release/v$(KUBECTL_VERSION)/bin/$(platform)/amd64/kubectl
 KUBECTL := $(LOCAL_BIN)/$(KUBECTL_BIN)
@@ -191,7 +191,7 @@ releases-gh:
 	$(OPEN) $(GH_RELEASES)
 
 KN_RELEASES := https://github.com/knative/client/releases
-KN_VERSION := 1.0.2
+KN_VERSION := 1.1.0
 KN_BIN := kn-$(KN_VERSION)-$(platform)-amd64
 KN_URL := $(KN_RELEASES)/download/knative-v$(KN_VERSION)/kn-$(platform)-amd64
 KN := $(LOCAL_BIN)/$(KN_BIN)
@@ -282,7 +282,7 @@ KO_DOCKER_REPO := kind.local
 env::
 	@echo 'export KO_DOCKER_REPO="$(KO_DOCKER_REPO)"'
 export KO_DOCKER_REPO
-MIN_SUPPORTED_K8S_VERSION := 1.20
+MIN_SUPPORTED_K8S_VERSION := 1.21
 KIND_K8S_VERSION ?= $(MIN_SUPPORTED_K8S_VERSION)
 export KIND_K8S_VERSION
 # Find the corresponding version digest in https://github.com/kubernetes-sigs/kind/releases
@@ -318,7 +318,7 @@ CERT_MANAGER_VERSION ?= 1.5.4
 install-cert-manager: | $(KUBECONFIG) $(KUBECTL) ## Install Cert Manager - dependency of RabbitMQ Topology Operator
 	$(KUBECTL) $(K_CMD) --filename \
 		https://github.com/jetstack/cert-manager/releases/download/v$(CERT_MANAGER_VERSION)/cert-manager.yaml
-	$(KUBECTL) wait --for=condition=available deploy/cert-manager-webhook --timeout=120s --namespace $(CERT_MANAGER_NAMESPACE)
+	$(KUBECTL) wait --for=condition=available deploy/cert-manager-webhook --timeout=60s --namespace $(CERT_MANAGER_NAMESPACE)
 
 # https://github.com/rabbitmq/messaging-topology-operator/releases
 RABBITMQ_TOPOLOGY_OPERATOR_VERSION ?= 1.2.1
@@ -327,7 +327,7 @@ install-rabbitmq-topology-operator: | install-cert-manager $(KUBECTL) ## Install
 	$(KUBECTL) $(K_CMD) --filename \
 		https://github.com/rabbitmq/messaging-topology-operator/releases/download/v$(RABBITMQ_TOPOLOGY_OPERATOR_VERSION)/messaging-topology-operator-with-certmanager.yaml
 
-KNATIVE_VERSION ?= 1.0.2
+KNATIVE_VERSION ?= 1.1.0
 
 # https://github.com/knative/serving/releases
 .PHONY: install-knative-serving
@@ -336,8 +336,8 @@ install-knative-serving: | $(KUBECONFIG) $(KUBECTL) ## Install Knative Serving
 		https://github.com/knative/serving/releases/download/knative-v$(KNATIVE_VERSION)/serving-crds.yaml
 	$(KUBECTL) $(K_CMD) --filename \
 		https://github.com/knative/serving/releases/download/knative-v$(KNATIVE_VERSION)/serving-core.yaml
-	$(KUBECTL) wait --for=condition=available deploy/controller --timeout=120s --namespace $(SERVING_NAMESPACE)
-	$(KUBECTL) wait --for=condition=available deploy/webhook --timeout=120s --namespace $(SERVING_NAMESPACE)
+	$(KUBECTL) wait --for=condition=available deploy/controller --timeout=60s --namespace $(SERVING_NAMESPACE)
+	$(KUBECTL) wait --for=condition=available deploy/webhook --timeout=60s --namespace $(SERVING_NAMESPACE)
 	$(KUBECTL) apply --filename https://github.com/knative/net-kourier/releases/download/knative-v$(KNATIVE_VERSION)/kourier.yaml
 	$(KUBECTL) patch configmap/config-network --namespace $(SERVING_NAMESPACE) --type merge \
 		--patch '{"data":{"ingress.class":"kourier.ingress.networking.knative.dev"}}'
@@ -349,24 +349,24 @@ install-knative-eventing: | $(KUBECONFIG) $(KUBECTL) ## Install Knative Eventing
 		https://github.com/knative/eventing/releases/download/knative-v$(KNATIVE_VERSION)/eventing-crds.yaml
 	$(KUBECTL) $(K_CMD) --filename \
 		https://github.com/knative/eventing/releases/download/knative-v$(KNATIVE_VERSION)/eventing-core.yaml
-	$(KUBECTL) wait --for=condition=available deploy/eventing-controller --timeout=120s --namespace $(EVENTING_NAMESPACE)
-	$(KUBECTL) wait --for=condition=available deploy/eventing-webhook --timeout=120s --namespace $(EVENTING_NAMESPACE)
+	$(KUBECTL) wait --for=condition=available deploy/eventing-controller --timeout=60s --namespace $(EVENTING_NAMESPACE)
+	$(KUBECTL) wait --for=condition=available deploy/eventing-webhook --timeout=60s --namespace $(EVENTING_NAMESPACE)
 
 .PHONY: install
 install: | $(KUBECTL) $(KO) install-knative-eventing install-rabbitmq-cluster-operator install-rabbitmq-topology-operator ## Install local dev Knative Eventing RabbitMQ - manages all dependencies, including K8S components
 	$(KO) apply --filename config/broker
-	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-broker-controller --timeout=120s --namespace $(EVENTING_NAMESPACE)
-	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-broker-webhook --timeout=120s --namespace $(EVENTING_NAMESPACE)
+	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-broker-controller --timeout=60s --namespace $(EVENTING_NAMESPACE)
+	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-broker-webhook --timeout=60s --namespace $(EVENTING_NAMESPACE)
 	$(KO) apply --filename config/source
-	$(KUBECTL) wait --for=condition=available deploy/pingsource-mt-adapter --timeout=120s --namespace knative-eventing
+	$(KUBECTL) wait --for=condition=available deploy/pingsource-mt-adapter --timeout=60s --namespace knative-eventing
 
 .PHONY: install-standalone
 install-standalone: | $(KUBECTL) $(KO) install-knative-eventing install-rabbitmq-cluster-operator ## Install local dev Knative Eventing RabbitMQ Standalone - manages all dependencies, including K8S components
 	$(KO) apply --filename config/brokerstandalone
-	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-standalone-broker-controller --timeout=120s --namespace $(EVENTING_NAMESPACE)
-	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-broker-webhook --timeout=120s --namespace $(EVENTING_NAMESPACE)
+	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-standalone-broker-controller --timeout=60s --namespace $(EVENTING_NAMESPACE)
+	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-broker-webhook --timeout=60s --namespace $(EVENTING_NAMESPACE)
 	$(KO) apply --filename config/source
-	$(KUBECTL) wait --for=condition=available deploy/pingsource-mt-adapter --timeout=120s --namespace knative-eventing
+	$(KUBECTL) wait --for=condition=available deploy/pingsource-mt-adapter --timeout=60s --namespace knative-eventing
 
 .PHONY: test-e2e-publish
 test-e2e-publish: | $(KUBECONFIG) ## Run TestKoPublish end-to-end tests  - assumes a K8S with all necessary components installed (Knative & RabbitMQ)
