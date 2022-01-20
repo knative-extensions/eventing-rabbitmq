@@ -67,6 +67,7 @@ jobs:
 
     - name: Gather Failure Data
       if: ${{ failure() }}
+      working-directory: ./src/knative.dev/${{ github.event.repository.name }}
       run: |
         set -x
         make .env
