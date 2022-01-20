@@ -46,7 +46,7 @@ type IngressArgs struct {
 	Configs            reconcilersource.ConfigAccessor
 }
 
-// MakeIngress creates the in-memory representation of the Broker's ingress Deployment.
+// MakeIngressDeployment creates the in-memory representation of the Broker's ingress Deployment.
 func MakeIngressDeployment(args *IngressArgs) *appsv1.Deployment {
 	envs := []corev1.EnvVar{{
 		Name:  system.NamespaceEnvKey,

@@ -45,10 +45,8 @@ type Rabbit struct {
 
 var _ duck.Implementable = (*Rabbit)(nil)
 
-// RabbiSpec
 type RabbitSpec struct{}
 
-// RabbitStatus.
 type RabbitStatus struct {
 	// DefaultUser identifies information on internal resources.
 	DefaultUser *RabbitDefaultUser `json:"defaultUser,omitempty"`

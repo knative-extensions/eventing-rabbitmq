@@ -721,8 +721,8 @@ func TestReconcile(t *testing.T) {
 			brokerLister:       listers.GetBrokerLister(),
 			triggerLister:      listers.GetTriggerLister(),
 			deploymentLister:   listers.GetDeploymentLister(),
-			sourceTracker:      duck.NewListableTracker(ctx, source.Get, func(types.NamespacedName) {}, 0),
-			addressableTracker: duck.NewListableTracker(ctx, v1addr.Get, func(types.NamespacedName) {}, 0),
+			sourceTracker:      duck.NewListableTrackerFromTracker(ctx, source.Get, tracker.New(func(types.NamespacedName) {}, 0)),
+			addressableTracker: duck.NewListableTrackerFromTracker(ctx, v1addr.Get, tracker.New(func(types.NamespacedName) {}, 0)),
 			uriResolver:        resolver.NewURIResolverFromTracker(ctx, tracker.New(func(types.NamespacedName) {}, 0)),
 			brokerClass:        "RabbitMQBroker",
 			dialerFunc:         dialer.TestDialer,
@@ -847,7 +847,7 @@ func triggerWithFilter() *eventingv1.Trigger {
 		WithTriggerUID(triggerUID),
 		WithTriggerSubscriberURI(subscriberURI))
 	t.Spec.Filter = &eventingv1.TriggerFilter{
-		Attributes: eventingv1.TriggerFilterAttributes(map[string]string{"type": "dev.knative.sources.ping"}),
+		Attributes: map[string]string{"type": "dev.knative.sources.ping"},
 	}
 	return t
 }
@@ -863,7 +863,7 @@ func triggerWithFilterReady() *eventingv1.Trigger {
 		WithTriggerSubscriberResolvedSucceeded(),
 		WithTriggerStatusSubscriberURI(subscriberURI))
 	t.Spec.Filter = &eventingv1.TriggerFilter{
-		Attributes: eventingv1.TriggerFilterAttributes(map[string]string{"type": "dev.knative.sources.ping"}),
+		Attributes: map[string]string{"type": "dev.knative.sources.ping"},
 	}
 	return t
 }
@@ -880,7 +880,7 @@ func triggerWithFinalizerReady() *eventingv1.Trigger {
 		WithTriggerSubscriberResolvedSucceeded(),
 		WithTriggerStatusSubscriberURI(subscriberURI))
 	t.Spec.Filter = &eventingv1.TriggerFilter{
-		Attributes: eventingv1.TriggerFilterAttributes(map[string]string{"type": "dev.knative.sources.ping"}),
+		Attributes: map[string]string{"type": "dev.knative.sources.ping"},
 	}
 	t.Finalizers = []string{finalizerName}
 	return t

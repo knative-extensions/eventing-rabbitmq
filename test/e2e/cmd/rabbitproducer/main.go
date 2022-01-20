@@ -19,7 +19,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -44,7 +43,6 @@ func main() {
 	var env envConfig
 	if err := envconfig.Process("", &env); err != nil {
 		log.Fatal("[ERROR] Failed to process env var: ", err)
-		os.Exit(1)
 	}
 	connStr := fmt.Sprintf("amqp://%s:%s@%s", env.Username, env.Password, env.Broker)
 

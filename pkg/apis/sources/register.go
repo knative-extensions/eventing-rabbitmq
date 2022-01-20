@@ -35,7 +35,6 @@ const (
 )
 
 var (
-	// ContainerSourceResource respresents a Knative Eventing Sources ContainerSource
 	RabbitMQResource = schema.GroupResource{
 		Group:    GroupName,
 		Resource: "rabbitmqsources",

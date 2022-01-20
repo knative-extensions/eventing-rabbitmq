@@ -92,7 +92,7 @@ func WithBrokerDeletionTimestamp(b *v1.Broker) {
 	b.ObjectMeta.SetDeletionTimestamp(&t)
 }
 
-// WithBrokerChannel sets the Broker's ChannelTemplateSpec to the specified CRD.
+// WithBrokerConfig sets the Broker's config KReference.
 func WithBrokerConfig(config *duckv1.KReference) BrokerOption {
 	return func(b *v1.Broker) {
 		b.Spec.Config = config
@@ -135,35 +135,35 @@ func WithExchangeReady() BrokerOption {
 	}
 }
 
-// WithDLXFailed() sets DLX condition to failed.
+// WithDLXFailed sets DLX condition to failed.
 func WithDLXFailed(reason, msg string) BrokerOption {
 	return func(b *v1.Broker) {
 		MarkDLXFailed(&b.Status, reason, msg)
 	}
 }
 
-// WithDLXReady() sets DLX condition to ready.
+// WithDLXReady sets DLX condition to ready.
 func WithDLXReady() BrokerOption {
 	return func(b *v1.Broker) {
 		MarkDLXReady(&b.Status)
 	}
 }
 
-// WithDLXReady() sets DLX condition to ready, but not configured.
+// WithDLXNotConfigured sets DLX condition to configured.
 func WithDLXNotConfigured() BrokerOption {
 	return func(b *v1.Broker) {
 		MarkDLXNotConfigured(&b.Status)
 	}
 }
 
-// WithDeadLetterSinkReady() sets DeadLetterSink condition to ready.
+// WithDeadLetterSinkReady sets DeadLetterSink condition to ready.
 func WithDeadLetterSinkReady() BrokerOption {
 	return func(b *v1.Broker) {
 		MarkDeadLetterSinkReady(&b.Status)
 	}
 }
 
-// WithDeadLetterSinkReady() sets DeadLetterSink condition to failed.
+// WithDeadLetterSinkReady sets DeadLetterSink condition to failed.
 func WithDeadLetterSinkFailed(reason, msg string) BrokerOption {
 	return func(b *v1.Broker) {
 		MarkDeadLetterSinkFailed(&b.Status, reason, msg)
