@@ -19,9 +19,11 @@ package resources
 import (
 	"context"
 	"fmt"
+	"regexp"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 
 	"knative.dev/eventing/pkg/apis/eventing"
@@ -33,8 +35,8 @@ const TriggerLabelKey = "eventing.knative.dev/trigger"
 type QueueArgs struct {
 	Name                     string
 	Namespace                string
-	RabbitMQClusterName      string
 	RabbitMQClusterNamespace string
+	RabbitMQClusterName      string
 	Owner                    metav1.OwnerReference
 	Labels                   map[string]string
 	DLXName                  *string
@@ -62,12 +64,27 @@ func NewQueue(ctx context.Context, args *QueueArgs) *rabbitv1beta1.Queue {
 			},
 		},
 	}
-	if args.DLXName != nil {
-		q.Spec.Arguments = &runtime.RawExtension{
-			Raw: []byte(fmt.Sprintf(`{"x-dead-letter-exchange":%q}`, *args.DLXName)),
-		}
-	}
 	return q
+}
+
+func NewPolicy(args *QueueArgs) *rabbitv1beta1.Policy {
+	return &rabbitv1beta1.Policy{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            args.Name,
+			Namespace:       args.Namespace,
+			OwnerReferences: []metav1.OwnerReference{args.Owner},
+		},
+		Spec: v1beta1.PolicySpec{
+			Name:       args.Name,
+			Pattern:    fmt.Sprintf("^%s$", regexp.QuoteMeta(args.Name)),
+			ApplyTo:    "queues",
+			Definition: &runtime.RawExtension{Raw: []byte(fmt.Sprintf(`{"dead-letter-exchange": %q}`, *args.DLXName))},
+			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
+				Name:      args.RabbitMQClusterName,
+				Namespace: args.RabbitMQClusterNamespace,
+			},
+		},
+	}
 }
 
 // QueueLabels generates the labels present on the Queue linking the Broker / Trigger to the

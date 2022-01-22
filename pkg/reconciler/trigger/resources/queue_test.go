@@ -23,10 +23,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
-	"knative.dev/pkg/ptr"
 )
 
 const (
@@ -99,34 +97,6 @@ func TestNewQueue(t *testing.T) {
 						Name:      rabbitmqcluster,
 						Namespace: "single-rabbitmq-cluster",
 					},
-				},
-			},
-		},
-		{
-			name: "adds a dead letter exchange if that is set",
-			args: &resources.QueueArgs{
-				Name:                triggerName,
-				Namespace:           namespace,
-				RabbitMQClusterName: rabbitmqcluster,
-				Owner:               owner,
-				Labels:              map[string]string{"cool": "label"},
-				DLXName:             ptr.String("dlx"),
-			},
-			want: &rabbitv1beta1.Queue{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:            triggerName,
-					Namespace:       namespace,
-					OwnerReferences: []metav1.OwnerReference{owner},
-					Labels:          map[string]string{"cool": "label"},
-				},
-				Spec: rabbitv1beta1.QueueSpec{
-					Name:       triggerName,
-					Durable:    true,
-					AutoDelete: false,
-					RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
-						Name: rabbitmqcluster,
-					},
-					Arguments: &runtime.RawExtension{Raw: []byte(`{"x-dead-letter-exchange":"dlx"}`)},
 				},
 			},
 		},
