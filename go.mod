@@ -29,9 +29,9 @@ require (
 	k8s.io/apimachinery v0.22.5
 	k8s.io/client-go v0.22.5
 	k8s.io/code-generator v0.22.5
-	k8s.io/kube-openapi v0.0.0-20211109043538-20434351676c
 	knative.dev/eventing v0.28.1-0.20220121080404-f07487898e80
 	knative.dev/hack v0.0.0-20220118141833-9b2ed8471e30
+	knative.dev/hack/schema v0.0.0-20220124114929-9dd1ec11c0ad
 	knative.dev/pkg v0.0.0-20220118160532-77555ea48cd4
 	knative.dev/reconciler-test v0.0.0-20220118183433-c8bfbe66bada
 	sigs.k8s.io/controller-runtime v0.9.6
@@ -87,6 +87,7 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.6.7 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
+	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.11 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
@@ -114,6 +115,7 @@ require (
 	github.com/rogpeppe/fastuuid v1.2.0 // indirect
 	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
+	github.com/spf13/cobra v1.2.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/testify v1.7.0 // indirect
 	github.com/tsenart/vegeta/v12 v12.8.4 // indirect
@@ -146,6 +148,7 @@ require (
 	k8s.io/gengo v0.0.0-20211129171323-c02415ce4185 // indirect
 	k8s.io/klog v1.0.0 // indirect
 	k8s.io/klog/v2 v2.40.1 // indirect
+	k8s.io/kube-openapi v0.0.0-20211109043538-20434351676c // indirect
 	k8s.io/utils v0.0.0-20211208161948-7d6a63dca704 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.1.2 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
