@@ -110,7 +110,6 @@ type RabbitmqSourceSpec struct {
 	// +required
 	Brokers string `json:"brokers"`
 	// Topic topic to consume messages from
-	// +required
 	Topic string `json:"topic,omitempty"`
 	// User for rabbitmq connection
 	// +optional

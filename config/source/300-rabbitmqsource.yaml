@@ -37,8 +37,141 @@ spec:
     schema:
       openAPIV3Schema:
         type: object
-        # Workaround, existing schema is incomplete and fails validation.
-        x-kubernetes-preserve-unknown-fields: true
+        properties:
+          spec:
+            type: object
+            required:
+              - brokers
+            properties:
+              brokers:
+                type: string
+              channel_config:
+                type: object
+                properties:
+                  global_qos:
+                    type: boolean
+                  prefetch_count:
+                    type: integer
+                    format: int32
+              exchange_config:
+                type: object
+                required:
+                  - type
+                properties:
+                  auto_deleted:
+                    type: boolean
+                  durable:
+                    type: boolean
+                  internal:
+                    type: boolean
+                  name:
+                    type: string
+                  nowait:
+                    type: boolean
+                  type:
+                    type: string
+              password:
+                type: object
+                properties:
+                  secretKeyRef:
+                    type: object
+                    properties:
+                      key:
+                        type: string
+                      name:
+                        type: string
+                      optional:
+                        type: boolean
+              predeclared:
+                type: boolean
+              queue_config:
+                type: object
+                properties:
+                  delete_when_unused:
+                    type: boolean
+                  durable:
+                    type: boolean
+                  exclusive:
+                    type: boolean
+                  name:
+                    type: string
+                  nowait:
+                    type: boolean
+                  routing_key:
+                    type: string
+              serviceAccountName:
+                type: string
+              sink:
+                type: object
+                properties:
+                  ref:
+                    type: object
+                    properties:
+                      apiVersion:
+                        type: string
+                      group:
+                        type: string
+                      kind:
+                        type: string
+                      name:
+                        type: string
+                      namespace:
+                        type: string
+                  uri:
+                    type: string
+              topic:
+                type: string
+              user:
+                type: object
+                properties:
+                  secretKeyRef:
+                    type: object
+                    properties:
+                      key:
+                        type: string
+                      name:
+                        type: string
+                      optional:
+                        type: boolean
+              vhost:
+                type: string
+          status:
+            type: object
+            properties:
+              annotations:
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
+              ceAttributes:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    source:
+                      type: string
+                    type:
+                      type: string
+              conditions:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    lastTransitionTime:
+                      type: string
+                    message:
+                      type: string
+                    reason:
+                      type: string
+                    severity:
+                      type: string
+                    status:
+                      type: string
+                    type:
+                      type: string
+              observedGeneration:
+                type: integer
+                format: int64
+              sinkUri:
+                type: string
   names:
     categories:
       - all
