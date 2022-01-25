@@ -1149,7 +1149,7 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/eventing v0.28.1-0.20220121080404-f07487898e80
+# knative.dev/eventing v0.29.0
 ## explicit; go 1.16
 knative.dev/eventing/pkg/adapter/v2
 knative.dev/eventing/pkg/adapter/v2/util/crstatusevent
