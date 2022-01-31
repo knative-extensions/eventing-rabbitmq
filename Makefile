@@ -22,13 +22,13 @@ INFO := $(CYAN)
 WARN := $(MAGENTA)
 
 XDG_CONFIG_HOME ?= $(CURDIR)/.config
-env::
+envrc::
 	@echo 'export XDG_CONFIG_HOME="$(XDG_CONFIG_HOME)"'
 KUBECONFIG_DIR = $(XDG_CONFIG_HOME)/kubectl
 KUBECONFIG ?= $(KUBECONFIG_DIR)/config
 $(KUBECONFIG_DIR):
 	mkdir -p $(@)
-env::
+envrc::
 	@echo 'export KUBECONFIG="$(KUBECONFIG)"'
 
 LOCAL_BIN := $(CURDIR)/bin
@@ -36,7 +36,7 @@ PATH := $(LOCAL_BIN):$(PATH)
 export PATH
 $(LOCAL_BIN):
 	mkdir -p $@
-env::
+envrc::
 	@echo 'export PATH="$(PATH)"'
 
 
@@ -68,7 +68,7 @@ $(GCLOUD): | $(CURL) $(LOCAL_BIN)
 	ln -sf $(GCLOUD) $(LOCAL_BIN)/gcloud
 	@printf "$(INFO)ko requires $(BOLD)docker-credential-gcloud$(NORMAL)\n"
 	$(GCLOUD) auth configure-docker
-	@printf "$(RED)Remember to run: $(BOLD)make .env -B && . .env$(NORMAL)\n"
+	@printf "$(RED)Remember to run: $(BOLD)make .envrc -B && . .envrc$(NORMAL)\n"
 
 .PHONY: gcloud
 gcloud: $(GCLOUD)
@@ -213,11 +213,11 @@ releases-kn:
 #
 .DEFAULT_GOAL := help
 
-.PHONY: env
-env:: ## Configure shell env - eval "$(make env)" OR rm .env && make .env && source .env
+.PHONY: envrc
+envrc:: ## Configure shell envrc - eval "$(make envrc)" OR rm .envrc && make .envrc && source .envrc
 	@echo 'unalias m 2>/dev/null || true ; alias m=make'
-.env:
-	$(MAKE) --file $(lastword $(MAKEFILE_LIST)) --no-print-directory env SILENT="1>/dev/null 2>&1" > .env
+.envrc:
+	$(MAKE) --file $(lastword $(MAKEFILE_LIST)) --no-print-directory envrc SILENT="1>/dev/null 2>&1" > .envrc
 
 CURL ?= /usr/bin/curl
 $(CURL):
@@ -229,7 +229,7 @@ curl: $(CURL)
 HELP_TARGET_DEPTH ?= \#\#
 .PHONY: help
 help:
-	@printf "\nIf this is your first time running this, remember to run: $(BOLD)make .env && source .env$(NORMAL)\n"
+	@printf "\nIf this is your first time running this, remember to run: $(BOLD)make .envrc && source .envrc$(NORMAL)\n"
 	@printf "Now just type $(BOLD)make <TAB>$(NORMAL) to enjoy shell autocompletion\n"
 	@printf "By the way, $(BOLD)m$(NORMAL) is an alias for $(BOLD)make$(NORMAL)\n\n"
 	@printf "Here is a list of all the make targets that you can run, e.g. $(BOLD)make test-e2e$(NORMAL) or $(BOLD)m test-e2e$(NORMAL)\n\n"
@@ -247,7 +247,7 @@ endef
 .PHONY: bash-autocomplete
 bash-autocomplete:
 	@echo "$(BASH_AUTOCOMPLETE)"
-env:: bash-autocomplete
+envrc:: bash-autocomplete
 
 .PHONY: go-dep-update
 go-dep-update: ## Update any Go dependency
@@ -276,17 +276,17 @@ CERT_MANAGER_NAMESPACE = cert-manager
 export CERT_MANAGER_NAMESPACE
 KIND_CLUSTER_NAME ?= eventing-rabbitmq-e2e
 export KIND_CLUSTER_NAME
-env::
+envrc::
 	@echo 'export KIND_CLUSTER_NAME="$(KIND_CLUSTER_NAME)"'
 KO_DOCKER_REPO := kind.local
-env::
+envrc::
 	@echo 'export KO_DOCKER_REPO="$(KO_DOCKER_REPO)"'
 export KO_DOCKER_REPO
-MIN_SUPPORTED_K8S_VERSION := 1.21
+MIN_SUPPORTED_K8S_VERSION := 1.21.1
 KIND_K8S_VERSION ?= $(MIN_SUPPORTED_K8S_VERSION)
 export KIND_K8S_VERSION
 # Find the corresponding version digest in https://github.com/kubernetes-sigs/kind/releases
-KIND_K8S_DIGEST ?= sha256:cbeaf907fc78ac97ce7b625e4bf0de16e3ea725daf6b04f930bd14c67c671ff9
+KIND_K8S_DIGEST ?= sha256:69860bda5563ac81e3c0057d654b5253219618a22ec3a346306239bba8cfa1a6
 export KIND_K8S_DIGEST
 
 .PHONY: kind-cluster
@@ -294,7 +294,7 @@ kind-cluster: | $(KIND) $(ENVSUBST)
 	( $(KIND) get clusters | grep $(KIND_CLUSTER_NAME) ) \
 	|| ( cat $(CURDIR)/test/e2e/kind.yaml \
 	     | $(ENVSUBST_SAFE) \
-	     | $(KIND) create cluster --name $(KIND_CLUSTER_NAME) --config - )
+	     | $(KIND) -v1  create cluster --name $(KIND_CLUSTER_NAME) --config  - )
 
 $(KUBECONFIG): | $(KUBECONFIG_DIR)
 	$(MAKE) --no-print-directory kind-cluster
@@ -404,3 +404,7 @@ TEST_COMPILATION_TAGS=e2e
 .PHONY: test-compilation
 test-compilation: ## Build test binaries with e2e tags
 	go test -vet=off -tags "$(BUILD_TAGS)" -exec echo  ./...
+
+.PHONE: reset
+reset:
+	kind delete cluster; rm ./.envrc; rm -rf ./bin; rm -rf ~/.config
