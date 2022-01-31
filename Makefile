@@ -286,7 +286,7 @@ MIN_SUPPORTED_K8S_VERSION := 1.21
 KIND_K8S_VERSION ?= $(MIN_SUPPORTED_K8S_VERSION)
 export KIND_K8S_VERSION
 # Find the corresponding version digest in https://github.com/kubernetes-sigs/kind/releases
-KIND_K8S_DIGEST ?= sha256:cbeaf907fc78ac97ce7b625e4bf0de16e3ea725daf6b04f930bd14c67c671ff9
+KIND_K8S_DIGEST ?= sha256:69860bda5563ac81e3c0057d654b5253219618a22ec3a346306239bba8cfa1a6
 export KIND_K8S_DIGEST
 
 .PHONY: kind-cluster
@@ -313,7 +313,7 @@ install-rabbitmq-cluster-operator: | $(KUBECONFIG) $(KUBECTL) ## Install RabbitM
 # https://github.com/jetstack/cert-manager/releases
 # ⚠️  You may want to keep this in sync with RABBITMQ_TOPOLOGY_OPERATOR_VERSION
 # In other words, don't upgrade cert-manager to a version that was released AFTER RABBITMQ_TOPOLOGY_OPERATOR_VERSION
-CERT_MANAGER_VERSION ?= 1.5.4
+CERT_MANAGER_VERSION ?= 1.7.0
 .PHONY: install-cert-manager
 install-cert-manager: | $(KUBECONFIG) $(KUBECTL) ## Install Cert Manager - dependency of RabbitMQ Topology Operator
 	$(KUBECTL) $(K_CMD) --filename \
