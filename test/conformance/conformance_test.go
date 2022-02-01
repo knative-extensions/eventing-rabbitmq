@@ -53,8 +53,8 @@ func TestBrokerControlPlaneConformance(t *testing.T) {
 	// Install and wait for a Ready Broker.
 	env.Prerequisite(ctx, t, broker.GoesReady("default", b.WithEnvConfig()...))
 	brokerFeatureSet := broker.ControlPlaneConformance("default")
-	// To distribute the test total load, 8 gave me the best results locally
-	brokerFeatureSet.Features = brokerFeatureSet.Features[:8]
+	// To distribute the test total load, total length is 18
+	brokerFeatureSet.Features = brokerFeatureSet.Features[:6]
 	env.TestSet(ctx, t, brokerFeatureSet)
 }
 
@@ -71,10 +71,30 @@ func TestBrokerControlPlaneConformance2(t *testing.T) {
 	//	env.Prerequisite(ctx, t, secret.Install("rabbitbrokersecret", "rabbitbroker", ctx, b.WithEnvConfig()...))
 	env.Prerequisite(ctx, t, secret.Created("rabbitbroker-secret", "rabbitbroker", ctx, b.WithEnvConfig()...))
 	// Install and wait for a Ready Broker.
+	env.Prerequisite(ctx, t, broker.GoesReady("default1", b.WithEnvConfig()...))
+	brokerFeatureSet := broker.ControlPlaneConformance("default1")
+	// To distribute the test total load, total length is 18
+	brokerFeatureSet.Features = brokerFeatureSet.Features[6:12]
+	env.TestSet(ctx, t, brokerFeatureSet)
+}
+
+func TestBrokerControlPlaneConformance3(t *testing.T) {
+	ctx, env := global.Environment(
+		knative.WithKnativeNamespace(system.Namespace()),
+		knative.WithLoggingConfig,
+		knative.WithTracingConfig,
+		k8s.WithEventListener,
+		environment.Managed(t),
+	)
+
+	env.Prerequisite(ctx, t, rabbitmqcluster.GoesReady("rabbitbroker", b.WithEnvConfig()...))
+	//	env.Prerequisite(ctx, t, secret.Install("rabbitbrokersecret", "rabbitbroker", ctx, b.WithEnvConfig()...))
+	env.Prerequisite(ctx, t, secret.Created("rabbitbroker-secret", "rabbitbroker", ctx, b.WithEnvConfig()...))
+	// Install and wait for a Ready Broker.
 	env.Prerequisite(ctx, t, broker.GoesReady("default2", b.WithEnvConfig()...))
 	brokerFeatureSet := broker.ControlPlaneConformance("default2")
-	// To distribute the test total load, 8 gave me the best results locally
-	brokerFeatureSet.Features = brokerFeatureSet.Features[8:]
+	// To distribute the test total load, total length is 18
+	brokerFeatureSet.Features = brokerFeatureSet.Features[12:]
 	env.TestSet(ctx, t, brokerFeatureSet)
 }
 
