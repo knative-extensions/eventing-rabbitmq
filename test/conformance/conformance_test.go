@@ -38,7 +38,47 @@ import (
 )
 
 // TestBrokerConformance
-func TestBrokerConformance(t *testing.T) {
+func TestBrokerControlPlaneConformance(t *testing.T) {
+	ctx, env := global.Environment(
+		knative.WithKnativeNamespace(system.Namespace()),
+		knative.WithLoggingConfig,
+		knative.WithTracingConfig,
+		k8s.WithEventListener,
+		environment.Managed(t),
+	)
+
+	env.Prerequisite(ctx, t, rabbitmqcluster.GoesReady("rabbitbroker", b.WithEnvConfig()...))
+	//	env.Prerequisite(ctx, t, secret.Install("rabbitbrokersecret", "rabbitbroker", ctx, b.WithEnvConfig()...))
+	env.Prerequisite(ctx, t, secret.Created("rabbitbroker-secret", "rabbitbroker", ctx, b.WithEnvConfig()...))
+	// Install and wait for a Ready Broker.
+	env.Prerequisite(ctx, t, broker.GoesReady("default", b.WithEnvConfig()...))
+	brokerFeatureSet := broker.ControlPlaneConformance("default")
+	// To distribute the test total load, 8 gave me the best results locally
+	brokerFeatureSet.Features = brokerFeatureSet.Features[:8]
+	env.TestSet(ctx, t, brokerFeatureSet)
+}
+
+func TestBrokerControlPlaneConformance2(t *testing.T) {
+	ctx, env := global.Environment(
+		knative.WithKnativeNamespace(system.Namespace()),
+		knative.WithLoggingConfig,
+		knative.WithTracingConfig,
+		k8s.WithEventListener,
+		environment.Managed(t),
+	)
+
+	env.Prerequisite(ctx, t, rabbitmqcluster.GoesReady("rabbitbroker", b.WithEnvConfig()...))
+	//	env.Prerequisite(ctx, t, secret.Install("rabbitbrokersecret", "rabbitbroker", ctx, b.WithEnvConfig()...))
+	env.Prerequisite(ctx, t, secret.Created("rabbitbroker-secret", "rabbitbroker", ctx, b.WithEnvConfig()...))
+	// Install and wait for a Ready Broker.
+	env.Prerequisite(ctx, t, broker.GoesReady("default", b.WithEnvConfig()...))
+	brokerFeatureSet := broker.ControlPlaneConformance("default")
+	// To distribute the test total load, 8 gave me the best results locally
+	brokerFeatureSet.Features = brokerFeatureSet.Features[8:]
+	env.TestSet(ctx, t, brokerFeatureSet)
+}
+
+func TestBrokerDataPlaneConformance(t *testing.T) {
 	ctx, env := global.Environment(
 		knative.WithKnativeNamespace(system.Namespace()),
 		knative.WithLoggingConfig,
@@ -53,6 +93,5 @@ func TestBrokerConformance(t *testing.T) {
 	// Install and wait for a Ready Broker.
 	env.Prerequisite(ctx, t, broker.GoesReady("default", b.WithEnvConfig()...))
 
-	env.TestSet(ctx, t, broker.ControlPlaneConformance("default"))
 	env.TestSet(ctx, t, broker.DataPlaneConformance("default"))
 }
