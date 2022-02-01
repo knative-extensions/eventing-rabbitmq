@@ -67,8 +67,8 @@ jobs:
       working-directory: ./src/knative.dev/${{ github.event.repository.name }}
       run: |
         set -x
-        make .env
-        . .env
+        make .envrc
+        . .envrc
         make kubectl
 
         echo "===================== Brokers =============================="

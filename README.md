@@ -22,6 +22,10 @@ See [Install and Demo](./broker/README.md)
 
 See [Install and Demo](./source/README.md)
 
+## Testing
+
+See [Install and Demo](./test/README.md)
+
 ---
 
 This repo falls under the
