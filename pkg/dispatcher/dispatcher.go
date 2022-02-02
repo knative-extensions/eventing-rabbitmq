@@ -74,7 +74,10 @@ func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel wabbit.Channe
 		return errors.Wrap(err, "create consumer")
 	}
 
-	ceClient, err := client.NewClientHTTP([]cehttp.Option{cehttp.WithIsRetriableFunc(isRetriableFunc)}, nil)
+	ceClient, err := client.NewClientHTTP([]cehttp.Option{cehttp.WithIsRetriableFunc(func(statusCode int) bool {
+		retry, _ := kncloudevents.SelectiveRetry(ctx, &http.Response{StatusCode: statusCode}, nil)
+		return retry
+	})}, nil)
 	if err != nil {
 		return errors.Wrap(err, "create http client")
 	}
@@ -113,10 +116,6 @@ func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel wabbit.Channe
 			workerQueue <- msg
 		}
 	}
-}
-
-func isRetriableFunc(sc int) bool {
-	return sc < 200 || sc >= 300
 }
 
 func isSuccess(ctx context.Context, result protocol.Result) bool {
