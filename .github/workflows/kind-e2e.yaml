@@ -24,12 +24,12 @@ jobs:
 
         # Map between K8s and KinD versions.
         # This is attempting to make it a bit clearer what's being tested.
-        # See: https://github.com/kubernetes-sigs/kind/releases/tag/v0.9.0
+        # See: https://github.com/kubernetes-sigs/kind/releases/tag/v0.11.1
         include:
         - k8s-version: v1.21.2
-          kind-image-sha: sha256:0fda882e43d425622f045b492f8bd83c2e0b4984fc03e2e05ec101ca1a685fb7
+          kind-image-sha: sha256:9d07ff05e4afefbba983fac311807b3c17a5f36e7061f6cb7e2ba756255b2be4
         - k8s-version: v1.22.1
-          kind-image-sha: sha256:e0bf222d7dd1589075117c51740903017b328c59ffb0c3d97187a2b3de1f92b3
+          kind-image-sha: sha256:100b3558428386d1372591f8d62add85b900538d94db8e455b66ebaf05a3ca3a
     env:
       GOPATH: ${{ github.workspace }}
 
