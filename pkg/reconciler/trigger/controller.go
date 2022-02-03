@@ -47,6 +47,7 @@ import (
 	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
 	configmapinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/configmap"
 
+	policyinformer "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/informers/rabbitmq.com/v1beta1/policy"
 	queueinformer "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/informers/rabbitmq.com/v1beta1/queue"
 
 	"knative.dev/pkg/configmap"
@@ -80,6 +81,7 @@ func NewController(
 	brokerInformer := brokerinformer.Get(ctx)
 	deploymentInformer := deploymentinformer.Get(ctx)
 	triggerInformer := triggerinformer.Get(ctx)
+	policyInformer := policyinformer.Get(ctx)
 	queueInformer := queueinformer.Get(ctx)
 	bindingInformer := bindinginformer.Get(ctx)
 	exchangeInformer := exchangeinformer.Get(ctx)
@@ -116,6 +118,10 @@ func NewController(
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 	queueInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.FilterControllerGK(v1.Kind("Trigger")),
+		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
+	})
+	policyInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.FilterControllerGK(v1.Kind("Trigger")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
