@@ -28,6 +28,7 @@ import (
 	_ "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/client/fake"
 	_ "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/informers/rabbitmq.com/v1beta1/binding/fake"
 	_ "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/informers/rabbitmq.com/v1beta1/exchange/fake"
+	_ "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/informers/rabbitmq.com/v1beta1/policy/fake"
 	_ "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/informers/rabbitmq.com/v1beta1/queue/fake"
 	_ "knative.dev/eventing/pkg/client/injection/informers/eventing/v1/broker/fake"
 	_ "knative.dev/pkg/client/injection/ducks/duck/v1/addressable/fake"
