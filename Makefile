@@ -407,4 +407,4 @@ test-compilation: ## Build test binaries with e2e tags
 
 .PHONE: reset
 reset:
-	kind delete cluster; rm ./.envrc; rm -rf ./bin; rm -rf ~/.config
+	kind delete cluster; rm -f $(CURDIR)/.envrc; rm -rf $(CURDIR)/bin; rm -rf $(CURDIR)/.config
