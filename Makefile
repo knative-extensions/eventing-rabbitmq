@@ -304,7 +304,7 @@ $(KUBECONFIG): | $(KUBECONFIG_DIR)
 kubeconfig: $(KUBECONFIG)
 
 # https://github.com/rabbitmq/cluster-operator/releases
-RABBITMQ_CLUSTER_OPERATOR_VERSION ?= 1.10.0
+RABBITMQ_CLUSTER_OPERATOR_VERSION ?= 1.11.1
 .PHONY: install-rabbitmq-cluster-operator
 install-rabbitmq-cluster-operator: | $(KUBECONFIG) $(KUBECTL) ## Install RabbitMQ Cluster Operator
 	$(KUBECTL) $(K_CMD) --filename \
@@ -313,7 +313,7 @@ install-rabbitmq-cluster-operator: | $(KUBECONFIG) $(KUBECTL) ## Install RabbitM
 # https://github.com/jetstack/cert-manager/releases
 # ⚠️  You may want to keep this in sync with RABBITMQ_TOPOLOGY_OPERATOR_VERSION
 # In other words, don't upgrade cert-manager to a version that was released AFTER RABBITMQ_TOPOLOGY_OPERATOR_VERSION
-CERT_MANAGER_VERSION ?= 1.5.4
+CERT_MANAGER_VERSION ?= 1.7.0
 .PHONY: install-cert-manager
 install-cert-manager: | $(KUBECONFIG) $(KUBECTL) ## Install Cert Manager - dependency of RabbitMQ Topology Operator
 	$(KUBECTL) $(K_CMD) --filename \
@@ -321,7 +321,7 @@ install-cert-manager: | $(KUBECONFIG) $(KUBECTL) ## Install Cert Manager - depen
 	$(KUBECTL) wait --for=condition=available deploy/cert-manager-webhook --timeout=60s --namespace $(CERT_MANAGER_NAMESPACE)
 
 # https://github.com/rabbitmq/messaging-topology-operator/releases
-RABBITMQ_TOPOLOGY_OPERATOR_VERSION ?= 1.2.1
+RABBITMQ_TOPOLOGY_OPERATOR_VERSION ?= 1.3.0
 .PHONY: install-rabbitmq-topology-operator
 install-rabbitmq-topology-operator: | install-cert-manager $(KUBECTL) ## Install RabbitMQ Topology Operator
 	$(KUBECTL) $(K_CMD) --filename \
@@ -375,7 +375,7 @@ test-e2e-publish: | $(KUBECONFIG) ## Run TestKoPublish end-to-end tests  - assum
 .PHONY: test-e2e-broker
 test-e2e-broker: | $(KUBECONFIG) ## Run Broker end-to-end tests - assumes a K8S with all necessary components installed (Knative & RabbitMQ)
 	@printf "$(WARN)$(BOLD)rabbitmqcluster$(NORMAL)$(WARN) has large resource requirements 🤔$(NORMAL)\n"
-	go test -v -race -count=1 -timeout=15m -tags=e2e ./test/e2e/... -run 'Test.*Broker.*'
+	go test -v -race -count=1 -timeout=20m -tags=e2e ./test/e2e/... -run 'Test.*Broker.*'
 
 .PHONY: test-e2e-source
 test-e2e-source: | $(KUBECONFIG) ## Run Source end-to-end tests - assumes a K8S with all necessary components installed (Knative & RabbitMQ)
@@ -389,8 +389,8 @@ _test-conformance:
 	BROKER_TEMPLATES=$(BROKER_TEMPLATES) \
 	BROKER_CLASS=RabbitMQBroker \
 	go test -v -tags=e2e \
-		-count=1 -parallel=12 -timeout=20m \
-		-run TestBrokerConformance $(CURDIR)/test/conformance/...
+		-count=1 -parallel=8 -timeout=40m \
+		-run TestBroker.*Conformance.* $(CURDIR)/test/conformance/...
 
 .PHONY: test-conformance
 test-conformance: BROKER_TEMPLATES = $(CURDIR)/test/conformance/testdata/with-operator

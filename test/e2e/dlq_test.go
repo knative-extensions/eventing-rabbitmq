@@ -38,8 +38,8 @@ import (
 func BrokerDLQTest() *feature.Feature {
 	f := new(feature.Feature)
 
+	f.Requirement("RabbitMQ broker goes ready", AllGoReady)
 	f.Setup("dlq works", dlq.Install())
-	f.Alpha("RabbitMQ broker").Must("goes ready", AllGoReady)
 	f.Alpha("RabbitMQ source").
 		Must("the recorder received all sent events within the time",
 			func(ctx context.Context, t feature.T) {
