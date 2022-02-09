@@ -36,6 +36,7 @@ import (
 
 	bindinginformer "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/informers/rabbitmq.com/v1beta1/binding"
 	exchangeinformer "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/informers/rabbitmq.com/v1beta1/exchange"
+	policyinformer "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/informers/rabbitmq.com/v1beta1/policy"
 	queueinformer "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/informers/rabbitmq.com/v1beta1/queue"
 	brokerinformer "knative.dev/eventing/pkg/client/injection/informers/eventing/v1/broker"
 	brokerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1/broker"
@@ -92,6 +93,7 @@ func NewController(
 	endpointsInformer := endpointsinformer.Get(ctx)
 	rabbitInformer := rabbitv1.Get(ctx)
 	exchangeInformer := exchangeinformer.Get(ctx)
+	policyInformer := policyinformer.Get(ctx)
 	queueInformer := queueinformer.Get(ctx)
 	bindingInformer := bindinginformer.Get(ctx)
 	configmapInformer := configmapinformer.Get(ctx)
@@ -152,7 +154,10 @@ func NewController(
 		FilterFunc: controller.FilterControllerGK(eventingv1.Kind("Broker")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
-
+	policyInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.FilterControllerGK(eventingv1.Kind("Broker")),
+		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
+	})
 	queueInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.FilterControllerGK(eventingv1.Kind("Broker")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
