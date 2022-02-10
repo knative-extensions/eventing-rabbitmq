@@ -5,3 +5,10 @@ metadata:
   namespace: {{ .namespace }}
 spec:
   replicas: 1
+  resources:
+    limits:
+      cpu: "2000m"
+      memory: "500Mi"
+    requests:
+      cpu: "100m"
+      memory: "500Mi"
