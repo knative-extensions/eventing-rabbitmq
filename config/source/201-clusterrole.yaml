@@ -63,6 +63,27 @@ rules:
     resources:
       - "leases"
     verbs: *everything
+  # for RabbitMQ messaging topology objects
+  - apiGroups:
+      - rabbitmq.com
+    resources:
+      - queues
+      - exchanges
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - rabbitmq.com
+    resources:
+      - queues/status
+      - exchanges/status
+    verbs:
+      - get
 
 ---
 # The role is needed for the aggregated role source-observer in knative-eventing to provide readonly access to "Sources".
