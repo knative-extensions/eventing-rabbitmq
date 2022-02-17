@@ -22,6 +22,7 @@ import (
 	nethttp "net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/NeowayLabs/wabbit"
 	"github.com/NeowayLabs/wabbit/amqp"
@@ -67,12 +68,15 @@ type QueueConfig struct {
 type adapterConfig struct {
 	adapter.EnvConfig
 
-	Brokers        string `envconfig:"RABBITMQ_BROKERS" required:"true"`
-	Topic          string `envconfig:"RABBITMQ_TOPIC" required:"true"`
-	User           string `envconfig:"RABBITMQ_USER" required:"false"`
-	Password       string `envconfig:"RABBITMQ_PASSWORD" required:"false"`
-	Vhost          string `envconfig:"RABBITMQ_VHOST" required:"false"`
-	Predeclared    bool   `envconfig:"RABBITMQ_PREDECLARED" required:"false"`
+	Brokers        string        `envconfig:"RABBITMQ_BROKERS" required:"true"`
+	Topic          string        `envconfig:"RABBITMQ_TOPIC" required:"true"`
+	User           string        `envconfig:"RABBITMQ_USER" required:"false"`
+	Password       string        `envconfig:"RABBITMQ_PASSWORD" required:"false"`
+	Vhost          string        `envconfig:"RABBITMQ_VHOST" required:"false"`
+	Predeclared    bool          `envconfig:"RABBITMQ_PREDECLARED" required:"false"`
+	Retry          int           `envconfig:"RABBITMQ_RETRY" required:"false"`
+	BackoffPolicy  string        `envconfig:"RABBITMQ_BACKOFF_POLICY" required:"false"`
+	BackoffDelay   time.Duration `envconfig:"RABBITMQ_BACKOFF_DELAY" default:"50ms" required:"false"`
 	ChannelConfig  ChannelConfig
 	ExchangeConfig ExchangeConfig
 	QueueConfig    QueueConfig
@@ -329,7 +333,7 @@ func (a *Adapter) processMessages(wg *sync.WaitGroup, queue <-chan wabbit.Delive
 			}
 		} else {
 			a.logger.Error("Sending event to sink failed: ", zap.Error(err))
-			err = msg.Nack(false, true)
+			err = msg.Nack(false, a.config.Retry == 0)
 			if err != nil {
 				a.logger.Error("Sending Nack failed with Delivery Tag")
 			}
@@ -339,12 +343,13 @@ func (a *Adapter) processMessages(wg *sync.WaitGroup, queue <-chan wabbit.Delive
 
 func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 	a.logger.Info("url ->" + a.httpMessageSender.Target)
+
 	req, err := a.httpMessageSender.NewCloudEventRequest(a.context)
 	if err != nil {
 		return err
 	}
 
-	msgBinding := NewMessageFromDelivery(msg)
+	var msgBinding binding.Message = NewMessageFromDelivery(msg)
 
 	defer func() {
 		err := msgBinding.Finish(nil)
@@ -354,9 +359,7 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 	}()
 
 	// if the msg is a cloudevent send it as it is to http
-	if msgBinding.ReadEncoding() != binding.EncodingUnknown {
-		err = http.WriteRequest(a.context, msgBinding, req)
-	} else {
+	if msgBinding.ReadEncoding() == binding.EncodingUnknown {
 		// if the rabbitmq msg is not a cloudevent transform it into one
 		event := cloudevents.NewEvent()
 		err = convertToCloudEvent(&event, msg, a)
@@ -365,17 +368,27 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 			return err
 		}
 
-		err = http.WriteRequest(a.context, binding.ToMessage(&event), req)
+		msgBinding = binding.ToMessage(&event)
 	}
 
+	err = http.WriteRequest(a.context, msgBinding, req)
 	if err != nil {
 		a.logger.Error(fmt.Sprintf("Error writting event to http, encoding: %s", msgBinding.ReadEncoding()), zap.Error(err))
 		return err
 	}
 
-	res, err := a.httpMessageSender.Send(req)
+	res, err := a.httpMessageSender.SendWithRetries(req, &kncloudevents.RetryConfig{
+		RetryMax: a.config.Retry,
+		CheckRetry: func(ctx context.Context, resp *nethttp.Response, err error) (bool, error) {
+			return kncloudevents.SelectiveRetry(ctx, resp, nil)
+		},
+		Backoff: func(attemptNum int, resp *nethttp.Response) time.Duration {
+			a.logger.Info(fmt.Sprintf("AttempNum #%d send msg %s", attemptNum, msg.MessageId()))
+			return a.config.BackoffDelay
+		},
+	})
 	if err != nil {
-		a.logger.Error("Error while sending the message", zap.Error(err))
+		a.logger.Error("Error while sending the message", zap.Error(err), zap.Any("%s", req))
 		return err
 	}
 
