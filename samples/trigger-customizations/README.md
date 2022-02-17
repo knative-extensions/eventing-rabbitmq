@@ -2,7 +2,7 @@
 
 ## Prerequisites and installation
 
-- Follow instructions listed [here](../../broker/operator-based.md#prerequisites) 
+- Follow instructions listed [here](../../broker/operator-based.md#prerequisites)
 - Install [KO](https://github.com/google/ko). It is used to create the images that will be used in this demo
 - Set `KO_DOCKER_REPO` to an accessible container registry
 
@@ -14,13 +14,13 @@ This doc and demos highlight the various customizations that can be done on a Tr
 Trigger has a configurable annotation `rabbitmq.eventing.knative.dev/prefetchCount`. The following are effects of setting this parameter to `n`:
 
 - Prefetch count is set on the RabbitMQ channel and queue created for this trigger. The channel will receive a maximum of `n` number of messages at once.
-- The trigger will create `n` workers to consume messages off the queue and dispatch to the sink.  
+- The trigger will create `n` workers to consume messages off the queue and dispatch to the sink.
 
-If this value is unset, it will default to `1`. This means the trigger will only handle one event at a time. This will preserve the order of the messages in a queue but 
+If this value is unset, it will default to `1`. This means the trigger will only handle one event at a time. This will preserve the order of the messages in a queue but
 will make the trigger a bottleneck. A slow processing sink will result in low overall throughput. Setting a value higher than 1 will result in `n` events being handled at
 a time by the trigger but ordering won't be guaranteed as events are sent to the sink.
 
-The following demo highlights the benefits and tradeoffs of setting the prefetch count to > 1 and leaving it as 1. 
+The following demo highlights the benefits and tradeoffs of setting the prefetch count to > 1 and leaving it as 1.
 
 #### Configuration
 - Create a RabbitMQ cluster and broker
@@ -33,11 +33,11 @@ The following demo highlights the benefits and tradeoffs of setting the prefetch
 #### Components
 New components introduced in this demo:
 
-- [event-sender](https://github.com/knative-sandbox/eventing-rabbitmq/tree/main/samples/trigger-customizations/event-sender) 
-  Is used to send `n` messages to a broker.
+- [event-sender](https://github.com/knative-sandbox/eventing-rabbitmq/tree/main/samples/trigger-customizations/event-sender)
+Is used to send `n` messages to a broker.
 
 - [event-display](https://github.com/knative-sandbox/eventing-rabbitmq/tree/main/samples/trigger-customizations/event-display)
-  Is used as a "slow" sink. It will wait for `delay` number of seconds for each event it consumes. 
+Is used as a "slow" sink. It will wait for `delay` number of seconds for each event it consumes.
 
 #### Steps
 Execute the following steps/commands from the root of this repo.
@@ -191,7 +191,7 @@ high-throughput-event-display   http://high-throughput-event-display.trigger-dem
 ```
 
 #### Create the Source
-Create the source to start sending messages. 
+Create the source to start sending messages.
 <br/>
 NOTE: ensure the `--sink` is set to the broker's ingress URL.
 
@@ -253,10 +253,8 @@ processed event with ID: 4
 processed event with ID: 5
 ```
 
-
-
 #### Cleanup
-Delete the trigger-demo namespace to easily remove all the created resources 
+Delete the trigger-demo namespace to easily remove all the created resources
 
 ```sh
 kubectl delete -f samples/trigger-customizations/100-namespace.yaml
