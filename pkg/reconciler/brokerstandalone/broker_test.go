@@ -828,7 +828,7 @@ func TestReconcile(t *testing.T) {
 					WithIngressAvailable(),
 					WithDLXReady(),
 					WithDeadLetterSinkReady(),
-					WithDeadLetterSinkResolvedFailed("Unable to get the DeadLetterSink's URI", `services "badsink" not found`),
+					WithDeadLetterSinkResolvedFailed("Unable to get the DeadLetterSink's URI", `failed to get object test-namespace/badsink: services "badsink" not found`),
 					WithSecretReady(),
 					WithBrokerAddressURI(brokerAddress),
 					WithExchangeReady()),
@@ -843,7 +843,7 @@ func TestReconcile(t *testing.T) {
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
-				Eventf(corev1.EventTypeWarning, "InternalError", `services "badsink" not found`),
+				Eventf(corev1.EventTypeWarning, "InternalError", `failed to get object test-namespace/badsink: services "badsink" not found`),
 			},
 			WantErr: true,
 		},
