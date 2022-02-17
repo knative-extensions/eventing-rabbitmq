@@ -333,7 +333,7 @@ func (a *Adapter) processMessages(wg *sync.WaitGroup, queue <-chan wabbit.Delive
 			}
 		} else {
 			a.logger.Error("Sending event to sink failed: ", zap.Error(err))
-			err = msg.Nack(false, a.config.Retry == 0)
+			err = msg.Nack(false, true) // Maybe change the topology for a DLE
 			if err != nil {
 				a.logger.Error("Sending Nack failed with Delivery Tag")
 			}
