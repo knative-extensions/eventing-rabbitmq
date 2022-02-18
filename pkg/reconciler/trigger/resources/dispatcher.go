@@ -95,11 +95,6 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 		dispatcher.Env = append(dispatcher.Env, args.Configs.ToEnvVars()...)
 	}
 	if args.Delivery != nil {
-		dispatcher.Env = append(dispatcher.Env,
-			corev1.EnvVar{
-				Name:  "REQUEUE",
-				Value: "false",
-			})
 		if args.Delivery.Retry != nil {
 			dispatcher.Env = append(dispatcher.Env,
 				corev1.EnvVar{
@@ -121,13 +116,6 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 					Value: string(*args.Delivery.BackoffPolicy),
 				})
 		}
-	} else {
-		dispatcher.Env = append(dispatcher.Env,
-			// TODO: We should remove REQUEUE, it is not used.
-			corev1.EnvVar{
-				Name:  "REQUEUE",
-				Value: "false",
-			})
 	}
 	if prefetch, ok := args.Trigger.ObjectMeta.Annotations[prefetchAnnotation]; ok {
 		dispatcher.Env = append(dispatcher.Env,
