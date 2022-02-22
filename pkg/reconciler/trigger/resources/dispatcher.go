@@ -35,7 +35,7 @@ import (
 
 const (
 	dispatcherContainerName = "dispatcher"
-	prefetchAnnotation      = "rabbitmq.eventing.knative.dev/prefetchCount"
+	PrefetchAnnotation      = "rabbitmq.eventing.knative.dev/prefetchCount"
 )
 
 // DispatcherArgs are the arguments to create a dispatcher deployment. There's
@@ -117,7 +117,7 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 				})
 		}
 	}
-	if prefetch, ok := args.Trigger.ObjectMeta.Annotations[prefetchAnnotation]; ok {
+	if prefetch, ok := args.Trigger.ObjectMeta.Annotations[PrefetchAnnotation]; ok {
 		dispatcher.Env = append(dispatcher.Env,
 			corev1.EnvVar{
 				Name:  "PREFETCH_COUNT",

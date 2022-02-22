@@ -703,6 +703,35 @@ func TestReconcile(t *testing.T) {
 					WithTriggerDependencyReady(),
 				),
 			}},
+		}, {
+			Name: "Deployment updated when prefetch count removed",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				ReadyBroker(),
+				NewTrigger(triggerName, testNS, brokerName,
+					WithTriggerUID(triggerUID),
+					WithTriggerSubscriberURI(subscriberURI)),
+				createSecret(rabbitURL),
+				markReady(createQueue()),
+				markReady(createPolicy(true)),
+				markReady(createBinding(false)),
+				createDispatcherDeploymentWithPrefetchCount(),
+			},
+			WantUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: createDispatcherDeployment(),
+			}},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewTrigger(triggerName, testNS, brokerName,
+					WithTriggerUID(triggerUID),
+					WithTriggerSubscriberURI(subscriberURI),
+					WithInitTriggerConditions,
+					WithTriggerBrokerReady(),
+					WithTriggerDeadLetterSinkNotConfigured(),
+					WithTriggerSubscribed(),
+					WithTriggerDependencyReady(),
+					WithTriggerSubscriberResolvedSucceeded(),
+					WithTriggerStatusSubscriberURI(subscriberURI)),
+			}},
 		},
 	}
 
@@ -976,6 +1005,31 @@ func createDifferentDispatcherDeployment() *appsv1.Deployment {
 			},
 		},
 		Image:              "differentdispatcherimage",
+		RabbitMQSecretName: rabbitSecretName,
+		QueueName:          queueName,
+		BrokerUrlSecretKey: "brokerURL",
+		BrokerIngressURL:   brokerAddress,
+		Subscriber:         subscriberAddress,
+	}
+	return resources.MakeDispatcherDeployment(args)
+}
+
+func createDispatcherDeploymentWithPrefetchCount() *appsv1.Deployment {
+	args := &resources.DispatcherArgs{
+		Trigger: &eventingv1.Trigger{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      triggerName,
+				Namespace: testNS,
+				UID:       triggerUID,
+				Annotations: map[string]string{
+					resources.PrefetchAnnotation: "10",
+				},
+			},
+			Spec: eventingv1.TriggerSpec{
+				Broker: brokerName,
+			},
+		},
+		Image:              dispatcherImage,
 		RabbitMQSecretName: rabbitSecretName,
 		QueueName:          queueName,
 		BrokerUrlSecretKey: "brokerURL",
