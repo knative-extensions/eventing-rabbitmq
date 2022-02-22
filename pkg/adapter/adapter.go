@@ -35,6 +35,7 @@ import (
 	"go.uber.org/zap"
 
 	"knative.dev/eventing/pkg/adapter/v2"
+	v1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/eventing/pkg/metrics/source"
 	"knative.dev/pkg/logging"
@@ -333,7 +334,7 @@ func (a *Adapter) processMessages(wg *sync.WaitGroup, queue <-chan wabbit.Delive
 			}
 		} else {
 			a.logger.Error("Sending event to sink failed: ", zap.Error(err))
-			err = msg.Nack(false, a.config.ChannelConfig.PrefetchCount != 1) // Maybe change the topology for a DLE
+			err = msg.Nack(false, false)
 			if err != nil {
 				a.logger.Error("Sending Nack failed with Delivery Tag")
 			}
@@ -343,7 +344,6 @@ func (a *Adapter) processMessages(wg *sync.WaitGroup, queue <-chan wabbit.Delive
 
 func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 	a.logger.Info("url ->" + a.httpMessageSender.Target)
-
 	req, err := a.httpMessageSender.NewCloudEventRequest(a.context)
 	if err != nil {
 		return err
@@ -377,16 +377,21 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 		return err
 	}
 
+	backoffDelay := a.config.BackoffDelay.String()
+	backoffPolicy := (v1.BackoffPolicyType)(a.config.BackoffPolicy)
+	if backoffPolicy == "" {
+		backoffPolicy = v1.BackoffPolicyExponential
+	}
+
 	res, err := a.httpMessageSender.SendWithRetries(req, &kncloudevents.RetryConfig{
 		RetryMax: a.config.Retry,
 		CheckRetry: func(ctx context.Context, resp *nethttp.Response, err error) (bool, error) {
 			return kncloudevents.SelectiveRetry(ctx, resp, nil)
 		},
-		Backoff: func(attemptNum int, resp *nethttp.Response) time.Duration {
-			a.logger.Info(fmt.Sprintf("AttempNum #%d send msg %s", attemptNum, msg.MessageId()))
-			return a.config.BackoffDelay
-		},
+		BackoffDelay:  &backoffDelay,
+		BackoffPolicy: &backoffPolicy,
 	})
+
 	if err != nil {
 		a.logger.Error("Error while sending the message", zap.Error(err), zap.Any("%s", req))
 		return err
