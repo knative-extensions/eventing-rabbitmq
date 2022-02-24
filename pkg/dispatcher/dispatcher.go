@@ -39,22 +39,16 @@ import (
 )
 
 const (
-	ackMultiple   = false // send ack/nack for multiple messages
 	ComponentName = "rabbitmq-dispatcher"
 )
 
 type Dispatcher struct {
 	BrokerIngressURL string
 	SubscriberURL    string
-
-	// Upon failure to deliver to sink, should the RabbitMQ messages be requeued.
-	// For example, if the DeadLetterSink has been configured, then do not Requeue.
-	Requeue bool
-
-	MaxRetries    int
-	BackoffDelay  time.Duration
-	BackoffPolicy eventingduckv1.BackoffPolicyType
-	WorkerCount   int
+	MaxRetries       int
+	BackoffDelay     time.Duration
+	BackoffPolicy    eventingduckv1.BackoffPolicyType
+	WorkerCount      int
 }
 
 // ConsumeFromQueue consumes messages from the given message channel and queue.
@@ -139,7 +133,7 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg wabbit.Delivery, ceClient
 	err := json.Unmarshal(msg.Body(), &event)
 	if err != nil {
 		logging.FromContext(ctx).Warn("failed to unmarshal event (NACK-ing and not re-queueing): ", err)
-		err = msg.Nack(ackMultiple, false) // do not requeue
+		err = msg.Nack(false, false)
 		if err != nil {
 			logging.FromContext(ctx).Warn("failed to NACK event: ", err)
 		}
@@ -163,9 +157,8 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg wabbit.Delivery, ceClient
 
 	response, result := ceClient.Request(ctx, event)
 	if !isSuccess(ctx, result) {
-		logging.FromContext(ctx).Warnf("Failed to deliver to %q requeue: %v", d.SubscriberURL, d.Requeue)
-		err = msg.Nack(ackMultiple, d.Requeue)
-		if err != nil {
+		logging.FromContext(ctx).Warnf("Failed to deliver to %q", d.SubscriberURL)
+		err := msg.Nack(false, false); if err != nil {
 			logging.FromContext(ctx).Warn("failed to NACK event: ", err)
 		}
 		return
@@ -177,8 +170,8 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg wabbit.Delivery, ceClient
 		ctx = cloudevents.ContextWithTarget(ctx, d.BrokerIngressURL)
 		result := ceClient.Send(ctx, *response)
 		if !isSuccess(ctx, result) {
-			logging.FromContext(ctx).Warnf("Failed to deliver to %q requeue: %v", d.BrokerIngressURL, d.Requeue)
-			err = msg.Nack(ackMultiple, d.Requeue) // not multiple
+			logging.FromContext(ctx).Warnf("Failed to deliver to %q", d.BrokerIngressURL)
+			err = msg.Nack(false, false) // not multiple
 			if err != nil {
 				logging.FromContext(ctx).Warn("failed to NACK event: ", err)
 			}
@@ -186,7 +179,7 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg wabbit.Delivery, ceClient
 		}
 	}
 
-	err = msg.Ack(ackMultiple)
+	err = msg.Ack(false)
 	if err != nil {
 		logging.FromContext(ctx).Warn("failed to ACK event: ", err)
 	}

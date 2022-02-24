@@ -148,9 +148,6 @@ func deployment(opts ...func(*appsv1.Deployment)) *appsv1.Deployment {
 						}, {
 							Name:  "BROKER_INGRESS_URL",
 							Value: brokerIngressURL,
-						}, {
-							Name:  "REQUEUE",
-							Value: "false",
 						}},
 					}},
 				},

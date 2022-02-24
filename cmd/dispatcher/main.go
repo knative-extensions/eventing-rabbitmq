@@ -41,8 +41,6 @@ type envConfig struct {
 	RabbitURL        string `envconfig:"RABBIT_URL" required:"true"`
 	BrokerIngressURL string `envconfig:"BROKER_INGRESS_URL" required:"true"`
 	SubscriberURL    string `envconfig:"SUBSCRIBER" required:"true"`
-	// Should failed deliveries be requeued in the RabbitMQ?
-	Requeue bool `envconfig:"REQUEUE" default:"false" required:"true"`
 
 	// Number of concurrent messages in flight
 	PrefetchCount int           `envconfig:"PREFETCH_COUNT" default:"1" required:"false"`
@@ -115,7 +113,6 @@ func main() {
 	d := &dispatcher.Dispatcher{
 		BrokerIngressURL: env.BrokerIngressURL,
 		SubscriberURL:    env.SubscriberURL,
-		Requeue:          env.Requeue,
 		MaxRetries:       env.Retry,
 		BackoffDelay:     backoffDelay,
 		BackoffPolicy:    backoffPolicy,

@@ -156,7 +156,6 @@ func TestEndToEnd(t *testing.T) {
 		brokerHandlers     []handlerFunc
 
 		// Delivery configuration
-		requeue       bool
 		maxRetries    int
 		backoffPolicy eventingduckv1.BackoffPolicyType
 
@@ -224,42 +223,27 @@ func TestEndToEnd(t *testing.T) {
 			expectedBrokerBodies:     []string{expectedResponseData},
 			consumeErr:               context.Canceled,
 		},
-		// ** With requeues **
-		"One event, success, no response, requeue": {
+		// ** With retries **
+		"One event, 2 failures, 3rd one succeeds no response, linear retry, 2 retries": {
+			subscriberReceiveCount:   3,
+			subscriberHandlers:       []handlerFunc{failed, failed, accepted},
+			events:                   []ce.Event{createEvent(eventData)},
+			expectedSubscriberBodies: []string{expectedData, expectedData, expectedData},
+			maxRetries:               2,
+			consumeErr:               context.Canceled,
+			backoffPolicy:            eventingduckv1.BackoffPolicyLinear,
+		},
+		"One event, success, response, goes to broker, failed once, retried once, then accepted": {
 			subscriberReceiveCount:   1,
 			subscriberHandlers:       []handlerFunc{accepted},
 			events:                   []ce.Event{createEvent(eventData)},
 			expectedSubscriberBodies: []string{expectedData},
-			requeue:                  true,
-			consumeErr:               context.Canceled,
-		},
-		"One event, 2 failures, 3rd one succeeds no response, requeue": {
-			subscriberReceiveCount:   3,
-			subscriberHandlers:       []handlerFunc{failed, failed, accepted},
-			events:                   []ce.Event{createEvent(eventData)},
-			expectedSubscriberBodies: []string{expectedData, expectedData, expectedData},
-			requeue:                  true,
-			consumeErr:               context.Canceled,
-		},
-		"One event, 2 failures, 3rd one succeeds no response, linear retry, requeue": {
-			subscriberReceiveCount:   3,
-			subscriberHandlers:       []handlerFunc{failed, failed, accepted},
-			events:                   []ce.Event{createEvent(eventData)},
-			expectedSubscriberBodies: []string{expectedData, expectedData, expectedData},
-			requeue:                  true,
-			backoffPolicy:            eventingduckv1.BackoffPolicyLinear,
-			consumeErr:               context.Canceled,
-		},
-		"One event, success, response, goes to broker, failed once, requeued, then accepted": {
-			subscriberReceiveCount:   2,
-			subscriberHandlers:       []handlerFunc{accepted, accepted},
-			events:                   []ce.Event{createEvent(eventData)},
-			expectedSubscriberBodies: []string{expectedData, expectedData},
-			responseEvents:           []ce.Event{createEvent(responseData), createEvent(responseData)},
+			responseEvents:           []ce.Event{createEvent(responseData)},
 			brokerReceiveCount:       2,
 			brokerHandlers:           []handlerFunc{failed, accepted},
 			expectedBrokerBodies:     []string{expectedResponseData, expectedResponseData},
-			requeue:                  true,
+			maxRetries:               1,
+			backoffPolicy:            eventingduckv1.BackoffPolicyLinear,
 			consumeErr:               context.Canceled,
 		},
 	}
@@ -322,7 +306,6 @@ func TestEndToEnd(t *testing.T) {
 			d := &Dispatcher{
 				BrokerIngressURL: broker.URL,
 				SubscriberURL:    subscriber.URL,
-				Requeue:          tc.requeue,
 				MaxRetries:       tc.maxRetries,
 				BackoffDelay:     backoffDelay,
 				BackoffPolicy:    backoffPolicy,
