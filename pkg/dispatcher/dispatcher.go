@@ -39,7 +39,6 @@ import (
 )
 
 const (
-	ackMultiple   = false // send ack/nack for multiple messages
 	ComponentName = "rabbitmq-dispatcher"
 )
 
@@ -134,7 +133,7 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg wabbit.Delivery, ceClient
 	err := json.Unmarshal(msg.Body(), &event)
 	if err != nil {
 		logging.FromContext(ctx).Warn("failed to unmarshal event (NACK-ing and not re-queueing): ", err)
-		err = msg.Nack(ackMultiple, false) // do not requeue
+		err = msg.Nack(false, false)
 		if err != nil {
 			logging.FromContext(ctx).Warn("failed to NACK event: ", err)
 		}
@@ -159,8 +158,7 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg wabbit.Delivery, ceClient
 	response, result := ceClient.Request(ctx, event)
 	if !isSuccess(ctx, result) {
 		logging.FromContext(ctx).Warnf("Failed to deliver to %q", d.SubscriberURL)
-		err = msg.Nack(ackMultiple, false)
-		if err != nil {
+		err := msg.Nack(false, false); if err != nil {
 			logging.FromContext(ctx).Warn("failed to NACK event: ", err)
 		}
 		return
@@ -173,7 +171,7 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg wabbit.Delivery, ceClient
 		result := ceClient.Send(ctx, *response)
 		if !isSuccess(ctx, result) {
 			logging.FromContext(ctx).Warnf("Failed to deliver to %q", d.BrokerIngressURL)
-			err = msg.Nack(ackMultiple, false) // not multiple
+			err = msg.Nack(false, false) // not multiple
 			if err != nil {
 				logging.FromContext(ctx).Warn("failed to NACK event: ", err)
 			}
@@ -181,7 +179,7 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg wabbit.Delivery, ceClient
 		}
 	}
 
-	err = msg.Ack(ackMultiple)
+	err = msg.Ack(false)
 	if err != nil {
 		logging.FromContext(ctx).Warn("failed to ACK event: ", err)
 	}
