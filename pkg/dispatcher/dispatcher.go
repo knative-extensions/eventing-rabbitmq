@@ -158,7 +158,7 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg wabbit.Delivery, ceClient
 	response, result := ceClient.Request(ctx, event)
 	if !isSuccess(ctx, result) {
 		logging.FromContext(ctx).Warnf("Failed to deliver to %q", d.SubscriberURL)
-		err := msg.Nack(false, false); if err != nil {
+		if err := msg.Nack(false, false); err != nil {
 			logging.FromContext(ctx).Warn("failed to NACK event: ", err)
 		}
 		return
