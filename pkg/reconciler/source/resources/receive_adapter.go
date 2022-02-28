@@ -173,7 +173,7 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 	if args.Source.Spec.BackoffDelay != nil {
 		env = append(env, corev1.EnvVar{
 			Name:  "RABBITMQ_BACKOFF_DELAY",
-			Value: string(string(*args.Source.Spec.BackoffDelay)),
+			Value: *args.Source.Spec.BackoffDelay,
 		})
 	}
 
