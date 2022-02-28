@@ -366,6 +366,7 @@ func (r *Reconciler) reconcileCommonIngressResources(ctx context.Context, s *cor
 	SetAddress(&b.Status, &apis.URL{
 		Scheme: "http",
 		Host:   network.GetServiceHostname(ingressEndpoints.GetName(), ingressEndpoints.GetNamespace()),
+		Path:   fmt.Sprintf("/%s/%s", b.Namespace, b.Name),
 	})
 
 	// If there's a Dead Letter Sink, then create a dispatcher for it. Note that this is for
