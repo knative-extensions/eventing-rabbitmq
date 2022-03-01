@@ -1,0 +1,281 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.7.0
+  creationTimestamp: null
+  name: rabbitmqsources.sources.knative.dev
+spec:
+  group: sources.knative.dev
+  names:
+    kind: RabbitmqSource
+    listKind: RabbitmqSourceList
+    plural: rabbitmqsources
+    singular: rabbitmqsource
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: RabbitmqSource is the Schema for the rabbitmqsources API.
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            properties:
+              brokers:
+                description: Brokers are the Rabbitmq servers the consumer will connect
+                  to.
+                type: string
+              channel_config:
+                description: ChannelConfig config for rabbitmq exchange
+                properties:
+                  global_qos:
+                    description: Channel Qos global property
+                    type: boolean
+                  prefetch_count:
+                    description: Channel Prefetch count
+                    type: integer
+                type: object
+              exchange_config:
+                description: ExchangeConfig config for rabbitmq exchange
+                properties:
+                  autoDelete:
+                    description: Exchange can be AutoDeleted or not
+                    type: boolean
+                  durable:
+                    description: Exchange is Durable or not
+                    type: boolean
+                  internal:
+                    description: Declare exchange as internal or not. Exchanges declared
+                      as `internal` do not accept accept publishings.
+                    type: boolean
+                  name:
+                    description: Name of the exchange
+                    type: string
+                  nowait:
+                    description: Exchange NoWait property. When set to true, declare
+                      without waiting for a confirmation from the server.
+                    type: boolean
+                  type:
+                    description: Type of exchange e.g. direct, topic, headers, fanout
+                    type: string
+                type: object
+              password:
+                description: Password for rabbitmq connection
+                properties:
+                  secretKeyRef:
+                    description: The Secret key to select from.
+                    properties:
+                      key:
+                        description: The key of the secret to select from.  Must be
+                          a valid secret key.
+                        type: string
+                      name:
+                        description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                          TODO: Add other useful fields. apiVersion, kind, uid?'
+                        type: string
+                      optional:
+                        description: Specify whether the Secret or its key must be
+                          defined
+                        type: boolean
+                    required:
+                    - key
+                    type: object
+                type: object
+              predeclared:
+                description: Predeclared defines if channels and queues are already
+                  predeclared and shouldn't be recreated. This should be used in case
+                  the user does not have permission to declare new queues and channels
+                  in RabbitMQ cluster
+                type: boolean
+              queue_config:
+                description: QueueConfig config for rabbitmq queues
+                properties:
+                  delete_when_unused:
+                    description: Queue can be AutoDeleted or not
+                    type: boolean
+                  durable:
+                    description: Queue is Durable or not
+                    type: boolean
+                  exclusive:
+                    description: Queue is exclusive or not.
+                    type: boolean
+                  name:
+                    description: Name of the queue to bind to. Queue name may be empty
+                      in which case the server will generate a unique name.
+                    type: string
+                  nowait:
+                    description: Queue NoWait property. When set to true, the queue
+                      will assume to be declared on the server.
+                    type: boolean
+                  routing_key:
+                    description: Routing key of the messages to be received. Multiple
+                      routing keys can be specified separated by commas. e.g. key1,key2
+                    type: string
+                type: object
+              serviceAccountName:
+                description: ServiceAccountName is the name of the ServiceAccount
+                  that will be used to run the Receive Adapter Deployment.
+                type: string
+              sink:
+                description: // Sink is a reference to an object that will resolve
+                  to a domain name to use as the sink. // +optional
+                properties:
+                  ref:
+                    description: Ref points to an Addressable.
+                    properties:
+                      apiVersion:
+                        description: API version of the referent.
+                        type: string
+                      group:
+                        description: 'Group of the API, without the version of the
+                          group. This can be used as an alternative to the APIVersion,
+                          and then resolved using ResolveGroup. Note: This API is
+                          EXPERIMENTAL and might break anytime. For more details:
+                          https://github.com/knative/eventing/issues/5086'
+                        type: string
+                      kind:
+                        description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                        type: string
+                      name:
+                        description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                        type: string
+                      namespace:
+                        description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
+                          This is optional field, it gets defaulted to the object
+                          holding it if left out.'
+                        type: string
+                    required:
+                    - kind
+                    - name
+                    type: object
+                  uri:
+                    description: URI can be an absolute URL(non-empty scheme and non-empty
+                      host) pointing to the target or a relative URI. Relative URIs
+                      will be resolved using the base URI retrieved from Ref.
+                    type: object
+                type: object
+              topic:
+                description: Topic topic to consume messages from
+                type: string
+              user:
+                description: User for rabbitmq connection
+                properties:
+                  secretKeyRef:
+                    description: The Secret key to select from.
+                    properties:
+                      key:
+                        description: The key of the secret to select from.  Must be
+                          a valid secret key.
+                        type: string
+                      name:
+                        description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                          TODO: Add other useful fields. apiVersion, kind, uid?'
+                        type: string
+                      optional:
+                        description: Specify whether the Secret or its key must be
+                          defined
+                        type: boolean
+                    required:
+                    - key
+                    type: object
+                type: object
+              vhost:
+                description: VHost is the name of the VHost that will be used to set
+                  up our sources
+                type: string
+            required:
+            - brokers
+            type: object
+          status:
+            properties:
+              annotations:
+                additionalProperties:
+                  type: string
+                description: Annotations is additional Status fields for the Resource
+                  to save some additional State as well as convey more information
+                  to the user. This is roughly akin to Annotations on any k8s resource,
+                  just the reconciler conveying richer information outwards.
+                type: object
+              ceAttributes:
+                description: CloudEventAttributes are the specific attributes that
+                  the Source uses as part of its CloudEvents.
+                items:
+                  description: CloudEventAttributes specifies the attributes that
+                    a Source uses as part of its CloudEvents.
+                  properties:
+                    source:
+                      description: Source is the CloudEvents source attribute.
+                      type: string
+                    type:
+                      description: Type refers to the CloudEvent type attribute.
+                      type: string
+                  type: object
+                type: array
+              conditions:
+                description: Conditions the latest available observations of a resource's
+                  current state.
+                items:
+                  description: 'Condition defines a readiness condition for a Knative
+                    resource. See: https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties'
+                  properties:
+                    lastTransitionTime:
+                      description: LastTransitionTime is the last time the condition
+                        transitioned from one status to another. We use VolatileTime
+                        in place of metav1.Time to exclude this from creating equality.Semantic
+                        differences (all other things held constant).
+                      type: string
+                    message:
+                      description: A human readable message indicating details about
+                        the transition.
+                      type: string
+                    reason:
+                      description: The reason for the condition's last transition.
+                      type: string
+                    severity:
+                      description: Severity with which to treat failures of this type
+                        of condition. When this is not specified, it defaults to Error.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: Type of condition.
+                      type: string
+                  required:
+                  - status
+                  - type
+                  type: object
+                type: array
+              observedGeneration:
+                description: ObservedGeneration is the 'Generation' of the Service
+                  that was last processed by the controller.
+                format: int64
+                type: integer
+              sinkUri:
+                description: SinkURI is the current active sink URI that has been
+                  configured for the Source.
+                type: object
+            type: object
+        type: object
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

@@ -408,3 +408,7 @@ test-compilation: ## Build test binaries with e2e tags
 .PHONE: reset
 reset:
 	kind delete cluster; rm -f $(CURDIR)/.envrc; rm -rf $(CURDIR)/bin; rm -rf $(CURDIR)/.config
+
+manifests:
+	controller-gen crd paths="./pkg/apis/sources/" output:crd:artifacts:config=config/sources/
+
