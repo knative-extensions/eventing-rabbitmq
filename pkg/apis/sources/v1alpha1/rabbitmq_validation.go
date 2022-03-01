@@ -60,7 +60,7 @@ func (chSpec *RabbitmqChannelConfigSpec) validate(ctx context.Context) *apis.Fie
 	}
 
 	if *chSpec.PrefetchCount < 1 || *chSpec.PrefetchCount > 1000 {
-		return apis.ErrOutOfBoundsValue(*chSpec.PrefetchCount, 1, 1000, "prefetch_count")
+		return apis.ErrOutOfBoundsValue(*chSpec.PrefetchCount, 1, 1000, "prefetchCount")
 	}
 
 	return nil

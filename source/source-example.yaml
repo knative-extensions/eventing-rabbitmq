@@ -14,20 +14,20 @@ spec:
     secretKeyRef:
       name: RABBITMQ_PASSWORD
       key: RABBITMQ_PASSWORD
-  exchange_config:
-    name: RABBITMQ_EXCHANGE_CONFIG_NAME
-    type: RABBITMQ_EXCHANGE_CONFIG_TYPE
-    durable: RABBITMQ_EXCHANGE_CONFIG_DURABLE
-    auto_deleted: RABBITMQ_EXCHANGE_CONFIG_AUTO_DELETED
-    internal: RABBITMQ_EXCHANGE_CONFIG_INTERNAL
-    nowait: RABBITMQ_EXCHANGE_CONFIG_NOWAIT
-  queue_config:
-    name: RABBITMQ_QUEUE_CONFIG_NAME
-    routing_key: RABBITMQ_ROUTING_KEY
-    durable: RABBITMQ_QUEUE_CONFIG_DURABLE
-    delete_when_unused: RABBITMQ_QUEUE_CONFIG_AUTO_DELETED
-    exclusive: RABBITMQ_QUEUE_CONFIG_EXCLUSIVE
-    nowait: RABBITMQ_QUEUE_CONFIG_NOWAIT
+  exchangeConfig:
+    name: RABBITMQ_exchangeConfig_NAME
+    type: RABBITMQ_exchangeConfig_TYPE
+    durable: RABBITMQ_exchangeConfig_DURABLE
+    autoDelete: RABBITMQ_exchangeConfig_AUTO_DELETED
+    internal: RABBITMQ_exchangeConfig_INTERNAL
+    nowait: RABBITMQ_exchangeConfig_NOWAIT
+  queueConfig:
+    name: RABBITMQ_queueConfig_NAME
+    routingKey: RABBITMQ_ROUTING_KEY
+    durable: RABBITMQ_queueConfig_DURABLE
+    autoDelete: RABBITMQ_queueConfig_AUTO_DELETED
+    exclusive: RABBITMQ_queueConfig_EXCLUSIVE
+    nowait: RABBITMQ_queueConfig_NOWAIT
 
   sink:
     apiVersion: serving.knative.dev/v1

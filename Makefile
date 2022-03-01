@@ -257,7 +257,7 @@ go-dep-update: ## Update any Go dependency
 	$(CURDIR)/hack/update-codegen.sh
 
 .PHONY: test-unit
-test-unit: ## Run unit tests
+test-unit: manifests## Run unit tests
 	go test -race $(GOTEST) ./...
 
 .PHONY: test-unit-uncached
@@ -410,5 +410,4 @@ reset:
 	kind delete cluster; rm -f $(CURDIR)/.envrc; rm -rf $(CURDIR)/bin; rm -rf $(CURDIR)/.config
 
 manifests:
-	controller-gen crd paths="./pkg/apis/sources/" output:crd:artifacts:config=config/sources/
-
+	controller-gen crd paths="./pkg/apis/sources/v1alpha1" output:crd:artifacts:config=config/source/

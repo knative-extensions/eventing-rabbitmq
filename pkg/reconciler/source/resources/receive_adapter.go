@@ -86,7 +86,7 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 		},
 		{
 			Name:  "RABBITMQ_EXCHANGE_CONFIG_AUTO_DELETED",
-			Value: strconv.FormatBool(args.Source.Spec.ExchangeConfig.AutoDeleted),
+			Value: strconv.FormatBool(args.Source.Spec.ExchangeConfig.AutoDelete),
 		},
 		{
 			Name:  "RABBITMQ_EXCHANGE_CONFIG_INTERNAL",
@@ -106,7 +106,7 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 		},
 		{
 			Name:  "RABBITMQ_QUEUE_CONFIG_AUTO_DELETED",
-			Value: strconv.FormatBool(args.Source.Spec.QueueConfig.DeleteWhenUnused),
+			Value: strconv.FormatBool(args.Source.Spec.QueueConfig.AutoDelete),
 		},
 		{
 			Name:  "RABBITMQ_QUEUE_CONFIG_EXCLUSIVE",

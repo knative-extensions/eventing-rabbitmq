@@ -33,6 +33,10 @@ import (
 // +genreconciler
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
+// +kubebuilder:object:root=true
+// +kubebuilder:resource:categories=all
+// +kubebuilder:subresource:status
+
 // RabbitmqSource is the Schema for the rabbitmqsources API.
 // +k8s:openapi-gen=true
 type RabbitmqSource struct {
@@ -53,10 +57,12 @@ var _ duckv1.KRShaped = (*RabbitmqSource)(nil)
 type RabbitmqChannelConfigSpec struct {
 	// Channel Prefetch count
 	// +optional
-	PrefetchCount *int `json:"prefetch_count,omitempty"`
+	// +kubebuilder:validation:Minimum:=1
+	// +kubebuilder:validation:Maximum:=1000
+	PrefetchCount *int `json:"prefetchCount,omitempty"`
 	// Channel Qos global property
 	// +optional
-	GlobalQos bool `json:"global_qos,omitempty"`
+	GlobalQos bool `json:"globalQos,omitempty"`
 }
 
 type RabbitmqSourceExchangeConfigSpec struct {
@@ -69,9 +75,9 @@ type RabbitmqSourceExchangeConfigSpec struct {
 	// Exchange is Durable or not
 	// +optional
 	Durable bool `json:"durable,omitempty"`
-	// Exchange can be AutoDeleted or not
+	// Exchange can be AutoDelete or not
 	// +optional
-	AutoDeleted bool `json:"auto_deleted,omitempty"`
+	AutoDelete bool `json:"autoDelete,omitempty"`
 	// Declare exchange as internal or not.
 	// Exchanges declared as `internal` do not accept accept publishings.
 	// +optional
@@ -90,13 +96,12 @@ type RabbitmqSourceQueueConfigSpec struct {
 	// Routing key of the messages to be received.
 	// Multiple routing keys can be specified separated by commas. e.g. key1,key2
 	// +optional
-	RoutingKey string `json:"routing_key,omitempty"`
+	RoutingKey string `json:"routingKey,omitempty"`
 	// Queue is Durable or not
 	// +optional
 	Durable bool `json:"durable,omitempty"`
-	// Queue can be AutoDeleted or not
 	// +optional
-	DeleteWhenUnused bool `json:"delete_when_unused,omitempty"`
+	AutoDelete bool `json:"autoDelete,omitempty"`
 	// Queue is exclusive or not.
 	// +optional
 	Exclusive bool `json:"exclusive,omitempty"`
@@ -126,13 +131,13 @@ type RabbitmqSourceSpec struct {
 	Predeclared bool `json:"predeclared,omitempty"`
 	// ChannelConfig config for rabbitmq exchange
 	// +optional
-	ChannelConfig RabbitmqChannelConfigSpec `json:"channel_config,omitempty"`
+	ChannelConfig RabbitmqChannelConfigSpec `json:"channelConfig,omitempty"`
 	// ExchangeConfig config for rabbitmq exchange
 	// +optional
-	ExchangeConfig RabbitmqSourceExchangeConfigSpec `json:"exchange_config,omitempty"`
+	ExchangeConfig RabbitmqSourceExchangeConfigSpec `json:"exchangeConfig,omitempty"`
 	// QueueConfig config for rabbitmq queues
 	// +optional
-	QueueConfig RabbitmqSourceQueueConfigSpec `json:"queue_config,omitempty"`
+	QueueConfig RabbitmqSourceQueueConfigSpec `json:"queueConfig,omitempty"`
 	// Sink is a reference to an object that will resolve to a domain name to use as the sink.
 	// +optional
 	Sink *duckv1.Destination `json:"sink,omitempty"`
@@ -170,6 +175,8 @@ func (s *RabbitmqSource) GetGroupVersionKind() schema.GroupVersionKind {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// +kubebuilder:object:root=true
 
 // RabbitmqSourceList contains a list of RabbitmqSources.
 type RabbitmqSourceList struct {

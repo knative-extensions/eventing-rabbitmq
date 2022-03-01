@@ -30,19 +30,19 @@ var (
 		Brokers: "amqp://guest:guest@localhost:5672/",
 		Topic:   "logs_topic",
 		ExchangeConfig: RabbitmqSourceExchangeConfigSpec{
-			TypeOf:      "topic",
-			Durable:     true,
-			AutoDeleted: false,
-			Internal:    false,
-			NoWait:      false,
+			TypeOf:     "topic",
+			Durable:    true,
+			AutoDelete: false,
+			Internal:   false,
+			NoWait:     false,
 		},
 		QueueConfig: RabbitmqSourceQueueConfigSpec{
-			Name:             "",
-			RoutingKey:       "*.critical",
-			Durable:          false,
-			DeleteWhenUnused: false,
-			Exclusive:        true,
-			NoWait:           false,
+			Name:       "",
+			RoutingKey: "*.critical",
+			Durable:    false,
+			AutoDelete: false,
+			Exclusive:  true,
+			NoWait:     false,
 		},
 		ChannelConfig: RabbitmqChannelConfigSpec{
 			PrefetchCount: &defaultPrefetchCount,
@@ -211,12 +211,12 @@ func TestRabbitmqSourceCheckChannelPrefetchCountValue(t *testing.T) {
 			prefetchCount: 1,
 			allowed:       true,
 		},
-		"negative prefetch_count in spec": {
+		"negative prefetchCount in spec": {
 			spec:          &fullSpec,
 			prefetchCount: -1,
 			allowed:       false,
 		},
-		"out of bounds prefetch_count in spec": {
+		"out of bounds prefetchCount in spec": {
 			spec:          &fullSpec,
 			prefetchCount: 1001,
 			allowed:       false,
@@ -227,28 +227,28 @@ func TestRabbitmqSourceCheckChannelPrefetchCountValue(t *testing.T) {
 			isInUpdate:    true,
 			allowed:       false,
 		},
-		"zero prefetch_count in spec on update": {
+		"zero prefetchCount in spec on update": {
 			spec:          &fullSpec,
 			prefetchCount: 0,
 			allowed:       false,
 		},
-		"out of bounds prefetch_count in spec on update": {
+		"out of bounds prefetchCount in spec on update": {
 			spec:          &fullSpec,
 			prefetchCount: 1001,
 			allowed:       false,
 		},
-		"valid channel prefetch_count update on a non exclusive source queue": {
+		"valid channel prefetchCount update on a non exclusive source queue": {
 			spec: &RabbitmqSourceSpec{
 				Brokers:        fullSpec.Brokers,
 				Topic:          fullSpec.Topic,
 				ExchangeConfig: fullSpec.ExchangeConfig,
 				QueueConfig: RabbitmqSourceQueueConfigSpec{
-					Name:             "",
-					RoutingKey:       "*.critical",
-					Durable:          false,
-					DeleteWhenUnused: false,
-					Exclusive:        false,
-					NoWait:           false,
+					Name:       "",
+					RoutingKey: "*.critical",
+					Durable:    false,
+					AutoDelete: false,
+					Exclusive:  false,
+					NoWait:     false,
 				},
 				ChannelConfig:      fullSpec.ChannelConfig,
 				Sink:               fullSpec.Sink,
