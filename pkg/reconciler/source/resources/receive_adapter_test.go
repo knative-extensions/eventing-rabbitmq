@@ -24,10 +24,15 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1alpha12 "knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 )
 
 func TestMakeReceiveAdapter(t *testing.T) {
+	var retry int32 = 5
 	prefetchCount := 10
+	backoffDelay := "50ms"
+	backoffPolicy := eventingduckv1.BackoffPolicyExponential
+
 	src := &v1alpha12.RabbitmqSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "source-name",
@@ -73,6 +78,9 @@ func TestMakeReceiveAdapter(t *testing.T) {
 			ChannelConfig: v1alpha12.RabbitmqChannelConfigSpec{
 				PrefetchCount: &prefetchCount,
 			},
+			Retry:         &retry,
+			BackoffDelay:  &backoffDelay,
+			BackoffPolicy: &backoffPolicy,
 		},
 	}
 
@@ -246,6 +254,17 @@ func TestMakeReceiveAdapter(t *testing.T) {
 								},
 								{
 									Name: "RABBITMQ_VHOST",
+								},
+								{
+									Name:  "RABBITMQ_RETRY",
+									Value: "5",
+								},
+								{
+									Name:  "RABBITMQ_BACKOFF_POLICY",
+									Value: "exponential"},
+								{
+									Name:  "RABBITMQ_BACKOFF_DELAY",
+									Value: "50ms",
 								},
 							},
 						},

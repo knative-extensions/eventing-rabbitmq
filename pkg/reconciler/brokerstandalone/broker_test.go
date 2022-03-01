@@ -97,7 +97,7 @@ const (
       "x-knative-trigger": "test-trigger",
       "type": "dev.knative.sources.ping"
     },
-    "properties_key": "test-namespace-test-broker",
+    "properties_key": "test-namespace-test-broker"
   }]`
 )
 
