@@ -27,9 +27,9 @@ jobs:
         # See: https://github.com/kubernetes-sigs/kind/releases/tag/v0.11.1
         include:
         - k8s-version: v1.21.2
-          kind-image-sha: sha256:9d07ff05e4afefbba983fac311807b3c17a5f36e7061f6cb7e2ba756255b2be4
+          kind-image-sha: sha256:69860bda5563ac81e3c0057d654b5253219618a22ec3a346306239bba8cfa1a6
         - k8s-version: v1.22.1
-          kind-image-sha: sha256:100b3558428386d1372591f8d62add85b900538d94db8e455b66ebaf05a3ca3a
+          kind-image-sha: sha256:b8bda84bb3a190e6e028b1760d277454a72267a5454b57db34437c34a588d047
     env:
       GOPATH: ${{ github.workspace }}
 
