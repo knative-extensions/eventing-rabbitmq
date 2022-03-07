@@ -20,6 +20,9 @@ limitations under the License.
 package rekt
 
 import (
+	"log"
+	"net/http"
+	_ "net/http/pprof"
 	"testing"
 
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
@@ -39,6 +42,9 @@ import (
 
 // TestBrokerConformance
 func TestBrokerControlPlaneConformance(t *testing.T) {
+	go func() {
+		log.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
 	ctx, env := global.Environment(
 		knative.WithKnativeNamespace(system.Namespace()),
 		knative.WithLoggingConfig,
