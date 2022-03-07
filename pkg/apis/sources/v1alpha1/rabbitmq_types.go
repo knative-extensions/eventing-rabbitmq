@@ -29,13 +29,12 @@ import (
 	"knative.dev/pkg/webhook/resourcesemantics"
 )
 
+// +kubebuilder:object:root=true
+// +kubebuilder:resource:categories=all;knative;eventing;sources;importers
+// +kubebuilder:subresource:status
 // +genclient
 // +genreconciler
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// +kubebuilder:object:root=true
-// +kubebuilder:resource:categories=all
-// +kubebuilder:subresource:status
 
 // RabbitmqSource is the Schema for the rabbitmqsources API.
 // +k8s:openapi-gen=true
@@ -174,9 +173,8 @@ func (s *RabbitmqSource) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("RabbitmqSource")
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
 // +kubebuilder:object:root=true
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // RabbitmqSourceList contains a list of RabbitmqSources.
 type RabbitmqSourceList struct {

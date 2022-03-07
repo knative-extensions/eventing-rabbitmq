@@ -12,6 +12,10 @@ spec:
   names:
     categories:
     - all
+    - knative
+    - eventing
+    - sources
+    - importers
     kind: RabbitmqSource
     listKind: RabbitmqSourceList
     plural: rabbitmqsources
