@@ -77,7 +77,7 @@ releases-gcloud:
 	$(OPEN) https://cloud.google.com/sdk/docs/quickstart
 
 KO_RELEASES := https://github.com/google/ko/releases
-KO_VERSION := 0.9.3
+KO_VERSION := 0.10.0
 KO_BIN_DIR := $(LOCAL_BIN)/ko_$(KO_VERSION)_$(PLATFORM)_x86_64
 KO_URL := $(KO_RELEASES)/download/v$(KO_VERSION)/$(notdir $(KO_BIN_DIR)).tar.gz
 KO := $(KO_BIN_DIR)/ko
@@ -131,7 +131,7 @@ releases-envsubst:
 
 KUBECTL_RELEASES := https://github.com/kubernetes/kubernetes/tags
 # Keep this in sync with KIND_K8S_VERSION
-KUBECTL_VERSION := 1.21.9
+KUBECTL_VERSION := 1.23.4
 KUBECTL_BIN := kubectl-$(KUBECTL_VERSION)-$(platform)-amd64
 KUBECTL_URL := https://storage.googleapis.com/kubernetes-release/release/v$(KUBECTL_VERSION)/bin/$(platform)/amd64/kubectl
 KUBECTL := $(LOCAL_BIN)/$(KUBECTL_BIN)
@@ -191,7 +191,7 @@ releases-gh:
 	$(OPEN) $(GH_RELEASES)
 
 KN_RELEASES := https://github.com/knative/client/releases
-KN_VERSION := 1.1.0
+KN_VERSION := 1.2.0
 KN_BIN := kn-$(KN_VERSION)-$(platform)-amd64
 KN_URL := $(KN_RELEASES)/download/knative-v$(KN_VERSION)/kn-$(platform)-amd64
 KN := $(LOCAL_BIN)/$(KN_BIN)
@@ -304,7 +304,7 @@ $(KUBECONFIG): | $(KUBECONFIG_DIR)
 kubeconfig: $(KUBECONFIG)
 
 # https://github.com/rabbitmq/cluster-operator/releases
-RABBITMQ_CLUSTER_OPERATOR_VERSION ?= 1.11.1
+RABBITMQ_CLUSTER_OPERATOR_VERSION ?= 1.12.0
 .PHONY: install-rabbitmq-cluster-operator
 install-rabbitmq-cluster-operator: | $(KUBECONFIG) $(KUBECTL) ## Install RabbitMQ Cluster Operator
 	$(KUBECTL) $(K_CMD) --filename \
@@ -313,7 +313,7 @@ install-rabbitmq-cluster-operator: | $(KUBECONFIG) $(KUBECTL) ## Install RabbitM
 # https://github.com/jetstack/cert-manager/releases
 # ⚠️  You may want to keep this in sync with RABBITMQ_TOPOLOGY_OPERATOR_VERSION
 # In other words, don't upgrade cert-manager to a version that was released AFTER RABBITMQ_TOPOLOGY_OPERATOR_VERSION
-CERT_MANAGER_VERSION ?= 1.7.0
+CERT_MANAGER_VERSION ?= 1.7.1
 .PHONY: install-cert-manager
 install-cert-manager: | $(KUBECONFIG) $(KUBECTL) ## Install Cert Manager - dependency of RabbitMQ Topology Operator
 	$(KUBECTL) $(K_CMD) --filename \
@@ -321,13 +321,13 @@ install-cert-manager: | $(KUBECONFIG) $(KUBECTL) ## Install Cert Manager - depen
 	$(KUBECTL) wait --for=condition=available deploy/cert-manager-webhook --timeout=60s --namespace $(CERT_MANAGER_NAMESPACE)
 
 # https://github.com/rabbitmq/messaging-topology-operator/releases
-RABBITMQ_TOPOLOGY_OPERATOR_VERSION ?= 1.3.0
+RABBITMQ_TOPOLOGY_OPERATOR_VERSION ?= 1.4.0
 .PHONY: install-rabbitmq-topology-operator
 install-rabbitmq-topology-operator: | install-cert-manager $(KUBECTL) ## Install RabbitMQ Topology Operator
 	$(KUBECTL) $(K_CMD) --filename \
 		https://github.com/rabbitmq/messaging-topology-operator/releases/download/v$(RABBITMQ_TOPOLOGY_OPERATOR_VERSION)/messaging-topology-operator-with-certmanager.yaml
 
-KNATIVE_VERSION ?= 1.1.0
+KNATIVE_VERSION ?= 1.2.0
 
 # https://github.com/knative/serving/releases
 .PHONY: install-knative-serving
@@ -388,8 +388,8 @@ test-e2e: install test-e2e-publish test-e2e-broker test-e2e-source ## Run all en
 _test-conformance:
 	BROKER_TEMPLATES=$(BROKER_TEMPLATES) \
 	BROKER_CLASS=RabbitMQBroker \
-	go test -v -tags=e2e \
-		-count=1 -parallel=8 -timeout=40m \
+	go test -v -tags=e2e -parallel=6 \
+		-count=1 -timeout=90m \
 		-run TestBroker.*Conformance.* $(CURDIR)/test/conformance/...
 
 .PHONY: test-conformance
