@@ -388,7 +388,7 @@ test-e2e: install test-e2e-publish test-e2e-broker test-e2e-source ## Run all en
 _test-conformance:
 	BROKER_TEMPLATES=$(BROKER_TEMPLATES) \
 	BROKER_CLASS=RabbitMQBroker \
-	go test -v -tags=e2e -parallel=1 \
+	go test -v -tags=e2e -parallel=8 \
 		-count=1 -timeout=90m \
 		-run TestBroker.*Conformance.* $(CURDIR)/test/conformance/...
 
