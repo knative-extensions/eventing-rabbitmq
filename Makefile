@@ -389,7 +389,7 @@ _test-conformance:
 	BROKER_TEMPLATES=$(BROKER_TEMPLATES) \
 	BROKER_CLASS=RabbitMQBroker \
 	go test -v -tags=e2e \
-		-count=1 -parallel=8 -timeout=40m \
+		-count=1 -parallel=8 -timeout=60m \
 		-run TestBroker.*Conformance.* $(CURDIR)/test/conformance/...
 
 .PHONY: test-conformance
