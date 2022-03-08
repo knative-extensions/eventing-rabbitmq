@@ -16,6 +16,7 @@ jobs:
   run:
     runs-on: ubuntu-latest
     strategy:
+      max-parallel: 1
       fail-fast: false # Keep running if one leg fails.
       matrix:
         k8s-version:
