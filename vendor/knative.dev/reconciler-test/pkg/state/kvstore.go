@@ -65,7 +65,3 @@ func (cs *KVStore) Set(_ context.Context, key string, value interface{}) error {
 	cs.store[key] = string(bytes)
 	return nil
 }
-
-func (cs *KVStore) MarshalJSON() ([]byte, error) {
-	return json.Marshal(cs.store)
-}

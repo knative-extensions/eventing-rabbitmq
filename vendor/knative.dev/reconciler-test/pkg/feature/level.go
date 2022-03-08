@@ -17,7 +17,6 @@ limitations under the License.
 package feature
 
 import (
-	"fmt"
 	"strings"
 )
 
@@ -70,10 +69,6 @@ func (l Levels) String() string {
 	}
 
 	return b.String()
-}
-
-func (l Levels) MarshalJSON() ([]byte, error) {
-	return []byte(fmt.Sprintf("%q", l.String())), nil
 }
 
 var LevelMapping = map[Levels]string{

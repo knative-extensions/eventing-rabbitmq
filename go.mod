@@ -37,6 +37,8 @@ require (
 	sigs.k8s.io/controller-runtime v0.9.6
 )
 
+replace knative.dev/reconciler-test v0.0.0-20220216192840-2c3291f210ce => knative.dev/reconciler-test v0.0.0-20211018075026-816dbd1c57f7
+
 require (
 	cloud.google.com/go v0.98.0 // indirect
 	contrib.go.opencensus.io/exporter/ocagent v0.7.1-0.20200907061046-05415f1de66d // indirect

@@ -17,8 +17,6 @@ kubeadmConfigPatches:
 nodes:
 - role: control-plane
   image: kindest/node:${KIND_K8S_VERSION}@${KIND_K8S_DIGEST}
-- role: control-plane
-  image: kindest/node:${KIND_K8S_VERSION}@${KIND_K8S_DIGEST}
 - role: worker
   image: kindest/node:${KIND_K8S_VERSION}@${KIND_K8S_DIGEST}
 - role: worker
