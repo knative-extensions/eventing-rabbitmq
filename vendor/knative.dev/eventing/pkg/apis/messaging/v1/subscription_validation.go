@@ -99,7 +99,7 @@ func (s *Subscription) CheckImmutableFields(ctx context.Context, original *Subsc
 	}
 
 	// Only Subscriber and Reply are mutable.
-	ignoreArguments := cmpopts.IgnoreFields(SubscriptionSpec{}, "Subscriber", "Reply", "Delivery")
+	ignoreArguments := cmpopts.IgnoreFields(SubscriptionSpec{}, "Subscriber", "Reply")
 	if diff, err := kmp.ShortDiff(original.Spec, s.Spec, ignoreArguments); err != nil {
 		return &apis.FieldError{
 			Message: "Failed to diff Subscription",

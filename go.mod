@@ -30,14 +30,12 @@ require (
 	k8s.io/client-go v0.22.5
 	k8s.io/code-generator v0.22.5
 	k8s.io/kube-openapi v0.0.0-20211109043538-20434351676c
-	knative.dev/eventing v0.29.1-0.20220226194900-cbf1b0863ed6
+	knative.dev/eventing v0.29.0
 	knative.dev/hack v0.0.0-20220218190734-a8ef7b67feec
-	knative.dev/pkg v0.0.0-20220217155112-d48172451966
+	knative.dev/pkg v0.0.0-20220217145012-5e98acda85af
 	knative.dev/reconciler-test v0.0.0-20220216192840-2c3291f210ce
 	sigs.k8s.io/controller-runtime v0.9.6
 )
-
-replace knative.dev/reconciler-test v0.0.0-20220216192840-2c3291f210ce => knative.dev/reconciler-test v0.0.0-20211018075026-816dbd1c57f7
 
 require (
 	cloud.google.com/go v0.98.0 // indirect
