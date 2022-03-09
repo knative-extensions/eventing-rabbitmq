@@ -20,6 +20,7 @@ import (
 	"context"
 
 	"knative.dev/eventing-rabbitmq/test/e2e/config/dlq"
+	brokerresources "knative.dev/eventing/test/rekt/resources/broker"
 	"knative.dev/reconciler-test/pkg/eventshub"
 	"knative.dev/reconciler-test/pkg/feature"
 
@@ -38,8 +39,14 @@ import (
 func BrokerDLQTest() *feature.Feature {
 	f := new(feature.Feature)
 
-	f.Requirement("RabbitMQ broker goes ready", AllGoReady)
 	f.Setup("dlq works", dlq.Install())
+	f.Setup("RabbitMQ broker goes ready", AllGoReady)
+	prober := eventshub.NewProber()
+	prober.SetTargetResource(brokerresources.GVR(), "testbroker")
+	prober.SenderFullEvents(5)
+	f.Setup("install source", prober.SenderInstall("source"))
+	f.Requirement("sender is finished", prober.SenderDone("source"))
+
 	f.Alpha("RabbitMQ source").
 		Must("the recorder received all sent events within the time",
 			func(ctx context.Context, t feature.T) {
