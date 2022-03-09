@@ -97,7 +97,6 @@ var (
 	brokerAddress      = &apis.URL{
 		Scheme: "http",
 		Host:   network.GetServiceHostname(ingressServiceName, testNS),
-		Path:   fmt.Sprintf("/%s/%s", testNS, brokerName),
 	}
 	deadLetterSinkAddress = &apis.URL{
 		Scheme: "http",
