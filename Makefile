@@ -294,7 +294,7 @@ kind-cluster: | $(KIND) $(ENVSUBST)
 	( $(KIND) get clusters | grep $(KIND_CLUSTER_NAME) ) \
 	|| ( cat $(CURDIR)/test/e2e/kind.yaml \
 	     | $(ENVSUBST_SAFE) \
-	     | $(KIND) -v1  create cluster --name $(KIND_CLUSTER_NAME) --config  - )
+	     | $(KIND) create cluster --name $(KIND_CLUSTER_NAME) --config  - )
 
 $(KUBECONFIG): | $(KUBECONFIG_DIR)
 	$(MAKE) --no-print-directory kind-cluster
@@ -389,7 +389,7 @@ _test-conformance:
 	BROKER_TEMPLATES=$(BROKER_TEMPLATES) \
 	BROKER_CLASS=RabbitMQBroker \
 	go test -v -tags=e2e \
-		-count=1 -parallel=8 -timeout=2h \
+		-count=1 -parallel=12 -timeout=2h \
 		-run TestBroker.*Conformance.* $(CURDIR)/test/conformance/...
 
 .PHONY: test-conformance
