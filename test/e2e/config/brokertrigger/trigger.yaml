@@ -5,6 +5,8 @@ kind: Trigger
 metadata:
   name: {{ printf "%s-%d" $kref.Name $index }}
   namespace: {{ $.namespace }}
+  annotations:
+    rabbitmq.eventing.knative.dev/prefetchCount: '{{ $.prefetchCount }}'
 spec:
   broker: testbroker
   subscriber:
