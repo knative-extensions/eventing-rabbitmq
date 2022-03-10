@@ -30,7 +30,7 @@ import (
 )
 
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:categories=all;knative;eventing;sources;importers
+// +kubebuilder:resource:shortName={"rmqsource"},categories=all;knative;eventing;sources;importers
 // +kubebuilder:subresource:status
 // +genclient
 // +genreconciler
