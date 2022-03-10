@@ -393,7 +393,7 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 	})
 
 	if err != nil {
-		a.logger.Error("Error while sending the message", zap.Error(err), zap.Any("%s", req))
+		a.logger.Error("Error while sending the message", zap.Error(err))
 		return err
 	}
 
