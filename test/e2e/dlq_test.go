@@ -41,6 +41,7 @@ func BrokerDLQTest() *feature.Feature {
 
 	f.Setup("dlq works", dlq.Install())
 	f.Setup("RabbitMQ broker goes ready", AllGoReady)
+
 	prober := eventshub.NewProber()
 	prober.SetTargetResource(brokerresources.GVR(), "testbroker")
 	prober.SenderFullEvents(5)
