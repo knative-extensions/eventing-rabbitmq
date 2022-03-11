@@ -32,7 +32,7 @@ require (
 	k8s.io/kube-openapi v0.0.0-20211109043538-20434351676c
 	knative.dev/eventing v0.30.0
 	knative.dev/hack v0.0.0-20220224013837-e1785985d364
-	knative.dev/pkg v0.0.0-20220301181942-2fdd5f232e77
+	knative.dev/pkg v0.0.0-20220310195447-38af013b30ff
 	knative.dev/reconciler-test v0.0.0-20220303141206-84821d26ed1f
 	sigs.k8s.io/controller-runtime v0.9.6
 )
