@@ -115,20 +115,20 @@ spec:
     secretKeyRef:
       name: rabbitmq-default-user
       key: password
-  channel_config:
-    global_qos: false
-  exchange_config:
+  channelConfig:
+    globalQos: false
+  exchangeConfig:
     name: "eventing-rabbitmq-source"
     type: "fanout"
     durable: false
-    auto_deleted: false
+    autoDelete: false
     internal: false
     nowait: false
-  queue_config:
+  queueConfig:
     name: "eventing-rabbitmq-source"
-    routing_key: ""
+    routingKey: ""
     durable: false
-    delete_when_unused: true
+    autoDelete: true
     exclusive: true
     nowait: false
   sink:

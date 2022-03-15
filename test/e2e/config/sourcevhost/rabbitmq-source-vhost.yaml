@@ -29,17 +29,17 @@ spec:
     secretKeyRef:
       name: "secret-basic-auth"
       key: "password"
-  exchange_config:
+  exchangeConfig:
     type: "fanout"
     durable: true
-    auto_deleted: false
+    autoDelete: false
     internal: false
     nowait: false
-  queue_config:
+  queueConfig:
     name: ""
-    routing_key: ""
+    routingKey: ""
     durable: false
-    delete_when_unused: false
+    autoDelete: false
     exclusive: false
     nowait: false
   sink:

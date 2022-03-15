@@ -93,12 +93,12 @@ spec:
     secretKeyRef:
       name: rabbitmq-default-user
       key: password
-  channel_config:
-    global_qos: false
-  exchange_config:
+  channelConfig:
+    globalQos: false
+  exchangeConfig:
     name: "eventing-rabbitmq-source"
     type: "fanout"
-  queue_config:
+  queueConfig:
     name: "eventing-rabbitmq-source"
   sink:
     ref:
@@ -166,21 +166,21 @@ Source parameters
 | `user.secretKeyRef` | Username for Broker authentication; field `key` in a Kubernetes Secret named `name` |
 | `password.secretKeyRef` | Password for Broker authentication; field `key` in a Kubernetes Secret named `name` |
 | `topic` | The topic for the exchange |
-| `exchange_config` | Settings for the exchange |
-| `exchange_config.type` | [Exchange type](https://www.rabbitmq.com/tutorials/amqp-concepts.html#exchanges). Can be `fanout`, `direct`, `topic`, `match` or `headers` |
-| `exchange_config.durable` * | Boolean |
-| `exchange_config.auto_deleted` * | Boolean |
-| `exchange_config.internal` * | Boolean |
-| `exchange_config.nowait` * | Boolean |
-| `queue_config` * | Settings for the queue |
-| `queue_config.name` * | Name of the queue (may be empty) |
-| `queue_config.routing_key` * | Routing key for the queue |
-| `queue_config.durable` * | Boolean |
-| `queue_config.delete_when_unused` * | Boolean |
-| `queue_config.exclusive` * | Boolean |
-| `queue_config.nowait` * | Boolean |
-| `channel_config.prefetch_count` * | Int that limits the [Consumer Prefetch Value](https://www.rabbitmq.com/consumer-prefetch.html). Default value is `1`. Value must be between `1` and `1000`. With a value of `1` the RabbitMQ Source process events in FIFO order, values above `1` break message ordering guarantees and can be seen as more performance oriented. |
-| `channel_config.global_qos` * | Boolean defining how the [Consumer Sharing Limit](https://www.rabbitmq.com/consumer-prefetch.html#sharing-the-limit) is handled. |
+| `exchangeConfig` | Settings for the exchange |
+| `exchangeConfig.type` | [Exchange type](https://www.rabbitmq.com/tutorials/amqp-concepts.html#exchanges). Can be `fanout`, `direct`, `topic`, `match` or `headers` |
+| `exchangeConfig.durable` * | Boolean |
+| `exchangeConfig.autoDelete` * | Boolean |
+| `exchangeConfig.internal` * | Boolean |
+| `exchangeConfig.nowait` * | Boolean |
+| `queueConfig` * | Settings for the queue |
+| `queueConfig.name` * | Name of the queue (may be empty) |
+| `queueConfig.routingKey` * | Routing key for the queue |
+| `queueConfig.durable` * | Boolean |
+| `queueConfig.autoDelete` * | Boolean |
+| `queueConfig.exclusive` * | Boolean |
+| `queueConfig.nowait` * | Boolean |
+| `channelConfig.prefetchCount` * | Int that limits the [Consumer Prefetch Value](https://www.rabbitmq.com/consumer-prefetch.html). Default value is `1`. Value must be between `1` and `1000`. With a value of `1` the RabbitMQ Source process events in FIFO order, values above `1` break message ordering guarantees and can be seen as more performance oriented. |
+| `channelConfig.globalQos` * | Boolean defining how the [Consumer Sharing Limit](https://www.rabbitmq.com/consumer-prefetch.html#sharing-the-limit) is handled. |
 | `sink` | A reference to an [Addressable](https://knative.dev/docs/eventing/#event-consumers) Kubernetes object |
 
 `*` These attributes are optional.
@@ -213,10 +213,10 @@ spec:
     secretKeyRef:
       name: "rabbitmq-secret"
       key: "password"
-  exchange_config:
+  exchangeConfig:
     type: "fanout"
     durable: true
-    auto_deleted: false
+    autoDelete: false
   sink:
     ref:
       apiVersion: serving.knative.dev/v1

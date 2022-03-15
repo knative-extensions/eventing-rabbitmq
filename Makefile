@@ -257,7 +257,7 @@ go-dep-update: ## Update any Go dependency
 	$(CURDIR)/hack/update-codegen.sh
 
 .PHONY: test-unit
-test-unit: ## Run unit tests
+test-unit: manifests## Run unit tests
 	go test -race $(GOTEST) ./...
 
 .PHONY: test-unit-uncached
@@ -408,3 +408,7 @@ test-compilation: ## Build test binaries with e2e tags
 .PHONE: reset
 reset:
 	kind delete cluster; rm -f $(CURDIR)/.envrc; rm -rf $(CURDIR)/bin; rm -rf $(CURDIR)/.config
+
+manifests:
+	controller-gen crd paths="./pkg/apis/sources/v1alpha1" output:crd:artifacts:config=config/source/
+	mv config/source/sources.knative.dev_rabbitmqsources.yaml config/source/300-rabbitmqsource.yaml

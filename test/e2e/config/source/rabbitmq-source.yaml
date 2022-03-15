@@ -28,21 +28,21 @@ spec:
     secretKeyRef:
       name: "rabbitmqc-default-user"
       key: "password"
-  exchange_config:
+  exchangeConfig:
     type: "fanout"
     durable: true
-    auto_deleted: false
+    autoDelete: false
     internal: false
     nowait: false
-  queue_config:
+  queueConfig:
     name: ""
-    routing_key: ""
+    routingKey: ""
     durable: false
-    delete_when_unused: false
+    autoDelete: false
     exclusive: false
     nowait: false
-  channel_config:
-    prefetch_count: 10
+  channelConfig:
+    prefetchCount: 10
   sink:
     ref:
       apiVersion: v1
