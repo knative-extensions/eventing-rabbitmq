@@ -49,42 +49,32 @@ type envConfig struct {
 	BrokerURL    string `envconfig:"BROKER_URL" required:"true"`
 	ExchangeName string `envconfig:"EXCHANGE_NAME" required:"true"`
 
-	channel *amqp.Channel
+	connection *amqp.Connection
+	channel    *amqp.Channel
 }
 
 func main() {
 	ctx := signals.NewContext()
-
 	var env envConfig
 	if err := envconfig.Process("", &env); err != nil {
 		logging.FromContext(ctx).Fatal("Failed to process env var: ", err)
 	}
 
 	env.SetComponent(component)
+	var err error
 	logger := env.GetLogger()
 	ctx = logging.WithLogger(ctx, logger)
-	if err := env.SetupTracing(); err != nil {
+
+	if err = env.SetupTracing(); err != nil {
 		logger.Errorw("Failed setting up trace publishing", zap.Error(err))
 	}
-	if err := env.SetupMetrics(ctx); err != nil {
+
+	if err = env.SetupMetrics(ctx); err != nil {
 		logger.Errorw("Failed to create the metrics exporter", zap.Error(err))
 	}
 
-	conn, err := amqp.Dial(env.BrokerURL)
-	if err != nil {
-		logger.Fatalw("failed to connect to RabbitMQ", zap.Error(err))
-	}
-	defer conn.Close()
-
-	env.channel, err = conn.Channel()
-	if err != nil {
-		logger.Fatalw("failed to open a channel", zap.Error(err))
-	}
-
-	// noWait is false
-	if err := env.channel.Confirm(false); err != nil {
-		logger.Fatalf("faild to switch connection channel to confirm mode: %s", err)
-	}
+	env.setupRabbitMQ(logger)
+	defer env.connection.Close()
 	defer env.channel.Close()
 
 	connectionArgs := kncloudevents.ConnectionArgs{
@@ -97,6 +87,27 @@ func main() {
 
 	if err := receiver.StartListen(ctx, &env); err != nil {
 		logger.Fatalf("failed to start listen, %v", err)
+	}
+}
+
+func (env *envConfig) setupRabbitMQ(logger *zap.SugaredLogger) {
+	var err error
+
+	if env.connection == nil || env.connection.IsClosed() {
+		env.connection, err = amqp.Dial(env.BrokerURL)
+		if err != nil {
+			logger.Fatalw("failed to connect to RabbitMQ", zap.Error(err))
+		}
+	}
+
+	env.channel, err = env.connection.Channel()
+	if err != nil {
+		logger.Fatalw("failed to open a channel", zap.Error(err))
+	}
+
+	// noWait is false
+	if err = env.channel.Confirm(false); err != nil {
+		logger.Fatalf("faild to switch connection channel to confirm mode: %s", err)
 	}
 }
 
@@ -150,8 +161,12 @@ func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, err
 	if err != nil {
 		return http.StatusBadRequest, fmt.Errorf("failed to marshal event, %w", err)
 	}
-	tp, ts := (&tracecontext.HTTPFormat{}).SpanContextToHeaders(span.SpanContext())
 
+	if env.channel.IsClosed() {
+		env.setupRabbitMQ(env.GetLogger())
+	}
+
+	tp, ts := (&tracecontext.HTTPFormat{}).SpanContextToHeaders(span.SpanContext())
 	headers := amqp.Table{
 		"type":        event.Type(),
 		"source":      event.Source(),
@@ -159,6 +174,7 @@ func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, err
 		"traceparent": tp,
 		"tracestate":  ts,
 	}
+
 	for key, val := range event.Extensions() {
 		headers[key] = val
 	}
@@ -174,6 +190,7 @@ func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, err
 			Body:         bytes,
 			DeliveryMode: amqp.Persistent,
 		})
+
 	if err != nil {
 		return http.StatusInternalServerError, fmt.Errorf("failed to publish message: %w", err)
 	}
@@ -182,5 +199,6 @@ func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, err
 	if !ack {
 		return http.StatusInternalServerError, errors.New("failed to publish message: nacked")
 	}
+
 	return http.StatusAccepted, nil
 }
