@@ -109,6 +109,16 @@ func (env *envConfig) setupRabbitMQ(logger *zap.SugaredLogger) {
 	if err = env.channel.Confirm(false); err != nil {
 		logger.Fatalf("faild to switch connection channel to confirm mode: %s", err)
 	}
+
+	// Wait for a channel or connection close message to rerun the RabbitMQ setup
+	go func() {
+		select {
+		case <-env.connection.NotifyClose(make(chan *amqp.Error)):
+		case <-env.channel.NotifyClose(make(chan *amqp.Error)):
+		}
+
+		env.setupRabbitMQ(logger)
+	}()
 }
 
 func (env *envConfig) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
@@ -160,10 +170,6 @@ func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, err
 	bytes, err := json.Marshal(event)
 	if err != nil {
 		return http.StatusBadRequest, fmt.Errorf("failed to marshal event, %w", err)
-	}
-
-	if env.channel.IsClosed() {
-		env.setupRabbitMQ(env.GetLogger())
 	}
 
 	tp, ts := (&tracecontext.HTTPFormat{}).SpanContextToHeaders(span.SpanContext())
