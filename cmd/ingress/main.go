@@ -66,11 +66,11 @@ func main() {
 	ctx = logging.WithLogger(ctx, logger)
 
 	if err = env.SetupTracing(); err != nil {
-		logger.Errorw("Failed setting up trace publishing", zap.Error(err))
+		logger.Errorw("failed setting up trace publishing", zap.Error(err))
 	}
 
 	if err = env.SetupMetrics(ctx); err != nil {
-		logger.Errorw("Failed to create the metrics exporter", zap.Error(err))
+		logger.Errorw("failed to create the metrics exporter", zap.Error(err))
 	}
 
 	env.setupRabbitMQ(logger)
@@ -107,7 +107,7 @@ func (env *envConfig) setupRabbitMQ(logger *zap.SugaredLogger) {
 
 	// noWait is false
 	if err = env.channel.Confirm(false); err != nil {
-		logger.Fatalf("faild to switch connection channel to confirm mode: %s", err)
+		logger.Fatalf("failed to switch connection channel to confirm mode: %s", err)
 	}
 
 	// Wait for a channel or connection close message to rerun the RabbitMQ setup
@@ -116,7 +116,7 @@ func (env *envConfig) setupRabbitMQ(logger *zap.SugaredLogger) {
 		case <-env.connection.NotifyClose(make(chan *amqp.Error)):
 		case <-env.channel.NotifyClose(make(chan *amqp.Error)):
 		}
-
+		logger.Warn("lost connection to RabbitMQ, reconnecting")
 		env.setupRabbitMQ(logger)
 	}()
 }
@@ -132,6 +132,7 @@ func (env *envConfig) ServeHTTP(writer http.ResponseWriter, request *http.Reques
 
 	// validate request URI
 	if request.RequestURI != "/" {
+		logger.Error("unexpected incoming request uri")
 		writer.WriteHeader(http.StatusNotFound)
 		return
 	}
