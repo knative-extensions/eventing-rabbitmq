@@ -66,11 +66,11 @@ func main() {
 	ctx = logging.WithLogger(ctx, logger)
 
 	if err = env.SetupTracing(); err != nil {
-		logger.Errorw("failed setting up trace publishing", zap.Error(err))
+		logger.Errorw("Failed setting up trace publishing", zap.Error(err))
 	}
 
 	if err = env.SetupMetrics(ctx); err != nil {
-		logger.Errorw("failed to create the metrics exporter", zap.Error(err))
+		logger.Errorw("Failed to create the metrics exporter", zap.Error(err))
 	}
 
 	env.setupRabbitMQ(logger)
@@ -86,7 +86,7 @@ func main() {
 	receiver := kncloudevents.NewHTTPMessageReceiver(env.Port)
 
 	if err := receiver.StartListen(ctx, &env); err != nil {
-		logger.Fatalf("failed to start listen, %v", err)
+		logger.Fatalf("Failed to start listen, %v", err)
 	}
 }
 
@@ -96,18 +96,18 @@ func (env *envConfig) setupRabbitMQ(logger *zap.SugaredLogger) {
 	if env.connection == nil || env.connection.IsClosed() {
 		env.connection, err = amqp.Dial(env.BrokerURL)
 		if err != nil {
-			logger.Fatalw("failed to connect to RabbitMQ", zap.Error(err))
+			logger.Fatalw("Failed to connect to RabbitMQ", zap.Error(err))
 		}
 	}
 
 	env.channel, err = env.connection.Channel()
 	if err != nil {
-		logger.Fatalw("failed to open a channel", zap.Error(err))
+		logger.Fatalw("Failed to open a channel", zap.Error(err))
 	}
 
 	// noWait is false
 	if err = env.channel.Confirm(false); err != nil {
-		logger.Fatalf("failed to switch connection channel to confirm mode: %s", err)
+		logger.Fatalf("Failed to switch connection channel to confirm mode: %s", err)
 	}
 
 	// Wait for a channel or connection close message to rerun the RabbitMQ setup
@@ -116,7 +116,7 @@ func (env *envConfig) setupRabbitMQ(logger *zap.SugaredLogger) {
 		case <-env.connection.NotifyClose(make(chan *amqp.Error)):
 		case <-env.channel.NotifyClose(make(chan *amqp.Error)):
 		}
-		logger.Warn("lost connection to RabbitMQ, reconnecting")
+		logger.Warn("Lost connection to RabbitMQ, reconnecting")
 		env.setupRabbitMQ(logger)
 	}()
 }
@@ -125,14 +125,14 @@ func (env *envConfig) ServeHTTP(writer http.ResponseWriter, request *http.Reques
 	logger := env.GetLogger()
 	// validate request method
 	if request.Method != http.MethodPost {
-		logger.Warn("unexpected request method", zap.String("method", request.Method))
+		logger.Warn("Unexpected request method", zap.String("method", request.Method))
 		writer.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 
 	// validate request URI
 	if request.RequestURI != "/" {
-		logger.Error("unexpected incoming request uri")
+		logger.Error("Unexpected incoming request uri")
 		writer.WriteHeader(http.StatusNotFound)
 		return
 	}
@@ -144,7 +144,7 @@ func (env *envConfig) ServeHTTP(writer http.ResponseWriter, request *http.Reques
 
 	event, err := binding.ToEvent(ctx, message)
 	if err != nil {
-		logger.Warnw("failed to extract event from request", zap.Error(err))
+		logger.Warnw("Failed to extract event from request", zap.Error(err))
 		writer.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -152,7 +152,7 @@ func (env *envConfig) ServeHTTP(writer http.ResponseWriter, request *http.Reques
 	// run validation for the extracted event
 	validationErr := event.Validate()
 	if validationErr != nil {
-		logger.Warnw("failed to validate extracted event", zap.Error(validationErr))
+		logger.Warnw("Failed to validate extracted event", zap.Error(validationErr))
 		writer.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -162,7 +162,7 @@ func (env *envConfig) ServeHTTP(writer http.ResponseWriter, request *http.Reques
 
 	statusCode, err := env.send(event, span)
 	if err != nil {
-		logger.Errorw("failed to send event", zap.Error(err))
+		logger.Errorw("Failed to send event", zap.Error(err))
 	}
 	writer.WriteHeader(statusCode)
 }
