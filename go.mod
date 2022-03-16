@@ -30,10 +30,10 @@ require (
 	k8s.io/client-go v0.22.5
 	k8s.io/code-generator v0.22.5
 	k8s.io/kube-openapi v0.0.0-20211109043538-20434351676c
-	knative.dev/eventing v0.30.0
-	knative.dev/hack v0.0.0-20220224013837-e1785985d364
-	knative.dev/pkg v0.0.0-20220310195447-38af013b30ff
-	knative.dev/reconciler-test v0.0.0-20220303141206-84821d26ed1f
+	knative.dev/eventing v0.30.1-0.20220316055858-c02e63aea351
+	knative.dev/hack v0.0.0-20220314052818-c9c3ea17a2e9
+	knative.dev/pkg v0.0.0-20220316002959-3a4cc56708b9
+	knative.dev/reconciler-test v0.0.0-20220314160418-3b7a0d7f7b4b
 	sigs.k8s.io/controller-runtime v0.9.6
 )
 
@@ -103,7 +103,7 @@ require (
 	github.com/openzipkin/zipkin-go v0.3.0 // indirect
 	github.com/pborman/uuid v1.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/prometheus/client_golang v1.11.0 // indirect
+	github.com/prometheus/client_golang v1.11.1 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.32.1 // indirect
 	github.com/prometheus/procfs v0.6.0 // indirect
