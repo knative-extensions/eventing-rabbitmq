@@ -88,6 +88,8 @@ type Adapter struct {
 	reporter          source.StatsReporter
 	logger            *zap.Logger
 	context           context.Context
+	connection        *amqp.Conn
+	channel           wabbit.Channel
 }
 
 var _ adapter.MessageAdapter = (*Adapter)(nil)
@@ -115,16 +117,7 @@ func vhostHandler(brokers string, vhost string) string {
 	return fmt.Sprintf("%s%s", brokers, vhost)
 }
 
-func (a *Adapter) CreateConn(user string, password string, logger *zap.Logger) (*amqp.Conn, error) {
-	if user != "" && password != "" {
-		a.config.Brokers = fmt.Sprintf(
-			"amqp://%s:%s@%s",
-			a.config.User,
-			a.config.Password,
-			vhostHandler(a.config.Brokers, a.config.Vhost),
-		)
-	}
-
+func (a *Adapter) CreateConn(logger *zap.Logger) (*amqp.Conn, error) {
 	conn, err := amqp.Dial(a.config.Brokers)
 	if err != nil {
 		logger.Error(err.Error())
@@ -132,13 +125,15 @@ func (a *Adapter) CreateConn(user string, password string, logger *zap.Logger) (
 	return conn, err
 }
 
-func (a *Adapter) CreateChannel(conn *amqp.Conn, connTest *amqptest.Conn,
-	logger *zap.Logger) (wabbit.Channel, error) {
+func (a *Adapter) CreateChannel(
+	connTest *amqptest.Conn,
+	logger *zap.Logger,
+) (wabbit.Channel, error) {
 	var ch wabbit.Channel
 	var err error
 
-	if conn != nil {
-		ch, err = conn.Channel()
+	if a.connection != nil {
+		ch, err = a.connection.Channel()
 	} else {
 		ch, err = connTest.Channel()
 	}
@@ -166,6 +161,7 @@ func (a *Adapter) Start(ctx context.Context) error {
 }
 
 func (a *Adapter) start(stopCh <-chan struct{}) error {
+	var err error
 	logger := a.logger
 
 	logger.Info("Starting with config: ",
@@ -175,35 +171,40 @@ func (a *Adapter) start(stopCh <-chan struct{}) error {
 		zap.String("Name", a.config.Name),
 		zap.String("Namespace", a.config.Namespace))
 
-	conn, err := a.CreateConn(a.config.User, a.config.Password, logger)
-	if err == nil {
-		defer conn.Close()
+	if a.config.User != "" && a.config.Password != "" {
+		a.config.Brokers = fmt.Sprintf(
+			"amqp://%s:%s@%s",
+			a.config.User,
+			a.config.Password,
+			vhostHandler(a.config.Brokers, a.config.Vhost),
+		)
 	}
 
-	ch, err := a.CreateChannel(conn, nil, logger)
+	a.setupRabbitMQ()
 	if err == nil {
-		defer ch.Close()
+		defer a.connection.Close()
+		defer a.channel.Close()
 	}
 
-	queue, err := a.StartAmqpClient(&ch)
+	queue, err := a.StartAmqpClient()
 	if err != nil {
 		logger.Error(err.Error())
 	}
 
-	return a.PollForMessages(&ch, queue, stopCh)
+	return a.PollForMessages(queue, stopCh)
 }
 
-func (a *Adapter) StartAmqpClient(ch *wabbit.Channel) (*wabbit.Queue, error) {
+func (a *Adapter) StartAmqpClient() (*wabbit.Queue, error) {
 	logger := a.logger
 
 	if a.config.Predeclared {
-		queue, err := (*ch).QueueInspect(a.config.QueueConfig.Name)
+		queue, err := a.channel.QueueInspect(a.config.QueueConfig.Name)
 		return &queue, err
 	}
 
 	exchangeConfig := fillDefaultValuesForExchangeConfig(&a.config.ExchangeConfig, a.config.Topic)
 
-	err := (*ch).ExchangeDeclare(
+	err := a.channel.ExchangeDeclare(
 		exchangeConfig.Name,
 		exchangeConfig.TypeOf,
 		wabbit.Option{
@@ -217,7 +218,7 @@ func (a *Adapter) StartAmqpClient(ch *wabbit.Channel) (*wabbit.Queue, error) {
 		return nil, err
 	}
 
-	queue, err := (*ch).QueueDeclare(
+	queue, err := a.channel.QueueDeclare(
 		a.config.QueueConfig.Name,
 		wabbit.Option{
 			"durable":   a.config.QueueConfig.Durable,
@@ -234,7 +235,7 @@ func (a *Adapter) StartAmqpClient(ch *wabbit.Channel) (*wabbit.Queue, error) {
 		routingKeys := strings.Split(a.config.QueueConfig.RoutingKey, ",")
 
 		for _, routingKey := range routingKeys {
-			err = (*ch).QueueBind(
+			err = a.channel.QueueBind(
 				queue.Name(),
 				routingKey,
 				exchangeConfig.Name,
@@ -247,7 +248,7 @@ func (a *Adapter) StartAmqpClient(ch *wabbit.Channel) (*wabbit.Queue, error) {
 			}
 		}
 	} else {
-		err = (*ch).QueueBind(
+		err = a.channel.QueueBind(
 			queue.Name(),
 			"",
 			exchangeConfig.Name,
@@ -263,9 +264,9 @@ func (a *Adapter) StartAmqpClient(ch *wabbit.Channel) (*wabbit.Queue, error) {
 	return &queue, nil
 }
 
-func (a *Adapter) ConsumeMessages(channel *wabbit.Channel,
+func (a *Adapter) ConsumeMessages(channel wabbit.Channel,
 	queue *wabbit.Queue, logger *zap.Logger) (<-chan wabbit.Delivery, error) {
-	msgs, err := (*channel).Consume(
+	msgs, err := channel.Consume(
 		(*queue).Name(),
 		"",
 		wabbit.Option{
@@ -281,11 +282,8 @@ func (a *Adapter) ConsumeMessages(channel *wabbit.Channel,
 	return msgs, err
 }
 
-func (a *Adapter) PollForMessages(channel *wabbit.Channel,
-	queue *wabbit.Queue, stopCh <-chan struct{}) error {
+func (a *Adapter) PollForMessages(queue *wabbit.Queue, stopCh <-chan struct{}) error {
 	logger := a.logger
-
-	msgs, _ := a.ConsumeMessages(channel, queue, logger)
 
 	wg := &sync.WaitGroup{}
 	workerCount := a.config.ChannelConfig.PrefetchCount
@@ -297,6 +295,8 @@ func (a *Adapter) PollForMessages(channel *wabbit.Channel,
 		go a.processMessages(wg, workerQueue)
 	}
 
+	msgs, _ := a.ConsumeMessages(a.channel, queue, logger)
+
 	for {
 		select {
 		case <-stopCh:
@@ -306,9 +306,19 @@ func (a *Adapter) PollForMessages(channel *wabbit.Channel,
 			return nil
 		case msg, ok := <-msgs:
 			if !ok {
-				close(workerQueue)
-				wg.Wait()
-				return nil
+				err := a.setupRabbitMQ()
+				if err != nil {
+					logger.Error("Error reconnecting to RabbitMQ", zap.Error(err))
+					return err
+				}
+
+				q, err := a.channel.QueueInspect(a.config.QueueConfig.Name)
+				if err != nil {
+					logger.Error(err.Error())
+					return err
+				}
+				msgs, _ = a.ConsumeMessages(a.channel, &q, logger)
+				continue
 			}
 			workerQueue <- msg
 		}
@@ -403,4 +413,17 @@ func fillDefaultValuesForExchangeConfig(config *ExchangeConfig, topic string) *E
 		config.Name = topic
 	}
 	return config
+}
+
+func (a *Adapter) setupRabbitMQ() error {
+	var err error
+	if a.connection == nil || a.connection.IsClosed() {
+		a.connection, err = a.CreateConn(a.logger)
+		if err != nil {
+			return err
+		}
+	}
+
+	a.channel, err = a.CreateChannel(nil, a.logger)
+	return err
 }
