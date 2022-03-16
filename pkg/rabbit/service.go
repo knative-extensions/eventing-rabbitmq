@@ -48,7 +48,7 @@ type Rabbit struct {
 func (r *Rabbit) ReconcileExchange(ctx context.Context, args *resources.ExchangeArgs) (Result, error) {
 	logging.FromContext(ctx).Infow("Reconciling exchange", zap.String("name", args.Name))
 
-	want := resources.NewExchange(ctx, args)
+	want := resources.NewExchange(args)
 	current, err := r.RabbitmqV1beta1().Exchanges(args.Namespace).Get(ctx, args.Name, metav1.GetOptions{})
 	if apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Debugw("Creating rabbitmq exchange", zap.String("exchange name", want.Name))

@@ -17,7 +17,6 @@ limitations under the License.
 package resources
 
 import (
-	"context"
 	"net/url"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,7 +37,7 @@ type ExchangeArgs struct {
 	Trigger                  *eventingv1.Trigger
 }
 
-func NewExchange(ctx context.Context, args *ExchangeArgs) *rabbitv1beta1.Exchange {
+func NewExchange(args *ExchangeArgs) *rabbitv1beta1.Exchange {
 	var ownerReference metav1.OwnerReference
 
 	if args.Trigger != nil {
