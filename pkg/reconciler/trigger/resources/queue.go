@@ -17,7 +17,6 @@ limitations under the License.
 package resources
 
 import (
-	"context"
 	"fmt"
 	"regexp"
 
@@ -42,8 +41,8 @@ type QueueArgs struct {
 	DLXName                  *string
 }
 
-func NewQueue(ctx context.Context, args *QueueArgs) *rabbitv1beta1.Queue {
-	q := &rabbitv1beta1.Queue{
+func NewQueue(args *QueueArgs) *rabbitv1beta1.Queue {
+	return &rabbitv1beta1.Queue{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:       args.Namespace,
 			Name:            args.Name,
@@ -64,7 +63,6 @@ func NewQueue(ctx context.Context, args *QueueArgs) *rabbitv1beta1.Queue {
 			},
 		},
 	}
-	return q
 }
 
 func NewPolicy(args *QueueArgs) *rabbitv1beta1.Policy {

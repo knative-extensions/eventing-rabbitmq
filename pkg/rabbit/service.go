@@ -73,7 +73,7 @@ func (r *Rabbit) ReconcileExchange(ctx context.Context, args *resources.Exchange
 func (r *Rabbit) ReconcileQueue(ctx context.Context, args *triggerresources.QueueArgs) (Result, error) {
 	logging.FromContext(ctx).Info("Reconciling queue")
 
-	want := triggerresources.NewQueue(ctx, args)
+	want := triggerresources.NewQueue(args)
 	queue, err := r.RabbitmqV1beta1().Queues(args.Namespace).Get(ctx, want.Name, metav1.GetOptions{})
 	if apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Debugw("Creating rabbitmq queue", zap.String("queue", want.Name))
