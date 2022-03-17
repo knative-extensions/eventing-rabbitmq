@@ -42,12 +42,12 @@ import (
 const resourceGroup = "rabbitmqsources.sources.knative.dev"
 
 type ExchangeConfig struct {
-	Name        string `envconfig:"RABBITMQ_EXCHANGE_CONFIG_NAME" required:"false"`
-	TypeOf      string `envconfig:"RABBITMQ_EXCHANGE_CONFIG_TYPE" required:"true"`
-	Durable     bool   `envconfig:"RABBITMQ_EXCHANGE_CONFIG_DURABLE" required:"false"`
-	AutoDeleted bool   `envconfig:"RABBITMQ_EXCHANGE_CONFIG_AUTO_DELETED" required:"false"`
-	Internal    bool   `envconfig:"RABBITMQ_EXCHANGE_CONFIG_INTERNAL" required:"false"`
-	NoWait      bool   `envconfig:"RABBITMQ_EXCHANGE_CONFIG_NOWAIT" required:"false"`
+	Name       string `envconfig:"RABBITMQ_EXCHANGE_CONFIG_NAME" required:"false"`
+	TypeOf     string `envconfig:"RABBITMQ_EXCHANGE_CONFIG_TYPE" required:"true"`
+	Durable    bool   `envconfig:"RABBITMQ_EXCHANGE_CONFIG_DURABLE" required:"false"`
+	AutoDelete bool   `envconfig:"RABBITMQ_EXCHANGE_CONFIG_AUTO_DELETE" required:"false"`
+	Internal   bool   `envconfig:"RABBITMQ_EXCHANGE_CONFIG_INTERNAL" required:"false"`
+	NoWait     bool   `envconfig:"RABBITMQ_EXCHANGE_CONFIG_NOWAIT" required:"false"`
 }
 
 type ChannelConfig struct {
@@ -56,12 +56,12 @@ type ChannelConfig struct {
 }
 
 type QueueConfig struct {
-	Name             string `envconfig:"RABBITMQ_QUEUE_CONFIG_NAME" required:"false"`
-	RoutingKey       string `envconfig:"RABBITMQ_ROUTING_KEY" required:"true"`
-	Durable          bool   `envconfig:"RABBITMQ_QUEUE_CONFIG_DURABLE" required:"false"`
-	DeleteWhenUnused bool   `envconfig:"RABBITMQ_QUEUE_CONFIG_AUTO_DELETED" required:"false"`
-	Exclusive        bool   `envconfig:"RABBITMQ_QUEUE_CONFIG_EXCLUSIVE" required:"false"`
-	NoWait           bool   `envconfig:"RABBITMQ_QUEUE_CONFIG_NOWAIT" required:"false"`
+	Name       string `envconfig:"RABBITMQ_QUEUE_CONFIG_NAME" required:"false"`
+	RoutingKey string `envconfig:"RABBITMQ_ROUTING_KEY" required:"true"`
+	Durable    bool   `envconfig:"RABBITMQ_QUEUE_CONFIG_DURABLE" required:"false"`
+	AutoDelete bool   `envconfig:"RABBITMQ_QUEUE_CONFIG_AUTO_DELETE" required:"false"`
+	Exclusive  bool   `envconfig:"RABBITMQ_QUEUE_CONFIG_EXCLUSIVE" required:"false"`
+	NoWait     bool   `envconfig:"RABBITMQ_QUEUE_CONFIG_NOWAIT" required:"false"`
 }
 
 type adapterConfig struct {
@@ -208,7 +208,7 @@ func (a *Adapter) StartAmqpClient(ch *wabbit.Channel) (*wabbit.Queue, error) {
 		exchangeConfig.TypeOf,
 		wabbit.Option{
 			"durable":  exchangeConfig.Durable,
-			"delete":   exchangeConfig.AutoDeleted,
+			"delete":   exchangeConfig.AutoDelete,
 			"internal": exchangeConfig.Internal,
 			"noWait":   exchangeConfig.NoWait,
 		})
@@ -221,7 +221,7 @@ func (a *Adapter) StartAmqpClient(ch *wabbit.Channel) (*wabbit.Queue, error) {
 		a.config.QueueConfig.Name,
 		wabbit.Option{
 			"durable":   a.config.QueueConfig.Durable,
-			"delete":    a.config.QueueConfig.DeleteWhenUnused,
+			"delete":    a.config.QueueConfig.AutoDelete,
 			"exclusive": a.config.QueueConfig.Exclusive,
 			"noWait":    a.config.QueueConfig.NoWait,
 		})

@@ -187,7 +187,7 @@ func TestMakeReceiveAdapter(t *testing.T) {
 									Value: "true",
 								},
 								{
-									Name:  "RABBITMQ_EXCHANGE_CONFIG_AUTO_DELETED",
+									Name:  "RABBITMQ_EXCHANGE_CONFIG_AUTO_DELETE",
 									Value: "false",
 								},
 								{
@@ -207,7 +207,7 @@ func TestMakeReceiveAdapter(t *testing.T) {
 									Value: "false",
 								},
 								{
-									Name:  "RABBITMQ_QUEUE_CONFIG_AUTO_DELETED",
+									Name:  "RABBITMQ_QUEUE_CONFIG_AUTO_DELETE",
 									Value: "false",
 								},
 								{
