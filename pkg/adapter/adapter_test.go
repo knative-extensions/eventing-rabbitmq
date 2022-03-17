@@ -231,12 +231,14 @@ func TestAdapter_CreateConn(t *testing.T) {
 		reporter: statsReporter,
 	}
 
-	conn, _ := a.CreateConn("", "", logging.FromContext(context.TODO()).Desugar())
+	conn, _ := a.CreateConn(logging.FromContext(context.TODO()).Desugar())
 	if conn != nil {
 		t.Errorf("Failed to connect to RabbitMQ")
 	}
 
-	conn, _ = a.CreateConn("guest", "guest", logging.FromContext(context.TODO()).Desugar())
+	a.config.User = "guest"
+	a.config.Password = "guest"
+	conn, _ = a.CreateConn(logging.FromContext(context.TODO()).Desugar())
 	if conn != nil {
 		t.Errorf("Failed to connect to RabbitMQ")
 	}
@@ -281,7 +283,7 @@ func TestAdapter_CreateChannel(t *testing.T) {
 	}
 
 	for i := 1; i <= 2048; i++ {
-		channel, _ := a.CreateChannel(nil, conn, logging.FromContext(context.TODO()).Desugar())
+		channel, _ := a.CreateChannel(conn, logging.FromContext(context.TODO()).Desugar())
 		if channel == nil {
 			t.Logf("Failed to open a channel")
 			break
@@ -291,7 +293,6 @@ func TestAdapter_CreateChannel(t *testing.T) {
 }
 
 func TestAdapter_StartAmqpClient(t *testing.T) {
-
 	/**
 	Test for exchange type "direct"
 	*/
@@ -306,12 +307,12 @@ func TestAdapter_StartAmqpClient(t *testing.T) {
 		t.Errorf("%s: %s", "Failed to connect to RabbitMQ", err)
 	}
 
-	statsReporter, _ := source.NewStatsReporter()
-
-	channel, err := conn.Channel()
+	ch, err := conn.Channel()
 	if err != nil {
 		t.Errorf("Failed to open a channel")
 	}
+
+	statsReporter, _ := source.NewStatsReporter()
 
 	a := &Adapter{
 		config: &adapterConfig{
@@ -336,7 +337,8 @@ func TestAdapter_StartAmqpClient(t *testing.T) {
 		reporter: statsReporter,
 	}
 
-	_, err = a.StartAmqpClient(&channel)
+	a.channel = ch
+	_, err = a.StartAmqpClient()
 	if err != nil {
 		t.Errorf("Failed to start RabbitMQ")
 	}
@@ -366,7 +368,9 @@ func TestAdapter_StartAmqpClient(t *testing.T) {
 		logger:   zap.NewNop(),
 		reporter: statsReporter,
 	}
-	_, err = a.StartAmqpClient(&channel)
+
+	a.channel = ch
+	_, err = a.StartAmqpClient()
 	if err != nil {
 		t.Errorf("Failed to start RabbitMQ")
 	}
@@ -396,7 +400,9 @@ func TestAdapter_StartAmqpClient(t *testing.T) {
 		logger:   zap.NewNop(),
 		reporter: statsReporter,
 	}
-	_, err = a.StartAmqpClient(&channel)
+
+	a.channel = ch
+	_, err = a.StartAmqpClient()
 	if err != nil {
 		t.Errorf("Failed to start RabbitMQ")
 	}
@@ -421,11 +427,6 @@ func TestAdapter_StartAmqpClient_InvalidExchangeType(t *testing.T) {
 
 	statsReporter, _ := source.NewStatsReporter()
 
-	channel, err := conn.Channel()
-	if err != nil {
-		t.Errorf("Failed to open a channel")
-	}
-
 	a := &Adapter{
 		config: &adapterConfig{
 			Topic:   "",
@@ -448,7 +449,13 @@ func TestAdapter_StartAmqpClient_InvalidExchangeType(t *testing.T) {
 		logger:   zap.NewNop(),
 		reporter: statsReporter,
 	}
-	_, err = a.StartAmqpClient(&channel)
+
+	a.channel, err = conn.Channel()
+	if err != nil {
+		t.Errorf("Failed to open a channel")
+	}
+
+	_, err = a.StartAmqpClient()
 	if err != nil {
 		t.Logf("Failed to start RabbitMQ")
 	}
@@ -495,7 +502,8 @@ func TestAdapter_StartAmqpClient_PredeclaredQueue(t *testing.T) {
 		reporter: statsReporter,
 	}
 
-	_, err = a.StartAmqpClient(&channel)
+	a.channel = channel
+	_, err = a.StartAmqpClient()
 	if err.Error() != fmt.Sprintf("no queue named %s", testQueue) {
 		t.Errorf("Was expecting an error due to invalid queue name, got error: %s", err)
 	}
@@ -504,12 +512,12 @@ func TestAdapter_StartAmqpClient_PredeclaredQueue(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to declare new Queue: %s", err)
 	}
-	queue, err := a.StartAmqpClient(&channel)
+	queue, err := a.StartAmqpClient()
 	if err != nil {
 		t.Errorf("An error has occurred and it shouldn't: %s", err)
 	}
 
-	_, err = a.ConsumeMessages(&channel, queue, logging.FromContext(context.TODO()).Desugar())
+	_, err = a.ConsumeMessages(channel, queue, logging.FromContext(context.TODO()).Desugar())
 	if err != nil {
 		t.Errorf("Failed to consume from RabbitMQ: %s", err)
 	}
@@ -557,11 +565,13 @@ func TestAdapter_ConsumeMessages(t *testing.T) {
 		logger:   zap.NewNop(),
 		reporter: statsReporter,
 	}
-	queue, err := a.StartAmqpClient(&channel)
+
+	a.channel = channel
+	queue, err := a.StartAmqpClient()
 	if err != nil {
 		t.Errorf("Failed to start RabbitMQ")
 	}
-	_, err = a.ConsumeMessages(&channel, queue, logging.FromContext(context.TODO()).Desugar())
+	_, err = a.ConsumeMessages(channel, queue, logging.FromContext(context.TODO()).Desugar())
 	if err != nil {
 		t.Errorf("Failed to consume from RabbitMQ")
 	}
@@ -697,8 +707,9 @@ func TestAdapter_PollForMessages(t *testing.T) {
 		reporter: statsReporter,
 	}
 
-	err = channel.ExchangeDeclare(a.config.ExchangeConfig.Name, a.config.ExchangeConfig.TypeOf, nil)
+	a.channel = channel
 
+	err = channel.ExchangeDeclare(a.config.ExchangeConfig.Name, a.config.ExchangeConfig.TypeOf, nil)
 	if err != nil {
 		t.Errorf("Failed to declare an exchange")
 	}
@@ -720,7 +731,7 @@ func TestAdapter_PollForMessages(t *testing.T) {
 	ctx, cancelFunc := context.WithDeadline(context.TODO(), time.Now().Add(100*time.Millisecond))
 	defer cancelFunc()
 
-	err = a.PollForMessages(&channel, &queue, ctx.Done())
+	err = a.PollForMessages(&queue, ctx.Done())
 
 	if err != nil {
 		t.Errorf("testing err %s", err)
