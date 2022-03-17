@@ -14,29 +14,29 @@ spec:
     secretKeyRef:
       name: rabbitmq-default-user
       key: password
-  channel_config:
+  channelConfig:
     # Value must be between 1 and 1000
     # A value of 1 RabbitMQ Source behaves as a FIFO queue
     # Values above 1 break message ordering guarantees and can be seen as more performance oriented
-    # prefetch_count: 10
-    global_qos: false
-  exchange_config:
+    # prefetchCount: 10
+    globalQos: false
+  exchangeConfig:
     name: "eventing-rabbitmq-source"
     type: "fanout"
     durable: false
-    auto_deleted: false
+    autoDelete: false
     internal: false
     nowait: false
-  queue_config:
+  queueConfig:
     name: "eventing-rabbitmq-source"
-    routing_key: ""
+    routingKey: ""
     durable: false
     # TODO: Why is the queue not deleted 30 minutes after the source is deleted?
     # https://github.com/knative-sandbox/eventing-rabbitmq/issues/528
-    delete_when_unused: true
+    autoDelete: true
     # TODO: SHORT-TERM FIX
     # Ensures that the queue is deleted when the Source is deleted
-    # While exclusive is true, channel_config.prefetch_count cannot be updated
+    # While exclusive is true, channelConfig.prefetchCount cannot be updated
     exclusive: true
     nowait: false
   sink:
