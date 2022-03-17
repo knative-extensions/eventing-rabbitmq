@@ -23,6 +23,7 @@ import (
 	"context"
 
 	"knative.dev/eventing-rabbitmq/test/e2e/config/brokertrigger"
+	brokerresources "knative.dev/eventing/test/rekt/resources/broker"
 	"knative.dev/reconciler-test/pkg/eventshub"
 	"knative.dev/reconciler-test/pkg/feature"
 
@@ -49,6 +50,13 @@ func DirectTestBroker() *feature.Feature {
 			},
 		},
 	}))
+	f.Setup("RabbitMQ broker goes ready", AllGoReady)
+
+	prober := eventshub.NewProber()
+	prober.SetTargetResource(brokerresources.GVR(), "testbroker")
+	prober.SenderFullEvents(5)
+	f.Setup("install source", prober.SenderInstall("source"))
+	f.Requirement("sender is finished", prober.SenderDone("source"))
 
 	f.Alpha("RabbitMQ broker").Must("goes ready", AllGoReady)
 	f.Alpha("RabbitMQ source").
