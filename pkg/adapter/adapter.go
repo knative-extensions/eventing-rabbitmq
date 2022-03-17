@@ -180,7 +180,7 @@ func (a *Adapter) start(stopCh <-chan struct{}) error {
 		)
 	}
 
-	a.setupRabbitMQ()
+	a.setupRabbitMQ(nil)
 	if err == nil {
 		defer a.connection.Close()
 		defer a.channel.Close()
@@ -306,7 +306,7 @@ func (a *Adapter) PollForMessages(queue *wabbit.Queue, stopCh <-chan struct{}) e
 			return nil
 		case msg, ok := <-msgs:
 			if !ok {
-				err := a.setupRabbitMQ()
+				err := a.setupRabbitMQ(nil)
 				if err != nil {
 					logger.Error("Error reconnecting to RabbitMQ", zap.Error(err))
 					return err
@@ -415,15 +415,15 @@ func fillDefaultValuesForExchangeConfig(config *ExchangeConfig, topic string) *E
 	return config
 }
 
-func (a *Adapter) setupRabbitMQ() error {
+func (a *Adapter) setupRabbitMQ(connTest *amqptest.Conn) error {
 	var err error
-	if a.connection == nil || a.connection.IsClosed() {
+	if connTest == nil && (a.connection == nil || a.connection.IsClosed()) {
 		a.connection, err = a.CreateConn(a.logger)
 		if err != nil {
 			return err
 		}
 	}
 
-	a.channel, err = a.CreateChannel(nil, a.logger)
+	a.channel, err = a.CreateChannel(connTest, a.logger)
 	return err
 }

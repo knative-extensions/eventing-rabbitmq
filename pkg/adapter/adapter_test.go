@@ -530,6 +530,7 @@ func TestAdapter_ConsumeMessages(t *testing.T) {
 	if err != nil {
 		t.Errorf("%s: %s", "Failed to connect to RabbitMQ", err)
 	}
+	defer fakeServer.Stop()
 
 	conn, err := amqptest.Dial("amqp://localhost:5672/%2f")
 	if err != nil {
@@ -776,5 +777,52 @@ func TestAdapter_NewAdapter(t *testing.T) {
 
 	if a == cmpA {
 		t.Errorf("Error in NewnvConfig return Type")
+	}
+}
+
+func TestAdapter_SetupRabbitMQ(t *testing.T) {
+	fakeServer := server.NewServer("amqp://localhost:5672/%2f")
+	err := fakeServer.Start()
+	if err != nil {
+		t.Errorf("%s: %s", "Failed to connect to RabbitMQ", err)
+	}
+	defer fakeServer.Stop()
+
+	statsReporter, _ := source.NewStatsReporter()
+	a := &Adapter{
+		config: &adapterConfig{
+			Topic:   "",
+			Brokers: "amqp://localhost:5672/%2f",
+			ExchangeConfig: ExchangeConfig{
+				TypeOf:     "direct",
+				Durable:    true,
+				AutoDelete: false,
+				Internal:   false,
+				NoWait:     false,
+			},
+			QueueConfig: QueueConfig{
+				Name:       "",
+				Durable:    false,
+				AutoDelete: false,
+				Exclusive:  true,
+				NoWait:     false,
+			},
+		},
+		logger:   zap.NewNop(),
+		reporter: statsReporter,
+	}
+
+	conn, err := amqptest.Dial("amqp://localhost:5672/%2f")
+	if err != nil {
+		t.Errorf("%s: %s", "Failed to connect to RabbitMQ", err)
+	}
+
+	err = a.setupRabbitMQ(conn)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if a.channel == nil {
+		t.Fatal("Error: RabbitMQ Channel failed to be created")
 	}
 }
