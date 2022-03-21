@@ -5,7 +5,7 @@ all: test
 
 .PHONY: test
 test:
-	go test -race -v
+	go test -v
 .PHONY: tests
 tests: test
 
@@ -19,8 +19,8 @@ cover:
 
 .PHONY: ginkgo
 ginkgo:
-	command -v ginkgo || go install github.com/onsi/ginkgo/ginkgo
-	ginkgo -race -v
+	command -v ginkgo || go get -u github.com/onsi/ginkgo/ginkgo
+	ginkgo -v
 
 .PHONY: docker
 docker:
@@ -28,3 +28,14 @@ docker:
 	  --interactive --tty --entrypoint /bin/bash \
 	  --volume $(CURDIR):/usr/src/app --workdir /usr/src/app \
 	  golang:1.12
+
+.PHONY: docker.rabbitmq
+docker.rabbitmq:
+	docker run -p 15672:15672 -p 5672:5672 -p 4639:4639 --name rabbithole_rabbitmq -dit rabbitmq:3.8-management
+	sleep 10
+	docker exec -ti rabbithole_rabbitmq /bin/bash -c "rabbitmqctl set_cluster_name rabbitmq@localhost"
+	docker exec -ti rabbithole_rabbitmq /bin/bash -c "rabbitmqctl add_vhost /"
+	docker exec -ti rabbithole_rabbitmq /bin/bash -c "rabbitmqctl set_permissions -p / guest \".*\" \".*\" \".*\""
+	docker exec -ti rabbithole_rabbitmq /bin/bash -c "rabbitmqctl add_vhost rabbit/hole"
+	docker exec -ti rabbithole_rabbitmq /bin/bash -c "rabbitmqctl set_permissions -p rabbit/hole guest \".*\" \".*\" \".*\""
+	docker exec -ti rabbithole_rabbitmq /bin/bash -c "rabbitmq-plugins enable rabbitmq_federation rabbitmq_federation_management rabbitmq_shovel rabbitmq_shovel_management"

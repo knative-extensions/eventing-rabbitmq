@@ -14,11 +14,11 @@ require (
 	github.com/google/licenseclassifier v0.0.0-20210325184830-bb04aff29e72
 	github.com/influxdata/tdigest v0.0.1 // indirect
 	github.com/kelseyhightower/envconfig v1.4.0
-	github.com/michaelklishin/rabbit-hole/v2 v2.11.0
+	github.com/michaelklishin/rabbit-hole/v2 v2.12.0
 	github.com/pkg/errors v0.9.1
 	github.com/rabbitmq/amqp091-go v1.3.0
-	github.com/rabbitmq/cluster-operator v1.10.0
-	github.com/rabbitmq/messaging-topology-operator v1.2.2-0.20211112104201-5a7530880441
+	github.com/rabbitmq/cluster-operator v1.12.1
+	github.com/rabbitmq/messaging-topology-operator v1.4.1
 	github.com/testcontainers/testcontainers-go v0.11.1
 	github.com/tiago4orion/conjure v0.0.0-20150908101743-93cb30b9d218 // indirect
 	go.opencensus.io v0.23.0
@@ -34,11 +34,11 @@ require (
 	knative.dev/hack v0.0.0-20220318020218-14f832e506f8
 	knative.dev/pkg v0.0.0-20220318185521-e6e3cf03d765
 	knative.dev/reconciler-test v0.0.0-20220317152933-ce683fafefb6
-	sigs.k8s.io/controller-runtime v0.9.6
+	sigs.k8s.io/controller-runtime v0.11.1
 )
 
 require (
-	cloud.google.com/go v0.98.0 // indirect
+	cloud.google.com/go v0.99.0 // indirect
 	contrib.go.opencensus.io/exporter/ocagent v0.7.1-0.20200907061046-05415f1de66d // indirect
 	contrib.go.opencensus.io/exporter/prometheus v0.4.0 // indirect
 	contrib.go.opencensus.io/exporter/zipkin v0.1.2 // indirect
@@ -53,7 +53,7 @@ require (
 	github.com/blendle/zapdriver v1.3.1 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
-	github.com/cespare/xxhash/v2 v2.1.1 // indirect
+	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/cloudevents/conformance v0.2.0 // indirect
 	github.com/cloudevents/sdk-go/sql/v2 v2.8.0 // indirect
 	github.com/containerd/cgroups v1.0.2 // indirect
@@ -83,7 +83,7 @@ require (
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/googleapis/gnostic v0.5.5 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
-	github.com/hashicorp/go-cleanhttp v0.5.1 // indirect
+	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.6.7 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
@@ -136,7 +136,7 @@ require (
 	gonum.org/v1/gonum v0.0.0-20190331200053-3d26580ed485 // indirect
 	google.golang.org/api v0.61.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20211129164237-f09f9a12af12 // indirect
+	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
 	google.golang.org/grpc v1.42.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
