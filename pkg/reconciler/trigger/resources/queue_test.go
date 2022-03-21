@@ -17,7 +17,6 @@ limitations under the License.
 package resources_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -102,7 +101,7 @@ func TestNewQueue(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			got := resources.NewQueue(context.TODO(), tt.args)
+			got := resources.NewQueue(tt.args)
 			if !equality.Semantic.DeepDerivative(tt.want, got) {
 				t.Errorf("Unexpected Queue resource: want:\n%+v\ngot:\n%+v\ndiff:\n%+v", tt.want, got, cmp.Diff(tt.want, got))
 			}
