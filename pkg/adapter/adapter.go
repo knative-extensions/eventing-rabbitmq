@@ -182,8 +182,7 @@ func (a *Adapter) start(stopCh <-chan struct{}) error {
 
 	a.setupRabbitMQ(nil)
 	if err == nil {
-		defer a.connection.Close()
-		defer a.channel.Close()
+		defer a.cleanupRabbitMQ()
 	}
 
 	queue, err := a.StartAmqpClient()
@@ -306,6 +305,7 @@ func (a *Adapter) PollForMessages(queue *wabbit.Queue, stopCh <-chan struct{}) e
 			return nil
 		case msg, ok := <-msgs:
 			if !ok {
+				logger.Warn("not ok message comming from the queue", zap.Any("msg", msg))
 				err := a.setupRabbitMQ(nil)
 				if err != nil {
 					logger.Error("Error reconnecting to RabbitMQ", zap.Error(err))
@@ -426,4 +426,14 @@ func (a *Adapter) setupRabbitMQ(connTest *amqptest.Conn) error {
 
 	a.channel, err = a.CreateChannel(connTest, a.logger)
 	return err
+}
+
+func (a *Adapter) cleanupRabbitMQ() {
+	if err := a.channel.Close(); err != nil {
+		a.logger.Warn("error closing channel", zap.Error(err))
+	}
+
+	if err := a.connection.Close(); err != nil {
+		a.logger.Warn("error closing connection", zap.Error(err))
+	}
 }
