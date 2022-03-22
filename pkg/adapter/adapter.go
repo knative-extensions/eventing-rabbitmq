@@ -305,7 +305,7 @@ func (a *Adapter) PollForMessages(queue *wabbit.Queue, stopCh <-chan struct{}) e
 			return nil
 		case msg, ok := <-msgs:
 			if !ok {
-				logger.Warn("not ok message comming from the queue", zap.Any("msg", msg))
+				logger.Warn("not ok message coming from the queue", zap.Any("msg", msg))
 				err := a.setupRabbitMQ(nil)
 				if err != nil {
 					logger.Error("Error reconnecting to RabbitMQ", zap.Error(err))
