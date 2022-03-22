@@ -38,12 +38,10 @@ To get autoscaling (scale to zero as well as up from 0), you can also optionally
 install
 [KEDA based autoscaler](https://github.com/knative-sandbox/eventing-autoscaler-keda).
 
-## Trigger Customization (optional)
-The Trigger can be customized to better fit a user's needs. Check out the [Trigger-Customizations Samples Directory](../samples/trigger-customizations) for examples.
-
 ## Next Steps
 
-Check out the [Broker-Trigger Samples Directory](../samples/broker-trigger) in this repo and start building your topology with Eventing RabbitMQ!
+- Check out the [Broker-Trigger Samples Directory](../samples/broker-trigger) in this repo and start building your topology with Eventing RabbitMQ!
+- The Trigger can be customized to better fit a user's needs. Check out the [Trigger-Customizations Samples Directory](../samples/trigger-customizations) for examples.
 
 ## Additional Resources
 

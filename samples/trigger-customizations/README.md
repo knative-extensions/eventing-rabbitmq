@@ -33,10 +33,10 @@ The following demo highlights the benefits and tradeoffs of setting the prefetch
 #### Components
 New components introduced in this demo:
 
-- [event-sender](https://github.com/knative-sandbox/eventing-rabbitmq/tree/main/samples/trigger-customizations/event-sender)
+- [event-sender](./event-sender)
 Is used to send `n` messages to a broker.
 
-- [event-display](https://github.com/knative-sandbox/eventing-rabbitmq/tree/main/samples/trigger-customizations/event-display)
+- [event-display](./event-display)
 Is used as a "slow" sink. It will wait for `delay` number of seconds for each event it consumes.
 
 #### Steps
@@ -53,7 +53,7 @@ or
 kubectl create ns trigger-demo
 ```
 
-####Create a RabbitMQ Cluster
+#### Create a RabbitMQ Cluster
 
 ```sh
 kubectl apply -f samples/trigger-customizations/200-rabbitmq.yaml
@@ -151,6 +151,9 @@ metadata:
   namespace: trigger-demo
 spec:
   template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/min-scale: "1"
     spec:
       containers:
       - image: ko://knative.dev/eventing-rabbitmq/samples/trigger-customizations/event-display
@@ -164,12 +167,15 @@ metadata:
   namespace: trigger-demo
 spec:
   template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/min-scale: "1"
     spec:
       containers:
         - image: ko://knative.dev/eventing-rabbitmq/samples/trigger-customizations/event-display
           args:
             - --delay=20
-
+EOF
 ```
 
 #### Wait for resources to become ready

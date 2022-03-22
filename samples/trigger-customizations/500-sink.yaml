@@ -5,6 +5,9 @@ metadata:
   namespace: trigger-demo
 spec:
   template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/min-scale: "1"
     spec:
       containers:
       - image: ko://knative.dev/eventing-rabbitmq/samples/trigger-customizations/event-display
@@ -18,6 +21,9 @@ metadata:
   namespace: trigger-demo
 spec:
   template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/min-scale: "1"
     spec:
       containers:
         - image: ko://knative.dev/eventing-rabbitmq/samples/trigger-customizations/event-display
