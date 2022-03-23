@@ -256,14 +256,14 @@ func TestMakeReceiveAdapter(t *testing.T) {
 									Name: "RABBITMQ_VHOST",
 								},
 								{
-									Name:  "RABBITMQ_RETRY",
+									Name:  "HTTP_SENDER_RETRY",
 									Value: "5",
 								},
 								{
-									Name:  "RABBITMQ_BACKOFF_POLICY",
+									Name:  "HTTP_SENDER_BACKOFF_POLICY",
 									Value: "exponential"},
 								{
-									Name:  "RABBITMQ_BACKOFF_DELAY",
+									Name:  "HTTP_SENDER_BACKOFF_DELAY",
 									Value: "50ms",
 								},
 							},

@@ -75,9 +75,9 @@ type adapterConfig struct {
 	Password       string        `envconfig:"RABBITMQ_PASSWORD" required:"false"`
 	Vhost          string        `envconfig:"RABBITMQ_VHOST" required:"false"`
 	Predeclared    bool          `envconfig:"RABBITMQ_PREDECLARED" required:"false"`
-	Retry          int           `envconfig:"RABBITMQ_RETRY" required:"false"`
-	BackoffPolicy  string        `envconfig:"RABBITMQ_BACKOFF_POLICY" required:"false"`
-	BackoffDelay   time.Duration `envconfig:"RABBITMQ_BACKOFF_DELAY" default:"50ms" required:"false"`
+	Retry          int           `envconfig:"HTTP_SENDER_RETRY" required:"false"`
+	BackoffPolicy  string        `envconfig:"HTTP_SENDER_BACKOFF_POLICY" required:"false"`
+	BackoffDelay   time.Duration `envconfig:"HTTP_SENDER_BACKOFF_DELAY" default:"50ms" required:"false"`
 	ChannelConfig  ChannelConfig
 	ExchangeConfig ExchangeConfig
 	QueueConfig    QueueConfig

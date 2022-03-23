@@ -153,26 +153,26 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 
 	if args.Source.Spec.Retry != nil {
 		env = append(env, corev1.EnvVar{
-			Name:  "RABBITMQ_RETRY",
+			Name:  "HTTP_SENDER_RETRY",
 			Value: strconv.FormatInt(int64(*args.Source.Spec.Retry), 10),
 		})
 	}
 
 	if args.Source.Spec.BackoffPolicy != nil {
 		env = append(env, corev1.EnvVar{
-			Name:  "RABBITMQ_BACKOFF_POLICY",
+			Name:  "HTTP_SENDER_BACKOFF_POLICY",
 			Value: string(*args.Source.Spec.BackoffPolicy),
 		})
 	} else {
 		env = append(env, corev1.EnvVar{
-			Name:  "RABBITMQ_BACKOFF_POLICY",
+			Name:  "HTTP_SENDER_BACKOFF_POLICY",
 			Value: string(eventingduckv1.BackoffPolicyExponential),
 		})
 	}
 
 	if args.Source.Spec.BackoffDelay != nil {
 		env = append(env, corev1.EnvVar{
-			Name:  "RABBITMQ_BACKOFF_DELAY",
+			Name:  "HTTP_SENDER_BACKOFF_DELAY",
 			Value: *args.Source.Spec.BackoffDelay,
 		})
 	}
