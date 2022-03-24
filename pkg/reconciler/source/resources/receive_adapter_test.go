@@ -108,7 +108,12 @@ func TestMakeReceiveAdapter(t *testing.T) {
 				SinkURI: "sink-uri",
 			})
 
+			boPolicy := tt.backoffPolicy
 			one := int32(1)
+			if boPolicy == "" {
+				boPolicy = eventingduckv1.BackoffPolicyExponential
+			}
+
 			want := &v1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:         "rabbitmqsource-source-name-",
@@ -275,7 +280,7 @@ func TestMakeReceiveAdapter(t *testing.T) {
 										},
 										{
 											Name:  "HTTP_SENDER_BACKOFF_POLICY",
-											Value: string(tt.backoffPolicy),
+											Value: string(boPolicy),
 										},
 										{
 											Name:  "HTTP_SENDER_BACKOFF_DELAY",

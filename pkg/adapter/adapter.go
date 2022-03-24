@@ -386,9 +386,6 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 	} else {
 		a.logger.Sugar().Fatalf("Invalid BACKOFF_POLICY specified: must be %q or %q", v1.BackoffPolicyExponential, v1.BackoffPolicyLinear)
 	}
-	if backoffPolicy == "" {
-		backoffPolicy = v1.BackoffPolicyExponential
-	}
 
 	res, err := a.httpMessageSender.SendWithRetries(req, &kncloudevents.RetryConfig{
 		RetryMax: a.config.Retry,
