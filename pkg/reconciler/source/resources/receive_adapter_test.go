@@ -209,7 +209,7 @@ func TestMakeReceiveAdapter(t *testing.T) {
 											Value: "true",
 										},
 										{
-											Name:  "RABBITMQ_EXCHANGE_CONFIG_AUTO_DELETED",
+											Name:  "RABBITMQ_EXCHANGE_CONFIG_AUTO_DELETE",
 											Value: "false",
 										},
 										{
@@ -229,7 +229,7 @@ func TestMakeReceiveAdapter(t *testing.T) {
 											Value: "false",
 										},
 										{
-											Name:  "RABBITMQ_QUEUE_CONFIG_AUTO_DELETED",
+											Name:  "RABBITMQ_QUEUE_CONFIG_AUTO_DELETE",
 											Value: "false",
 										},
 										{
@@ -275,7 +275,8 @@ func TestMakeReceiveAdapter(t *testing.T) {
 										},
 										{
 											Name:  "HTTP_SENDER_BACKOFF_POLICY",
-											Value: "exponential"},
+											Value: string(tt.backoffPolicy),
+										},
 										{
 											Name:  "HTTP_SENDER_BACKOFF_DELAY",
 											Value: "50ms",
