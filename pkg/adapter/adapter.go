@@ -379,6 +379,13 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 
 	backoffDelay := a.config.BackoffDelay.String()
 	backoffPolicy := (v1.BackoffPolicyType)(a.config.BackoffPolicy)
+	if backoffPolicy == "" || backoffPolicy == "exponential" {
+		backoffPolicy = v1.BackoffPolicyExponential
+	} else if backoffPolicy == "linear" {
+		backoffPolicy = v1.BackoffPolicyLinear
+	} else {
+		a.logger.Sugar().Fatalf("Invalid BACKOFF_POLICY specified: must be %q or %q", v1.BackoffPolicyExponential, v1.BackoffPolicyLinear)
+	}
 	if backoffPolicy == "" {
 		backoffPolicy = v1.BackoffPolicyExponential
 	}

@@ -136,11 +136,7 @@ type RabbitmqSourceSpec struct {
 	// BackoffPolicy is the retry backoff policy (linear, exponential).
 	// +optional
 	BackoffPolicy *eventingduckv1.BackoffPolicyType `json:"backoffPolicy,omitempty"`
-	// BackoffDelay is the delay before retrying.
-	// More information on Duration format:
-	//  - https://www.iso.org/iso-8601-date-and-time-format.html
-	//  - https://en.wikipedia.org/wiki/ISO_8601
-	//
+	// BackoffDelay is the delay before retrying in time.Duration format.
 	// For linear policy, backoff delay is backoffDelay*<numberOfRetries>.
 	// For exponential policy, backoff delay is backoffDelay*2^<numberOfRetries>.
 	// +optional

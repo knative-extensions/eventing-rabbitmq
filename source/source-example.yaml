@@ -8,7 +8,7 @@ spec:
   topic: RABBITMQ_TOPIC
   retry: 5
   backoffPolicy: "linear"
-  backoffDelay: "PT30S"
+  backoffDelay: "50ms"
   user:
     secretKeyRef:
       name: RABBITMQ_USER
