@@ -17,6 +17,9 @@ limitations under the License.
 package resources_test
 
 import (
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/utils/pointer"
+	"knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -29,12 +32,15 @@ import (
 )
 
 const (
-	brokerName      = "testbroker"
-	brokerUID       = "broker-test-uid"
-	triggerName     = "testtrigger"
-	triggerUID      = "trigger-test-uid"
-	namespace       = "foobar"
-	rabbitmqcluster = "testrabbitmqcluster"
+	brokerName       = "testbroker"
+	brokerUID        = "broker-test-uid"
+	triggerName      = "testtrigger"
+	triggerUID       = "trigger-test-uid"
+	namespace        = "foobar"
+	rabbitmqcluster  = "testrabbitmqcluster"
+	connectionSecret = "secret-name"
+	sourceName       = "a-source"
+	sourceUID        = "source-test-uid"
 )
 
 func TestNewExchange(t *testing.T) {
@@ -45,9 +51,11 @@ func TestNewExchange(t *testing.T) {
 	}{{
 		name: "broker exchange",
 		args: &resources.ExchangeArgs{
-			Name:                brokerName,
-			Namespace:           namespace,
-			RabbitMQClusterName: rabbitmqcluster,
+			Name: brokerName,
+			Namespace:    namespace,
+			RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
+				Name: rabbitmqcluster,
+			},
 			Broker: &eventingv1.Broker{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      brokerName,
@@ -88,10 +96,12 @@ func TestNewExchange(t *testing.T) {
 	}, {
 		name: "broker exchange in RabbitMQ cluster namespace",
 		args: &resources.ExchangeArgs{
-			Name:                     brokerName,
-			Namespace:                namespace,
-			RabbitMQClusterName:      rabbitmqcluster,
-			RabbitMQClusterNamespace: "single-rabbitmq-cluster",
+			Name: brokerName,
+			Namespace:    namespace,
+			RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
+				Name:      rabbitmqcluster,
+				Namespace: "single-rabbitmq-cluster",
+			},
 			Broker: &eventingv1.Broker{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      brokerName,
@@ -131,11 +141,70 @@ func TestNewExchange(t *testing.T) {
 			},
 		},
 	}, {
+		name: "source exchange",
+		args: &resources.ExchangeArgs{
+			Name: sourceName,
+			Namespace:    namespace,
+			RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
+				ConnectionSecret: &corev1.LocalObjectReference{
+					Name: connectionSecret,
+				},
+			},
+			Source: &v1alpha1.RabbitmqSource{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      sourceName,
+					Namespace: namespace,
+					UID:       sourceUID,
+				},
+				Spec: v1alpha1.RabbitmqSourceSpec{
+					ExchangeConfig: v1alpha1.RabbitmqSourceExchangeConfigSpec{
+						Name:       "some-exchange",
+						TypeOf:     "direct",
+						Durable:    false,
+						AutoDelete: false,
+						NoWait:     false,
+					},
+				},
+			},
+		},
+		want: &rabbitv1beta1.Exchange{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      sourceName,
+				Namespace: namespace,
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						Kind:       "RabbitmqSource",
+						APIVersion: "sources.knative.dev/v1alpha1",
+						Name:       sourceName,
+						UID:        sourceUID,
+						Controller: pointer.Bool(true),
+						BlockOwnerDeletion: pointer.Bool(true),
+					},
+				},
+				Labels: map[string]string{
+					"eventing.knative.dev/SourceName": sourceName,
+				},
+			},
+			Spec: rabbitv1beta1.ExchangeSpec{
+				Name:       "some-exchange",
+				Type:     "direct",
+				Durable:    false,
+				AutoDelete: false,
+				RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
+					ConnectionSecret: &corev1.LocalObjectReference{
+						Name: connectionSecret,
+					},
+				},
+			},
+		},
+	}, {
 		name: "trigger exchange",
 		args: &resources.ExchangeArgs{
-			Name:                brokerName,
-			Namespace:           namespace,
-			RabbitMQClusterName: rabbitmqcluster,
+			Name: brokerName,
+			Namespace:    namespace,
+			RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
+				Name: rabbitmqcluster,
+			},
 			Broker: &eventingv1.Broker{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      brokerName,

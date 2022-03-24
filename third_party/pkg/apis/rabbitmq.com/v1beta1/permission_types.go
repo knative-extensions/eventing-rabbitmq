@@ -8,11 +8,11 @@ import (
 
 // PermissionSpec defines the desired state of Permission
 type PermissionSpec struct {
-	// Name of an existing user; must provide user or userReference, else create/update will fail; cannot be updated
+	// ExchangeName of an existing user; must provide user or userReference, else create/update will fail; cannot be updated
 	User string `json:"user,omitempty"`
 	// Reference to an existing user.rabbitmq.com object; must provide user or userReference, else create/update will fail; cannot be updated
 	UserReference *corev1.LocalObjectReference `json:"userReference,omitempty"`
-	// Name of an existing vhost; required property; cannot be updated
+	// ExchangeName of an existing vhost; required property; cannot be updated
 	// +kubebuilder:validation:Required
 	Vhost string `json:"vhost"`
 	// Permissions to grant to the user in the specific vhost; required property.

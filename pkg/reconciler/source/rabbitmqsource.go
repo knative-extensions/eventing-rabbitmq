@@ -19,9 +19,15 @@ package rabbitmq
 import (
 	"context"
 	"fmt"
-
+	"knative.dev/eventing-rabbitmq/pkg/rabbit"
+	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
+	brokerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
+	triggerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
+	"knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
+	rabbitlisters "knative.dev/eventing-rabbitmq/third_party/pkg/client/listers/rabbitmq.com/v1beta1"
 	"knative.dev/eventing/pkg/utils"
 	"knative.dev/pkg/controller"
+	"knative.dev/pkg/kmeta"
 
 	"go.uber.org/zap"
 	v1 "k8s.io/api/apps/v1"
@@ -74,6 +80,9 @@ type Reconciler struct {
 
 	rabbitmqLister   listers.RabbitmqSourceLister
 	deploymentLister appsv1listers.DeploymentLister
+	bindingListener rabbitlisters.BindingLister
+	exchangeLister   rabbitlisters.ExchangeLister
+	queueLister      rabbitlisters.QueueLister
 
 	rabbitmqClientSet versioned.Interface
 	loggingContext    context.Context
@@ -81,6 +90,8 @@ type Reconciler struct {
 	metricsConfig     *metrics.ExporterOptions
 
 	sinkResolver *resolver.URIResolver
+
+	rabbit rabbit.Service
 }
 
 var _ reconcilerrabbitmqsource.Interface = (*Reconciler)(nil)
@@ -106,6 +117,11 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, src *v1alpha1.RabbitmqSo
 	}
 	src.Status.MarkSink(sinkURI)
 
+	if err := r.reconcileRabbitObjects(ctx, src); err != nil {
+		logging.FromContext(ctx).Error("Unable to create RabbitMQ resources", zap.Error(err))
+		return err
+	}
+
 	ra, err := r.createReceiveAdapter(ctx, src, sinkURI)
 	if err != nil {
 		logging.FromContext(ctx).Error("Unable to create the receive adapter", zap.Error(err))
@@ -117,8 +133,62 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, src *v1alpha1.RabbitmqSo
 	return nil
 }
 
-func (r *Reconciler) createReceiveAdapter(ctx context.Context, src *v1alpha1.RabbitmqSource, sinkURI *apis.URL) (*v1.Deployment, error) {
+func (r *Reconciler) reconcileRabbitObjects(ctx context.Context, source *v1alpha1.RabbitmqSource) error {
+	logger := logging.FromContext(ctx)
+	if source.Spec.Predeclared {
+		logger.Info("predeclared set to true; no RabbitMQ objects to reconcile",
+			"source", source.Name,
+			"predeclared queue", source.Spec.QueueConfig.Name)
+		return nil
+	}
 
+	_, err := r.rabbit.ReconcileExchange(ctx, &brokerresources.ExchangeArgs{
+		Name: naming.CreateSourceRabbitName(source),
+		Namespace:    source.Namespace,
+		RabbitmqClusterReference: &v1beta1.RabbitmqClusterReference{
+			ConnectionSecret: source.Spec.ConnectionSecret,
+		},
+		Source: source,
+	})
+	if err != nil {
+		logger.Error("failed to reconcile exchange", "exchange", source.Spec.ExchangeConfig.Name)
+		return err
+	}
+
+	_, err = r.rabbit.ReconcileQueue(ctx, &triggerresources.QueueArgs{
+		Name: naming.CreateSourceRabbitName(source),
+		Namespace:    source.Namespace,
+		RabbitmqClusterReference: &v1beta1.RabbitmqClusterReference{
+			ConnectionSecret: source.Spec.ConnectionSecret,
+		},
+		Source: source,
+		Owner: *kmeta.NewControllerRef(source),
+	})
+	if err != nil {
+		logger.Error("failed to reconcile queue", "queue", source.Spec.QueueConfig.Name)
+		return err
+	}
+
+	_, err = r.rabbit.ReconcileBinding(ctx, &triggerresources.BindingArgs{
+		Name: naming.CreateSourceRabbitName(source),
+		Namespace:    source.Namespace,
+		RabbitmqClusterReference: &v1beta1.RabbitmqClusterReference{
+			ConnectionSecret: source.Spec.ConnectionSecret,
+		},
+		Vhost: source.Spec.Vhost,
+		Source: source.Spec.ExchangeConfig.Name,
+		Destination: source.Spec.QueueConfig.Name,
+		Owner: *kmeta.NewControllerRef(source),
+	})
+	if err != nil {
+		logger.Error("failed to reconcile queue", "queue", source.Spec.QueueConfig.Name)
+		return err
+	}
+
+	return nil
+}
+
+func (r *Reconciler) createReceiveAdapter(ctx context.Context, src *v1alpha1.RabbitmqSource, sinkURI *apis.URL) (*v1.Deployment, error) {
 	loggingConfig, err := logging.ConfigToJSON(r.loggingConfig)
 	if err != nil {
 		logging.FromContext(ctx).Error("error while converting logging config to JSON", zap.Any("receiveAdapter", err))

@@ -1109,8 +1109,10 @@ func createPolicy(broker bool) *rabbitv1beta1.Policy {
 		Namespace:                testNS,
 		Owner:                    *kmeta.NewControllerRef(t),
 		DLXName:                  &dlxName,
-		RabbitMQClusterName:      rabbitMQBrokerName,
-		RabbitMQClusterNamespace: testNS,
+		RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
+			Name:      rabbitMQBrokerName,
+			Namespace: testNS,
+		},
 	})
 }
 

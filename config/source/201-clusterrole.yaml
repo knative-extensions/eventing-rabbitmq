@@ -67,6 +67,7 @@ rules:
   - apiGroups:
       - rabbitmq.com
     resources:
+      - bindings
       - queues
       - exchanges
     verbs:
@@ -80,6 +81,7 @@ rules:
   - apiGroups:
       - rabbitmq.com
     resources:
+      - bindings/status
       - queues/status
       - exchanges/status
     verbs:

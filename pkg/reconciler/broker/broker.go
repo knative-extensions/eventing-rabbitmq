@@ -19,6 +19,7 @@ package broker
 import (
 	"context"
 	"fmt"
+	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 
 	"go.uber.org/zap"
 	v1 "k8s.io/api/apps/v1"
@@ -290,12 +291,14 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 
 	if b.Spec.Delivery != nil && b.Spec.Delivery.DeadLetterSink != nil {
 		queue, err := r.rabbit.ReconcileQueue(ctx, &triggerresources.QueueArgs{
-			Name:                     naming.CreateBrokerDeadLetterQueueName(b),
-			Namespace:                b.Namespace,
-			RabbitMQClusterName:      b.Spec.Config.Name,
-			RabbitMQClusterNamespace: b.Spec.Config.Namespace,
-			Owner:                    *kmeta.NewControllerRef(b),
-			Labels:                   triggerresources.QueueLabels(b, nil),
+			Name:      naming.CreateBrokerDeadLetterQueueName(b),
+			Namespace: b.Namespace,
+			RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
+				Name:      b.Spec.Config.Name,
+				Namespace: b.Spec.Config.Namespace,
+			},
+			Owner:  *kmeta.NewControllerRef(b),
+			Labels: triggerresources.QueueLabels(b, nil),
 		})
 		if err != nil {
 			MarkDLXFailed(&b.Status, "QueueFailure", fmt.Sprintf("Failed to reconcile Dead Letter Queue %q : %s", naming.CreateBrokerDeadLetterQueueName(b), err))
@@ -309,14 +312,17 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 		MarkDLXReady(&b.Status)
 		bindingName := naming.CreateBrokerDeadLetterQueueName(b)
 		binding, err := r.rabbit.ReconcileBinding(ctx, &triggerresources.BindingArgs{
-			Name:                     bindingName,
-			Namespace:                b.Namespace,
-			RabbitMQClusterName:      b.Spec.Config.Name,
-			RabbitMQClusterNamespace: b.Spec.Config.Namespace,
-			Source:                   naming.BrokerExchangeName(b, true),
-			Destination:              bindingName,
-			Owner:                    *kmeta.NewControllerRef(b),
-			Labels:                   triggerresources.BindingLabels(b, nil),
+			Name:      bindingName,
+			Namespace: b.Namespace,
+			RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
+				Name:      b.Spec.Config.Name,
+				Namespace: b.Spec.Config.Namespace,
+			},
+			Vhost:       "/",
+			Source:      naming.BrokerExchangeName(b, true),
+			Destination: bindingName,
+			Owner:       *kmeta.NewControllerRef(b),
+			Labels:      triggerresources.BindingLabels(b, nil),
 			Filters: map[string]string{
 				triggerresources.DLQBindingKey: b.Name,
 			},

@@ -17,6 +17,8 @@ limitations under the License.
 package resources_test
 
 import (
+	v1 "k8s.io/api/core/v1"
+	"knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -29,6 +31,8 @@ import (
 const (
 	namespace   = "foobar"
 	triggerName = "my-trigger"
+	sourceName = "a-source"
+	connectionSecretName = "a-random-secret"
 )
 
 func TestNewQueue(t *testing.T) {
@@ -50,7 +54,9 @@ func TestNewQueue(t *testing.T) {
 			args: &resources.QueueArgs{
 				Name:                triggerName,
 				Namespace:           namespace,
-				RabbitMQClusterName: rabbitmqcluster,
+				RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
+					Name: rabbitmqcluster,
+				},
 				Owner:               owner,
 				Labels:              map[string]string{"cool": "label"},
 			},
@@ -76,8 +82,10 @@ func TestNewQueue(t *testing.T) {
 			args: &resources.QueueArgs{
 				Name:                     triggerName,
 				Namespace:                namespace,
-				RabbitMQClusterName:      rabbitmqcluster,
-				RabbitMQClusterNamespace: "single-rabbitmq-cluster",
+				RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
+					Name: rabbitmqcluster,
+					Namespace: "single-rabbitmq-cluster",
+				},
 				Owner:                    owner,
 				Labels:                   map[string]string{"cool": "label"},
 			},
@@ -95,6 +103,47 @@ func TestNewQueue(t *testing.T) {
 					RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
 						Name:      rabbitmqcluster,
 						Namespace: "single-rabbitmq-cluster",
+					},
+				},
+			},
+		},
+		{
+			name: "creates a queue for source",
+			args: &resources.QueueArgs{
+				Name:                     sourceName,
+				Namespace:                namespace,
+				RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
+					ConnectionSecret: &v1.LocalObjectReference{
+						Name: connectionSecretName,
+					},
+				},
+				Owner:                    owner,
+				Labels:                   map[string]string{"a-key": "a-value"},
+				Source: &v1alpha1.RabbitmqSource{
+					Spec:       v1alpha1.RabbitmqSourceSpec{
+						QueueConfig: v1alpha1.RabbitmqSourceQueueConfigSpec{
+							Name:       "a-test-queue",
+							Durable:    false,
+							AutoDelete: false,
+						},
+					},
+				},
+			},
+			want: &rabbitv1beta1.Queue{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:            sourceName,
+					Namespace:       namespace,
+					OwnerReferences: []metav1.OwnerReference{owner},
+					Labels:          map[string]string{"a-key": "a-value"},
+				},
+				Spec: rabbitv1beta1.QueueSpec{
+					Name:       "a-test-queue",
+					Durable:    false,
+					AutoDelete: false,
+					RabbitmqClusterReference:  rabbitv1beta1.RabbitmqClusterReference{
+						ConnectionSecret: &v1.LocalObjectReference{
+							Name: connectionSecretName,
+						},
 					},
 				},
 			},

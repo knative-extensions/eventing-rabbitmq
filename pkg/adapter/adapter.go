@@ -179,10 +179,9 @@ func (a *Adapter) start(stopCh <-chan struct{}) error {
 	logger := a.logger
 
 	logger.Info("Starting with config: ",
-		zap.String("ExchangeConfigType", a.config.ExchangeConfig.TypeOf),
-		zap.String("RoutingKey", a.config.QueueConfig.RoutingKey),
+		zap.String("QueueName", a.config.QueueConfig.Name),
 		zap.String("SinkURI", a.config.Sink),
-		zap.String("Name", a.config.Name),
+		zap.String("ExchangeName", a.config.Name),
 		zap.String("Namespace", a.config.Namespace))
 
 	conn, err := a.CreateConn(a.config.User, a.config.Password, logger)
@@ -204,73 +203,8 @@ func (a *Adapter) start(stopCh <-chan struct{}) error {
 }
 
 func (a *Adapter) StartAmqpClient(ch *wabbit.Channel) (*wabbit.Queue, error) {
-	logger := a.logger
-
-	if a.config.Predeclared {
-		queue, err := (*ch).QueueInspect(a.config.QueueConfig.Name)
-		return &queue, err
-	}
-
-	exchangeConfig := fillDefaultValuesForExchangeConfig(&a.config.ExchangeConfig, a.config.Topic)
-
-	err := (*ch).ExchangeDeclare(
-		exchangeConfig.Name,
-		exchangeConfig.TypeOf,
-		wabbit.Option{
-			"durable":  exchangeConfig.Durable,
-			"delete":   exchangeConfig.AutoDelete,
-			"internal": exchangeConfig.Internal,
-			"noWait":   exchangeConfig.NoWait,
-		})
-	if err != nil {
-		logger.Error(err.Error())
-		return nil, err
-	}
-
-	queue, err := (*ch).QueueDeclare(
-		a.config.QueueConfig.Name,
-		wabbit.Option{
-			"durable":   a.config.QueueConfig.Durable,
-			"delete":    a.config.QueueConfig.AutoDelete,
-			"exclusive": a.config.QueueConfig.Exclusive,
-			"noWait":    a.config.QueueConfig.NoWait,
-		})
-	if err != nil {
-		logger.Error(err.Error())
-		return nil, err
-	}
-
-	if a.config.ExchangeConfig.TypeOf != "fanout" {
-		routingKeys := strings.Split(a.config.QueueConfig.RoutingKey, ",")
-
-		for _, routingKey := range routingKeys {
-			err = (*ch).QueueBind(
-				queue.Name(),
-				routingKey,
-				exchangeConfig.Name,
-				wabbit.Option{
-					"noWait": a.config.QueueConfig.NoWait,
-				})
-			if err != nil {
-				logger.Error(err.Error())
-				return nil, err
-			}
-		}
-	} else {
-		err = (*ch).QueueBind(
-			queue.Name(),
-			"",
-			exchangeConfig.Name,
-			wabbit.Option{
-				"noWait": a.config.QueueConfig.NoWait,
-			})
-		if err != nil {
-			logger.Error(err.Error())
-			return nil, err
-		}
-	}
-
-	return &queue, nil
+	queue, err := (*ch).QueueInspect(a.config.QueueConfig.Name)
+	return &queue, err
 }
 
 func (a *Adapter) ConsumeMessages(channel *wabbit.Channel,
@@ -411,15 +345,4 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 
 	_ = a.reporter.ReportEventCount(reportArgs, res.StatusCode)
 	return nil
-}
-
-func fillDefaultValuesForExchangeConfig(config *ExchangeConfig, topic string) *ExchangeConfig {
-	if config.TypeOf != "topic" {
-		if config.Name == "" {
-			config.Name = "logs"
-		}
-	} else {
-		config.Name = topic
-	}
-	return config
 }
