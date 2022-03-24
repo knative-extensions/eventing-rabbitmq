@@ -179,10 +179,10 @@ func (a *Adapter) start(stopCh <-chan struct{}) error {
 	logger := a.logger
 
 	logger.Info("Starting with config: ",
+		zap.String("Name", a.config.Name),
+		zap.String("Namespace", a.config.Namespace),
 		zap.String("QueueName", a.config.QueueConfig.Name),
-		zap.String("SinkURI", a.config.Sink),
-		zap.String("ExchangeName", a.config.Name),
-		zap.String("Namespace", a.config.Namespace))
+		zap.String("SinkURI", a.config.Sink))
 
 	conn, err := a.CreateConn(a.config.User, a.config.Password, logger)
 	if err == nil {
