@@ -19,6 +19,7 @@ package rabbitmq
 import (
 	"context"
 	"fmt"
+
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
 	brokerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
@@ -80,7 +81,7 @@ type Reconciler struct {
 
 	rabbitmqLister   listers.RabbitmqSourceLister
 	deploymentLister appsv1listers.DeploymentLister
-	bindingListener rabbitlisters.BindingLister
+	bindingListener  rabbitlisters.BindingLister
 	exchangeLister   rabbitlisters.ExchangeLister
 	queueLister      rabbitlisters.QueueLister
 
@@ -143,8 +144,8 @@ func (r *Reconciler) reconcileRabbitObjects(ctx context.Context, source *v1alpha
 	}
 
 	_, err := r.rabbit.ReconcileExchange(ctx, &brokerresources.ExchangeArgs{
-		Name: naming.CreateSourceRabbitName(source),
-		Namespace:    source.Namespace,
+		Name:      naming.CreateSourceRabbitName(source),
+		Namespace: source.Namespace,
 		RabbitmqClusterReference: &v1beta1.RabbitmqClusterReference{
 			ConnectionSecret: source.Spec.ConnectionSecret,
 		},
@@ -156,13 +157,13 @@ func (r *Reconciler) reconcileRabbitObjects(ctx context.Context, source *v1alpha
 	}
 
 	_, err = r.rabbit.ReconcileQueue(ctx, &triggerresources.QueueArgs{
-		Name: naming.CreateSourceRabbitName(source),
-		Namespace:    source.Namespace,
+		Name:      naming.CreateSourceRabbitName(source),
+		Namespace: source.Namespace,
 		RabbitmqClusterReference: &v1beta1.RabbitmqClusterReference{
 			ConnectionSecret: source.Spec.ConnectionSecret,
 		},
 		Source: source,
-		Owner: *kmeta.NewControllerRef(source),
+		Owner:  *kmeta.NewControllerRef(source),
 	})
 	if err != nil {
 		logger.Error("failed to reconcile queue", "queue", source.Spec.QueueConfig.Name)
@@ -170,15 +171,15 @@ func (r *Reconciler) reconcileRabbitObjects(ctx context.Context, source *v1alpha
 	}
 
 	_, err = r.rabbit.ReconcileBinding(ctx, &triggerresources.BindingArgs{
-		Name: naming.CreateSourceRabbitName(source),
-		Namespace:    source.Namespace,
+		Name:      naming.CreateSourceRabbitName(source),
+		Namespace: source.Namespace,
 		RabbitmqClusterReference: &v1beta1.RabbitmqClusterReference{
 			ConnectionSecret: source.Spec.ConnectionSecret,
 		},
-		Vhost: source.Spec.Vhost,
-		Source: source.Spec.ExchangeConfig.Name,
+		Vhost:       source.Spec.Vhost,
+		Source:      source.Spec.ExchangeConfig.Name,
 		Destination: source.Spec.QueueConfig.Name,
-		Owner: *kmeta.NewControllerRef(source),
+		Owner:       *kmeta.NewControllerRef(source),
 	})
 	if err != nil {
 		logger.Error("failed to reconcile queue", "queue", source.Spec.QueueConfig.Name)

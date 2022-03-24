@@ -19,6 +19,7 @@ package trigger
 import (
 	"context"
 	"fmt"
+
 	"knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 
 	"go.uber.org/zap"

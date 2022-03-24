@@ -18,6 +18,7 @@ package naming
 
 import (
 	"fmt"
+
 	"knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 
 	"knative.dev/pkg/kmeta"

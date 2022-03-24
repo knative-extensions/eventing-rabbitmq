@@ -18,11 +18,12 @@ package rabbitmq
 
 import (
 	"context"
+	"os"
+
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	bindinginformer "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/informers/rabbitmq.com/v1beta1/binding"
 	exchangeinformer "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/informers/rabbitmq.com/v1beta1/exchange"
 	queueinformer "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/informers/rabbitmq.com/v1beta1/queue"
-	"os"
 
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"

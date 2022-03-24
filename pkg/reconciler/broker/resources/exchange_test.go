@@ -17,10 +17,11 @@ limitations under the License.
 package resources_test
 
 import (
+	"testing"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/pointer"
 	"knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
-	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -51,8 +52,8 @@ func TestNewExchange(t *testing.T) {
 	}{{
 		name: "broker exchange",
 		args: &resources.ExchangeArgs{
-			Name: brokerName,
-			Namespace:    namespace,
+			Name:      brokerName,
+			Namespace: namespace,
 			RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
 				Name: rabbitmqcluster,
 			},
@@ -96,8 +97,8 @@ func TestNewExchange(t *testing.T) {
 	}, {
 		name: "broker exchange in RabbitMQ cluster namespace",
 		args: &resources.ExchangeArgs{
-			Name: brokerName,
-			Namespace:    namespace,
+			Name:      brokerName,
+			Namespace: namespace,
 			RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
 				Name:      rabbitmqcluster,
 				Namespace: "single-rabbitmq-cluster",
@@ -143,8 +144,8 @@ func TestNewExchange(t *testing.T) {
 	}, {
 		name: "source exchange",
 		args: &resources.ExchangeArgs{
-			Name: sourceName,
-			Namespace:    namespace,
+			Name:      sourceName,
+			Namespace: namespace,
 			RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
 				ConnectionSecret: &corev1.LocalObjectReference{
 					Name: connectionSecret,
@@ -173,11 +174,11 @@ func TestNewExchange(t *testing.T) {
 				Namespace: namespace,
 				OwnerReferences: []metav1.OwnerReference{
 					{
-						Kind:       "RabbitmqSource",
-						APIVersion: "sources.knative.dev/v1alpha1",
-						Name:       sourceName,
-						UID:        sourceUID,
-						Controller: pointer.Bool(true),
+						Kind:               "RabbitmqSource",
+						APIVersion:         "sources.knative.dev/v1alpha1",
+						Name:               sourceName,
+						UID:                sourceUID,
+						Controller:         pointer.Bool(true),
 						BlockOwnerDeletion: pointer.Bool(true),
 					},
 				},
@@ -187,7 +188,7 @@ func TestNewExchange(t *testing.T) {
 			},
 			Spec: rabbitv1beta1.ExchangeSpec{
 				Name:       "some-exchange",
-				Type:     "direct",
+				Type:       "direct",
 				Durable:    false,
 				AutoDelete: false,
 				RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
@@ -200,8 +201,8 @@ func TestNewExchange(t *testing.T) {
 	}, {
 		name: "trigger exchange",
 		args: &resources.ExchangeArgs{
-			Name: brokerName,
-			Namespace:    namespace,
+			Name:      brokerName,
+			Namespace: namespace,
 			RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
 				Name: rabbitmqcluster,
 			},

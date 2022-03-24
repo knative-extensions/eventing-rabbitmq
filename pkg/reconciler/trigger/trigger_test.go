@@ -1105,10 +1105,10 @@ func createPolicy(broker bool) *rabbitv1beta1.Policy {
 		dlxName = naming.TriggerDLXExchangeName(t)
 	}
 	return resources.NewPolicy(&resources.QueueArgs{
-		Name:                     queueName,
-		Namespace:                testNS,
-		Owner:                    *kmeta.NewControllerRef(t),
-		DLXName:                  &dlxName,
+		Name:      queueName,
+		Namespace: testNS,
+		Owner:     *kmeta.NewControllerRef(t),
+		DLXName:   &dlxName,
 		RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
 			Name:      rabbitMQBrokerName,
 			Namespace: testNS,

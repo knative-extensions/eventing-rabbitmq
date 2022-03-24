@@ -20,8 +20,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	"net/url"
+
+	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -46,13 +47,13 @@ func (r *Reconciler) getExchangeArgs(ctx context.Context, b *eventingv1.Broker) 
 		return nil, err
 	}
 	return &resources.ExchangeArgs{
-		Namespace:                b.Namespace,
-		Broker:                   b,
+		Namespace: b.Namespace,
+		Broker:    b,
 		RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
 			Name:      b.Spec.Config.Name,
 			Namespace: b.Spec.Config.Namespace,
 		},
-		RabbitMQURL:              rabbitmqURL,
+		RabbitMQURL: rabbitmqURL,
 	}, nil
 }
 
