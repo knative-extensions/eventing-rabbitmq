@@ -42,7 +42,7 @@ github.com/Microsoft/hcsshim/internal/vmcompute
 github.com/Microsoft/hcsshim/internal/wclayer
 github.com/Microsoft/hcsshim/internal/winapi
 github.com/Microsoft/hcsshim/osversion
-# github.com/NeowayLabs/wabbit v0.0.0-20210927194032-73ad61d1620e
+# github.com/NeowayLabs/wabbit v0.0.0-20210927194032-73ad61d1620e => github.com/gabo1208/wabbit v0.0.0-20220317170930-38d53c949918
 ## explicit
 github.com/NeowayLabs/wabbit
 github.com/NeowayLabs/wabbit/amqp
