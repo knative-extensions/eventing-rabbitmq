@@ -280,14 +280,14 @@ func TestReconcile(t *testing.T) {
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
-					WithExchangeFailed("ExchangeFailure", `Failed to create exchange: Network unreachable`)),
+					WithExchangeFailed("ExchangeFailure", `Failed to create exchange: network unreachable`)),
 			}},
 			WantPatches: []clientgotesting.PatchActionImpl{
 				patchFinalizers(testNS, brokerName),
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
-				Eventf(corev1.EventTypeWarning, "InternalError", `Network unreachable`),
+				Eventf(corev1.EventTypeWarning, "InternalError", `network unreachable`),
 			},
 			WantErr: true,
 		}, {

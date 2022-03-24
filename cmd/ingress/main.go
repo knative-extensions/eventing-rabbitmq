@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net/http"
 
+	wabbitamqp "github.com/NeowayLabs/wabbit/amqp"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
@@ -30,6 +31,7 @@ import (
 	"go.opencensus.io/plugin/ochttp/propagation/tracecontext"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
+	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	"knative.dev/eventing-rabbitmq/pkg/utils"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/pkg/logging"
@@ -49,12 +51,13 @@ type envConfig struct {
 	BrokerURL    string `envconfig:"BROKER_URL" required:"true"`
 	ExchangeName string `envconfig:"EXCHANGE_NAME" required:"true"`
 
-	connection *amqp.Connection
-	channel    *amqp.Channel
+	connection *wabbitamqp.Conn
+	channel    *wabbitamqp.Channel
 }
 
 func main() {
 	ctx := signals.NewContext()
+	retryNumber := 0
 	var env envConfig
 	if err := envconfig.Process("", &env); err != nil {
 		logging.FromContext(ctx).Fatal("Failed to process env var: ", err)
@@ -73,9 +76,22 @@ func main() {
 		logger.Errorw("Failed to create the metrics exporter", zap.Error(err))
 	}
 
-	env.setupRabbitMQ(logger)
-	defer env.connection.Close()
-	defer env.channel.Close()
+	retryChannel := make(chan bool)
+	env.CreateRabbitMQResources(&retryNumber, retryChannel, logger)
+	go func() {
+		for {
+			retry := <-retryChannel
+			if !retry {
+				return
+			}
+			env.CreateRabbitMQResources(&retryNumber, retryChannel, logger)
+		}
+	}()
+	defer func() {
+		retryChannel <- false
+		close(retryChannel)
+		rabbit.CleanupRabbitMQ(env.connection, env.channel, logger)
+	}()
 
 	connectionArgs := kncloudevents.ConnectionArgs{
 		MaxIdleConns:        defaultMaxIdleConnections,
@@ -88,37 +104,6 @@ func main() {
 	if err := receiver.StartListen(ctx, &env); err != nil {
 		logger.Fatalf("Failed to start listen, %v", err)
 	}
-}
-
-func (env *envConfig) setupRabbitMQ(logger *zap.SugaredLogger) {
-	var err error
-
-	if env.connection == nil || env.connection.IsClosed() {
-		env.connection, err = amqp.Dial(env.BrokerURL)
-		if err != nil {
-			logger.Fatalw("Failed to connect to RabbitMQ", zap.Error(err))
-		}
-	}
-
-	env.channel, err = env.connection.Channel()
-	if err != nil {
-		logger.Fatalw("Failed to open a channel", zap.Error(err))
-	}
-
-	// noWait is false
-	if err = env.channel.Confirm(false); err != nil {
-		logger.Fatalf("Failed to switch connection channel to confirm mode: %s", err)
-	}
-
-	// Wait for a channel or connection close message to rerun the RabbitMQ setup
-	go func() {
-		select {
-		case <-env.connection.NotifyClose(make(chan *amqp.Error)):
-		case <-env.channel.NotifyClose(make(chan *amqp.Error)):
-		}
-		logger.Warn("Lost connection to RabbitMQ, reconnecting")
-		env.setupRabbitMQ(logger)
-	}()
 }
 
 func (env *envConfig) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
@@ -208,4 +193,13 @@ func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, err
 	}
 
 	return http.StatusAccepted, nil
+}
+
+func (env *envConfig) CreateRabbitMQResources(retryNumber *int, retryChannel chan<- bool, logger *zap.SugaredLogger) {
+	conn, channel, err := rabbit.SetupRabbitMQ(env.BrokerURL, retryNumber, retryChannel, logger)
+	if err != nil {
+		return
+	}
+	env.connection = conn.(*wabbitamqp.Conn)
+	env.channel = channel.(*wabbitamqp.Channel)
 }

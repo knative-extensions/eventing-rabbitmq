@@ -38,7 +38,7 @@ require (
 )
 
 require k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9
-replace github.com/NeowayLabs/wabbit v0.0.0-20210927194032-73ad61d1620e => github.com/gabo1208/wabbit v0.0.0-20220317170930-38d53c949918
+replace github.com/NeowayLabs/wabbit v0.0.0-20210927194032-73ad61d1620e => github.com/gabo1208/wabbit v0.0.0-20220327194540-7275fcb826e1
 
 require (
 	cloud.google.com/go v0.99.0 // indirect

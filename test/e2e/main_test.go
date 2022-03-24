@@ -130,7 +130,7 @@ func TestBrokerDLQ(t *testing.T) {
 	env.Test(ctx, t, RabbitMQCluster())
 	env.Test(ctx, t, RecorderFeature())
 	env.Test(ctx, t, BrokerDLQTest())
-	env.Finish()
+	//env.Finish()
 }
 
 // TestSourceDirect makes sure a source delivers events to Sink.

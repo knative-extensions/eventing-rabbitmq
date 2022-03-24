@@ -17,65 +17,97 @@ limitations under the License.
 package rabbit
 
 import (
+	"time"
+
 	"github.com/NeowayLabs/wabbit"
 	wabbitamqp "github.com/NeowayLabs/wabbit/amqp"
 	"go.uber.org/zap"
 )
 
-const maxRetries = 5
+const cycleRetries = 60
+
+var (
+	cycleNumber      = 0
+	cycleDuration    = 1
+	maxCycleDuration = 7200
+)
 
 func SetupRabbitMQ(
-	connection wabbit.Conn,
-	channel wabbit.Channel,
 	brokerURL string,
 	retryNumber *int,
-	logger *zap.SugaredLogger) {
-	if *retryNumber >= maxRetries {
-		logger.Fatalf("Max retries (%d) reached, unnable to setup RabbitMQ correctly", maxRetries)
-		return
+	retryChannel chan<- bool,
+	logger *zap.SugaredLogger) (wabbit.Conn, wabbit.Channel, error) {
+	if *retryNumber >= cycleRetries {
+		cycleNumber += 1
+		*retryNumber = 0
+		if cycleDuration == 1 {
+			cycleDuration += 1
+		} else if cycleDuration >= maxCycleDuration {
+			cycleDuration = maxCycleDuration
+		} else {
+			cycleDuration *= cycleDuration
+		}
+
+		logger.Warnf("Max retries (%d) reached for a cycle, adjusting duration to %ss", cycleRetries, cycleDuration)
 	}
 
 	var err error
 	*retryNumber += 1
-	if connection == nil || connection.IsClosed() {
-		connection, err = wabbitamqp.Dial(brokerURL)
-		if err != nil {
-			logger.Fatalw("Failed to connect to RabbitMQ", zap.Error(err))
-		}
+	conn, err := wabbitamqp.Dial(brokerURL)
+	if err != nil {
+		logger.Errorw("Failed to connect to RabbitMQ", zap.Error(err))
 	}
 
-	if channel, err = connection.Channel(); err != nil {
-		logger.Fatalw("Failed to open a channel", zap.Error(err))
+	channel, err := conn.Channel()
+	if err != nil {
+		logger.Errorw("Failed to open a channel", zap.Error(err))
 	}
 
+	channel = channel.(*wabbitamqp.Channel)
 	// noWait is false
 	if err = channel.Confirm(false); err != nil {
-		logger.Fatalf("Failed to switch connection channel to confirm mode: %s", err)
+		logger.Errorw("Failed to switch connection channel to confirm mode: %s", zap.Error(err))
 	}
 
+	// If there is an error trying to setup rabbit, retry
 	if err != nil {
-		SetupRabbitMQ(connection, channel, brokerURL, retryNumber, logger)
-		return
+		time.Sleep(time.Second * time.Duration(cycleDuration))
+		return SetupRabbitMQ(brokerURL, retryNumber, retryChannel, logger)
 	}
 
+	// If there is no error then, set the retries to zero and wait for a channel closed event again
+	*retryNumber = 0
 	// Wait for a channel or connection close message to rerun the RabbitMQ setup
-	go CleanupRabbitMQ(connection, channel, brokerURL, retryNumber, logger)
+	go WatchRabbitMQConnections(conn, channel, brokerURL, retryNumber, retryChannel, logger)
+	return conn, channel, nil
 }
 
-func CleanupRabbitMQ(
+func WatchRabbitMQConnections(
 	connection wabbit.Conn,
 	channel wabbit.Channel,
 	brokerURL string,
 	retryNumber *int,
+	retryChannel chan<- bool,
 	logger *zap.SugaredLogger) {
 	var err error
 	select {
 	case err = <-connection.NotifyClose(make(chan wabbit.Error)):
 	case err = <-channel.NotifyClose(make(chan wabbit.Error)):
 	}
-	logger.Fatalf(
+	logger.Warn(
 		"Lost connection to RabbitMQ, reconnecting try number %d. Error: %v",
-		*retryNumber,
+		*retryNumber+((cycleNumber+1)*cycleRetries),
 		zap.Error(err))
-	SetupRabbitMQ(connection, channel, brokerURL, retryNumber, logger)
+	CleanupRabbitMQ(connection, channel, logger)
+	retryChannel <- true
+}
+
+func CleanupRabbitMQ(connection wabbit.Conn, channel wabbit.Channel, logger *zap.SugaredLogger) {
+	if err := channel.Close(); err != nil {
+		logger.Error(err)
+	}
+
+	if err := connection.Close(); err != nil {
+		logger.Error(err)
+	}
 }

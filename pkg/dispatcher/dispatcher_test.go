@@ -31,7 +31,9 @@ import (
 
 	"github.com/NeowayLabs/wabbit"
 	"github.com/NeowayLabs/wabbit/amqptest/server"
+
 	cloudevents "github.com/cloudevents/sdk-go/v2"
+	amqp091 "github.com/rabbitmq/amqp091-go"
 
 	ce "github.com/cloudevents/sdk-go/v2/event"
 	"github.com/google/go-cmp/cmp"
@@ -139,7 +141,7 @@ func TestFailToConsume(t *testing.T) {
 		t.Fatal("Did not fail to consume.", err)
 	}
 
-	if err.Error() != "create consumer: Unknown queue 'nosuchqueue'" {
+	if err.Error() != "create consumer: unknown queue 'nosuchqueue'" {
 		t.Fatal("Unexpected failure message, got: ", err)
 	}
 }
@@ -280,7 +282,7 @@ func TestEndToEnd(t *testing.T) {
 			}
 
 			for i := range tc.rawMessages {
-				err = ch.Publish(exchangeName, "process.data", tc.rawMessages[i], nil)
+				err = ch.Publish(exchangeName, "process.data", false, false, amqp091.Publishing{Body: tc.rawMessages[i]})
 				if err != nil {
 					t.Errorf("Failed to publish raw message %d: %s", i, err)
 				}
@@ -290,7 +292,7 @@ func TestEndToEnd(t *testing.T) {
 				if err != nil {
 					t.Errorf("Failed to marshal the event %d: %s", i, err)
 				}
-				err = ch.Publish(exchangeName, "process.data", b, nil)
+				err = ch.Publish(exchangeName, "process.data", false, false, amqp091.Publishing{Body: b})
 				if err != nil {
 					t.Errorf("Failed to publish event %d: %s", i, err)
 				}
