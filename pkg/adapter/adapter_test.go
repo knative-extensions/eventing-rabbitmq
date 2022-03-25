@@ -163,7 +163,6 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 			}
 
 			err = a.postMessage(m)
-
 			if tc.error && err == nil {
 				t.Errorf("expected error, but got %v", err)
 			}
