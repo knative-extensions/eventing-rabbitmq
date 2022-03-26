@@ -518,6 +518,8 @@ github.com/gabo1208/wabbit v0.0.0-20220325042137-ea6ad596a729 h1:UzwY++FXoNEm+oU
 github.com/gabo1208/wabbit v0.0.0-20220325042137-ea6ad596a729/go.mod h1:vpedrSl1GHO2ZM+tvyvpjG1pJJRGXfH6utkZvPBe4qI=
 github.com/gabo1208/wabbit v0.0.0-20220325042451-a8ec1ec18993 h1:yZLIvqGIgR+8u9vSuHnK1Ud9Ro8NsdNHbuDavEgKUIA=
 github.com/gabo1208/wabbit v0.0.0-20220325042451-a8ec1ec18993/go.mod h1:vpedrSl1GHO2ZM+tvyvpjG1pJJRGXfH6utkZvPBe4qI=
+github.com/gabo1208/wabbit v0.0.0-20220326190254-c6b17c4cd853 h1:Z7aIGyEpHTm1Ytrn/ECFyIkzFSHx0hx428P9kC0aCaQ=
+github.com/gabo1208/wabbit v0.0.0-20220326190254-c6b17c4cd853/go.mod h1:vpedrSl1GHO2ZM+tvyvpjG1pJJRGXfH6utkZvPBe4qI=
 github.com/garyburd/redigo v0.0.0-20150301180006-535138d7bcd7/go.mod h1:NR3MbYisc3/PwhQ00EMzDiPmrwpPxAn5GI05/YaO1SY=
 github.com/getkin/kin-openapi v0.76.0/go.mod h1:660oXbgy5JFMKreazJaQTw7o+X00qeSyhcnluiMv+Xg=
 github.com/getsentry/raven-go v0.2.0/go.mod h1:KungGk8q33+aIAZUIVWZDr2OfAEBsO49PX4NzFV5kcQ=

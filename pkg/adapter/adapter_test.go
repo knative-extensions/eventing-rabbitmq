@@ -221,12 +221,12 @@ func TestAdapter_CreateConn(t *testing.T) {
 	}
 
 	conn, _ := a.CreateConn("", "", logging.FromContext(context.TODO()).Desugar())
-	if conn != nil {
+	if conn.(*amqp.Conn) != nil {
 		t.Errorf("Failed to connect to RabbitMQ")
 	}
 
 	conn, _ = a.CreateConn("guest", "guest", logging.FromContext(context.TODO()).Desugar())
-	if conn != nil {
+	if conn.(*amqp.Conn) != nil {
 		t.Errorf("Failed to connect to RabbitMQ")
 	}
 	fakeServer.Stop()

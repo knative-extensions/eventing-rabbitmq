@@ -27,10 +27,15 @@ import (
 const cycleRetries = 60
 
 var (
-	cycleNumber      = 0
-	cycleDuration    = 1
-	maxCycleDuration = 7200
+	cycleNumber                                        = 0
+	cycleDuration                                      = 1
+	maxCycleDuration                                   = 7200
+	DialFunc         func(string) (wabbit.Conn, error) = wabbitamqp.Dial
 )
+
+func SetDialFunc(dialFunc func(uri string) (wabbit.Conn, error)) {
+	DialFunc = dialFunc
+}
 
 func SetupRabbitMQ(
 	brokerURL string,
@@ -53,7 +58,7 @@ func SetupRabbitMQ(
 
 	var err error
 	*retryNumber += 1
-	conn, err := wabbitamqp.Dial(brokerURL)
+	conn, err := DialFunc(brokerURL)
 	if err != nil {
 		logger.Errorw("Failed to connect to RabbitMQ", zap.Error(err))
 	}
@@ -98,11 +103,11 @@ func WatchRabbitMQConnections(
 		"Lost connection to RabbitMQ, reconnecting try number %d. Error: %v",
 		*retryNumber+((cycleNumber+1)*cycleRetries),
 		zap.Error(err))
-	CleanupRabbitMQ(connection, channel, logger)
+	CloseRabbitMQConnections(connection, channel, logger)
 	retryChannel <- true
 }
 
-func CleanupRabbitMQ(connection wabbit.Conn, channel wabbit.Channel, logger *zap.SugaredLogger) {
+func CloseRabbitMQConnections(connection wabbit.Conn, channel wabbit.Channel, logger *zap.SugaredLogger) {
 	if err := channel.Close(); err != nil {
 		logger.Error(err)
 	}
@@ -110,4 +115,10 @@ func CleanupRabbitMQ(connection wabbit.Conn, channel wabbit.Channel, logger *zap
 	if err := connection.Close(); err != nil {
 		logger.Error(err)
 	}
+}
+
+func CleanupRabbitMQ(connection wabbit.Conn, channel wabbit.Channel, retryChannel chan<- bool, logger *zap.SugaredLogger) {
+	retryChannel <- false
+	close(retryChannel)
+	CloseRabbitMQConnections(connection, channel, logger)
 }

@@ -82,16 +82,12 @@ func main() {
 		for {
 			retry := <-retryChannel
 			if !retry {
-				return
+				break
 			}
 			env.CreateRabbitMQResources(&retryNumber, retryChannel, logger)
 		}
 	}()
-	defer func() {
-		retryChannel <- false
-		close(retryChannel)
-		rabbit.CleanupRabbitMQ(env.connection, env.channel, logger)
-	}()
+	defer rabbit.CleanupRabbitMQ(env.connection, env.channel, retryChannel, logger)
 
 	connectionArgs := kncloudevents.ConnectionArgs{
 		MaxIdleConns:        defaultMaxIdleConnections,

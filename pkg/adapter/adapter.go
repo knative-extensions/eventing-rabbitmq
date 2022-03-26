@@ -120,7 +120,7 @@ func vhostHandler(brokers string, vhost string) string {
 	return fmt.Sprintf("%s%s", brokers, vhost)
 }
 
-func (a *Adapter) CreateConn(user string, password string, logger *zap.Logger) (*amqp.Conn, error) {
+func (a *Adapter) CreateConn(user string, password string, logger *zap.Logger) (wabbit.Conn, error) {
 	if user != "" && password != "" {
 		a.config.Brokers = fmt.Sprintf(
 			"amqp://%s:%s@%s",
@@ -137,7 +137,7 @@ func (a *Adapter) CreateConn(user string, password string, logger *zap.Logger) (
 	return conn, err
 }
 
-func (a *Adapter) CreateChannel(conn *amqp.Conn, connTest *amqptest.Conn,
+func (a *Adapter) CreateChannel(conn wabbit.Conn, connTest *amqptest.Conn,
 	logger *zap.Logger) (wabbit.Channel, error) {
 	var ch wabbit.Channel
 	var err error
