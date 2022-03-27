@@ -30,6 +30,7 @@ var (
 	cycleNumber                                        = 0
 	cycleDuration                                      = 1
 	maxCycleDuration                                   = 7200
+	Retrying                                           = true
 	DialFunc         func(string) (wabbit.Conn, error) = wabbitamqp.Dial
 )
 
@@ -42,6 +43,7 @@ func SetupRabbitMQ(
 	retryNumber *int,
 	retryChannel chan<- bool,
 	logger *zap.SugaredLogger) (wabbit.Conn, wabbit.Channel, error) {
+	// Calculate the current cycle time to sleep in ms
 	if *retryNumber >= cycleRetries {
 		cycleNumber += 1
 		*retryNumber = 0
@@ -52,36 +54,30 @@ func SetupRabbitMQ(
 		} else {
 			cycleDuration *= cycleDuration
 		}
-
 		logger.Warnf("Max retries (%d) reached for a cycle, adjusting duration to %ss", cycleRetries, cycleDuration)
 	}
 
 	var err error
+	var conn wabbit.Conn
+	var channel wabbit.Channel
 	*retryNumber += 1
-	conn, err := DialFunc(brokerURL)
-	if err != nil {
+	if conn, err = DialFunc(brokerURL); err != nil {
 		logger.Errorw("Failed to connect to RabbitMQ", zap.Error(err))
-	}
-
-	channel, err := conn.Channel()
-	if err != nil {
+	} else if channel, err = conn.Channel(); err != nil {
 		logger.Errorw("Failed to open a channel", zap.Error(err))
 	}
 
-	channel = channel.(*wabbitamqp.Channel)
-	// noWait is false
-	if err = channel.Confirm(false); err != nil {
-		logger.Errorw("Failed to switch connection channel to confirm mode: %s", zap.Error(err))
-	}
-
-	// If there is an error trying to setup rabbit, retry
-	if err != nil {
+	// If there is an error trying to setup rabbit, and the Retrying is true retry
+	if err != nil && Retrying {
 		time.Sleep(time.Second * time.Duration(cycleDuration))
 		return SetupRabbitMQ(brokerURL, retryNumber, retryChannel, logger)
 	}
-
-	// If there is no error then, set the retries to zero and wait for a channel closed event again
+	// If there is no error then, or Retrying is false
+	// set the retries to zero
 	*retryNumber = 0
+	if err != nil && !Retrying {
+		return nil, nil, err
+	}
 	// Wait for a channel or connection close message to rerun the RabbitMQ setup
 	go WatchRabbitMQConnections(conn, channel, brokerURL, retryNumber, retryChannel, logger)
 	return conn, channel, nil
@@ -108,12 +104,16 @@ func WatchRabbitMQConnections(
 }
 
 func CloseRabbitMQConnections(connection wabbit.Conn, channel wabbit.Channel, logger *zap.SugaredLogger) {
-	if err := channel.Close(); err != nil {
-		logger.Error(err)
+	if !channel.IsClosed() {
+		if err := channel.Close(); err != nil {
+			logger.Error(err)
+		}
 	}
 
-	if err := connection.Close(); err != nil {
-		logger.Error(err)
+	if !connection.IsClosed() {
+		if err := connection.Close(); err != nil {
+			logger.Error(err)
+		}
 	}
 }
 

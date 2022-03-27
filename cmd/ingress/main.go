@@ -78,6 +78,10 @@ func main() {
 
 	retryChannel := make(chan bool)
 	env.CreateRabbitMQResources(&retryNumber, retryChannel, logger)
+	// noWait is false
+	if err = env.channel.Confirm(false); err != nil {
+		logger.Errorw("Failed to switch connection channel to confirm mode: %s", zap.Error(err))
+	}
 	go func() {
 		for {
 			retry := <-retryChannel
