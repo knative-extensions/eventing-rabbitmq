@@ -26,7 +26,7 @@ type DialerFunc func(rabbitURL string) (wabbit.Conn, error)
 
 func RealDialer(rabbitURL string) (wabbit.Conn, error) {
 	realCon, err := amqp.Dial(rabbitURL)
-	return wabbit.Conn(realCon), err
+	return realCon, err
 }
 
 func TestDialer(rabbitURL string) (wabbit.Conn, error) {
