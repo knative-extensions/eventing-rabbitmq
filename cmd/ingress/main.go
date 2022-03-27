@@ -57,7 +57,6 @@ type envConfig struct {
 
 func main() {
 	ctx := signals.NewContext()
-	retryNumber := 0
 	var env envConfig
 	if err := envconfig.Process("", &env); err != nil {
 		logging.FromContext(ctx).Fatal("Failed to process env var: ", err)
@@ -77,7 +76,7 @@ func main() {
 	}
 
 	retryChannel := make(chan bool)
-	env.CreateRabbitMQResources(&retryNumber, retryChannel, logger)
+	env.CreateRabbitMQResources(retryChannel, logger)
 	// noWait is false
 	if err = env.channel.Confirm(false); err != nil {
 		logger.Errorw("Failed to switch connection channel to confirm mode: %s", zap.Error(err))
@@ -86,9 +85,11 @@ func main() {
 		for {
 			retry := <-retryChannel
 			if !retry {
+				logger.Warn("stopped listenning for RabbitMQ resources retries")
 				break
 			}
-			env.CreateRabbitMQResources(&retryNumber, retryChannel, logger)
+			logger.Warn("recreating RabbitMQ resources")
+			env.CreateRabbitMQResources(retryChannel, logger)
 		}
 	}()
 	defer rabbit.CleanupRabbitMQ(env.connection, env.channel, retryChannel, logger)
@@ -98,9 +99,7 @@ func main() {
 		MaxIdleConnsPerHost: defaultMaxIdleConnectionsPerHost,
 	}
 	kncloudevents.ConfigureConnectionArgs(&connectionArgs)
-
 	receiver := kncloudevents.NewHTTPMessageReceiver(env.Port)
-
 	if err := receiver.StartListen(ctx, &env); err != nil {
 		logger.Fatalf("Failed to start listen, %v", err)
 	}
@@ -195,8 +194,8 @@ func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, err
 	return http.StatusAccepted, nil
 }
 
-func (env *envConfig) CreateRabbitMQResources(retryNumber *int, retryChannel chan<- bool, logger *zap.SugaredLogger) {
-	conn, channel, err := rabbit.SetupRabbitMQ(env.BrokerURL, retryNumber, retryChannel, logger)
+func (env *envConfig) CreateRabbitMQResources(retryChannel chan<- bool, logger *zap.SugaredLogger) {
+	conn, channel, err := rabbit.SetupRabbitMQ(env.BrokerURL, retryChannel, logger)
 	if err != nil {
 		return
 	}

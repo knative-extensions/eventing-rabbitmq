@@ -17,6 +17,7 @@ limitations under the License.
 package rabbit
 
 import (
+	"errors"
 	"time"
 
 	"github.com/NeowayLabs/wabbit"
@@ -27,11 +28,13 @@ import (
 const cycleRetries = 60
 
 var (
-	cycleNumber                                        = 0
-	cycleDuration                                      = 1
-	maxCycleDuration                                   = 7200
-	Retrying                                           = true
-	DialFunc         func(string) (wabbit.Conn, error) = wabbitamqp.Dial
+	retryCounter                                        = 0
+	cycleNumber                                         = 0
+	InitCycleDuration                                   = 1
+	cycleDuration                                       = 1
+	maxCycleDuration                                    = 7200
+	Retrying                                            = true
+	DialFunc          func(string) (wabbit.Conn, error) = wabbitamqp.Dial
 )
 
 func SetDialFunc(dialFunc func(uri string) (wabbit.Conn, error)) {
@@ -40,27 +43,26 @@ func SetDialFunc(dialFunc func(uri string) (wabbit.Conn, error)) {
 
 func SetupRabbitMQ(
 	brokerURL string,
-	retryNumber *int,
 	retryChannel chan<- bool,
 	logger *zap.SugaredLogger) (wabbit.Conn, wabbit.Channel, error) {
 	// Calculate the current cycle time to sleep in ms
-	if *retryNumber >= cycleRetries {
+	if retryCounter >= cycleRetries {
 		cycleNumber += 1
-		*retryNumber = 0
+		retryCounter = 0
 		if cycleDuration == 1 {
 			cycleDuration += 1
-		} else if cycleDuration >= maxCycleDuration {
-			cycleDuration = maxCycleDuration
-		} else {
+		} else if cycleDuration < maxCycleDuration {
 			cycleDuration *= cycleDuration
+		} else if cycleDuration > maxCycleDuration {
+			cycleDuration = maxCycleDuration
 		}
 		logger.Warnf("Max retries (%d) reached for a cycle, adjusting duration to %ss", cycleRetries, cycleDuration)
 	}
 
+	retryCounter += 1
 	var err error
 	var conn wabbit.Conn
 	var channel wabbit.Channel
-	*retryNumber += 1
 	if conn, err = DialFunc(brokerURL); err != nil {
 		logger.Errorw("Failed to connect to RabbitMQ", zap.Error(err))
 	} else if channel, err = conn.Channel(); err != nil {
@@ -69,17 +71,21 @@ func SetupRabbitMQ(
 
 	// If there is an error trying to setup rabbit, and the Retrying is true retry
 	if err != nil && Retrying {
-		time.Sleep(time.Second * time.Duration(cycleDuration))
-		return SetupRabbitMQ(brokerURL, retryNumber, retryChannel, logger)
-	}
-	// If there is no error then, or Retrying is false
-	// set the retries to zero
-	*retryNumber = 0
-	if err != nil && !Retrying {
+		if cycleDuration <= 0 {
+			return nil, nil, errors.New("InitCycleDuration needs to be a positive integer")
+		}
+
+		time.Sleep(time.Millisecond * time.Duration(cycleDuration*(retryCounter)-1))
+		return SetupRabbitMQ(brokerURL, retryChannel, logger)
+	} else if err != nil && !Retrying {
 		return nil, nil, err
 	}
+	// if Retrying is true and error nil reset the retryCounter and cycle values
+	cycleDuration = InitCycleDuration
+	cycleNumber = 0
+	retryCounter = 0
 	// Wait for a channel or connection close message to rerun the RabbitMQ setup
-	go WatchRabbitMQConnections(conn, channel, brokerURL, retryNumber, retryChannel, logger)
+	go WatchRabbitMQConnections(conn, channel, brokerURL, retryChannel, logger)
 	return conn, channel, nil
 }
 
@@ -87,7 +93,6 @@ func WatchRabbitMQConnections(
 	connection wabbit.Conn,
 	channel wabbit.Channel,
 	brokerURL string,
-	retryNumber *int,
 	retryChannel chan<- bool,
 	logger *zap.SugaredLogger) {
 	var err error
@@ -97,7 +102,7 @@ func WatchRabbitMQConnections(
 	}
 	logger.Warn(
 		"Lost connection to RabbitMQ, reconnecting try number %d. Error: %v",
-		*retryNumber+((cycleNumber+1)*cycleRetries),
+		retryCounter+((cycleNumber+1)*cycleRetries),
 		zap.Error(err))
 	CloseRabbitMQConnections(connection, channel, logger)
 	retryChannel <- true

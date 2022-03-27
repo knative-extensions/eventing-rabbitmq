@@ -17,21 +17,16 @@ limitations under the License.
 package rabbit
 
 import (
+	"sync"
 	"testing"
 
+	wabbitamqp "github.com/NeowayLabs/wabbit/amqp"
 	"github.com/NeowayLabs/wabbit/amqptest"
 	"github.com/NeowayLabs/wabbit/amqptest/server"
 	"go.uber.org/zap"
 )
 
-func Test_DialFunc(t *testing.T) {
-	if DialFunc == nil {
-		t.Errorf("Default rabbit's pkg Dial function shouldn't be nil")
-	}
-}
-
 func Test_SetupRabbitMQ(t *testing.T) {
-	retryNumber := 0
 	retryChannel := make(chan bool)
 	testChan := make(chan bool)
 	logger := zap.NewNop().Sugar()
@@ -44,14 +39,14 @@ func Test_SetupRabbitMQ(t *testing.T) {
 
 	// To avoid retrying here we set the variable to false
 	Retrying = false
-	_, _, err = SetupRabbitMQ("amqp://localhost:5672/%2f", &retryNumber, retryChannel, logger)
+	_, _, err = SetupRabbitMQ("amqp://localhost:5672/%2f", retryChannel, logger)
 	if err == nil {
 		t.Error("SetupRabbitMQ should fail with the default DialFunc in testing environments")
 	}
 
 	Retrying = true
 	SetDialFunc(amqptest.Dial)
-	conn, ch, err := SetupRabbitMQ("amqp://localhost:5672/%2f", &retryNumber, retryChannel, logger)
+	conn, ch, err := SetupRabbitMQ("amqp://localhost:5672/%2f", retryChannel, logger)
 	if err != nil {
 		t.Errorf("Error while creating RabbitMQ resources %s", err)
 	} else if conn.IsClosed() || ch.IsClosed() {
@@ -62,15 +57,19 @@ func Test_SetupRabbitMQ(t *testing.T) {
 	go func(t *testing.T) {
 		for {
 			retry := <-retryChannel
+			testChan <- retry
 			if !retry {
 				t.Log("retryChannel closed correctly")
-				testChan <- retry
 				break
+			} else {
+				t.Log("connections closed correctly")
 			}
 		}
 	}(t)
 
 	CloseRabbitMQConnections(conn, ch, logger)
+	// wait for a response from the notifyClose channel to the retryChannel test process
+	<-testChan
 	if !conn.IsClosed() || !ch.IsClosed() {
 		t.Error("Connection or Channel not closed after close method")
 	}
@@ -79,6 +78,64 @@ func Test_SetupRabbitMQ(t *testing.T) {
 	if !conn.IsClosed() || !ch.IsClosed() {
 		t.Error("Connection or Channel not closed after cleanup method")
 	}
-	// wait for a response from the retryChannel test process
+	// wait for a response from the notifyClose channel to the retryChannel test process
 	<-testChan
+}
+
+func Test_SetupExponentialBackoff(t *testing.T) {
+	var wg sync.WaitGroup
+	retryChannel := make(chan bool)
+	logger := zap.NewNop().Sugar()
+	// set Retrying to false to test only edge cases without retrying
+	Retrying = false
+	// SetDialFunc to one that always fails
+	SetDialFunc(wabbitamqp.Dial)
+
+	// use a non blocking thread running the retries and wait for it
+	wg.Add(1)
+	go func() {
+		SetupRabbitMQ("amqp://localhost:5672/%2f", retryChannel, logger)
+		wg.Done()
+	}()
+	wg.Wait()
+	if retryCounter == 0 {
+		t.Errorf("no retries have been attempted want: > 0, got: %d", retryCounter)
+	}
+
+	retryCounter = 60
+	wg.Add(1)
+	go func() {
+		SetupRabbitMQ("amqp://localhost:5672/%2f", retryChannel, logger)
+		wg.Done()
+	}()
+	wg.Wait()
+	if cycleNumber == 0 || cycleDuration == 1 {
+		t.Errorf("cycles haven't been updated want: 1 2, got: %d %d", cycleNumber, cycleDuration)
+	}
+
+	cycleNumber = 0
+	cycleDuration = 2
+	cycleExp := cycleDuration * cycleDuration
+	retryCounter = 60
+	wg.Add(1)
+	go func() {
+		SetupRabbitMQ("amqp://localhost:5672/%2f", retryChannel, logger)
+		wg.Done()
+	}()
+	wg.Wait()
+	if cycleDuration < cycleExp {
+		t.Errorf("cycle duration is not been updated exponentially got: %d, want: %d", cycleDuration, cycleExp)
+	}
+
+	retryCounter = 60
+	maxCycleDuration = 1
+	wg.Add(1)
+	go func() {
+		SetupRabbitMQ("amqp://localhost:5672/%2f", retryChannel, logger)
+		wg.Done()
+	}()
+	wg.Wait()
+	if cycleDuration > maxCycleDuration {
+		t.Errorf("cycleDuration is greater than maxCycleDuration %d", cycleDuration)
+	}
 }
