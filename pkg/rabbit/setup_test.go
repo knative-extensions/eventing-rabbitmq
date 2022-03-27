@@ -58,22 +58,26 @@ func Test_SetupRabbitMQ(t *testing.T) {
 		for {
 			retry := <-retryChannel
 			testChan <- retry
-			if !retry {
+			if retry {
+				t.Log("connections closed correctly")
+			} else {
 				t.Log("retryChannel closed correctly")
 				break
-			} else {
-				t.Log("connections closed correctly")
 			}
 		}
 	}(t)
 
-	CloseRabbitMQConnections(conn, ch, logger)
+	ch.Close()
 	// wait for a response from the notifyClose channel to the retryChannel test process
 	<-testChan
 	if !conn.IsClosed() || !ch.IsClosed() {
-		t.Error("Connection or Channel not closed after close method")
+		t.Error("Connection or Channel not closed after retry")
 	}
 
+	conn, ch, err = SetupRabbitMQ("amqp://localhost:5672/%2f", retryChannel, logger)
+	if err != nil {
+		t.Errorf("Error while creating RabbitMQ resources %s", err)
+	}
 	CleanupRabbitMQ(conn, ch, retryChannel, logger)
 	if !conn.IsClosed() || !ch.IsClosed() {
 		t.Error("Connection or Channel not closed after cleanup method")

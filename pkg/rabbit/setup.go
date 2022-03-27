@@ -34,6 +34,7 @@ var (
 	cycleDuration                                       = 1
 	maxCycleDuration                                    = 7200
 	Retrying                                            = true
+	cleaningUp                                          = false
 	DialFunc          func(string) (wabbit.Conn, error) = wabbitamqp.Dial
 )
 
@@ -45,6 +46,7 @@ func SetupRabbitMQ(
 	brokerURL string,
 	retryChannel chan<- bool,
 	logger *zap.SugaredLogger) (wabbit.Conn, wabbit.Channel, error) {
+	cleaningUp = false
 	// Calculate the current cycle time to sleep in ms
 	if retryCounter >= cycleRetries {
 		cycleNumber += 1
@@ -101,11 +103,13 @@ func WatchRabbitMQConnections(
 	case err = <-channel.NotifyClose(make(chan wabbit.Error)):
 	}
 	logger.Warn(
-		"Lost connection to RabbitMQ, reconnecting try number %d. Error: %v",
+		"Lost connection to RabbitMQ, reconnecting retry number %d. Error: %v",
 		retryCounter+((cycleNumber+1)*cycleRetries),
 		zap.Error(err))
-	CloseRabbitMQConnections(connection, channel, logger)
-	retryChannel <- true
+	if !cleaningUp {
+		CloseRabbitMQConnections(connection, channel, logger)
+		retryChannel <- true
+	}
 }
 
 func CloseRabbitMQConnections(connection wabbit.Conn, channel wabbit.Channel, logger *zap.SugaredLogger) {
@@ -123,6 +127,7 @@ func CloseRabbitMQConnections(connection wabbit.Conn, channel wabbit.Channel, lo
 }
 
 func CleanupRabbitMQ(connection wabbit.Conn, channel wabbit.Channel, retryChannel chan<- bool, logger *zap.SugaredLogger) {
+	cleaningUp = true
 	retryChannel <- false
 	close(retryChannel)
 	CloseRabbitMQConnections(connection, channel, logger)
