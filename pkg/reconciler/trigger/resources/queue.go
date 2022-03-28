@@ -77,6 +77,7 @@ func NewPolicy(args *QueueArgs) *rabbitv1beta1.Policy {
 			Name:            args.Name,
 			Namespace:       args.Namespace,
 			OwnerReferences: []metav1.OwnerReference{args.Owner},
+			Labels:          args.Labels,
 		},
 		Spec: v1beta1.PolicySpec{
 			Name:                     args.Name,
