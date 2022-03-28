@@ -165,6 +165,7 @@ func TestNewExchange(t *testing.T) {
 						AutoDelete: false,
 						NoWait:     false,
 					},
+					Vhost: "test",
 				},
 			},
 		},
@@ -188,6 +189,7 @@ func TestNewExchange(t *testing.T) {
 			},
 			Spec: rabbitv1beta1.ExchangeSpec{
 				Name:       "some-exchange",
+				Vhost:      "test",
 				Type:       "direct",
 				Durable:    false,
 				AutoDelete: false,

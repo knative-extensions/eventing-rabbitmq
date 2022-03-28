@@ -132,6 +132,7 @@ func TestNewQueue(t *testing.T) {
 							Durable:    false,
 							AutoDelete: false,
 						},
+						Vhost: "test",
 					},
 				},
 			},
@@ -144,6 +145,7 @@ func TestNewQueue(t *testing.T) {
 				},
 				Spec: rabbitv1beta1.QueueSpec{
 					Name:       "a-test-queue",
+					Vhost:      "test",
 					Durable:    false,
 					AutoDelete: false,
 					RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{

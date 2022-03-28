@@ -48,11 +48,13 @@ func NewQueue(args *QueueArgs) *rabbitv1beta1.Queue {
 	durable := true
 	autoDelete := false
 	queueName := args.Name
+	vhost := "/"
 
 	if args.Source != nil {
 		durable = args.Source.Spec.QueueConfig.Durable
 		autoDelete = args.Source.Spec.QueueConfig.AutoDelete
 		queueName = args.Source.Spec.QueueConfig.Name
+		vhost = args.Source.Spec.Vhost
 	}
 
 	return &rabbitv1beta1.Queue{
@@ -64,6 +66,7 @@ func NewQueue(args *QueueArgs) *rabbitv1beta1.Queue {
 		},
 		Spec: rabbitv1beta1.QueueSpec{
 			Name:                     queueName,
+			Vhost:                    vhost,
 			Durable:                  durable,
 			AutoDelete:               autoDelete,
 			RabbitmqClusterReference: *args.RabbitmqClusterReference,

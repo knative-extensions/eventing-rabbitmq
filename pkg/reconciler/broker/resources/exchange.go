@@ -43,6 +43,7 @@ type ExchangeArgs struct {
 // when used by trigger and broker, exchange properties such as `durable`, autoDelete`, and `type` are hardcoded
 func NewExchange(args *ExchangeArgs) *rabbitv1beta1.Exchange {
 	// exchange configurations for triggers and broker
+	vhost := "/"
 	durable := true
 	autoDelete := false
 	exchangeType := "headers"
@@ -61,6 +62,7 @@ func NewExchange(args *ExchangeArgs) *rabbitv1beta1.Exchange {
 		autoDelete = args.Source.Spec.ExchangeConfig.AutoDelete
 		exchangeType = args.Source.Spec.ExchangeConfig.TypeOf
 		exchangeName = args.Source.Spec.ExchangeConfig.Name
+		vhost = args.Source.Spec.Vhost
 	}
 
 	return &rabbitv1beta1.Exchange{
@@ -72,6 +74,7 @@ func NewExchange(args *ExchangeArgs) *rabbitv1beta1.Exchange {
 		},
 		Spec: rabbitv1beta1.ExchangeSpec{
 			Name:                     exchangeName,
+			Vhost:                    vhost,
 			Type:                     exchangeType,
 			Durable:                  durable,
 			AutoDelete:               autoDelete,
