@@ -22,6 +22,7 @@ import (
 	nethttp "net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/NeowayLabs/wabbit"
 	"github.com/NeowayLabs/wabbit/amqp"
@@ -34,6 +35,7 @@ import (
 	"go.uber.org/zap"
 
 	"knative.dev/eventing/pkg/adapter/v2"
+	v1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/eventing/pkg/metrics/source"
 	"knative.dev/pkg/logging"
@@ -67,12 +69,15 @@ type QueueConfig struct {
 type adapterConfig struct {
 	adapter.EnvConfig
 
-	Brokers        string `envconfig:"RABBITMQ_BROKERS" required:"true"`
-	Topic          string `envconfig:"RABBITMQ_TOPIC" required:"true"`
-	User           string `envconfig:"RABBITMQ_USER" required:"false"`
-	Password       string `envconfig:"RABBITMQ_PASSWORD" required:"false"`
-	Vhost          string `envconfig:"RABBITMQ_VHOST" required:"false"`
-	Predeclared    bool   `envconfig:"RABBITMQ_PREDECLARED" required:"false"`
+	Brokers        string        `envconfig:"RABBITMQ_BROKERS" required:"true"`
+	Topic          string        `envconfig:"RABBITMQ_TOPIC" required:"true"`
+	User           string        `envconfig:"RABBITMQ_USER" required:"false"`
+	Password       string        `envconfig:"RABBITMQ_PASSWORD" required:"false"`
+	Vhost          string        `envconfig:"RABBITMQ_VHOST" required:"false"`
+	Predeclared    bool          `envconfig:"RABBITMQ_PREDECLARED" required:"false"`
+	Retry          int           `envconfig:"HTTP_SENDER_RETRY" required:"false"`
+	BackoffPolicy  string        `envconfig:"HTTP_SENDER_BACKOFF_POLICY" required:"false"`
+	BackoffDelay   time.Duration `envconfig:"HTTP_SENDER_BACKOFF_DELAY" default:"50ms" required:"false"`
 	ChannelConfig  ChannelConfig
 	ExchangeConfig ExchangeConfig
 	QueueConfig    QueueConfig
@@ -96,6 +101,11 @@ var _ adapter.MessageAdapterConstructor = NewAdapter
 func NewAdapter(ctx context.Context, processed adapter.EnvConfigAccessor, httpMessageSender *kncloudevents.HTTPMessageSender, reporter source.StatsReporter) adapter.MessageAdapter {
 	logger := logging.FromContext(ctx).Desugar()
 	config := processed.(*adapterConfig)
+	if config.BackoffPolicy == "" {
+		config.BackoffPolicy = "exponential"
+	} else if config.BackoffPolicy != "linear" && config.BackoffPolicy != "exponential" {
+		logger.Sugar().Fatalf("Invalid BACKOFF_POLICY specified: must be %q or %q", v1.BackoffPolicyExponential, v1.BackoffPolicyLinear)
+	}
 
 	return &Adapter{
 		config:            config,
@@ -329,7 +339,7 @@ func (a *Adapter) processMessages(wg *sync.WaitGroup, queue <-chan wabbit.Delive
 			}
 		} else {
 			a.logger.Error("Sending event to sink failed: ", zap.Error(err))
-			err = msg.Nack(false, true)
+			err = msg.Nack(false, false)
 			if err != nil {
 				a.logger.Error("Sending Nack failed with Delivery Tag")
 			}
@@ -344,7 +354,7 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 		return err
 	}
 
-	msgBinding := NewMessageFromDelivery(msg)
+	var msgBinding binding.Message = NewMessageFromDelivery(msg)
 
 	defer func() {
 		err := msgBinding.Finish(nil)
@@ -354,9 +364,7 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 	}()
 
 	// if the msg is a cloudevent send it as it is to http
-	if msgBinding.ReadEncoding() != binding.EncodingUnknown {
-		err = http.WriteRequest(a.context, msgBinding, req)
-	} else {
+	if msgBinding.ReadEncoding() == binding.EncodingUnknown {
 		// if the rabbitmq msg is not a cloudevent transform it into one
 		event := cloudevents.NewEvent()
 		err = convertToCloudEvent(&event, msg, a)
@@ -365,15 +373,26 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 			return err
 		}
 
-		err = http.WriteRequest(a.context, binding.ToMessage(&event), req)
+		msgBinding = binding.ToMessage(&event)
 	}
 
+	err = http.WriteRequest(a.context, msgBinding, req)
 	if err != nil {
 		a.logger.Error(fmt.Sprintf("Error writting event to http, encoding: %s", msgBinding.ReadEncoding()), zap.Error(err))
 		return err
 	}
 
-	res, err := a.httpMessageSender.Send(req)
+	backoffDelay := a.config.BackoffDelay.String()
+	backoffPolicy := (v1.BackoffPolicyType)(a.config.BackoffPolicy)
+	res, err := a.httpMessageSender.SendWithRetries(req, &kncloudevents.RetryConfig{
+		RetryMax: a.config.Retry,
+		CheckRetry: func(ctx context.Context, resp *nethttp.Response, err error) (bool, error) {
+			return kncloudevents.SelectiveRetry(ctx, resp, nil)
+		},
+		BackoffDelay:  &backoffDelay,
+		BackoffPolicy: &backoffPolicy,
+	})
+
 	if err != nil {
 		a.logger.Error("Error while sending the message", zap.Error(err))
 		return err

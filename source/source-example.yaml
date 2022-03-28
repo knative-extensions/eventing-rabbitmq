@@ -6,6 +6,9 @@ metadata:
 spec:
   brokers: RABBITMQ_BROKERS
   topic: RABBITMQ_TOPIC
+  retry: 5
+  backoffPolicy: "linear"
+  backoffDelay: "50ms"
   user:
     secretKeyRef:
       name: RABBITMQ_USER

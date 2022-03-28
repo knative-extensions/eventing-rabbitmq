@@ -86,9 +86,7 @@ const (
 
 	dispatcherImage = "dispatcherimage"
 
-	bindingList = `
-[
-  {
+	bindingList = `[{
     "source": "knative-test-broker",
     "vhost": "/",
     "destination": "test-namespace-test-broker",
@@ -100,9 +98,7 @@ const (
       "type": "dev.knative.sources.ping"
     },
     "properties_key": "test-namespace-test-broker"
-  }
-]
-`
+  }]`
 )
 
 var (
@@ -868,7 +864,7 @@ func TestReconcile(t *testing.T) {
 		fakeServer.Start()
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusCreated)
-			fmt.Fprintln(w, bindingList)
+			fmt.Fprint(w, bindingList)
 		}))
 		r := &Reconciler{
 			eventingClientSet:  fakeeventingclient.Get(ctx),

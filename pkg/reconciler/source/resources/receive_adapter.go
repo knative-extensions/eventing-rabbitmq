@@ -24,6 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1alpha1 "knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
 )
 
@@ -148,6 +149,32 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 			Name:  "RABBITMQ_VHOST",
 			Value: args.Source.Spec.Vhost,
 		},
+	}
+
+	if args.Source.Spec.Retry != nil {
+		env = append(env, corev1.EnvVar{
+			Name:  "HTTP_SENDER_RETRY",
+			Value: strconv.FormatInt(int64(*args.Source.Spec.Retry), 10),
+		})
+	}
+
+	if args.Source.Spec.BackoffPolicy != nil {
+		env = append(env, corev1.EnvVar{
+			Name:  "HTTP_SENDER_BACKOFF_POLICY",
+			Value: string(*args.Source.Spec.BackoffPolicy),
+		})
+	} else {
+		env = append(env, corev1.EnvVar{
+			Name:  "HTTP_SENDER_BACKOFF_POLICY",
+			Value: string(eventingduckv1.BackoffPolicyExponential),
+		})
+	}
+
+	if args.Source.Spec.BackoffDelay != nil {
+		env = append(env, corev1.EnvVar{
+			Name:  "HTTP_SENDER_BACKOFF_DELAY",
+			Value: *args.Source.Spec.BackoffDelay,
+		})
 	}
 
 	return &v1.Deployment{

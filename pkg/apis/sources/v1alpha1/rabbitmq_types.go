@@ -23,6 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
@@ -128,6 +129,18 @@ type RabbitmqSourceSpec struct {
 	// RabbitMQ cluster
 	// +optional
 	Predeclared bool `json:"predeclared,omitempty"`
+	// Retry is the minimum number of retries the sender should attempt when
+	// sending an event before moving it to the dead letter sink.
+	// +optional
+	Retry *int32 `json:"retry,omitempty"`
+	// BackoffPolicy is the retry backoff policy (linear, exponential).
+	// +optional
+	BackoffPolicy *eventingduckv1.BackoffPolicyType `json:"backoffPolicy,omitempty"`
+	// BackoffDelay is the delay before retrying in time.Duration format.
+	// For linear policy, backoff delay is backoffDelay*<numberOfRetries>.
+	// For exponential policy, backoff delay is backoffDelay*2^<numberOfRetries>.
+	// +optional
+	BackoffDelay *string `json:"backoffDelay,omitempty"`
 	// ChannelConfig config for rabbitmq exchange
 	// +optional
 	ChannelConfig RabbitmqChannelConfigSpec `json:"channelConfig,omitempty"`

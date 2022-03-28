@@ -24,238 +24,279 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1alpha12 "knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 )
 
 func TestMakeReceiveAdapter(t *testing.T) {
+	var retry int32 = 5
 	prefetchCount := 10
-	src := &v1alpha12.RabbitmqSource{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "source-name",
-			Namespace: "source-namespace",
-		},
-		Spec: v1alpha12.RabbitmqSourceSpec{
-			ServiceAccountName: "source-svc-acct",
-			Topic:              "topic",
-			Brokers:            "amqp://guest:guest@localhost:5672/",
-			User: v1alpha12.SecretValueFromSource{
-				SecretKeyRef: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "the-user-secret",
-					},
-					Key: "user",
-				},
-			},
-			Password: v1alpha12.SecretValueFromSource{
-				SecretKeyRef: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "the-password-secret",
-					},
-					Key: "password",
-				},
-			},
-			Predeclared: true,
-			ExchangeConfig: v1alpha12.RabbitmqSourceExchangeConfigSpec{
-				Name:       "logs",
-				TypeOf:     "topic",
-				Durable:    true,
-				AutoDelete: false,
-				Internal:   false,
-				NoWait:     false,
-			},
-			QueueConfig: v1alpha12.RabbitmqSourceQueueConfigSpec{
-				Name:       "",
-				RoutingKey: "*.critical",
-				Durable:    false,
-				AutoDelete: false,
-				Exclusive:  false,
-				NoWait:     false,
-			},
-			ChannelConfig: v1alpha12.RabbitmqChannelConfigSpec{
-				PrefetchCount: &prefetchCount,
-			},
-		},
-	}
+	backoffDelay := "50ms"
 
-	got := MakeReceiveAdapter(&ReceiveAdapterArgs{
-		Image:  "test-image",
-		Source: src,
-		Labels: map[string]string{
-			"test-key1": "test-value1",
-			"test-key2": "test-value2",
-		},
-		SinkURI: "sink-uri",
-	})
+	for _, tt := range []struct {
+		name          string
+		backoffPolicy eventingduckv1.BackoffPolicyType
+	}{{
+		name:          "Backoff policy linear",
+		backoffPolicy: eventingduckv1.BackoffPolicyLinear,
+	},
+		{
+			name:          "Backoff policy exponential",
+			backoffPolicy: eventingduckv1.BackoffPolicyExponential,
+		}} {
+		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
 
-	one := int32(1)
-	want := &v1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:         "rabbitmqsource-source-name-",
-			Namespace:    "source-namespace",
-			GenerateName: "source-name-",
-			Labels: map[string]string{
-				"test-key1": "test-value1",
-				"test-key2": "test-value2",
-			},
-			OwnerReferences: []metav1.OwnerReference{
-				{
-					APIVersion:         "sources.knative.dev/v1alpha1",
-					Kind:               "RabbitmqSource",
-					Name:               "source-name",
-					Controller:         &[]bool{true}[0],
-					BlockOwnerDeletion: &[]bool{true}[0],
+			src := &v1alpha12.RabbitmqSource{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "source-name",
+					Namespace: "source-namespace",
 				},
-			},
-		},
-		Spec: v1.DeploymentSpec{
-			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
+				Spec: v1alpha12.RabbitmqSourceSpec{
+					ServiceAccountName: "source-svc-acct",
+					Topic:              "topic",
+					Brokers:            "amqp://guest:guest@localhost:5672/",
+					User: v1alpha12.SecretValueFromSource{
+						SecretKeyRef: &corev1.SecretKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{
+								Name: "the-user-secret",
+							},
+							Key: "user",
+						},
+					},
+					Password: v1alpha12.SecretValueFromSource{
+						SecretKeyRef: &corev1.SecretKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{
+								Name: "the-password-secret",
+							},
+							Key: "password",
+						},
+					},
+					Predeclared: true,
+					ExchangeConfig: v1alpha12.RabbitmqSourceExchangeConfigSpec{
+						Name:       "logs",
+						TypeOf:     "topic",
+						Durable:    true,
+						AutoDelete: false,
+						Internal:   false,
+						NoWait:     false,
+					},
+					QueueConfig: v1alpha12.RabbitmqSourceQueueConfigSpec{
+						Name:       "",
+						RoutingKey: "*.critical",
+						Durable:    false,
+						AutoDelete: false,
+						Exclusive:  false,
+						NoWait:     false,
+					},
+					ChannelConfig: v1alpha12.RabbitmqChannelConfigSpec{
+						PrefetchCount: &prefetchCount,
+					},
+					Retry:         &retry,
+					BackoffDelay:  &backoffDelay,
+					BackoffPolicy: &tt.backoffPolicy,
+				},
+			}
+
+			got := MakeReceiveAdapter(&ReceiveAdapterArgs{
+				Image:  "test-image",
+				Source: src,
+				Labels: map[string]string{
 					"test-key1": "test-value1",
 					"test-key2": "test-value2",
 				},
-			},
-			Replicas: &one,
-			Template: corev1.PodTemplateSpec{
+				SinkURI: "sink-uri",
+			})
+
+			boPolicy := tt.backoffPolicy
+			one := int32(1)
+			if boPolicy == "" {
+				boPolicy = eventingduckv1.BackoffPolicyExponential
+			}
+
+			want := &v1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						"sidecar.istio.io/inject": "true",
-					},
+					Name:         "rabbitmqsource-source-name-",
+					Namespace:    "source-namespace",
+					GenerateName: "source-name-",
 					Labels: map[string]string{
 						"test-key1": "test-value1",
 						"test-key2": "test-value2",
 					},
-				},
-				Spec: corev1.PodSpec{
-					ServiceAccountName: "source-svc-acct",
-					Containers: []corev1.Container{
+					OwnerReferences: []metav1.OwnerReference{
 						{
-							Name:            "receive-adapter",
-							Image:           "test-image",
-							ImagePullPolicy: "IfNotPresent",
-							Env: []corev1.EnvVar{
+							APIVersion:         "sources.knative.dev/v1alpha1",
+							Kind:               "RabbitmqSource",
+							Name:               "source-name",
+							Controller:         &[]bool{true}[0],
+							BlockOwnerDeletion: &[]bool{true}[0],
+						},
+					},
+				},
+				Spec: v1.DeploymentSpec{
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"test-key1": "test-value1",
+							"test-key2": "test-value2",
+						},
+					},
+					Replicas: &one,
+					Template: corev1.PodTemplateSpec{
+						ObjectMeta: metav1.ObjectMeta{
+							Annotations: map[string]string{
+								"sidecar.istio.io/inject": "true",
+							},
+							Labels: map[string]string{
+								"test-key1": "test-value1",
+								"test-key2": "test-value2",
+							},
+						},
+						Spec: corev1.PodSpec{
+							ServiceAccountName: "source-svc-acct",
+							Containers: []corev1.Container{
 								{
-									Name:  "RABBITMQ_BROKERS",
-									Value: "amqp://guest:guest@localhost:5672/",
-								},
-								{
-									Name:  "RABBITMQ_TOPIC",
-									Value: "topic",
-								},
-								{
-									Name: "RABBITMQ_USER",
-									ValueFrom: &corev1.EnvVarSource{
-										SecretKeyRef: &corev1.SecretKeySelector{
-											LocalObjectReference: corev1.LocalObjectReference{
-												Name: "the-user-secret",
+									Name:            "receive-adapter",
+									Image:           "test-image",
+									ImagePullPolicy: "IfNotPresent",
+									Env: []corev1.EnvVar{
+										{
+											Name:  "RABBITMQ_BROKERS",
+											Value: "amqp://guest:guest@localhost:5672/",
+										},
+										{
+											Name:  "RABBITMQ_TOPIC",
+											Value: "topic",
+										},
+										{
+											Name: "RABBITMQ_USER",
+											ValueFrom: &corev1.EnvVarSource{
+												SecretKeyRef: &corev1.SecretKeySelector{
+													LocalObjectReference: corev1.LocalObjectReference{
+														Name: "the-user-secret",
+													},
+													Key: "user",
+												},
 											},
-											Key: "user",
+										},
+										{
+											Name: "RABBITMQ_PASSWORD",
+											ValueFrom: &corev1.EnvVarSource{
+												SecretKeyRef: &corev1.SecretKeySelector{
+													LocalObjectReference: corev1.LocalObjectReference{
+														Name: "the-password-secret",
+													},
+													Key: "password",
+												},
+											},
+										},
+										{
+											Name:  "RABBITMQ_ROUTING_KEY",
+											Value: "*.critical",
+										},
+										{
+											Name:  "RABBITMQ_CHANNEL_CONFIG_QOS_GLOBAL",
+											Value: "false",
+										},
+										{
+											Name:  "RABBITMQ_CHANNEL_CONFIG_PREFETCH_COUNT",
+											Value: "10",
+										},
+										{
+											Name:  "RABBITMQ_EXCHANGE_CONFIG_NAME",
+											Value: "logs",
+										},
+										{
+											Name:  "RABBITMQ_EXCHANGE_CONFIG_TYPE",
+											Value: "topic",
+										},
+										{
+											Name:  "RABBITMQ_EXCHANGE_CONFIG_DURABLE",
+											Value: "true",
+										},
+										{
+											Name:  "RABBITMQ_EXCHANGE_CONFIG_AUTO_DELETE",
+											Value: "false",
+										},
+										{
+											Name:  "RABBITMQ_EXCHANGE_CONFIG_INTERNAL",
+											Value: "false",
+										},
+										{
+											Name:  "RABBITMQ_EXCHANGE_CONFIG_NOWAIT",
+											Value: "false",
+										},
+										{
+											Name:  "RABBITMQ_QUEUE_CONFIG_NAME",
+											Value: "",
+										},
+										{
+											Name:  "RABBITMQ_QUEUE_CONFIG_DURABLE",
+											Value: "false",
+										},
+										{
+											Name:  "RABBITMQ_QUEUE_CONFIG_AUTO_DELETE",
+											Value: "false",
+										},
+										{
+											Name:  "RABBITMQ_QUEUE_CONFIG_EXCLUSIVE",
+											Value: "false",
+										},
+										{
+											Name:  "RABBITMQ_QUEUE_CONFIG_NOWAIT",
+											Value: "false",
+										},
+										{
+											Name:  "RABBITMQ_PREDECLARED",
+											Value: "true",
+										},
+										{
+											Name:  "SINK_URI",
+											Value: "sink-uri",
+										},
+										{
+											Name:  "K_SINK",
+											Value: "sink-uri",
+										},
+										{
+											Name:  "NAME",
+											Value: "source-name",
+										},
+										{
+											Name:  "NAMESPACE",
+											Value: "source-namespace",
+										},
+										{
+											Name: "K_LOGGING_CONFIG",
+										},
+										{
+											Name: "K_METRICS_CONFIG",
+										},
+										{
+											Name: "RABBITMQ_VHOST",
+										},
+										{
+											Name:  "HTTP_SENDER_RETRY",
+											Value: "5",
+										},
+										{
+											Name:  "HTTP_SENDER_BACKOFF_POLICY",
+											Value: string(boPolicy),
+										},
+										{
+											Name:  "HTTP_SENDER_BACKOFF_DELAY",
+											Value: "50ms",
 										},
 									},
-								},
-								{
-									Name: "RABBITMQ_PASSWORD",
-									ValueFrom: &corev1.EnvVarSource{
-										SecretKeyRef: &corev1.SecretKeySelector{
-											LocalObjectReference: corev1.LocalObjectReference{
-												Name: "the-password-secret",
-											},
-											Key: "password",
-										},
-									},
-								},
-								{
-									Name:  "RABBITMQ_ROUTING_KEY",
-									Value: "*.critical",
-								},
-								{
-									Name:  "RABBITMQ_CHANNEL_CONFIG_QOS_GLOBAL",
-									Value: "false",
-								},
-								{
-									Name:  "RABBITMQ_CHANNEL_CONFIG_PREFETCH_COUNT",
-									Value: "10",
-								},
-								{
-									Name:  "RABBITMQ_EXCHANGE_CONFIG_NAME",
-									Value: "logs",
-								},
-								{
-									Name:  "RABBITMQ_EXCHANGE_CONFIG_TYPE",
-									Value: "topic",
-								},
-								{
-									Name:  "RABBITMQ_EXCHANGE_CONFIG_DURABLE",
-									Value: "true",
-								},
-								{
-									Name:  "RABBITMQ_EXCHANGE_CONFIG_AUTO_DELETE",
-									Value: "false",
-								},
-								{
-									Name:  "RABBITMQ_EXCHANGE_CONFIG_INTERNAL",
-									Value: "false",
-								},
-								{
-									Name:  "RABBITMQ_EXCHANGE_CONFIG_NOWAIT",
-									Value: "false",
-								},
-								{
-									Name:  "RABBITMQ_QUEUE_CONFIG_NAME",
-									Value: "",
-								},
-								{
-									Name:  "RABBITMQ_QUEUE_CONFIG_DURABLE",
-									Value: "false",
-								},
-								{
-									Name:  "RABBITMQ_QUEUE_CONFIG_AUTO_DELETE",
-									Value: "false",
-								},
-								{
-									Name:  "RABBITMQ_QUEUE_CONFIG_EXCLUSIVE",
-									Value: "false",
-								},
-								{
-									Name:  "RABBITMQ_QUEUE_CONFIG_NOWAIT",
-									Value: "false",
-								},
-								{
-									Name:  "RABBITMQ_PREDECLARED",
-									Value: "true",
-								},
-								{
-									Name:  "SINK_URI",
-									Value: "sink-uri",
-								},
-								{
-									Name:  "K_SINK",
-									Value: "sink-uri",
-								},
-								{
-									Name:  "NAME",
-									Value: "source-name",
-								},
-								{
-									Name:  "NAMESPACE",
-									Value: "source-namespace",
-								},
-								{
-									Name: "K_LOGGING_CONFIG",
-								},
-								{
-									Name: "K_METRICS_CONFIG",
-								},
-								{
-									Name: "RABBITMQ_VHOST",
 								},
 							},
 						},
 					},
 				},
-			},
-		},
-	}
+			}
 
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("unexpected deploy (-want, +got) = %v", diff)
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("unexpected deploy (-want, +got) = %v", diff)
+			}
+		})
 	}
 }
