@@ -208,9 +208,9 @@ func withDLX(args *DispatcherArgs) {
 func withPrefetch(c string) func(*DispatcherArgs) {
 	return func(args *DispatcherArgs) {
 		if args.Trigger.ObjectMeta.Annotations == nil {
-			args.Trigger.ObjectMeta.Annotations = map[string]string{prefetchAnnotation: c}
+			args.Trigger.ObjectMeta.Annotations = map[string]string{PrefetchAnnotation: c}
 		} else {
-			args.Trigger.ObjectMeta.Annotations[prefetchAnnotation] = c
+			args.Trigger.ObjectMeta.Annotations[PrefetchAnnotation] = c
 		}
 	}
 }
