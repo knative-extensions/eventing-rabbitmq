@@ -14,9 +14,9 @@ components and running tests - everything done with `make`.
 make .envrc && . .envrc
 ```
 
-Here we create our environment file containing patched PATH, various exports, etc.
-I personally like to use [direnv](https://direnv.net/) too. It will pick up .envrc and source it
-each time I cd'ing to my Eventng RabbitMQ local copy and more...
+Here we create our environment file containing patched `PATH`, various exports, etc.
+[Direnv](https://direnv.net/) will pick up `.envrc` and source it
+each time shell visits Eventing RabbitMQ folder.
 
 ### Create kind cluster
 
@@ -24,7 +24,7 @@ each time I cd'ing to my Eventng RabbitMQ local copy and more...
 make kind-cluster
 ```
 
-This will install `kind` to ./bin and initialize the cluster. Kind uses [kind.yaml](e2e/kind.yaml) as cluster configuration.
+This will install `kind` to ./bin and initialize the cluster. `Kind` uses [kind.yaml](e2e/kind.yaml) as cluster configuration.
 
 
 ### Install Knative, Certificate manager, RabbitMQ
@@ -39,8 +39,8 @@ make install
 make k9s
 ```
 
-[k9s](https://k9scli.io/) is a "Kubernetes CLI To Manage Your Clusters In Style". That `make` target takes care of k9s installation and configuration.
-This target will run k9s pointed to our kind cluster.
+[k9s](https://k9scli.io/) is a "Kubernetes CLI To Manage Your Clusters In Style". That `make` target takes care of `k9s` installation and configuration.
+This target will run `k9s` pointed to our kind cluster.
 
 ### Running tests
 
@@ -60,8 +60,8 @@ test-unit-uncached                  Run unit tests with no cache
 
 ## Temporary files
 
-Makefile will download and store binaries such as `kind`, `k9s`, `kubectl` to (curdir)/bin.
-Configurations will be stored in (curdir)/.config.
+Makefile will download and store binaries such as `kind`, `k9s`, `kubectl` to `(curdir)/bin`.
+Configurations will be stored in `(curdir)/.config`.
 Both paths are in the `.gitignore`.
 
 ## How to start fresh
