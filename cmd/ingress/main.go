@@ -86,6 +86,7 @@ func main() {
 			retry := <-retryChannel
 			if !retry {
 				logger.Warn("stopped listenning for RabbitMQ resources retries")
+				close(retryChannel)
 				break
 			}
 			logger.Warn("recreating RabbitMQ resources")

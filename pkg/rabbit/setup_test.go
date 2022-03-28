@@ -26,20 +26,25 @@ import (
 	"go.uber.org/zap"
 )
 
-func Test_SetupRabbitMQ(t *testing.T) {
+func Test_RabbitPkg(t *testing.T) {
+	t.Run("Test SetupRabbitMQ function", SetupRabbitMQTest)
+	t.Run("Test Exponential Backoff Retries Strategy", RetriesExponentialBackoffTest)
+}
+
+func SetupRabbitMQTest(t *testing.T) {
+	var wg sync.WaitGroup
 	retryChannel := make(chan bool)
-	testChan := make(chan bool)
 	logger := zap.NewNop().Sugar()
 
 	fakeServer := server.NewServer("amqp://localhost:5672/%2f")
-	err := fakeServer.Start()
-	if err != nil {
+	if err := fakeServer.Start(); err != nil {
 		t.Errorf("%s: %s", "Failed to connect to RabbitMQ", err)
 	}
+	defer fakeServer.Stop()
 
 	// To avoid retrying here we set the variable to false
 	Retrying = false
-	_, _, err = SetupRabbitMQ("amqp://localhost:5672/%2f", retryChannel, logger)
+	_, _, err := SetupRabbitMQ("amqp://localhost:5672/%2f", retryChannel, logger)
 	if err == nil {
 		t.Error("SetupRabbitMQ should fail with the default DialFunc in testing environments")
 	}
@@ -53,27 +58,21 @@ func Test_SetupRabbitMQ(t *testing.T) {
 		t.Error("Connection or Channel closed after creating them")
 	}
 
-	// function to test channel comunication between processes
-	go func(t *testing.T) {
-		for {
-			retry := <-retryChannel
-			testChan <- retry
-			if retry {
-				t.Log("connections closed correctly")
-			} else {
-				t.Log("retryChannel closed correctly")
-				break
-			}
-		}
-	}(t)
-
 	ch.Close()
 	// wait for a response from the notifyClose channel to the retryChannel test process
-	<-testChan
+	<-retryChannel
 	if !conn.IsClosed() || !ch.IsClosed() {
 		t.Error("Connection or Channel not closed after retry")
 	}
 
+	// drain leftover messages in the retryChannel
+	wg.Add(1)
+	go func() {
+		wg.Done()
+		<-retryChannel
+		close(retryChannel)
+	}()
+	wg.Wait()
 	conn, ch, err = SetupRabbitMQ("amqp://localhost:5672/%2f", retryChannel, logger)
 	if err != nil {
 		t.Errorf("Error while creating RabbitMQ resources %s", err)
@@ -82,11 +81,9 @@ func Test_SetupRabbitMQ(t *testing.T) {
 	if !conn.IsClosed() || !ch.IsClosed() {
 		t.Error("Connection or Channel not closed after cleanup method")
 	}
-	// wait for a response from the notifyClose channel to the retryChannel test process
-	<-testChan
 }
 
-func Test_SetupExponentialBackoff(t *testing.T) {
+func RetriesExponentialBackoffTest(t *testing.T) {
 	var wg sync.WaitGroup
 	retryChannel := make(chan bool)
 	logger := zap.NewNop().Sugar()
