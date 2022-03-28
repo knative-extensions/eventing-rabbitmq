@@ -1097,6 +1097,10 @@ func createQueue() *rabbitv1beta1.Queue {
 }
 
 func createPolicy(broker bool) *rabbitv1beta1.Policy {
+	labels := map[string]string{
+		"eventing.knative.dev/broker":  brokerName,
+		"eventing.knative.dev/trigger": triggerName,
+	}
 	t := triggerWithFilter()
 	var dlxName string
 	if broker {
@@ -1109,6 +1113,7 @@ func createPolicy(broker bool) *rabbitv1beta1.Policy {
 		Namespace: testNS,
 		Owner:     *kmeta.NewControllerRef(t),
 		DLXName:   &dlxName,
+		Labels:    labels,
 		RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
 			Name:      rabbitMQBrokerName,
 			Namespace: testNS,
