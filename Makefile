@@ -304,7 +304,7 @@ $(KUBECONFIG): | $(KUBECONFIG_DIR)
 kubeconfig: $(KUBECONFIG)
 
 # https://github.com/rabbitmq/cluster-operator/releases
-RABBITMQ_CLUSTER_OPERATOR_VERSION ?= 1.11.1
+RABBITMQ_CLUSTER_OPERATOR_VERSION ?= 1.12.1
 .PHONY: install-rabbitmq-cluster-operator
 install-rabbitmq-cluster-operator: | $(KUBECONFIG) $(KUBECTL) ## Install RabbitMQ Cluster Operator
 	$(KUBECTL) $(K_CMD) --filename \
@@ -321,7 +321,7 @@ install-cert-manager: | $(KUBECONFIG) $(KUBECTL) ## Install Cert Manager - depen
 	$(KUBECTL) wait --for=condition=available deploy/cert-manager-webhook --timeout=60s --namespace $(CERT_MANAGER_NAMESPACE)
 
 # https://github.com/rabbitmq/messaging-topology-operator/releases
-RABBITMQ_TOPOLOGY_OPERATOR_VERSION ?= 1.3.0
+RABBITMQ_TOPOLOGY_OPERATOR_VERSION ?= 1.4.1
 .PHONY: install-rabbitmq-topology-operator
 install-rabbitmq-topology-operator: | install-cert-manager $(KUBECTL) ## Install RabbitMQ Topology Operator
 	$(KUBECTL) $(K_CMD) --filename \
