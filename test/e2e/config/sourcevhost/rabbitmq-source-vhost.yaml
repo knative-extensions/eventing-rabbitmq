@@ -21,6 +21,8 @@ spec:
   brokers: "rabbitmqc.{{ .namespace }}:5672/"
   vhost: "test-vhost"
   topic: ""
+  connectionSecret:
+    name: "secret-basic-auth"
   user:
     secretKeyRef:
       name: "secret-basic-auth"
