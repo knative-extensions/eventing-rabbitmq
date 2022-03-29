@@ -20,6 +20,8 @@ metadata:
 spec:
   brokers: "rabbitmqc.{{ .namespace }}:5672/"
   topic: ""
+  connectionSecret:
+    name: "rabbitmqc-default-user"
   user:
     secretKeyRef:
       name: "rabbitmqc-default-user"

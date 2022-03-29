@@ -19,6 +19,9 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes"
+	"knative.dev/pkg/test"
 
 	"knative.dev/pkg/apis"
 
@@ -54,6 +57,7 @@ func RabbitMQCluster() *feature.Feature {
 	f := new(feature.Feature)
 
 	f.Setup("install a rabbitmqcluster", rabbitmq.Install())
+	f.Requirement("Add key uri to default user secret", RabbitMQClusterConnectionSecret)
 	f.Requirement("RabbitMQCluster goes ready", RabbitMQClusterReady)
 	return f
 }
@@ -62,8 +66,30 @@ func RabbitMQClusterVHost() *feature.Feature {
 	f := new(feature.Feature)
 
 	f.Setup("install a rabbitmqcluster with a default vhost and user permissions to it", rabbitmqvhost.Install())
+	f.Requirement("Add key uri to default user secret", RabbitMQClusterConnectionSecret)
 	f.Requirement("RabbitMQCluster goes ready", RabbitMQClusterReady)
 	return f
+}
+
+func RabbitMQClusterConnectionSecret(ctx context.Context, t feature.T) {
+	namespace := environment.FromContext(ctx).Namespace()
+
+	var err error
+	config, err := test.Flags.GetRESTConfig()
+	if err != nil {
+		t.Fatalf("failed to get REST config : %v", err)
+	}
+	kClient, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		t.Fatalf("failed to generate k8s clientSet : %v", err)
+	}
+
+	patch := []byte(fmt.Sprintf("{\"spec\":{\"stringData\":\"rabbitmqc.%s:15672\"}}", namespace))
+	_, err = kClient.CoreV1().Secrets(namespace).Patch(ctx, "rabbitmqc-default-user", types.MergePatchType, patch, metav1.PatchOptions{})
+	if err != nil {
+		t.Fatalf("failed to patch k8s Secret '%s' from namespace '%s' : %v", "rabbitmqc-default-user", namespace, err)
+	}
+	log.Printf("Successfully patched Secret '%s' from namespace '%s' with RabbitMQ uri", "rabbitmqc-default-user", namespace)
 }
 
 func RabbitMQClusterReady(ctx context.Context, t feature.T) {
