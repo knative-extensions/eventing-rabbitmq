@@ -1,0 +1,31 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: fifo-event-display
+  namespace: trigger-demo
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/min-scale: "1"
+    spec:
+      containers:
+      - image: ko://knative.dev/eventing-rabbitmq/samples/trigger-customizations/event-display
+        args:
+          - --delay=20
+---
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: high-throughput-event-display
+  namespace: trigger-demo
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/min-scale: "1"
+    spec:
+      containers:
+        - image: ko://knative.dev/eventing-rabbitmq/samples/trigger-customizations/event-display
+          args:
+            - --delay=20

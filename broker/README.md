@@ -38,11 +38,24 @@ To get autoscaling (scale to zero as well as up from 0), you can also optionally
 install
 [KEDA based autoscaler](https://github.com/knative-sandbox/eventing-autoscaler-keda).
 
+## Trigger Pre-Fetch Count
+Trigger has a configurable annotation `rabbitmq.eventing.knative.dev/prefetchCount`. The following are effects of setting this parameter to `n`:
+
+- Prefetch count is set on the RabbitMQ channel and queue created for this trigger. The channel will receive a maximum of `n` number of messages at once.
+- The trigger will create `n` workers to consume messages off the queue and dispatch to the sink.
+
+If this value is unset, it will default to `1`. This means the trigger will only handle one event at a time. This will preserve the order of the messages in a queue but
+will make the trigger a bottleneck. A slow processing sink will result in low overall throughput. Setting a value higher than 1 will result in `n` events being handled at
+a time by the trigger but ordering won't be guaranteed as events are sent to the sink.
+
+More details and samples can be found [here](../samples/trigger-customizations)
+
 ## Next Steps
 
-Check out the [Broker-Trigger Samples Directory](../samples/broker-trigger) in this repo and start building your topology with Eventing RabbitMQ!
+- Check out the [Broker-Trigger Samples Directory](../samples/broker-trigger) in this repo and start building your topology with Eventing RabbitMQ!
 
 ## Additional Resources
 
 - [RabbitMQ Docs](https://www.rabbitmq.com/documentation.html)
+- [RabbitMQ Operator Docs](https://www.rabbitmq.com/kubernetes/operator/operator-overview.html)
 - [Knative Docs](https://knative.dev/docs/)
