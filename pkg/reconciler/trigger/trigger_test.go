@@ -1087,6 +1087,7 @@ func createQueue() *rabbitv1beta1.Queue {
 		},
 		Spec: rabbitv1beta1.QueueSpec{
 			Name:    queueName,
+			Vhost:   "/",
 			Durable: true,
 			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
 				Name:      rabbitMQBrokerName,
@@ -1097,6 +1098,10 @@ func createQueue() *rabbitv1beta1.Queue {
 }
 
 func createPolicy(broker bool) *rabbitv1beta1.Policy {
+	labels := map[string]string{
+		"eventing.knative.dev/broker":  brokerName,
+		"eventing.knative.dev/trigger": triggerName,
+	}
 	t := triggerWithFilter()
 	var dlxName string
 	if broker {
@@ -1105,12 +1110,15 @@ func createPolicy(broker bool) *rabbitv1beta1.Policy {
 		dlxName = naming.TriggerDLXExchangeName(t)
 	}
 	return resources.NewPolicy(&resources.QueueArgs{
-		Name:                     queueName,
-		Namespace:                testNS,
-		Owner:                    *kmeta.NewControllerRef(t),
-		DLXName:                  &dlxName,
-		RabbitMQClusterName:      rabbitMQBrokerName,
-		RabbitMQClusterNamespace: testNS,
+		Name:      queueName,
+		Namespace: testNS,
+		Owner:     *kmeta.NewControllerRef(t),
+		DLXName:   &dlxName,
+		Labels:    labels,
+		RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
+			Name:      rabbitMQBrokerName,
+			Namespace: testNS,
+		},
 	})
 }
 

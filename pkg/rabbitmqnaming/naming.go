@@ -19,6 +19,8 @@ package naming
 import (
 	"fmt"
 
+	"knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
+
 	"knative.dev/pkg/kmeta"
 
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
@@ -66,4 +68,11 @@ func CreateTriggerQueueName(t *eventingv1.Trigger) string {
 func CreateTriggerDeadLetterQueueName(t *eventingv1.Trigger) string {
 	triggerDLQBase := fmt.Sprintf("t.%s.%s.dlq.", t.Namespace, t.Name)
 	return kmeta.ChildName(triggerDLQBase, string(t.GetUID()))
+}
+
+// CreateSourceRabbitName creates queue, exchange, and binding crd names for a RabbitmqSource.
+// Format is s.Namespace.ObjectName.SourceUID
+func CreateSourceRabbitName(s *v1alpha1.RabbitmqSource) string {
+	base := fmt.Sprintf("s.%s.%s.", s.Namespace, s.Name)
+	return kmeta.ChildName(base, string(s.GetUID()))
 }

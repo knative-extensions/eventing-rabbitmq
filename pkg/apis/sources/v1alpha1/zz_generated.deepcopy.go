@@ -161,6 +161,11 @@ func (in *RabbitmqSourceSpec) DeepCopyInto(out *RabbitmqSourceSpec) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.ConnectionSecret != nil {
+		in, out := &in.ConnectionSecret, &out.ConnectionSecret
+		*out = new(corev1.LocalObjectReference)
+		**out = **in
+	}
 	in.ChannelConfig.DeepCopyInto(&out.ChannelConfig)
 	out.ExchangeConfig = in.ExchangeConfig
 	out.QueueConfig = in.QueueConfig

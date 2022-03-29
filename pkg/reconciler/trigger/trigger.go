@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 
+	"knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
+
 	"go.uber.org/zap"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -49,11 +51,11 @@ import (
 	triggerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1/trigger"
 	eventinglisters "knative.dev/eventing/pkg/client/listers/eventing/v1"
 
+	brokerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
+	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	"knative.dev/eventing/pkg/duck"
 	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/resolver"
-
-	brokerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
 )
 
 type Reconciler struct {
@@ -147,12 +149,13 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		// as a Queue for it, and Dispatcher that pulls from that queue.
 		if t.Spec.Delivery != nil && t.Spec.Delivery.DeadLetterSink != nil {
 			args := &brokerresources.ExchangeArgs{
-				Name:                     naming.TriggerDLXExchangeName(t),
-				Namespace:                t.Namespace,
-				Broker:                   broker,
-				RabbitMQClusterName:      broker.Spec.Config.Name,
-				RabbitMQClusterNamespace: broker.Spec.Config.Namespace,
-				Trigger:                  t,
+				Namespace: t.Namespace,
+				Broker:    broker,
+				RabbitmqClusterReference: &v1beta1.RabbitmqClusterReference{
+					Name:      broker.Spec.Config.Name,
+					Namespace: broker.Spec.Config.Namespace,
+				},
+				Trigger: t,
 			}
 			dlx, err := r.rabbit.ReconcileExchange(ctx, args)
 			if err != nil {
@@ -166,12 +169,14 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 			}
 
 			dlq, err := r.rabbit.ReconcileQueue(ctx, &triggerresources.QueueArgs{
-				Name:                     naming.CreateTriggerDeadLetterQueueName(t),
-				Namespace:                t.Namespace,
-				RabbitMQClusterName:      broker.Spec.Config.Name,
-				RabbitMQClusterNamespace: broker.Spec.Config.Namespace,
-				Owner:                    *kmeta.NewControllerRef(t),
-				Labels:                   triggerresources.QueueLabels(broker, t),
+				Name:      naming.CreateTriggerDeadLetterQueueName(t),
+				Namespace: t.Namespace,
+				RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
+					Name:      broker.Spec.Config.Name,
+					Namespace: broker.Spec.Config.Namespace,
+				},
+				Owner:  *kmeta.NewControllerRef(t),
+				Labels: triggerresources.QueueLabels(broker, t),
 			})
 			if err != nil {
 				logging.FromContext(ctx).Error("Problem reconciling Trigger Queue", zap.Error(err))
@@ -220,13 +225,15 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 			dlxName = ptr.String(naming.BrokerExchangeName(broker, true))
 		}
 		queue, err := r.rabbit.ReconcileQueue(ctx, &triggerresources.QueueArgs{
-			Name:                     naming.CreateTriggerQueueName(t),
-			Namespace:                t.Namespace,
-			RabbitMQClusterName:      broker.Spec.Config.Name,
-			RabbitMQClusterNamespace: broker.Spec.Config.Namespace,
-			Owner:                    *kmeta.NewControllerRef(t),
-			Labels:                   triggerresources.QueueLabels(broker, t),
-			DLXName:                  dlxName,
+			Name:      naming.CreateTriggerQueueName(t),
+			Namespace: t.Namespace,
+			RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
+				Name:      broker.Spec.Config.Name,
+				Namespace: broker.Spec.Config.Namespace,
+			},
+			Owner:   *kmeta.NewControllerRef(t),
+			Labels:  triggerresources.QueueLabels(broker, t),
+			DLXName: dlxName,
 		})
 		if err != nil {
 			logging.FromContext(ctx).Error("Problem reconciling Trigger Queue", zap.Error(err))
@@ -434,15 +441,18 @@ func (r *Reconciler) reconcileBinding(ctx context.Context, b *eventingv1.Broker,
 	filters[resources.BindingKey] = t.Name
 
 	return r.rabbit.ReconcileBinding(ctx, &resources.BindingArgs{
-		Name:                     bindingName,
-		Namespace:                t.Namespace,
-		RabbitMQClusterName:      b.Spec.Config.Name,
-		RabbitMQClusterNamespace: b.Spec.Config.Namespace,
-		Source:                   naming.BrokerExchangeName(b, false),
-		Destination:              bindingName,
-		Owner:                    *kmeta.NewControllerRef(t),
-		Labels:                   resources.BindingLabels(b, t),
-		Filters:                  filters,
+		Name:      bindingName,
+		Namespace: t.Namespace,
+		RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
+			Name:      b.Spec.Config.Name,
+			Namespace: b.Spec.Config.Namespace,
+		},
+		Vhost:       "/",
+		Source:      naming.BrokerExchangeName(b, false),
+		Destination: bindingName,
+		Owner:       *kmeta.NewControllerRef(t),
+		Labels:      resources.BindingLabels(b, t),
+		Filters:     filters,
 	})
 }
 
@@ -450,13 +460,16 @@ func (r *Reconciler) reconcileDLQBinding(ctx context.Context, b *eventingv1.Brok
 	bindingName := naming.CreateTriggerDeadLetterQueueName(t)
 
 	return r.rabbit.ReconcileBinding(ctx, &resources.BindingArgs{
-		Name:                     bindingName,
-		Namespace:                t.Namespace,
-		RabbitMQClusterName:      b.Spec.Config.Name,
-		RabbitMQClusterNamespace: b.Spec.Config.Namespace,
-		Source:                   naming.TriggerDLXExchangeName(t),
-		Destination:              bindingName,
-		Owner:                    *kmeta.NewControllerRef(t),
-		Labels:                   resources.BindingLabels(b, t),
+		Name:      bindingName,
+		Namespace: t.Namespace,
+		RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
+			Name:      b.Spec.Config.Name,
+			Namespace: b.Spec.Config.Namespace,
+		},
+		Vhost:       "/",
+		Source:      naming.TriggerDLXExchangeName(t),
+		Destination: bindingName,
+		Owner:       *kmeta.NewControllerRef(t),
+		Labels:      resources.BindingLabels(b, t),
 	})
 }

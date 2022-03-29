@@ -17,7 +17,6 @@ limitations under the License.
 package resources_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -44,10 +43,13 @@ func TestNewBinding(t *testing.T) {
 		{
 			name: "Creates a binding",
 			args: &resources.BindingArgs{
-				Namespace:           namespace,
-				Name:                "name",
-				RabbitMQClusterName: rabbitmqcluster,
-				Labels:              map[string]string{"label": "cool"},
+				Namespace: namespace,
+				Name:      "name",
+				RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
+					Name: rabbitmqcluster,
+				},
+				Vhost:  "/",
+				Labels: map[string]string{"label": "cool"},
 				Owner: metav1.OwnerReference{
 					Kind:       "Broker",
 					APIVersion: "eventing.knative.dev/v1",
@@ -86,11 +88,14 @@ func TestNewBinding(t *testing.T) {
 		{
 			name: "Creates a binding in RabbitMQ cluster namespace",
 			args: &resources.BindingArgs{
-				Namespace:                namespace,
-				Name:                     "name",
-				RabbitMQClusterName:      rabbitmqcluster,
-				RabbitMQClusterNamespace: "single-rabbitmq-cluster",
-				Labels:                   map[string]string{"label": "cool"},
+				Namespace: namespace,
+				Name:      "name",
+				RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
+					Name:      rabbitmqcluster,
+					Namespace: "single-rabbitmq-cluster",
+				},
+				Vhost:  "/",
+				Labels: map[string]string{"label": "cool"},
 				Owner: metav1.OwnerReference{
 					Kind:       "Broker",
 					APIVersion: "eventing.knative.dev/v1",
@@ -130,6 +135,11 @@ func TestNewBinding(t *testing.T) {
 		{
 			name: "appends to filters if given",
 			args: &resources.BindingArgs{
+				Vhost: "/",
+				RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
+					Name:      rabbitmqcluster,
+					Namespace: "single-rabbitmq-cluster",
+				},
 				Filters: map[string]string{"filter": "this"},
 			},
 			want: &rabbitv1beta1.Binding{
@@ -143,7 +153,7 @@ func TestNewBinding(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := resources.NewBinding(context.TODO(), tt.args)
+			got, err := resources.NewBinding(tt.args)
 			if err != nil && tt.wantErr != "" {
 				t.Errorf("Got unexpected error return from NewBinding, wanted %v got %v", tt.wantErr, err)
 			} else if err == nil && tt.wantErr != "" {

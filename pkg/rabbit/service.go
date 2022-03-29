@@ -120,7 +120,7 @@ func (r *Rabbit) ReconcileQueue(ctx context.Context, args *triggerresources.Queu
 func (r *Rabbit) ReconcileBinding(ctx context.Context, args *triggerresources.BindingArgs) (Result, error) {
 	logging.FromContext(ctx).Info("Reconciling binding")
 
-	want, err := triggerresources.NewBinding(ctx, args)
+	want, err := triggerresources.NewBinding(args)
 	if err != nil {
 		return Result{}, fmt.Errorf("failed to create the binding spec: %w", err)
 	}
