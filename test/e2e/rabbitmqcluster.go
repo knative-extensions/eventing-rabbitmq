@@ -19,6 +19,7 @@ package e2e
 import (
 	"context"
 	"fmt"
+
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"knative.dev/pkg/test"
