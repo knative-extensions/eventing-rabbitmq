@@ -58,6 +58,16 @@ spec:
                     minimum: 1
                     type: integer
                 type: object
+              connectionSecret:
+                description: Secret contains the http management uri for the RabbitMQ
+                  cluster. Used when queue and exchange are not predeclared. The Secret
+                  must contain the key `uri`, `username` and `password`.
+                properties:
+                  name:
+                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                      TODO: Add other useful fields. apiVersion, kind, uid?'
+                    type: string
+                type: object
               exchangeConfig:
                 description: ExchangeConfig config for rabbitmq exchange
                 properties:
