@@ -57,8 +57,8 @@ func RabbitMQCluster() *feature.Feature {
 	f := new(feature.Feature)
 
 	f.Setup("install a rabbitmqcluster", rabbitmq.Install())
-	f.Requirement("Add key uri to default user secret", RabbitMQClusterConnectionSecret)
 	f.Requirement("RabbitMQCluster goes ready", RabbitMQClusterReady)
+	f.Requirement("Add key uri to default user secret", RabbitMQClusterConnectionSecret)
 	return f
 }
 
@@ -66,20 +66,35 @@ func RabbitMQClusterVHost() *feature.Feature {
 	f := new(feature.Feature)
 
 	f.Setup("install a rabbitmqcluster with a default vhost and user permissions to it", rabbitmqvhost.Install())
-	f.Requirement("Add key uri to default user secret", RabbitMQClusterConnectionSecret)
 	f.Requirement("RabbitMQCluster goes ready", RabbitMQClusterReady)
+	f.Requirement("Add key uri to default user secret", RabbitMQClusterConnectionSecretVhost)
 	return f
 }
 
 func RabbitMQClusterConnectionSecret(ctx context.Context, t feature.T) {
 	namespace := environment.FromContext(ctx).Namespace()
+	secretName := "rabbitmqc-default-user" // default user secret created by rabbitmq cluster operator
 
-	patch := []byte(fmt.Sprintf("{\"spec\":{\"stringData\":\"rabbitmqc.%s:15672\"}}", namespace))
-	_, err := kubeClient.Get(ctx).CoreV1().Secrets(namespace).Patch(ctx, "rabbitmqc-default-user", types.MergePatchType, patch, metav1.PatchOptions{})
-	if err != nil {
-		t.Fatalf("failed to patch k8s Secret '%s' from namespace '%s' : %v", "rabbitmqc-default-user", namespace, err)
+	if err := patchConnectionSecret(ctx, namespace, secretName); err != nil {
+		t.Fatalf("failed to patch k8s Secret '%s' from namespace '%s' : %v", secretName, namespace, err)
 	}
-	log.Printf("Successfully patched Secret '%s' from namespace '%s' with RabbitMQ uri", "rabbitmqc-default-user", namespace)
+	log.Printf("Successfully patched Secret '%s' from namespace '%s' with RabbitMQ uri", secretName, namespace)
+}
+
+func RabbitMQClusterConnectionSecretVhost(ctx context.Context, t feature.T) {
+	namespace := environment.FromContext(ctx).Namespace()
+	secretName := "secret-basic-auth" // 'secret-basic-auth' secret created in test/e2e/config/rabbitmqvhost/credentials.yaml
+
+	if err := patchConnectionSecret(ctx, namespace, secretName); err != nil {
+		t.Fatalf("failed to patch k8s Secret '%s' from namespace '%s' : %v", secretName, namespace, err)
+	}
+	log.Printf("Successfully patched Secret '%s' from namespace '%s' with RabbitMQ uri", secretName, namespace)
+}
+
+func patchConnectionSecret(ctx context.Context, namespace string, secretName string) error {
+	patch := []byte(fmt.Sprintf("{\"spec\":{\"stringData\":\"rabbitmqc.%s:15672\"}}", namespace))
+	_, err := kubeClient.Get(ctx).CoreV1().Secrets(namespace).Patch(ctx, secretName, types.MergePatchType, patch, metav1.PatchOptions{})
+	return err
 }
 
 func RabbitMQClusterReady(ctx context.Context, t feature.T) {
