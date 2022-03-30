@@ -32,7 +32,7 @@ spec:
       name: "secret-basic-auth"
       key: "password"
   exchangeConfig:
-    name: "test"
+    name: "logs"
     type: "fanout"
     durable: true
     autoDelete: false
