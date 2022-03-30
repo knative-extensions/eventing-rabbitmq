@@ -149,6 +149,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		// as a Queue for it, and Dispatcher that pulls from that queue.
 		if t.Spec.Delivery != nil && t.Spec.Delivery.DeadLetterSink != nil {
 			args := &brokerresources.ExchangeArgs{
+				Name:      naming.TriggerDLXExchangeName(t),
 				Namespace: t.Namespace,
 				Broker:    broker,
 				RabbitmqClusterReference: &v1beta1.RabbitmqClusterReference{
