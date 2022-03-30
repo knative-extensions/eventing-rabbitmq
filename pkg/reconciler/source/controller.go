@@ -20,6 +20,11 @@ import (
 	"context"
 	"os"
 
+	"knative.dev/eventing-rabbitmq/pkg/rabbit"
+	bindinginformer "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/informers/rabbitmq.com/v1beta1/binding"
+	exchangeinformer "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/informers/rabbitmq.com/v1beta1/exchange"
+	queueinformer "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/informers/rabbitmq.com/v1beta1/queue"
+
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 	rabbitmqclient "knative.dev/eventing-rabbitmq/pkg/client/injection/client"
@@ -46,14 +51,21 @@ func NewController(
 
 	rabbitmqInformer := rabbitmqinformer.Get(ctx)
 	deploymentInformer := deploymentinformer.Get(ctx)
+	bindingInformer := bindinginformer.Get(ctx)
+	queueInformer := queueinformer.Get(ctx)
+	exchangeInformer := exchangeinformer.Get(ctx)
 
 	c := &Reconciler{
 		KubeClientSet:       kubeclient.Get(ctx),
 		rabbitmqClientSet:   rabbitmqclient.Get(ctx),
 		rabbitmqLister:      rabbitmqInformer.Lister(),
 		deploymentLister:    deploymentInformer.Lister(),
+		bindingListener:     bindingInformer.Lister(),
+		exchangeLister:      exchangeInformer.Lister(),
+		queueLister:         queueInformer.Lister(),
 		receiveAdapterImage: raImage,
 		loggingContext:      ctx,
+		rabbit:              rabbit.New(ctx),
 	}
 
 	impl := rabbitmqsource.NewImpl(ctx, c)
@@ -64,6 +76,19 @@ func NewController(
 	rabbitmqInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
 	deploymentInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.FilterControllerGK(v1alpha1.Kind("RabbitmqSource")),
+		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
+	})
+
+	bindingInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.FilterControllerGK(v1alpha1.Kind("RabbitmqSource")),
+		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
+	})
+	queueInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.FilterControllerGK(v1alpha1.Kind("RabbitmqSource")),
+		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
+	})
+	exchangeInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.FilterControllerGK(v1alpha1.Kind("RabbitmqSource")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})

@@ -20,6 +20,8 @@ metadata:
 spec:
   brokers: "rabbitmqc.{{ .namespace }}:5672/"
   topic: ""
+  connectionSecret:
+    name: "rabbitmqc-default-user"
   user:
     secretKeyRef:
       name: "rabbitmqc-default-user"
@@ -29,13 +31,14 @@ spec:
       name: "rabbitmqc-default-user"
       key: "password"
   exchangeConfig:
+    name: "logs"
     type: "fanout"
     durable: true
     autoDelete: false
     internal: false
     nowait: false
   queueConfig:
-    name: ""
+    name: "test"
     routingKey: ""
     durable: false
     autoDelete: false

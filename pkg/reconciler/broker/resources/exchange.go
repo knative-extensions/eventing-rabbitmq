@@ -20,6 +20,7 @@ import (
 	"net/url"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 	"knative.dev/pkg/kmeta"
 
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
@@ -30,56 +31,75 @@ import (
 type ExchangeArgs struct {
 	Name                     string
 	Namespace                string
-	Broker                   *eventingv1.Broker
-	RabbitMQClusterName      string
-	RabbitMQClusterNamespace string
+	RabbitmqClusterReference *rabbitv1beta1.RabbitmqClusterReference
 	RabbitMQURL              *url.URL
+	Broker                   *eventingv1.Broker
 	Trigger                  *eventingv1.Trigger
+	Source                   *v1alpha1.RabbitmqSource
 }
 
+// NewExchange returns an `exchange.rabbitmq.com` object
+// used by trigger, broker, and source reconcilers
+// when used by trigger and broker, exchange properties such as `durable`, autoDelete`, and `type` are hardcoded
 func NewExchange(args *ExchangeArgs) *rabbitv1beta1.Exchange {
-	var ownerReference metav1.OwnerReference
+	// exchange configurations for triggers and broker
+	vhost := "/"
+	durable := true
+	autoDelete := false
+	exchangeType := "headers"
 
+	var exchangeName string
+	var ownerReference metav1.OwnerReference
 	if args.Trigger != nil {
 		ownerReference = *kmeta.NewControllerRef(args.Trigger)
-	} else {
+		exchangeName = args.Name
+	} else if args.Broker != nil {
 		ownerReference = *kmeta.NewControllerRef(args.Broker)
+		exchangeName = args.Name
+	} else if args.Source != nil {
+		ownerReference = *kmeta.NewControllerRef(args.Source)
+		durable = args.Source.Spec.ExchangeConfig.Durable
+		autoDelete = args.Source.Spec.ExchangeConfig.AutoDelete
+		exchangeType = args.Source.Spec.ExchangeConfig.TypeOf
+		exchangeName = args.Source.Spec.ExchangeConfig.Name
+		vhost = args.Source.Spec.Vhost
 	}
+
 	return &rabbitv1beta1.Exchange{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:       args.Namespace,
 			Name:            args.Name,
 			OwnerReferences: []metav1.OwnerReference{ownerReference},
-			Labels:          ExchangeLabels(args.Broker, args.Trigger),
+			Labels:          ExchangeLabels(args.Broker, args.Trigger, args.Source),
 		},
 		Spec: rabbitv1beta1.ExchangeSpec{
-			// Why is the name in the Spec again? Is this different from the ObjectMeta.Name? If not,
-			// maybe it should be removed?
-			Name:       args.Name,
-			Type:       "headers",
-			Durable:    true,
-			AutoDelete: false,
-			// TODO: We had before also internal / nowait set to false. Are these in Arguments,
-			// or do they get sane defaults that we can just work with?
-			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
-				Name:      args.RabbitMQClusterName,
-				Namespace: args.RabbitMQClusterNamespace,
-			},
+			Name:                     exchangeName,
+			Vhost:                    vhost,
+			Type:                     exchangeType,
+			Durable:                  durable,
+			AutoDelete:               autoDelete,
+			RabbitmqClusterReference: *args.RabbitmqClusterReference,
 		},
 	}
 }
 
-// ExchangeLabels generates the labels present on the Exchange linking the Broker to the
-// Exchange.
-func ExchangeLabels(b *eventingv1.Broker, t *eventingv1.Trigger) map[string]string {
+// ExchangeLabels generates the labels for the Exchange
+// Used by exchanges created by broker, trigger, and source controller
+func ExchangeLabels(b *eventingv1.Broker, t *eventingv1.Trigger, s *v1alpha1.RabbitmqSource) map[string]string {
 	if t != nil {
 		return map[string]string{
 			"eventing.knative.dev/broker":  b.Name,
 			"eventing.knative.dev/trigger": t.Name,
 		}
-	} else {
+	} else if b != nil {
 		return map[string]string{
 			"eventing.knative.dev/broker": b.Name,
 		}
+	} else if s != nil {
+		return map[string]string{
+			"eventing.knative.dev/SourceName": s.Name,
+		}
 	}
+
+	return nil
 }

@@ -115,15 +115,15 @@ type RabbitmqSourceSpec struct {
 	// Brokers are the Rabbitmq servers the consumer will connect to.
 	// +required
 	Brokers string `json:"brokers"`
-	// Topic topic to consume messages from
-	// +required
-	Topic string `json:"topic,omitempty"`
 	// User for rabbitmq connection
 	// +optional
 	User SecretValueFromSource `json:"user,omitempty"`
 	// Password for rabbitmq connection
 	// +optional
 	Password SecretValueFromSource `json:"password,omitempty"`
+	// Topic topic to consume messages from
+	// +required
+	Topic string `json:"topic,omitempty"`
 	// Predeclared defines if channels and queues are already predeclared and shouldn't be recreated.
 	// This should be used in case the user does not have permission to declare new queues and channels in
 	// RabbitMQ cluster
@@ -141,6 +141,11 @@ type RabbitmqSourceSpec struct {
 	// For exponential policy, backoff delay is backoffDelay*2^<numberOfRetries>.
 	// +optional
 	BackoffDelay *string `json:"backoffDelay,omitempty"`
+	// Secret contains the http management uri for the RabbitMQ cluster.
+	// Used when queue and exchange are not predeclared.
+	// The Secret must contain the key `uri`, `username` and `password`.
+	// +optional
+	ConnectionSecret *corev1.LocalObjectReference `json:"connectionSecret,omitempty"`
 	// ChannelConfig config for rabbitmq exchange
 	// +optional
 	ChannelConfig RabbitmqChannelConfigSpec `json:"channelConfig,omitempty"`

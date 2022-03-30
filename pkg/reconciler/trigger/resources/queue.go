@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"regexp"
 
+	"knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
@@ -34,14 +36,27 @@ const TriggerLabelKey = "eventing.knative.dev/trigger"
 type QueueArgs struct {
 	Name                     string
 	Namespace                string
-	RabbitMQClusterNamespace string
-	RabbitMQClusterName      string
+	RabbitmqClusterReference *rabbitv1beta1.RabbitmqClusterReference
 	Owner                    metav1.OwnerReference
 	Labels                   map[string]string
 	DLXName                  *string
+	Source                   *v1alpha1.RabbitmqSource
 }
 
 func NewQueue(args *QueueArgs) *rabbitv1beta1.Queue {
+	// queue configurations for triggers
+	durable := true
+	autoDelete := false
+	queueName := args.Name
+	vhost := "/"
+
+	if args.Source != nil {
+		durable = args.Source.Spec.QueueConfig.Durable
+		autoDelete = args.Source.Spec.QueueConfig.AutoDelete
+		queueName = args.Source.Spec.QueueConfig.Name
+		vhost = args.Source.Spec.Vhost
+	}
+
 	return &rabbitv1beta1.Queue{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:       args.Namespace,
@@ -50,17 +65,11 @@ func NewQueue(args *QueueArgs) *rabbitv1beta1.Queue {
 			Labels:          args.Labels,
 		},
 		Spec: rabbitv1beta1.QueueSpec{
-			// Why is the name in the Spec again? Is this different from the ObjectMeta.Name? If not,
-			// maybe it should be removed?
-			Name:       args.Name,
-			Durable:    true,
-			AutoDelete: false,
-			// TODO: We had before also internal / nowait set to false. Are these in Arguments,
-			// or do they get sane defaults that we can just work with?
-			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
-				Name:      args.RabbitMQClusterName,
-				Namespace: args.RabbitMQClusterNamespace,
-			},
+			Name:                     queueName,
+			Vhost:                    vhost,
+			Durable:                  durable,
+			AutoDelete:               autoDelete,
+			RabbitmqClusterReference: *args.RabbitmqClusterReference,
 		},
 	}
 }
@@ -71,16 +80,14 @@ func NewPolicy(args *QueueArgs) *rabbitv1beta1.Policy {
 			Name:            args.Name,
 			Namespace:       args.Namespace,
 			OwnerReferences: []metav1.OwnerReference{args.Owner},
+			Labels:          args.Labels,
 		},
 		Spec: v1beta1.PolicySpec{
-			Name:       args.Name,
-			Pattern:    fmt.Sprintf("^%s$", regexp.QuoteMeta(args.Name)),
-			ApplyTo:    "queues",
-			Definition: &runtime.RawExtension{Raw: []byte(fmt.Sprintf(`{"dead-letter-exchange": %q}`, *args.DLXName))},
-			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
-				Name:      args.RabbitMQClusterName,
-				Namespace: args.RabbitMQClusterNamespace,
-			},
+			Name:                     args.Name,
+			Pattern:                  fmt.Sprintf("^%s$", regexp.QuoteMeta(args.Name)),
+			ApplyTo:                  "queues",
+			Definition:               &runtime.RawExtension{Raw: []byte(fmt.Sprintf(`{"dead-letter-exchange": %q}`, *args.DLXName))},
+			RabbitmqClusterReference: *args.RabbitmqClusterReference,
 		},
 	}
 }

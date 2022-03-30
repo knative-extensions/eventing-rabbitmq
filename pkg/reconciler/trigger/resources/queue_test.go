@@ -17,7 +17,15 @@ limitations under the License.
 package resources_test
 
 import (
+	"fmt"
+	"regexp"
 	"testing"
+
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/utils/pointer"
+
+	v1 "k8s.io/api/core/v1"
+	"knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -27,8 +35,10 @@ import (
 )
 
 const (
-	namespace   = "foobar"
-	triggerName = "my-trigger"
+	namespace            = "foobar"
+	triggerName          = "my-trigger"
+	sourceName           = "a-source"
+	connectionSecretName = "a-random-secret"
 )
 
 func TestNewQueue(t *testing.T) {
@@ -48,11 +58,13 @@ func TestNewQueue(t *testing.T) {
 		{
 			name: "creates a queue",
 			args: &resources.QueueArgs{
-				Name:                triggerName,
-				Namespace:           namespace,
-				RabbitMQClusterName: rabbitmqcluster,
-				Owner:               owner,
-				Labels:              map[string]string{"cool": "label"},
+				Name:      triggerName,
+				Namespace: namespace,
+				RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
+					Name: rabbitmqcluster,
+				},
+				Owner:  owner,
+				Labels: map[string]string{"cool": "label"},
 			},
 			want: &rabbitv1beta1.Queue{
 				ObjectMeta: metav1.ObjectMeta{
@@ -74,12 +86,14 @@ func TestNewQueue(t *testing.T) {
 		{
 			name: "creates a queue in RabbitMQ cluster namespace",
 			args: &resources.QueueArgs{
-				Name:                     triggerName,
-				Namespace:                namespace,
-				RabbitMQClusterName:      rabbitmqcluster,
-				RabbitMQClusterNamespace: "single-rabbitmq-cluster",
-				Owner:                    owner,
-				Labels:                   map[string]string{"cool": "label"},
+				Name:      triggerName,
+				Namespace: namespace,
+				RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
+					Name:      rabbitmqcluster,
+					Namespace: "single-rabbitmq-cluster",
+				},
+				Owner:  owner,
+				Labels: map[string]string{"cool": "label"},
 			},
 			want: &rabbitv1beta1.Queue{
 				ObjectMeta: metav1.ObjectMeta{
@@ -99,11 +113,140 @@ func TestNewQueue(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "creates a queue for source",
+			args: &resources.QueueArgs{
+				Name:      sourceName,
+				Namespace: namespace,
+				RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
+					ConnectionSecret: &v1.LocalObjectReference{
+						Name: connectionSecretName,
+					},
+				},
+				Owner:  owner,
+				Labels: map[string]string{"a-key": "a-value"},
+				Source: &v1alpha1.RabbitmqSource{
+					Spec: v1alpha1.RabbitmqSourceSpec{
+						QueueConfig: v1alpha1.RabbitmqSourceQueueConfigSpec{
+							Name:       "a-test-queue",
+							Durable:    false,
+							AutoDelete: false,
+						},
+						Vhost: "test",
+					},
+				},
+			},
+			want: &rabbitv1beta1.Queue{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:            sourceName,
+					Namespace:       namespace,
+					OwnerReferences: []metav1.OwnerReference{owner},
+					Labels:          map[string]string{"a-key": "a-value"},
+				},
+				Spec: rabbitv1beta1.QueueSpec{
+					Name:       "a-test-queue",
+					Vhost:      "test",
+					Durable:    false,
+					AutoDelete: false,
+					RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
+						ConnectionSecret: &v1.LocalObjectReference{
+							Name: connectionSecretName,
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			got := resources.NewQueue(tt.args)
 			if !equality.Semantic.DeepDerivative(tt.want, got) {
 				t.Errorf("Unexpected Queue resource: want:\n%+v\ngot:\n%+v\ndiff:\n%+v", tt.want, got, cmp.Diff(tt.want, got))
+			}
+		})
+	}
+}
+
+func TestNewPolicy(t *testing.T) {
+	owner := metav1.OwnerReference{
+		Kind:       "Broker",
+		APIVersion: "eventing.knative.dev/v1",
+		Name:       brokerName,
+		UID:        brokerUID,
+	}
+
+	for _, tt := range []struct {
+		name    string
+		args    *resources.QueueArgs
+		want    *rabbitv1beta1.Policy
+		wantErr string
+	}{
+		{
+			name: "creates a policy",
+			args: &resources.QueueArgs{
+				Name:      triggerName,
+				Namespace: namespace,
+				RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
+					Name: rabbitmqcluster,
+				},
+				Owner:   owner,
+				Labels:  map[string]string{"cool": "label"},
+				DLXName: pointer.String("an-exchange"),
+			},
+			want: &rabbitv1beta1.Policy{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:            triggerName,
+					Namespace:       namespace,
+					OwnerReferences: []metav1.OwnerReference{owner},
+					Labels:          map[string]string{"cool": "label"},
+				},
+				Spec: rabbitv1beta1.PolicySpec{
+					Name:       triggerName,
+					Pattern:    fmt.Sprintf("^%s$", regexp.QuoteMeta(triggerName)),
+					ApplyTo:    "queues",
+					Definition: &runtime.RawExtension{Raw: []byte(fmt.Sprintf(`{"dead-letter-exchange": %q}`, "an-exchange"))},
+					RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
+						Name: rabbitmqcluster,
+					},
+				},
+			},
+		},
+		{
+			name: "creates a queue in a provided namespace",
+			args: &resources.QueueArgs{
+				Name:      triggerName,
+				Namespace: namespace,
+				RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
+					Name:      rabbitmqcluster,
+					Namespace: "a-namespace",
+				},
+				Owner:   owner,
+				Labels:  map[string]string{"cool": "label"},
+				DLXName: pointer.String("an-exchange"),
+			},
+			want: &rabbitv1beta1.Policy{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:            triggerName,
+					Namespace:       namespace,
+					OwnerReferences: []metav1.OwnerReference{owner},
+					Labels:          map[string]string{"cool": "label"},
+				},
+				Spec: rabbitv1beta1.PolicySpec{
+					Name:       triggerName,
+					Pattern:    fmt.Sprintf("^%s$", regexp.QuoteMeta(triggerName)),
+					ApplyTo:    "queues",
+					Definition: &runtime.RawExtension{Raw: []byte(fmt.Sprintf(`{"dead-letter-exchange": %q}`, "an-exchange"))},
+					RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
+						Name:      rabbitmqcluster,
+						Namespace: "a-namespace",
+					},
+				},
+			},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			got := resources.NewPolicy(tt.args)
+			if !equality.Semantic.DeepDerivative(tt.want, got) {
+				t.Errorf("Unexpected Policy resource: want:\n%+v\ngot:\n%+v\ndiff:\n%+v", tt.want, got, cmp.Diff(tt.want, got))
 			}
 		})
 	}
