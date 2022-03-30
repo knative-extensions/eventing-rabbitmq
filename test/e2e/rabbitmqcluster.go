@@ -22,7 +22,6 @@ import (
 
 	kubeClient "knative.dev/pkg/client/injection/kube/client"
 
-	"k8s.io/apimachinery/pkg/types"
 	"knative.dev/pkg/apis"
 
 	corev1 "k8s.io/api/core/v1"
@@ -92,8 +91,15 @@ func RabbitMQClusterConnectionSecretVhost(ctx context.Context, t feature.T) {
 }
 
 func patchConnectionSecret(ctx context.Context, namespace string, secretName string) error {
-	patch := []byte(fmt.Sprintf("{\"spec\":{\"stringData\":\"rabbitmqc.%s:15672\"}}", namespace))
-	_, err := kubeClient.Get(ctx).CoreV1().Secrets(namespace).Patch(ctx, secretName, types.MergePatchType, patch, metav1.PatchOptions{})
+	secret, err := kubeClient.Get(ctx).CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	secret.Data["uri"] = []byte(fmt.Sprintf("rabbitmqc.%s:15672", namespace))
+	if _, err = kubeClient.Get(ctx).CoreV1().Secrets(namespace).Update(ctx, secret, metav1.UpdateOptions{}); err != nil {
+		return err
+	}
+	log.Printf("Successfully updated Secret '%s' from namespace '%s' with RabbitMQ uri", secretName, namespace)
 	return err
 }
 
