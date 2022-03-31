@@ -41,7 +41,6 @@ import (
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
-	triggerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
 	rabbitclientset "knative.dev/eventing-rabbitmq/third_party/pkg/client/clientset/versioned"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	clientset "knative.dev/eventing/pkg/client/clientset/versioned"
@@ -265,7 +264,7 @@ func (r *Reconciler) reconcileDLXDispatcherDeployment(ctx context.Context, b *ev
 	return r.kubeClientSet.AppsV1().Deployments(b.Namespace).Delete(ctx, dispatcherName, metav1.DeleteOptions{})
 }
 
-func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker, args *resources.ExchangeArgs) error {
+func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker, args *rabbit.ExchangeArgs) error {
 	args.Name = naming.BrokerExchangeName(b, false)
 	exchange, err := r.rabbit.ReconcileExchange(ctx, args)
 	if err != nil {
@@ -291,7 +290,7 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 	MarkExchangeReady(&b.Status)
 
 	if b.Spec.Delivery != nil && b.Spec.Delivery.DeadLetterSink != nil {
-		queue, err := r.rabbit.ReconcileQueue(ctx, &triggerresources.QueueArgs{
+		queue, err := r.rabbit.ReconcileQueue(ctx, &rabbit.QueueArgs{
 			Name:      naming.CreateBrokerDeadLetterQueueName(b),
 			Namespace: b.Namespace,
 			RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
@@ -299,7 +298,7 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 				Namespace: b.Spec.Config.Namespace,
 			},
 			Owner:  *kmeta.NewControllerRef(b),
-			Labels: triggerresources.QueueLabels(b, nil),
+			Labels: rabbit.QueueLabels(b, nil),
 		})
 		if err != nil {
 			MarkDLXFailed(&b.Status, "QueueFailure", fmt.Sprintf("Failed to reconcile Dead Letter Queue %q : %s", naming.CreateBrokerDeadLetterQueueName(b), err))
@@ -312,7 +311,7 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 		}
 		MarkDLXReady(&b.Status)
 		bindingName := naming.CreateBrokerDeadLetterQueueName(b)
-		binding, err := r.rabbit.ReconcileBinding(ctx, &triggerresources.BindingArgs{
+		binding, err := r.rabbit.ReconcileBinding(ctx, &rabbit.BindingArgs{
 			Name:      bindingName,
 			Namespace: b.Namespace,
 			RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
@@ -323,9 +322,9 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 			Source:      naming.BrokerExchangeName(b, true),
 			Destination: bindingName,
 			Owner:       *kmeta.NewControllerRef(b),
-			Labels:      triggerresources.BindingLabels(b, nil),
+			Labels:      rabbit.BindingLabels(b, nil),
 			Filters: map[string]string{
-				triggerresources.DLQBindingKey: b.Name,
+				rabbit.DLQBindingKey: b.Name,
 			},
 		})
 		if err != nil {

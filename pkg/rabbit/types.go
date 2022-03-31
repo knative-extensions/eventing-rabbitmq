@@ -18,9 +18,6 @@ package rabbit
 
 import (
 	"context"
-
-	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
-	triggerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
 )
 
 type Result struct {
@@ -29,7 +26,7 @@ type Result struct {
 }
 
 type Service interface {
-	ReconcileExchange(context.Context, *resources.ExchangeArgs) (Result, error)
-	ReconcileQueue(context.Context, *triggerresources.QueueArgs) (Result, error)
-	ReconcileBinding(context.Context, *triggerresources.BindingArgs) (Result, error)
+	ReconcileExchange(context.Context, *ExchangeArgs) (Result, error)
+	ReconcileQueue(context.Context, *QueueArgs) (Result, error)
+	ReconcileBinding(context.Context, *BindingArgs) (Result, error)
 }

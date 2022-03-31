@@ -22,8 +22,6 @@ import (
 
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
-	brokerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
-	triggerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
 	"knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	rabbitlisters "knative.dev/eventing-rabbitmq/third_party/pkg/client/listers/rabbitmq.com/v1beta1"
 	"knative.dev/eventing/pkg/utils"
@@ -143,7 +141,7 @@ func (r *Reconciler) reconcileRabbitObjects(ctx context.Context, source *v1alpha
 		return nil
 	}
 
-	_, err := r.rabbit.ReconcileExchange(ctx, &brokerresources.ExchangeArgs{
+	_, err := r.rabbit.ReconcileExchange(ctx, &rabbit.ExchangeArgs{
 		Name:      naming.CreateSourceRabbitName(source),
 		Namespace: source.Namespace,
 		RabbitmqClusterReference: &v1beta1.RabbitmqClusterReference{
@@ -156,7 +154,7 @@ func (r *Reconciler) reconcileRabbitObjects(ctx context.Context, source *v1alpha
 		return err
 	}
 
-	_, err = r.rabbit.ReconcileQueue(ctx, &triggerresources.QueueArgs{
+	_, err = r.rabbit.ReconcileQueue(ctx, &rabbit.QueueArgs{
 		Name:      naming.CreateSourceRabbitName(source),
 		Namespace: source.Namespace,
 		RabbitmqClusterReference: &v1beta1.RabbitmqClusterReference{
@@ -170,7 +168,7 @@ func (r *Reconciler) reconcileRabbitObjects(ctx context.Context, source *v1alpha
 		return err
 	}
 
-	_, err = r.rabbit.ReconcileBinding(ctx, &triggerresources.BindingArgs{
+	_, err = r.rabbit.ReconcileBinding(ctx, &rabbit.BindingArgs{
 		Name:      naming.CreateSourceRabbitName(source),
 		Namespace: source.Namespace,
 		RabbitmqClusterReference: &v1beta1.RabbitmqClusterReference{

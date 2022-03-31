@@ -14,12 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resources_test
+package rabbit_test
 
 import (
 	"fmt"
 	"regexp"
 	"testing"
+
+	"k8s.io/apimachinery/pkg/types"
+
+	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/pointer"
@@ -30,34 +34,35 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 )
 
-const (
-	namespace            = "foobar"
-	triggerName          = "my-trigger"
-	sourceName           = "a-source"
-	connectionSecretName = "a-random-secret"
-)
-
 func TestNewQueue(t *testing.T) {
-	owner := metav1.OwnerReference{
-		Kind:       "Broker",
-		APIVersion: "eventing.knative.dev/v1",
-		Name:       brokerName,
-		UID:        brokerUID,
-	}
+	var (
+		namespace            = "foobar"
+		brokerName           = "testbroker"
+		brokerUID            = types.UID("broker-test-uid")
+		triggerName          = "testtrigger"
+		sourceName           = "a-source"
+		rabbitmqcluster      = "testrabbitmqcluster"
+		connectionSecretName = "a-random-secret"
+		owner                = metav1.OwnerReference{
+			Kind:       "Broker",
+			APIVersion: "eventing.knative.dev/v1",
+			Name:       brokerName,
+			UID:        brokerUID,
+		}
+	)
 
 	for _, tt := range []struct {
 		name    string
-		args    *resources.QueueArgs
+		args    *rabbit.QueueArgs
 		want    *rabbitv1beta1.Queue
 		wantErr string
 	}{
 		{
 			name: "creates a queue",
-			args: &resources.QueueArgs{
+			args: &rabbit.QueueArgs{
 				Name:      triggerName,
 				Namespace: namespace,
 				RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
@@ -85,7 +90,7 @@ func TestNewQueue(t *testing.T) {
 		},
 		{
 			name: "creates a queue in RabbitMQ cluster namespace",
-			args: &resources.QueueArgs{
+			args: &rabbit.QueueArgs{
 				Name:      triggerName,
 				Namespace: namespace,
 				RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
@@ -115,7 +120,7 @@ func TestNewQueue(t *testing.T) {
 		},
 		{
 			name: "creates a queue for source",
-			args: &resources.QueueArgs{
+			args: &rabbit.QueueArgs{
 				Name:      sourceName,
 				Namespace: namespace,
 				RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
@@ -158,7 +163,7 @@ func TestNewQueue(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			got := resources.NewQueue(tt.args)
+			got := rabbit.NewQueue(tt.args)
 			if !equality.Semantic.DeepDerivative(tt.want, got) {
 				t.Errorf("Unexpected Queue resource: want:\n%+v\ngot:\n%+v\ndiff:\n%+v", tt.want, got, cmp.Diff(tt.want, got))
 			}
@@ -167,22 +172,29 @@ func TestNewQueue(t *testing.T) {
 }
 
 func TestNewPolicy(t *testing.T) {
-	owner := metav1.OwnerReference{
-		Kind:       "Broker",
-		APIVersion: "eventing.knative.dev/v1",
-		Name:       brokerName,
-		UID:        brokerUID,
-	}
+	var (
+		namespace       = "foobar"
+		brokerName      = "testbroker"
+		brokerUID       = types.UID("broker-test-uid")
+		triggerName     = "testtrigger"
+		rabbitmqcluster = "testrabbitmqcluster"
+		owner           = metav1.OwnerReference{
+			Kind:       "Broker",
+			APIVersion: "eventing.knative.dev/v1",
+			Name:       brokerName,
+			UID:        brokerUID,
+		}
+	)
 
 	for _, tt := range []struct {
 		name    string
-		args    *resources.QueueArgs
+		args    *rabbit.QueueArgs
 		want    *rabbitv1beta1.Policy
 		wantErr string
 	}{
 		{
 			name: "creates a policy",
-			args: &resources.QueueArgs{
+			args: &rabbit.QueueArgs{
 				Name:      triggerName,
 				Namespace: namespace,
 				RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
@@ -212,7 +224,7 @@ func TestNewPolicy(t *testing.T) {
 		},
 		{
 			name: "creates a queue in a provided namespace",
-			args: &resources.QueueArgs{
+			args: &rabbit.QueueArgs{
 				Name:      triggerName,
 				Namespace: namespace,
 				RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
@@ -244,7 +256,7 @@ func TestNewPolicy(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			got := resources.NewPolicy(tt.args)
+			got := rabbit.NewPolicy(tt.args)
 			if !equality.Semantic.DeepDerivative(tt.want, got) {
 				t.Errorf("Unexpected Policy resource: want:\n%+v\ngot:\n%+v\ndiff:\n%+v", tt.want, got, cmp.Diff(tt.want, got))
 			}

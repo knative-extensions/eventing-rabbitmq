@@ -1109,7 +1109,7 @@ func createPolicy(broker bool) *rabbitv1beta1.Policy {
 	} else {
 		dlxName = naming.TriggerDLXExchangeName(t)
 	}
-	return resources.NewPolicy(&resources.QueueArgs{
+	return rabbit.NewPolicy(&rabbit.QueueArgs{
 		Name:      queueName,
 		Namespace: testNS,
 		Owner:     *kmeta.NewControllerRef(t),

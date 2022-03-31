@@ -14,10 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resources_test
+package rabbit_test
 
 import (
 	"testing"
+
+	"k8s.io/apimachinery/pkg/types"
+
+	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/pointer"
@@ -26,32 +30,31 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
-const (
-	brokerName       = "testbroker"
-	brokerUID        = "broker-test-uid"
-	triggerName      = "testtrigger"
-	triggerUID       = "trigger-test-uid"
-	namespace        = "foobar"
-	rabbitmqcluster  = "testrabbitmqcluster"
-	connectionSecret = "secret-name"
-	sourceName       = "a-source"
-	sourceUID        = "source-test-uid"
-)
-
 func TestNewExchange(t *testing.T) {
+	var (
+		brokerName       = "testbroker"
+		brokerUID        = types.UID("broker-test-uid")
+		triggerName      = "testtrigger"
+		triggerUID       = types.UID("trigger-test-uid")
+		sourceName       = "a-source"
+		sourceUID        = types.UID("source-test-uid")
+		namespace        = "foobar"
+		rabbitmqcluster  = "testrabbitmqcluster"
+		connectionSecret = "secret-name"
+	)
+
 	for _, tt := range []struct {
 		name string
-		args *resources.ExchangeArgs
+		args *rabbit.ExchangeArgs
 		want *rabbitv1beta1.Exchange
 	}{{
 		name: "broker exchange",
-		args: &resources.ExchangeArgs{
+		args: &rabbit.ExchangeArgs{
 			Name:      brokerName,
 			Namespace: namespace,
 			RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
@@ -96,7 +99,7 @@ func TestNewExchange(t *testing.T) {
 		},
 	}, {
 		name: "broker exchange in RabbitMQ cluster namespace",
-		args: &resources.ExchangeArgs{
+		args: &rabbit.ExchangeArgs{
 			Name:      brokerName,
 			Namespace: namespace,
 			RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
@@ -143,7 +146,7 @@ func TestNewExchange(t *testing.T) {
 		},
 	}, {
 		name: "source exchange",
-		args: &resources.ExchangeArgs{
+		args: &rabbit.ExchangeArgs{
 			Name:      sourceName,
 			Namespace: namespace,
 			RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
@@ -202,7 +205,7 @@ func TestNewExchange(t *testing.T) {
 		},
 	}, {
 		name: "trigger exchange",
-		args: &resources.ExchangeArgs{
+		args: &rabbit.ExchangeArgs{
 			Name:      brokerName,
 			Namespace: namespace,
 			RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
@@ -257,7 +260,7 @@ func TestNewExchange(t *testing.T) {
 		},
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
-			got := resources.NewExchange(tt.args)
+			got := rabbit.NewExchange(tt.args)
 			if !equality.Semantic.DeepDerivative(tt.want, got) {
 				t.Errorf("Unexpected Exchange resource: want:\n%+v\ngot:\n%+v\ndiff:\n%+v", tt.want, got, cmp.Diff(tt.want, got))
 			}
@@ -266,6 +269,12 @@ func TestNewExchange(t *testing.T) {
 }
 
 func TestExchangeLabels(t *testing.T) {
+	var (
+		brokerName  = "testbroker"
+		triggerName = "testtrigger"
+		sourceName  = "a-source"
+	)
+
 	for _, tt := range []struct {
 		name string
 		b    *eventingv1.Broker
@@ -310,7 +319,7 @@ func TestExchangeLabels(t *testing.T) {
 		},
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
-			got := resources.ExchangeLabels(tt.b, tt.t, tt.s)
+			got := rabbit.ExchangeLabels(tt.b, tt.t, tt.s)
 			if !equality.Semantic.DeepDerivative(tt.want, got) {
 				t.Errorf("Unexpected maps of Label: want:\n%+v\ngot:\n%+v\ndiff:\n%+v", tt.want, got, cmp.Diff(tt.want, got))
 			}
