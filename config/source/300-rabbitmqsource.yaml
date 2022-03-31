@@ -42,6 +42,14 @@ spec:
             type: object
           spec:
             properties:
+              backoffDelay:
+                description: BackoffDelay is the delay before retrying in time.Duration
+                  format. For linear policy, backoff delay is backoffDelay*<numberOfRetries>.
+                  For exponential policy, backoff delay is backoffDelay*2^<numberOfRetries>.
+                type: string
+              backoffPolicy:
+                description: BackoffPolicy is the retry backoff policy (linear, exponential).
+                type: string
               brokers:
                 description: Brokers are the Rabbitmq servers the consumer will connect
                   to.
@@ -144,6 +152,12 @@ spec:
                       routing keys can be specified separated by commas. e.g. key1,key2
                     type: string
                 type: object
+              retry:
+                description: Retry is the minimum number of retries the sender should
+                  attempt when sending an event before moving it to the dead letter
+                  sink.
+                format: int32
+                type: integer
               serviceAccountName:
                 description: ServiceAccountName is the name of the ServiceAccount
                   that will be used to run the Receive Adapter Deployment.
