@@ -44,7 +44,7 @@ type envConfig struct {
 	SubscriberURL    string `envconfig:"SUBSCRIBER" required:"true"`
 
 	// Number of concurrent messages in flight
-	PrefetchCount int           `envconfig:"PREFETCH_COUNT" default:"1" required:"false"`
+	Parallelism   int           `envconfig:"PARALLELISM" default:"1" required:"false"`
 	Retry         int           `envconfig:"RETRY" required:"false"`
 	BackoffPolicy string        `envconfig:"BACKOFF_POLICY" required:"false"`
 	BackoffDelay  time.Duration `envconfig:"BACKOFF_DELAY" default:"50ms" required:"false"`
@@ -103,7 +103,7 @@ func main() {
 		MaxRetries:       env.Retry,
 		BackoffDelay:     backoffDelay,
 		BackoffPolicy:    backoffPolicy,
-		WorkerCount:      env.PrefetchCount,
+		WorkerCount:      env.Parallelism,
 	}
 
 	for {
@@ -140,9 +140,9 @@ func (env *envConfig) setupRabbitMQ(ctx context.Context) {
 	}
 
 	err = env.channel.Qos(
-		env.PrefetchCount, // prefetch count
-		0,                 // prefetch size
-		false,             // global
+		env.Parallelism, // prefetch count
+		0,               // prefetch size
+		false,           // global
 	)
 	if err != nil {
 		logging.FromContext(ctx).Fatal("Failed to create QoS: ", err)

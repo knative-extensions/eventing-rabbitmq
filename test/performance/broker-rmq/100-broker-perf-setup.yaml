@@ -113,7 +113,7 @@ metadata:
   name: rabbitmq-broker-perf
   namespace: perf-eventing
   annotations:
-    rabbitmq.eventing.knative.dev/prefetchCount: "80"
+    rabbitmq.eventing.knative.dev/parallelism: "80"
 spec:
   broker: rabbitmq-test-broker
   subscriber:

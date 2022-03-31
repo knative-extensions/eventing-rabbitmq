@@ -25,8 +25,8 @@ import (
 )
 
 var (
-	defaultPrefetchCount = 1
-	fullSpec             = RabbitmqSourceSpec{
+	defaultParallelism = 1
+	fullSpec           = RabbitmqSourceSpec{
 		Brokers: "amqp://guest:guest@localhost:5672/",
 		Topic:   "logs_topic",
 		ExchangeConfig: RabbitmqSourceExchangeConfigSpec{
@@ -45,8 +45,8 @@ var (
 			NoWait:     false,
 		},
 		ChannelConfig: RabbitmqChannelConfigSpec{
-			PrefetchCount: &defaultPrefetchCount,
-			GlobalQos:     false,
+			Parallelism: &defaultParallelism,
+			GlobalQos:   false,
 		},
 		Sink: &duckv1.Destination{
 			Ref: &duckv1.KReference{
@@ -196,48 +196,48 @@ func TestRabbitmqSourceCheckImmutableFields(t *testing.T) {
 	}
 }
 
-func TestRabbitmqSourceCheckChannelPrefetchCountValue(t *testing.T) {
+func TestRabbitmqSourceCheckChannelParallelismValue(t *testing.T) {
 	testCases := map[string]struct {
 		spec                *RabbitmqSourceSpec
-		prefetchCount       int
+		parallelism         int
 		allowed, isInUpdate bool
 	}{
 		"nil spec": {
 			spec:    nil,
 			allowed: true,
 		},
-		"valid prefetch count": {
-			spec:          &fullSpec,
-			prefetchCount: 1,
-			allowed:       true,
+		"valid parallelism value": {
+			spec:        &fullSpec,
+			parallelism: 1,
+			allowed:     true,
 		},
-		"negative prefetchCount in spec": {
-			spec:          &fullSpec,
-			prefetchCount: -1,
-			allowed:       false,
+		"negative parallelism value in spec": {
+			spec:        &fullSpec,
+			parallelism: -1,
+			allowed:     false,
 		},
-		"out of bounds prefetchCount in spec": {
-			spec:          &fullSpec,
-			prefetchCount: 1001,
-			allowed:       false,
+		"out of bounds parallelism value in spec": {
+			spec:        &fullSpec,
+			parallelism: 1001,
+			allowed:     false,
 		},
-		"invalid update to prefetch count": {
-			spec:          &fullSpec,
-			prefetchCount: 111,
-			isInUpdate:    true,
-			allowed:       false,
+		"invalid update to parallelism value": {
+			spec:        &fullSpec,
+			parallelism: 111,
+			isInUpdate:  true,
+			allowed:     false,
 		},
-		"zero prefetchCount in spec on update": {
-			spec:          &fullSpec,
-			prefetchCount: 0,
-			allowed:       false,
+		"zero parallelism value in spec on update": {
+			spec:        &fullSpec,
+			parallelism: 0,
+			allowed:     false,
 		},
-		"out of bounds prefetchCount in spec on update": {
-			spec:          &fullSpec,
-			prefetchCount: 1001,
-			allowed:       false,
+		"out of bounds parallelism value in spec on update": {
+			spec:        &fullSpec,
+			parallelism: 1001,
+			allowed:     false,
 		},
-		"valid channel prefetchCount update on a non exclusive source queue": {
+		"valid channel parallelism value update on a non exclusive source queue": {
 			spec: &RabbitmqSourceSpec{
 				Brokers:        fullSpec.Brokers,
 				Topic:          fullSpec.Topic,
@@ -254,9 +254,9 @@ func TestRabbitmqSourceCheckChannelPrefetchCountValue(t *testing.T) {
 				Sink:               fullSpec.Sink,
 				ServiceAccountName: fullSpec.ServiceAccountName,
 			},
-			prefetchCount: 102,
-			allowed:       true,
-			isInUpdate:    true,
+			parallelism: 102,
+			allowed:     true,
+			isInUpdate:  true,
 		},
 	}
 
@@ -274,13 +274,13 @@ func TestRabbitmqSourceCheckChannelPrefetchCountValue(t *testing.T) {
 						Spec: *tc.spec,
 					}
 					updated.Spec.ChannelConfig = RabbitmqChannelConfigSpec{
-						PrefetchCount: &tc.prefetchCount,
+						Parallelism: &tc.parallelism,
 					}
 					ctx = apis.WithinUpdate(ctx, orig)
 					err = updated.Validate(ctx)
 				} else {
 					orig.Spec.ChannelConfig = RabbitmqChannelConfigSpec{
-						PrefetchCount: &tc.prefetchCount,
+						Parallelism: &tc.parallelism,
 					}
 
 					ctx = apis.WithinCreate(ctx)
@@ -288,7 +288,7 @@ func TestRabbitmqSourceCheckChannelPrefetchCountValue(t *testing.T) {
 				}
 
 				if tc.allowed != (err == nil) {
-					t.Fatalf("Unexpected prefetch count value check. Expected %v. Actual %v", tc.allowed, err)
+					t.Fatalf("Unexpected parallelism value check. Expected %v. Actual %v", tc.allowed, err)
 				}
 			}
 		})

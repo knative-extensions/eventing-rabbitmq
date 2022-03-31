@@ -41,8 +41,8 @@ func ConcurrentDispatchTest() *feature.Feature {
 
 	f.Setup("install recorder", eventshub.Install("recorder", eventshub.StartReceiver, eventshub.ResponseWaitTime(time.Second)))
 	f.Setup("install test resources", brokertrigger.Install(brokertrigger.Topology{
-		MessageCount:  2,
-		PrefetchCount: 10,
+		MessageCount: 2,
+		Parallelism:  10,
 		Triggers: []duckv1.KReference{{
 			Kind: "Service",
 			Name: "recorder",

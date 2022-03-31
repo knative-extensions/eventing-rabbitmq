@@ -60,8 +60,8 @@ spec:
                   globalQos:
                     description: Channel Qos global property
                     type: boolean
-                  prefetchCount:
-                    description: Channel Prefetch count
+                  parallelism:
+                    description: Sets the Channel's Prefetch count and number of Workers to consume simultaneously from it
                     maximum: 1000
                     minimum: 1
                     type: integer
