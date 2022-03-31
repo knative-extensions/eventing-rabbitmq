@@ -221,7 +221,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		var dlxName *string
 		if t.Spec.Delivery != nil && t.Spec.Delivery.DeadLetterSink != nil {
 			dlxName = ptr.String(naming.TriggerDLXExchangeName(t))
-		} else {
+		} else if broker.Spec.Delivery != nil && broker.Spec.Delivery.DeadLetterSink != nil {
 			dlxName = ptr.String(naming.BrokerExchangeName(broker, true))
 		}
 		queue, err := r.rabbit.ReconcileQueue(ctx, &rabbit.QueueArgs{

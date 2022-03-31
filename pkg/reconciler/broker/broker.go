@@ -277,19 +277,20 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 		return nil
 	}
 	args.Name = naming.BrokerExchangeName(b, true)
-	dlxExchange, err := r.rabbit.ReconcileExchange(ctx, args)
-	if err != nil {
-		MarkExchangeFailed(&b.Status, "ExchangeFailure", fmt.Sprintf("Failed to reconcile DLX exchange %q: %s", naming.BrokerExchangeName(args.Broker, true), err))
-		return err
-	}
-	if !dlxExchange.Ready {
-		logging.FromContext(ctx).Warnf("DLX exchange %q is not ready", dlxExchange.Name)
-		MarkExchangeFailed(&b.Status, "ExchangeFailure", fmt.Sprintf("DLX exchange %q is not ready", dlxExchange.Name))
-		return nil
-	}
 	MarkExchangeReady(&b.Status)
 
 	if b.Spec.Delivery != nil && b.Spec.Delivery.DeadLetterSink != nil {
+		dlxExchange, err := r.rabbit.ReconcileExchange(ctx, args)
+		if err != nil {
+			MarkExchangeFailed(&b.Status, "ExchangeFailure", fmt.Sprintf("Failed to reconcile DLX exchange %q: %s", naming.BrokerExchangeName(args.Broker, true), err))
+			return err
+		}
+		if !dlxExchange.Ready {
+			logging.FromContext(ctx).Warnf("DLX exchange %q is not ready", dlxExchange.Name)
+			MarkExchangeFailed(&b.Status, "ExchangeFailure", fmt.Sprintf("DLX exchange %q is not ready", dlxExchange.Name))
+			return nil
+		}
+
 		queue, err := r.rabbit.ReconcileQueue(ctx, &rabbit.QueueArgs{
 			Name:      naming.CreateBrokerDeadLetterQueueName(b),
 			Namespace: b.Namespace,
