@@ -71,7 +71,7 @@ type RabbitmqSourceExchangeConfigSpec struct {
 	Name string `json:"name,omitempty"`
 	// Type of exchange e.g. direct, topic, headers, fanout
 	// +required
-	TypeOf string `json:"type,omitempty"`
+	Type string `json:"type,omitempty"`
 	// Exchange is Durable or not
 	// +optional
 	Durable bool `json:"durable,omitempty"`

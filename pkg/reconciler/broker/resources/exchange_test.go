@@ -160,7 +160,7 @@ func TestNewExchange(t *testing.T) {
 				Spec: v1alpha1.RabbitmqSourceSpec{
 					ExchangeConfig: v1alpha1.RabbitmqSourceExchangeConfigSpec{
 						Name:       "some-exchange",
-						TypeOf:     "direct",
+						Type:       "direct",
 						Durable:    false,
 						AutoDelete: false,
 						NoWait:     false,

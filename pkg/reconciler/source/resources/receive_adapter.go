@@ -79,7 +79,7 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 		},
 		{
 			Name:  "RABBITMQ_EXCHANGE_CONFIG_TYPE",
-			Value: args.Source.Spec.ExchangeConfig.TypeOf,
+			Value: args.Source.Spec.ExchangeConfig.Type,
 		},
 		{
 			Name:  "RABBITMQ_EXCHANGE_CONFIG_DURABLE",
