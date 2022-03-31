@@ -43,13 +43,13 @@ func SetupRabbitMQTest(t *testing.T) {
 	defer fakeServer.Stop()
 
 	// To avoid retrying here we set the variable to false
-	Retrying = false
+	retrying = false
 	_, _, err := SetupRabbitMQ("amqp://localhost:5672/%2f", retryChannel, logger)
 	if err == nil {
 		t.Error("SetupRabbitMQ should fail with the default DialFunc in testing environments")
 	}
 
-	Retrying = true
+	retrying = true
 	SetDialFunc(amqptest.Dial)
 	conn, ch, err := SetupRabbitMQ("amqp://localhost:5672/%2f", retryChannel, logger)
 	if err != nil {
@@ -87,8 +87,8 @@ func RetriesExponentialBackoffTest(t *testing.T) {
 	var wg sync.WaitGroup
 	retryChannel := make(chan bool)
 	logger := zap.NewNop().Sugar()
-	// set Retrying to false to test only edge cases without retrying
-	Retrying = false
+	// set retrying to false to test only edge cases without retrying
+	retrying = false
 	// SetDialFunc to one that always fails
 	SetDialFunc(wabbitamqp.Dial)
 

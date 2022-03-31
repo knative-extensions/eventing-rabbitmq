@@ -49,7 +49,7 @@ type envConfig struct {
 	BackoffPolicy string        `envconfig:"BACKOFF_POLICY" required:"false"`
 	BackoffDelay  time.Duration `envconfig:"BACKOFF_DELAY" default:"50ms" required:"false"`
 
-	connection *amqp.Conn
+	connection wabbit.Conn
 	channel    wabbit.Channel
 }
 

@@ -63,24 +63,22 @@ func main() {
 	}
 
 	env.SetComponent(component)
-	var err error
 	logger := env.GetLogger()
 	ctx = logging.WithLogger(ctx, logger)
 
-	if err = env.SetupTracing(); err != nil {
+	if err := env.SetupTracing(); err != nil {
 		logger.Errorw("Failed setting up trace publishing", zap.Error(err))
 	}
 
-	if err = env.SetupMetrics(ctx); err != nil {
+	if err := env.SetupMetrics(ctx); err != nil {
 		logger.Errorw("Failed to create the metrics exporter", zap.Error(err))
 	}
 
 	retryChannel := make(chan bool)
-	env.CreateRabbitMQResources(retryChannel, logger)
-	// noWait is false
-	if err = env.channel.Confirm(false); err != nil {
-		logger.Errorw("Failed to switch connection channel to confirm mode: %s", zap.Error(err))
+	if err := env.CreateRabbitMQConnections(retryChannel, logger); err != nil {
+		logger.Errorf("error creating RabbitMQ connections: %s, waiting for a retry", err)
 	}
+	// Wait for retries attempts notification
 	go func() {
 		for {
 			retry := <-retryChannel
@@ -90,7 +88,10 @@ func main() {
 				break
 			}
 			logger.Warn("recreating RabbitMQ resources")
-			env.CreateRabbitMQResources(retryChannel, logger)
+
+			if err := env.CreateRabbitMQConnections(retryChannel, logger); err != nil {
+				logger.Errorf("error creating RabbitMQ connections: %s, waiting for a retry", err)
+			}
 		}
 	}()
 	defer rabbit.CleanupRabbitMQ(env.connection, env.channel, retryChannel, logger)
@@ -195,11 +196,16 @@ func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, err
 	return http.StatusAccepted, nil
 }
 
-func (env *envConfig) CreateRabbitMQResources(retryChannel chan<- bool, logger *zap.SugaredLogger) {
+func (env *envConfig) CreateRabbitMQConnections(retryChannel chan<- bool, logger *zap.SugaredLogger) error {
 	conn, channel, err := rabbit.SetupRabbitMQ(env.BrokerURL, retryChannel, logger)
 	if err != nil {
-		return
+		return err
 	}
 	env.connection = conn.(*wabbitamqp.Conn)
 	env.channel = channel.(*wabbitamqp.Channel)
+	if err := env.channel.Confirm(false); err != nil {
+		logger.Errorw("Failed to switch connection channel to confirm mode: %s", zap.Error(err))
+		return err
+	}
+	return nil
 }
