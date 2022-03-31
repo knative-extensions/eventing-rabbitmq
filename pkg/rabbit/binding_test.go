@@ -14,35 +14,39 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resources_test
+package rabbit_test
 
 import (
 	"testing"
+
+	"k8s.io/apimachinery/pkg/types"
+
+	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 )
 
-const (
-	brokerName      = "testbroker"
-	brokerUID       = "broker-test-uid"
-	rabbitmqcluster = "testrabbitmqcluster"
-)
-
 func TestNewBinding(t *testing.T) {
+	var (
+		brokerName      = "testbroker"
+		brokerUID       = types.UID("broker-test-uid")
+		rabbitmqcluster = "testrabbitmqcluster"
+		namespace       = "foobar"
+	)
+
 	for _, tt := range []struct {
 		name    string
-		args    *resources.BindingArgs
+		args    *rabbit.BindingArgs
 		want    *rabbitv1beta1.Binding
 		wantErr string
 	}{
 		{
 			name: "Creates a binding",
-			args: &resources.BindingArgs{
+			args: &rabbit.BindingArgs{
 				Namespace: namespace,
 				Name:      "name",
 				RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
@@ -87,7 +91,7 @@ func TestNewBinding(t *testing.T) {
 		},
 		{
 			name: "Creates a binding in RabbitMQ cluster namespace",
-			args: &resources.BindingArgs{
+			args: &rabbit.BindingArgs{
 				Namespace: namespace,
 				Name:      "name",
 				RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
@@ -134,7 +138,7 @@ func TestNewBinding(t *testing.T) {
 		},
 		{
 			name: "appends to filters if given",
-			args: &resources.BindingArgs{
+			args: &rabbit.BindingArgs{
 				Vhost: "/",
 				RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
 					Name:      rabbitmqcluster,
@@ -153,7 +157,7 @@ func TestNewBinding(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := resources.NewBinding(tt.args)
+			got, err := rabbit.NewBinding(tt.args)
 			if err != nil && tt.wantErr != "" {
 				t.Errorf("Got unexpected error return from NewBinding, wanted %v got %v", tt.wantErr, err)
 			} else if err == nil && tt.wantErr != "" {

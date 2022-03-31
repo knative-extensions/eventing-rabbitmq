@@ -25,8 +25,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
-	triggerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
 	"knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	rabbitclientset "knative.dev/eventing-rabbitmq/third_party/pkg/client/clientset/versioned"
 	rabbitmqclient "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/client"
@@ -45,10 +43,10 @@ type Rabbit struct {
 	rabbitclientset.Interface
 }
 
-func (r *Rabbit) ReconcileExchange(ctx context.Context, args *resources.ExchangeArgs) (Result, error) {
+func (r *Rabbit) ReconcileExchange(ctx context.Context, args *ExchangeArgs) (Result, error) {
 	logging.FromContext(ctx).Infow("Reconciling exchange", zap.String("name", args.Name))
 
-	want := resources.NewExchange(args)
+	want := NewExchange(args)
 	current, err := r.RabbitmqV1beta1().Exchanges(args.Namespace).Get(ctx, args.Name, metav1.GetOptions{})
 	if apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Debugw("Creating rabbitmq exchange", zap.String("exchange name", want.Name))
@@ -70,10 +68,10 @@ func (r *Rabbit) ReconcileExchange(ctx context.Context, args *resources.Exchange
 	}, nil
 }
 
-func (r *Rabbit) ReconcileQueue(ctx context.Context, args *triggerresources.QueueArgs) (Result, error) {
+func (r *Rabbit) ReconcileQueue(ctx context.Context, args *QueueArgs) (Result, error) {
 	logging.FromContext(ctx).Info("Reconciling queue")
 
-	want := triggerresources.NewQueue(args)
+	want := NewQueue(args)
 	queue, err := r.RabbitmqV1beta1().Queues(args.Namespace).Get(ctx, want.Name, metav1.GetOptions{})
 	if apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Debugw("Creating rabbitmq queue", zap.String("queue", want.Name))
@@ -93,7 +91,7 @@ func (r *Rabbit) ReconcileQueue(ctx context.Context, args *triggerresources.Queu
 
 	policyReady := true
 	if args.DLXName != nil {
-		want := triggerresources.NewPolicy(args)
+		want := NewPolicy(args)
 		policy, err := r.RabbitmqV1beta1().Policies(args.Namespace).Get(ctx, queue.Name, metav1.GetOptions{})
 		if apierrs.IsNotFound(err) {
 			logging.FromContext(ctx).Debugw("Creating rabbitmq policy", zap.String("name", queue.Name))
@@ -117,10 +115,10 @@ func (r *Rabbit) ReconcileQueue(ctx context.Context, args *triggerresources.Queu
 	}, nil
 }
 
-func (r *Rabbit) ReconcileBinding(ctx context.Context, args *triggerresources.BindingArgs) (Result, error) {
+func (r *Rabbit) ReconcileBinding(ctx context.Context, args *BindingArgs) (Result, error) {
 	logging.FromContext(ctx).Info("Reconciling binding")
 
-	want, err := triggerresources.NewBinding(args)
+	want, err := NewBinding(args)
 	if err != nil {
 		return Result{}, fmt.Errorf("failed to create the binding spec: %w", err)
 	}

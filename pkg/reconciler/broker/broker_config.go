@@ -22,6 +22,8 @@ import (
 	"fmt"
 	"net/url"
 
+	"knative.dev/eventing-rabbitmq/pkg/rabbit"
+
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -41,12 +43,12 @@ import (
 
 // This file contains the logic dealing with how to handle Broker.Spec.Config.
 
-func (r *Reconciler) getExchangeArgs(ctx context.Context, b *eventingv1.Broker) (*resources.ExchangeArgs, error) {
+func (r *Reconciler) getExchangeArgs(ctx context.Context, b *eventingv1.Broker) (*rabbit.ExchangeArgs, error) {
 	rabbitmqURL, err := r.rabbitmqURL(ctx, b)
 	if err != nil {
 		return nil, err
 	}
-	return &resources.ExchangeArgs{
+	return &rabbit.ExchangeArgs{
 		Namespace: b.Namespace,
 		Broker:    b,
 		RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{

@@ -19,6 +19,8 @@ package naming
 import (
 	"testing"
 
+	"knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 )
@@ -29,6 +31,8 @@ const (
 	triggerName = "testtrigger"
 	triggerUID  = "triggeruid"
 	namespace   = "foobar"
+	sourceName  = "a-source"
+	sourceUID   = "asourceUID"
 )
 
 func TestExchangeName(t *testing.T) {
@@ -109,5 +113,19 @@ func TestCreateTriggerDeadLetterQueueName(t *testing.T) {
 	})
 	if want != got {
 		t.Errorf("Unexpected name for foobar/trigger Trigger DLQ: want:\n%q\ngot:\n%q", want, got)
+	}
+}
+
+func TestCreateSourceRabbitName(t *testing.T) {
+	want := "s.foobar.a-source.asourceUID"
+	got := CreateSourceRabbitName(&v1alpha1.RabbitmqSource{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      sourceName,
+			UID:       sourceUID,
+		},
+	})
+	if want != got {
+		t.Errorf("Unexpected name for source: want:\n%q\ngot:\n%q", want, got)
 	}
 }

@@ -19,6 +19,8 @@ package resources
 import (
 	"testing"
 
+	"knative.dev/eventing-rabbitmq/pkg/rabbit"
+
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,7 +40,7 @@ func TestMakeSecret(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to parse the test URL: %s", err)
 	}
-	args := &ExchangeArgs{
+	args := &rabbit.ExchangeArgs{
 		Broker:      &eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: ns}},
 		RabbitMQURL: url.URL(),
 	}
