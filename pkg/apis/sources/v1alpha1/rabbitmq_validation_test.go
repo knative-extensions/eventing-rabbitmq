@@ -30,7 +30,7 @@ var (
 		Brokers: "amqp://guest:guest@localhost:5672/",
 		Topic:   "logs_topic",
 		ExchangeConfig: RabbitmqSourceExchangeConfigSpec{
-			TypeOf:     "topic",
+			Type:       "topic",
 			Durable:    true,
 			AutoDelete: false,
 			Internal:   false,

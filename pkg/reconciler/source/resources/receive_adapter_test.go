@@ -75,7 +75,7 @@ func TestMakeReceiveAdapter(t *testing.T) {
 					Predeclared: true,
 					ExchangeConfig: v1alpha12.RabbitmqSourceExchangeConfigSpec{
 						Name:       "logs",
-						TypeOf:     "topic",
+						Type:       "topic",
 						Durable:    true,
 						AutoDelete: false,
 						Internal:   false,
