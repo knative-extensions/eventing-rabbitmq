@@ -26,6 +26,13 @@ import (
 )
 
 func (current *RabbitmqSource) Validate(ctx context.Context) *apis.FieldError {
+	if !current.Spec.Predeclared && current.Spec.ExchangeConfig.Name == "" {
+		return &apis.FieldError{
+			Message: "Name of exchange must be provided when spec.predeclared is false",
+			Paths:   []string{"spec", "exchangeConfig", "name"},
+		}
+	}
+
 	if apis.IsInUpdate(ctx) {
 		var ignoreSpecFields cmp.Option
 		original := apis.GetBaseline(ctx).(*RabbitmqSource)
@@ -51,10 +58,10 @@ func (current *RabbitmqSource) Validate(ctx context.Context) *apis.FieldError {
 		}
 	}
 
-	return current.Spec.ChannelConfig.validate(ctx).ViaField("ChannelConfig")
+	return current.Spec.ChannelConfig.validate().ViaField("ChannelConfig")
 }
 
-func (chSpec *RabbitmqChannelConfigSpec) validate(ctx context.Context) *apis.FieldError {
+func (chSpec *RabbitmqChannelConfigSpec) validate() *apis.FieldError {
 	if chSpec.Parallelism == nil {
 		return nil
 	}
