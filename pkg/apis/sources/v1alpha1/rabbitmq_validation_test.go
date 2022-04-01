@@ -30,6 +30,7 @@ var (
 		Brokers: "amqp://guest:guest@localhost:5672/",
 		Topic:   "logs_topic",
 		ExchangeConfig: RabbitmqSourceExchangeConfigSpec{
+			Name:       "an-exchange",
 			Type:       "topic",
 			Durable:    true,
 			AutoDelete: false,
@@ -290,6 +291,40 @@ func TestRabbitmqSourceCheckChannelParallelismValue(t *testing.T) {
 				if tc.allowed != (err == nil) {
 					t.Fatalf("Unexpected parallelism value check. Expected %v. Actual %v", tc.allowed, err)
 				}
+			}
+		})
+	}
+}
+
+func TestRabbitmqSourceExchangeConfig(t *testing.T) {
+	testCases := map[string]struct {
+		spec                 *RabbitmqSourceExchangeConfigSpec
+		predeclared, allowed bool
+	}{
+		"not allowed when predeclared set to false and no exchange name set": {
+			spec:        &RabbitmqSourceExchangeConfigSpec{},
+			predeclared: false,
+			allowed:     false,
+		},
+		"allowed when predeclared set to true and no exchange name set": {
+			spec:        &RabbitmqSourceExchangeConfigSpec{},
+			predeclared: true,
+			allowed:     true,
+		},
+	}
+
+	for n, tc := range testCases {
+		t.Run(n, func(t *testing.T) {
+			src := &RabbitmqSource{
+				Spec: RabbitmqSourceSpec{
+					ExchangeConfig: *tc.spec,
+					Predeclared:    tc.predeclared,
+				},
+			}
+
+			err := src.Validate(context.TODO())
+			if tc.allowed != (err == nil) {
+				t.Fatalf("ExchangeConfig validation result incorrect. Expected %v. Actual %v", tc.allowed, err)
 			}
 		})
 	}

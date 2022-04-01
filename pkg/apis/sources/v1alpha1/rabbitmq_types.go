@@ -66,7 +66,7 @@ type RabbitmqChannelConfigSpec struct {
 }
 
 type RabbitmqSourceExchangeConfigSpec struct {
-	// Name of the exchange
+	// Name of the exchange; Required when predeclared is false.
 	// +optional
 	Name string `json:"name,omitempty"`
 	// Type of exchange e.g. direct, topic, headers, fanout
@@ -79,7 +79,7 @@ type RabbitmqSourceExchangeConfigSpec struct {
 	// +optional
 	AutoDelete bool `json:"autoDelete,omitempty"`
 	// Declare exchange as internal or not.
-	// Exchanges declared as `internal` do not accept accept publishings.
+	// Exchanges declared as `internal` do not accept accept publishing.
 	// +optional
 	Internal bool `json:"internal,omitempty"`
 	// Exchange NoWait property. When set to true,
@@ -89,10 +89,9 @@ type RabbitmqSourceExchangeConfigSpec struct {
 }
 
 type RabbitmqSourceQueueConfigSpec struct {
-	// Name of the queue to bind to.
-	// Queue name may be empty in which case the server will generate a unique name.
-	// +optional
-	Name string `json:"name,omitempty"`
+	// Name of the queue to bind to; required value.
+	// +required
+	Name string `json:"name"`
 	// Routing key of the messages to be received.
 	// Multiple routing keys can be specified separated by commas. e.g. key1,key2
 	// +optional
@@ -153,7 +152,7 @@ type RabbitmqSourceSpec struct {
 	// +optional
 	ExchangeConfig RabbitmqSourceExchangeConfigSpec `json:"exchangeConfig,omitempty"`
 	// QueueConfig config for rabbitmq queues
-	// +optional
+	// +required
 	QueueConfig RabbitmqSourceQueueConfigSpec `json:"queueConfig,omitempty"`
 	// Sink is a reference to an object that will resolve to a domain name to use as the sink.
 	// +optional

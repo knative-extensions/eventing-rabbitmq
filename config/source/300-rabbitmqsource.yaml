@@ -61,7 +61,8 @@ spec:
                     description: Channel Qos global property
                     type: boolean
                   parallelism:
-                    description: Sets the Channel's Prefetch count and number of Workers to consume simultaneously from it
+                    description: Sets the Channel's Prefetch count and number of Workers
+                      to consume simultaneously from it
                     maximum: 1000
                     minimum: 1
                     type: integer
@@ -87,10 +88,11 @@ spec:
                     type: boolean
                   internal:
                     description: Declare exchange as internal or not. Exchanges declared
-                      as `internal` do not accept accept publishings.
+                      as `internal` do not accept accept publishing.
                     type: boolean
                   name:
-                    description: Name of the exchange
+                    description: Name of the exchange; Required when predeclared is
+                      false.
                     type: string
                   nowait:
                     description: Exchange NoWait property. When set to true, declare
@@ -140,8 +142,7 @@ spec:
                     description: Queue is exclusive or not.
                     type: boolean
                   name:
-                    description: Name of the queue to bind to. Queue name may be empty
-                      in which case the server will generate a unique name.
+                    description: Name of the queue to bind to; required value.
                     type: string
                   nowait:
                     description: Queue NoWait property. When set to true, the queue
@@ -151,6 +152,8 @@ spec:
                     description: Routing key of the messages to be received. Multiple
                       routing keys can be specified separated by commas. e.g. key1,key2
                     type: string
+                required:
+                - name
                 type: object
               retry:
                 description: Retry is the minimum number of retries the sender should
