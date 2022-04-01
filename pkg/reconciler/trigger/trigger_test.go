@@ -20,11 +20,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"testing"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/network"
 	"knative.dev/pkg/tracker"
@@ -1072,7 +1072,7 @@ func createDispatcherDeploymentWithRetries() *appsv1.Deployment {
 		BrokerUrlSecretKey: "brokerURL",
 		BrokerIngressURL:   brokerAddress,
 		Subscriber:         subscriberAddress,
-		Delivery: &eventingduckv1.DeliverySpec{},
+		Delivery:           &eventingduckv1.DeliverySpec{},
 	}
 	return resources.MakeDispatcherDeployment(args)
 }
