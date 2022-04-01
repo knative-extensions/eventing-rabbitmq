@@ -53,8 +53,8 @@ type ExchangeConfig struct {
 }
 
 type ChannelConfig struct {
-	PrefetchCount int  `envconfig:"RABBITMQ_CHANNEL_CONFIG_PREFETCH_COUNT" default:"1" required:"false"`
-	GlobalQos     bool `envconfig:"RABBITMQ_CHANNEL_CONFIG_QOS_GLOBAL" required:"false"`
+	Parallelism int  `envconfig:"RABBITMQ_CHANNEL_CONFIG_PARALLELISM" default:"1" required:"false"`
+	GlobalQos   bool `envconfig:"RABBITMQ_CHANNEL_CONFIG_QOS_GLOBAL" required:"false"`
 }
 
 type QueueConfig struct {
@@ -158,12 +158,12 @@ func (a *Adapter) CreateChannel(conn *amqp.Conn, connTest *amqptest.Conn,
 	}
 
 	logger.Info("Initializing Channel with Config: ",
-		zap.Int("PrefetchCount", a.config.ChannelConfig.PrefetchCount),
+		zap.Int("Parallelism", a.config.ChannelConfig.Parallelism),
 		zap.Bool("GlobalQoS", a.config.ChannelConfig.GlobalQos),
 	)
 
 	err = ch.Qos(
-		a.config.ChannelConfig.PrefetchCount,
+		a.config.ChannelConfig.Parallelism,
 		0,
 		a.config.ChannelConfig.GlobalQos,
 	)
@@ -232,7 +232,7 @@ func (a *Adapter) PollForMessages(channel *wabbit.Channel,
 	msgs, _ := a.ConsumeMessages(channel, queue, logger)
 
 	wg := &sync.WaitGroup{}
-	workerCount := a.config.ChannelConfig.PrefetchCount
+	workerCount := a.config.ChannelConfig.Parallelism
 	wg.Add(workerCount)
 	workerQueue := make(chan wabbit.Delivery, workerCount)
 	logger.Info("Starting GoRoutines Workers: ", zap.Int("WorkerCount", workerCount))

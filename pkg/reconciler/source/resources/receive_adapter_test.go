@@ -29,7 +29,7 @@ import (
 
 func TestMakeReceiveAdapter(t *testing.T) {
 	var retry int32 = 5
-	prefetchCount := 10
+	parallelism := 10
 	backoffDelay := "50ms"
 
 	for _, tt := range []struct {
@@ -90,7 +90,7 @@ func TestMakeReceiveAdapter(t *testing.T) {
 						NoWait:     false,
 					},
 					ChannelConfig: v1alpha12.RabbitmqChannelConfigSpec{
-						PrefetchCount: &prefetchCount,
+						Parallelism: &parallelism,
 					},
 					Retry:         &retry,
 					BackoffDelay:  &backoffDelay,
@@ -198,7 +198,7 @@ func TestMakeReceiveAdapter(t *testing.T) {
 											Value: "false",
 										},
 										{
-											Name:  "RABBITMQ_CHANNEL_CONFIG_PREFETCH_COUNT",
+											Name:  "RABBITMQ_CHANNEL_CONFIG_PARALLELISM",
 											Value: "10",
 										},
 										{

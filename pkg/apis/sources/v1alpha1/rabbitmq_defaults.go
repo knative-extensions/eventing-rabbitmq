@@ -23,8 +23,8 @@ func (r *RabbitmqSource) SetDefaults(ctx context.Context) {
 }
 
 func (chConf *RabbitmqChannelConfigSpec) SetDefaults(ctx context.Context) {
-	if chConf.PrefetchCount == nil {
-		defaultPrefetchCount := 1
-		chConf.PrefetchCount = &defaultPrefetchCount
+	if chConf.Parallelism == nil {
+		defaultParallelism := 1
+		chConf.Parallelism = &defaultParallelism
 	}
 }

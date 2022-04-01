@@ -30,19 +30,19 @@ func init() {
 }
 
 type Topology struct {
-	MessageCount, PrefetchCount int
-	Triggers                    []duckv1.KReference
+	MessageCount, Parallelism int
+	Triggers                  []duckv1.KReference
 }
 
 func Install(topology Topology) feature.StepFn {
-	if topology.PrefetchCount == 0 {
-		topology.PrefetchCount = 1
+	if topology.Parallelism == 0 {
+		topology.Parallelism = 1
 	}
 
 	args := map[string]interface{}{
-		"messageCount":  topology.MessageCount,
-		"triggers":      topology.Triggers,
-		"prefetchCount": topology.PrefetchCount,
+		"messageCount": topology.MessageCount,
+		"triggers":     topology.Triggers,
+		"Parallelism":  topology.Parallelism,
 	}
 	return func(ctx context.Context, t feature.T) {
 		if _, err := manifest.InstallLocalYaml(ctx, args); err != nil {

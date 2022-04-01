@@ -45,7 +45,7 @@ spec:
     exclusive: false
     nowait: false
   channelConfig:
-    prefetchCount: 10
+    parallelism: 10
   sink:
     ref:
       apiVersion: v1

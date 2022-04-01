@@ -7,13 +7,13 @@
 - Set `KO_DOCKER_REPO` to an accessible container registry
 
 ## Overview
-The following demo highlights the benefits and tradeoffs of setting the prefetch count to > 1 and leaving it as 1.
+The following demo highlights the benefits and tradeoffs of setting the parallelism to > 1 and leaving it as 1.
 
 #### Configuration
 - Create a RabbitMQ cluster and broker
 - Create a source that will send 10 events all at once to a broker
-- Create a first-in-first-out (FIFO) trigger with prefetch count unset (defaults to 1)
-- Create a high-throughput trigger with prefetch count set to 10
+- Create a first-in-first-out (FIFO) trigger with parallelism unset (defaults to 1)
+- Create a high-throughput trigger with parallelism set to 10
 - Create a slow sink for each trigger
 - Observe the results through the logs of the sinks
 
@@ -111,7 +111,7 @@ metadata:
     # Value must be between 1 and 1000
     # A value of 1 RabbitMQ Trigger behaves as a FIFO queue
     # Values above 1 break message ordering guarantees but can be seen as more performance oriented.
-    rabbitmq.eventing.knative.dev/prefetchCount: "10"
+    rabbitmq.eventing.knative.dev/parallelism: "10"
 spec:
   broker: default
   subscriber:

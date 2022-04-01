@@ -30,8 +30,8 @@ import (
 )
 
 const (
-	BrokerClass        = "RabbitMQBroker"
-	prefetchAnnotation = "rabbitmq.eventing.knative.dev/prefetchCount"
+	BrokerClass           = "RabbitMQBroker"
+	parallelismAnnotation = "rabbitmq.eventing.knative.dev/parallelism"
 )
 
 func ValidateTrigger(ctx context.Context) func(context.Context, *unstructured.Unstructured) error {
@@ -61,21 +61,21 @@ func (t *RabbitTrigger) Validate(ctx context.Context) *apis.FieldError {
 		return nil
 	}
 
-	// if prefetch is set, validate it
+	// if parallelism is set, validate it
 	// if it isn't then the default value (1) is used
-	prefetch, ok := t.GetAnnotations()[prefetchAnnotation]
+	parallelism, ok := t.GetAnnotations()[parallelismAnnotation]
 	if ok {
-		prefetchInt, err := strconv.Atoi(prefetch)
+		parallelismInt, err := strconv.Atoi(parallelism)
 		if err != nil {
 			return &apis.FieldError{
-				Message: "Failed to parse valid int from prefetchAnnotation",
-				Paths:   []string{"metadata", "annotations", prefetchAnnotation},
+				Message: "Failed to parse valid int from parallelismAnnotation",
+				Paths:   []string{"metadata", "annotations", parallelismAnnotation},
 				Details: err.Error(),
 			}
 		}
 
-		if prefetchInt < 1 || prefetchInt > 1000 {
-			return apis.ErrOutOfBoundsValue(prefetchInt, 1, 1000, prefetchAnnotation)
+		if parallelismInt < 1 || parallelismInt > 1000 {
+			return apis.ErrOutOfBoundsValue(parallelismInt, 1, 1000, parallelismAnnotation)
 		}
 	}
 

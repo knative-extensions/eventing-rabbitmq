@@ -39,9 +39,9 @@ install
 [KEDA based autoscaler](https://github.com/knative-sandbox/eventing-autoscaler-keda).
 
 ## Trigger Pre-Fetch Count
-Trigger has a configurable annotation `rabbitmq.eventing.knative.dev/prefetchCount`. The following are effects of setting this parameter to `n`:
+Trigger has a configurable annotation `rabbitmq.eventing.knative.dev/parallelism`. The following are effects of setting this parameter to `n`:
 
-- Prefetch count is set on the RabbitMQ channel and queue created for this trigger. The channel will receive a maximum of `n` number of messages at once.
+- Prefetch count is set to this value on the RabbitMQ channel and queue created for this trigger. The channel will receive a maximum of `n` number of messages at once.
 - The trigger will create `n` workers to consume messages off the queue and dispatch to the sink.
 
 If this value is unset, it will default to `1`. This means the trigger will only handle one event at a time. This will preserve the order of the messages in a queue but

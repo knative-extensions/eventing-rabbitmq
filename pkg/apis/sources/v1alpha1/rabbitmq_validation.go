@@ -30,7 +30,7 @@ func (current *RabbitmqSource) Validate(ctx context.Context) *apis.FieldError {
 		var ignoreSpecFields cmp.Option
 		original := apis.GetBaseline(ctx).(*RabbitmqSource)
 
-		// Channel Prefetch Count cannot be changed when exclusive Queues are been used
+		// Channel Parallelism cannot be changed when exclusive Queues are been used
 		// because another Channel is created an it has no access to the exclusive Queue
 		if !current.Spec.QueueConfig.Exclusive {
 			ignoreSpecFields = cmpopts.IgnoreFields(RabbitmqSourceSpec{}, "ChannelConfig")
@@ -55,12 +55,12 @@ func (current *RabbitmqSource) Validate(ctx context.Context) *apis.FieldError {
 }
 
 func (chSpec *RabbitmqChannelConfigSpec) validate(ctx context.Context) *apis.FieldError {
-	if chSpec.PrefetchCount == nil {
+	if chSpec.Parallelism == nil {
 		return nil
 	}
 
-	if *chSpec.PrefetchCount < 1 || *chSpec.PrefetchCount > 1000 {
-		return apis.ErrOutOfBoundsValue(*chSpec.PrefetchCount, 1, 1000, "prefetchCount")
+	if *chSpec.Parallelism < 1 || *chSpec.Parallelism > 1000 {
+		return apis.ErrOutOfBoundsValue(*chSpec.Parallelism, 1, 1000, "Parallelism")
 	}
 
 	return nil

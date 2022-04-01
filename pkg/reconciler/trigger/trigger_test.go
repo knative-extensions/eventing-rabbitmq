@@ -704,7 +704,7 @@ func TestReconcile(t *testing.T) {
 				),
 			}},
 		}, {
-			Name: "Deployment updated when prefetch count removed",
+			Name: "Deployment updated when parallelism value is removed",
 			Key:  testKey,
 			Objects: []runtime.Object{
 				ReadyBroker(),
@@ -715,7 +715,7 @@ func TestReconcile(t *testing.T) {
 				markReady(createQueue()),
 				markReady(createPolicy(true)),
 				markReady(createBinding(false)),
-				createDispatcherDeploymentWithPrefetchCount(),
+				createDispatcherDeploymentWithParallelism(),
 			},
 			WantUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: createDispatcherDeployment(),
@@ -1014,7 +1014,7 @@ func createDifferentDispatcherDeployment() *appsv1.Deployment {
 	return resources.MakeDispatcherDeployment(args)
 }
 
-func createDispatcherDeploymentWithPrefetchCount() *appsv1.Deployment {
+func createDispatcherDeploymentWithParallelism() *appsv1.Deployment {
 	args := &resources.DispatcherArgs{
 		Trigger: &eventingv1.Trigger{
 			ObjectMeta: metav1.ObjectMeta{
@@ -1022,7 +1022,7 @@ func createDispatcherDeploymentWithPrefetchCount() *appsv1.Deployment {
 				Namespace: testNS,
 				UID:       triggerUID,
 				Annotations: map[string]string{
-					resources.PrefetchAnnotation: "10",
+					resources.ParallelismAnnotation: "10",
 				},
 			},
 			Spec: eventingv1.TriggerSpec{

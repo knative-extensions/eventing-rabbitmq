@@ -30,7 +30,7 @@ import (
 	"knative.dev/pkg/apis"
 )
 
-const prefetchAnnotation = "rabbitmq.eventing.knative.dev/prefetchCount"
+const parallelismAnnotation = "rabbitmq.eventing.knative.dev/parallelism"
 
 func TestTriggerValidate(t *testing.T) {
 	tests := []struct {
@@ -65,27 +65,27 @@ func TestTriggerValidate(t *testing.T) {
 			},
 		},
 		{
-			name:    "out of bounds prefetch count annotation",
-			trigger: trigger(withBroker("foo"), brokerExistsAndIsValid, withPrefetchCount("0")),
-			err:     apis.ErrOutOfBoundsValue(0, 1, 1000, prefetchAnnotation),
+			name:    "out of bounds parallelism count annotation",
+			trigger: trigger(withBroker("foo"), brokerExistsAndIsValid, withParallelism("0")),
+			err:     apis.ErrOutOfBoundsValue(0, 1, 1000, parallelismAnnotation),
 		},
 		{
-			name:    "invalid prefetch count annotation",
-			trigger: trigger(withBroker("foo"), brokerExistsAndIsValid, withPrefetchCount("notAnumber")),
+			name:    "invalid parallelism count annotation",
+			trigger: trigger(withBroker("foo"), brokerExistsAndIsValid, withParallelism("notAnumber")),
 			err: &apis.FieldError{
-				Message: "Failed to parse valid int from prefetchAnnotation",
-				Paths:   []string{"metadata", "annotations", prefetchAnnotation},
+				Message: "Failed to parse valid int from parallelismAnnotation",
+				Paths:   []string{"metadata", "annotations", parallelismAnnotation},
 				Details: `strconv.Atoi: parsing "notAnumber": invalid syntax`,
 			},
 		},
 		{
-			name:     "update prefetch count annotation",
-			trigger:  trigger(withBroker("foo"), brokerExistsAndIsValid, withPrefetchCount("100")),
+			name:     "update parallelism count annotation",
+			trigger:  trigger(withBroker("foo"), brokerExistsAndIsValid, withParallelism("100")),
 			original: trigger(withBroker("foo"), brokerExistsAndIsValid),
 		},
 		{
-			name:    "valid prefetch count annotation",
-			trigger: trigger(withBroker("foo"), brokerExistsAndIsValid, withPrefetchCount("100")),
+			name:    "valid Parallelisp count annotation",
+			trigger: trigger(withBroker("foo"), brokerExistsAndIsValid, withParallelism("100")),
 		},
 	}
 	for _, tc := range tests {
@@ -156,12 +156,12 @@ func withFilters(filters ...[]string) triggerOpt {
 	}
 }
 
-func withPrefetchCount(prefetchCount string) triggerOpt {
+func withParallelism(parallelism string) triggerOpt {
 	return func(t *v1.RabbitTrigger) {
 		if t.Annotations == nil {
 			t.Annotations = map[string]string{}
 		}
 
-		t.Annotations[prefetchAnnotation] = prefetchCount
+		t.Annotations[parallelismAnnotation] = parallelism
 	}
 }

@@ -55,11 +55,11 @@ var _ apis.Validatable = (*RabbitmqSource)(nil)
 var _ duckv1.KRShaped = (*RabbitmqSource)(nil)
 
 type RabbitmqChannelConfigSpec struct {
-	// Channel Prefetch count
+	// Sets the Channel's Prefetch count and number of Workers to consume simultaneously from it
 	// +optional
 	// +kubebuilder:validation:Minimum:=1
 	// +kubebuilder:validation:Maximum:=1000
-	PrefetchCount *int `json:"prefetchCount,omitempty"`
+	Parallelism *int `json:"parallelism,omitempty"`
 	// Channel Qos global property
 	// +optional
 	GlobalQos bool `json:"globalQos,omitempty"`

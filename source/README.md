@@ -179,7 +179,7 @@ Source parameters
 | `queueConfig.autoDelete` * | Boolean |
 | `queueConfig.exclusive` * | Boolean |
 | `queueConfig.nowait` * | Boolean |
-| `channelConfig.prefetchCount` * | Int that limits the [Consumer Prefetch Value](https://www.rabbitmq.com/consumer-prefetch.html). Default value is `1`. Value must be between `1` and `1000`. With a value of `1` the RabbitMQ Source process events in FIFO order, values above `1` break message ordering guarantees and can be seen as more performance oriented. |
+| `channelConfig.parallelism` * | Int that sets the [Consumer Prefetch Value](https://www.rabbitmq.com/consumer-prefetch.html) and creates `n` parallel consumer processes. Default value is `1`. Value must be between `1` and `1000`. With a value of `1` the RabbitMQ Source process events in FIFO order, values above `1` break message ordering guarantees and can be seen as more performance oriented. |
 | `channelConfig.globalQos` * | Boolean defining how the [Consumer Sharing Limit](https://www.rabbitmq.com/consumer-prefetch.html#sharing-the-limit) is handled. |
 | `sink` | A reference to an [Addressable](https://knative.dev/docs/eventing/#event-consumers) Kubernetes object |
 
@@ -240,7 +240,7 @@ The Source will provide output information about readiness or errors via the
     the network for consumers before receiving delivery acks.  The intent of Qos is
     to make sure the network buffers stay full between the server and client.
 
-    2. With a prefetch count greater than zero, the server will deliver that many
+    2. With a parallelism greater than zero, the server will deliver that many
     messages to consumers before acknowledgments are received.  The server ignores
     this option when consumers are started with noAck because no acknowledgments
     are expected or sent.
@@ -255,12 +255,12 @@ The Source will provide output information about readiness or errors via the
     channels, not connections (https://www.rabbitmq.com/consumer-prefetch.html).
 
     5. To get round-robin behavior between consumers consuming from the same queue on
-    different connections, set the prefetch count to 1, and the next available
+    different connections, set the parallelism to 1, and the next available
     message on the server will be delivered to the next available consumer.
 
     6. If your consumer work time is reasonably consistent and not much greater
     than two times your network round trip time, you will see significant
-    throughput improvements starting with a prefetch count of 2 or slightly
+    throughput improvements starting with a prallelism of 2 or slightly
     greater as described by benchmarks on RabbitMQ.
 
     7. http://www.rabbitmq.com/blog/2012/04/25/rabbitmq-performance-measurements-part-2/

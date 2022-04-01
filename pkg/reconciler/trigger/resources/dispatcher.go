@@ -35,7 +35,7 @@ import (
 
 const (
 	dispatcherContainerName = "dispatcher"
-	PrefetchAnnotation      = "rabbitmq.eventing.knative.dev/prefetchCount"
+	ParallelismAnnotation   = "rabbitmq.eventing.knative.dev/parallelism"
 )
 
 // DispatcherArgs are the arguments to create a dispatcher deployment. There's
@@ -117,11 +117,11 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 				})
 		}
 	}
-	if prefetch, ok := args.Trigger.ObjectMeta.Annotations[PrefetchAnnotation]; ok {
+	if parallelism, ok := args.Trigger.ObjectMeta.Annotations[ParallelismAnnotation]; ok {
 		dispatcher.Env = append(dispatcher.Env,
 			corev1.EnvVar{
-				Name:  "PREFETCH_COUNT",
-				Value: prefetch,
+				Name:  "PARALLELISM",
+				Value: parallelism,
 			})
 	}
 	return &appsv1.Deployment{

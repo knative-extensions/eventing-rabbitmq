@@ -6,7 +6,7 @@ metadata:
   name: {{ printf "%s-%d" $kref.Name $index }}
   namespace: {{ $.namespace }}
   annotations:
-     rabbitmq.eventing.knative.dev/prefetchCount: '{{ $.prefetchCount }}'
+     rabbitmq.eventing.knative.dev/parallelism: '{{ $.Parallelism }}'
 spec:
   broker: testbroker
   subscriber:

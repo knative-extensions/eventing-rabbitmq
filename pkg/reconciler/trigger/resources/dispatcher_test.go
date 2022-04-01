@@ -73,9 +73,9 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 			want: deployment(deploymentNamed("testtrigger-dlx-dispatcher")),
 		},
 		{
-			name: "with prefetch",
-			args: dispatcherArgs(withPrefetch("10")),
-			want: deployment(withEnv(corev1.EnvVar{Name: "PREFETCH_COUNT", Value: "10"})),
+			name: "with parallelism",
+			args: dispatcherArgs(withParallelism("10")),
+			want: deployment(withEnv(corev1.EnvVar{Name: "PARALLELISM", Value: "10"})),
 		},
 	}
 	for _, tt := range tests {
@@ -205,12 +205,12 @@ func withDLX(args *DispatcherArgs) {
 	args.DLX = true
 }
 
-func withPrefetch(c string) func(*DispatcherArgs) {
+func withParallelism(c string) func(*DispatcherArgs) {
 	return func(args *DispatcherArgs) {
 		if args.Trigger.ObjectMeta.Annotations == nil {
-			args.Trigger.ObjectMeta.Annotations = map[string]string{PrefetchAnnotation: c}
+			args.Trigger.ObjectMeta.Annotations = map[string]string{ParallelismAnnotation: c}
 		} else {
-			args.Trigger.ObjectMeta.Annotations[PrefetchAnnotation] = c
+			args.Trigger.ObjectMeta.Annotations[ParallelismAnnotation] = c
 		}
 	}
 }

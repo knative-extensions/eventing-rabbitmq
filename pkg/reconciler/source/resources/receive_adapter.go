@@ -70,8 +70,8 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 			Value: strconv.FormatBool(args.Source.Spec.ChannelConfig.GlobalQos),
 		},
 		{
-			Name:  "RABBITMQ_CHANNEL_CONFIG_PREFETCH_COUNT",
-			Value: strconv.Itoa(*args.Source.Spec.ChannelConfig.PrefetchCount),
+			Name:  "RABBITMQ_CHANNEL_CONFIG_PARALLELISM",
+			Value: strconv.Itoa(*args.Source.Spec.ChannelConfig.Parallelism),
 		},
 		{
 			Name:  "RABBITMQ_EXCHANGE_CONFIG_NAME",
