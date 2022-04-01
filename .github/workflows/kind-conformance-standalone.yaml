@@ -54,6 +54,7 @@ jobs:
         path: ./src/knative.dev/${{ github.event.repository.name }}
 
     - name: Merge upstream
+      working-directory: ./src/knative.dev/${{ github.event.repository.name }}
       if: github.event_name == 'pull_request'
       run: |
         if ! git config user.name > /dev/null; then
