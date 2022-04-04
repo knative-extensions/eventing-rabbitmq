@@ -52,6 +52,22 @@ jobs:
       uses: actions/checkout@v2
       with:
         path: ./src/knative.dev/${{ github.event.repository.name }}
+        fetch-depth: 0
+
+    - name: Merge upstream
+      working-directory: ./src/knative.dev/${{ github.event.repository.name }}
+      if: github.event_name == 'pull_request'
+      run: |
+        if ! git config user.name > /dev/null; then
+          git config user.name "John Doe"
+        fi
+        if ! git config user.email > /dev/null; then
+          git config user.email "johndoe@localhost"
+        fi
+        git remote add upstream https://github.com/${{ github.repository }}.git
+        git fetch upstream ${{ github.base_ref }}
+        git pull --no-rebase --no-commit upstream ${{ github.base_ref }}
+      shell: bash
 
     - name: Run conformance tests & install all required deps
       working-directory: ./src/knative.dev/${{ github.event.repository.name }}
