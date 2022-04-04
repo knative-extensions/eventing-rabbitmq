@@ -42,6 +42,7 @@ func display(event cloudevents.Event) {
 }
 
 func main() {
+	flag.Parse()
 	run(context.Background())
 }
 
@@ -51,8 +52,8 @@ func run(ctx context.Context) {
 		log.Fatal("Failed to create client: ", err)
 	}
 
+	log.Printf("starting event display, delay: %ds\n", delay)
 	if err := c.StartReceiver(ctx, display); err != nil {
 		log.Fatal("Error during receiver's runtime: ", err)
 	}
-	log.Print("starting event display\n")
 }
