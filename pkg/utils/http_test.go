@@ -28,24 +28,24 @@ func TestWithTimeout(t *testing.T) {
 		t.Fatal("couldn't create new Protocol")
 	}
 
-	testCases := map[string]struct{
-		protocol *cehttp.Protocol
-		timeout time.Duration
+	testCases := map[string]struct {
+		protocol  *cehttp.Protocol
+		timeout   time.Duration
 		expectErr bool
 	}{
 		"should error if protocol is nil": {
-			protocol: nil,
-			timeout: 30 * time.Second,
+			protocol:  nil,
+			timeout:   30 * time.Second,
 			expectErr: true,
 		},
 		"should initialize client if none exists": {
-			protocol: &cehttp.Protocol{},
-			timeout: 30 * time.Second,
+			protocol:  &cehttp.Protocol{},
+			timeout:   30 * time.Second,
 			expectErr: false,
 		},
 		"should set timeout on an initialized protocol": {
-			protocol: newProtocol,
-			timeout: 30 * time.Second,
+			protocol:  newProtocol,
+			timeout:   30 * time.Second,
 			expectErr: false,
 		},
 	}
