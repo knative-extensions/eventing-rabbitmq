@@ -148,15 +148,11 @@ spec:
     type: "fanout"
     durable: false
     autoDelete: false
-    internal: false
-    nowait: false
   queueConfig:
     name: "eventing-rabbitmq-source"
     routingKey: ""
     durable: false
     autoDelete: true
-    exclusive: true
-    nowait: false
   sink:
     ref:
       apiVersion: serving.knative.dev/v1

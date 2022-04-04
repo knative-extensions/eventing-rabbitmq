@@ -27,8 +27,6 @@ spec:
     type: "fanout"
     durable: false
     autoDelete: false
-    internal: false
-    nowait: false
   queueConfig:
     name: "eventing-rabbitmq-source"
     routingKey: ""
@@ -36,11 +34,6 @@ spec:
     # TODO: Why is the queue not deleted 30 minutes after the source is deleted?
     # https://github.com/knative-sandbox/eventing-rabbitmq/issues/528
     autoDelete: true
-    # TODO: SHORT-TERM FIX
-    # Ensures that the queue is deleted when the Source is deleted
-    # While exclusive is true, channelConfig.parallelism cannot be updated
-    exclusive: true
-    nowait: false
   sink:
     ref:
       apiVersion: serving.knative.dev/v1

@@ -78,14 +78,6 @@ type RabbitmqSourceExchangeConfigSpec struct {
 	// Exchange can be AutoDelete or not
 	// +optional
 	AutoDelete bool `json:"autoDelete,omitempty"`
-	// Declare exchange as internal or not.
-	// Exchanges declared as `internal` do not accept accept publishing.
-	// +optional
-	Internal bool `json:"internal,omitempty"`
-	// Exchange NoWait property. When set to true,
-	// declare without waiting for a confirmation from the server.
-	// +optional
-	NoWait bool `json:"nowait,omitempty"`
 }
 
 type RabbitmqSourceQueueConfigSpec struct {
@@ -101,13 +93,6 @@ type RabbitmqSourceQueueConfigSpec struct {
 	Durable bool `json:"durable,omitempty"`
 	// +optional
 	AutoDelete bool `json:"autoDelete,omitempty"`
-	// Queue is exclusive or not.
-	// +optional
-	Exclusive bool `json:"exclusive,omitempty"`
-	// Queue NoWait property. When set to true,
-	// the queue will assume to be declared on the server.
-	// +optional
-	NoWait bool `json:"nowait,omitempty"`
 }
 
 type RabbitmqSourceSpec struct {

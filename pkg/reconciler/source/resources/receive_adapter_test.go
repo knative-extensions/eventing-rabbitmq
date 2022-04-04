@@ -78,16 +78,12 @@ func TestMakeReceiveAdapter(t *testing.T) {
 						Type:       "topic",
 						Durable:    true,
 						AutoDelete: false,
-						Internal:   false,
-						NoWait:     false,
 					},
 					QueueConfig: v1alpha12.RabbitmqSourceQueueConfigSpec{
 						Name:       "",
 						RoutingKey: "*.critical",
 						Durable:    false,
 						AutoDelete: false,
-						Exclusive:  false,
-						NoWait:     false,
 					},
 					ChannelConfig: v1alpha12.RabbitmqChannelConfigSpec{
 						Parallelism: &parallelism,
@@ -218,14 +214,6 @@ func TestMakeReceiveAdapter(t *testing.T) {
 											Value: "false",
 										},
 										{
-											Name:  "RABBITMQ_EXCHANGE_CONFIG_INTERNAL",
-											Value: "false",
-										},
-										{
-											Name:  "RABBITMQ_EXCHANGE_CONFIG_NOWAIT",
-											Value: "false",
-										},
-										{
 											Name:  "RABBITMQ_QUEUE_CONFIG_NAME",
 											Value: "",
 										},
@@ -235,14 +223,6 @@ func TestMakeReceiveAdapter(t *testing.T) {
 										},
 										{
 											Name:  "RABBITMQ_QUEUE_CONFIG_AUTO_DELETE",
-											Value: "false",
-										},
-										{
-											Name:  "RABBITMQ_QUEUE_CONFIG_EXCLUSIVE",
-											Value: "false",
-										},
-										{
-											Name:  "RABBITMQ_QUEUE_CONFIG_NOWAIT",
 											Value: "false",
 										},
 										{
