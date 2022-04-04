@@ -31,13 +31,6 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
-	reconcilersource "knative.dev/eventing/pkg/reconciler/source"
-	"knative.dev/pkg/apis"
-	duckv1 "knative.dev/pkg/apis/duck/v1"
-	"knative.dev/pkg/kmeta"
-	"knative.dev/pkg/logging"
-	"knative.dev/pkg/ptr"
-
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
@@ -49,6 +42,12 @@ import (
 	clientset "knative.dev/eventing/pkg/client/clientset/versioned"
 	triggerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1/trigger"
 	eventinglisters "knative.dev/eventing/pkg/client/listers/eventing/v1"
+	reconcilersource "knative.dev/eventing/pkg/reconciler/source"
+	"knative.dev/pkg/apis"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
+	"knative.dev/pkg/kmeta"
+	"knative.dev/pkg/logging"
+	"knative.dev/pkg/ptr"
 
 	brokerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
@@ -144,11 +143,13 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		t.Status.MarkDependencyFailed("ReconcileFailure", "using secret is not supported with this controller")
 		return nil
 	} else {
-		// If there's DeadLetterSink, we need to create a DLX that's specific for this Trigger as well
-		// as a Queue for it, and Dispatcher that pulls from that queue.
+		var dlxName *string
 		if t.Spec.Delivery != nil && t.Spec.Delivery.DeadLetterSink != nil {
+			// If there's DeadLetterSink, we need to create a DLX that's specific for this Trigger as well
+			// as a Queue for it, and Dispatcher that pulls from that queue.
+			dlxName = ptr.String(naming.TriggerDLXExchangeName(t))
 			args := &rabbit.ExchangeArgs{
-				Name:      naming.TriggerDLXExchangeName(t),
+				Name:      ptr.StringValue(dlxName),
 				Namespace: t.Namespace,
 				Broker:    broker,
 				RabbitmqClusterReference: &v1beta1.RabbitmqClusterReference{
@@ -214,16 +215,14 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 				t.Status.MarkDependencyFailed("DeploymentFailure", "%v", err)
 				return err
 			}
+		} else if broker.Spec.Delivery != nil && broker.Spec.Delivery.DeadLetterSink != nil {
+			// If Trigger DLQ isn't defined but the Broker has a DLQ, then use that
+			dlxName = ptr.String(naming.BrokerExchangeName(broker, true))
 		} else {
 			// There's no Delivery spec, so just mark is as there's no DeadLetterSink Configured for it.
 			t.Status.MarkDeadLetterSinkNotConfigured()
 		}
-		var dlxName *string
-		if t.Spec.Delivery != nil && t.Spec.Delivery.DeadLetterSink != nil {
-			dlxName = ptr.String(naming.TriggerDLXExchangeName(t))
-		} else if broker.Spec.Delivery != nil && broker.Spec.Delivery.DeadLetterSink != nil {
-			dlxName = ptr.String(naming.BrokerExchangeName(broker, true))
-		}
+
 		queue, err := r.rabbit.ReconcileQueue(ctx, &rabbit.QueueArgs{
 			Name:      naming.CreateTriggerQueueName(t),
 			Namespace: t.Namespace,
