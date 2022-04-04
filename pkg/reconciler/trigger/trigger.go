@@ -216,6 +216,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 				return err
 			}
 		} else if broker.Spec.Delivery != nil && broker.Spec.Delivery.DeadLetterSink != nil {
+			t.Status.MarkDeadLetterSinkNotConfigured()
 			// If Trigger DLQ isn't defined but the Broker has a DLQ, then use that
 			dlxName = ptr.String(naming.BrokerExchangeName(broker, true))
 		} else {
