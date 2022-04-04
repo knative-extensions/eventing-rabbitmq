@@ -58,6 +58,30 @@ spec:
 EOF
 ```
 
+### Add RabbitMQ http uri to secret
+
+After creating the RabbitMQ cluster in previous step, add the RabbitMQ http uri to its default user secret.
+The RabbitMQ default user credentials are stored in a Kubernetes secret called 'NAME-default-user', where NAME is the name of the RabbitmqCluster object.
+In this example, the secret name is 'rabbitmq-default-user' in namespace 'source-demo'.
+
+To edit the RabbitMQ default user secret:
+```sh
+kubectl -n source-demo edit secret rabbitmq-default-user
+```
+
+Add uri to the Secret `stringData`
+```yaml
+kind: Secret
+metadata:
+  name: rabbitmq-default-user
+  namespace: source-demo
+type: Opaque
+data:
+  ...
+stringData:
+  uri: rabbitmq.source-demo:15672 # 'name-of-RabbitmqCluster.the-namespace:http-port'
+```
+
 ### Create the Perf Test Service
 
 This will create a Kubernetes Deployment which sends events to the RabbitMQ Cluster Exchange
@@ -115,6 +139,8 @@ spec:
     secretKeyRef:
       name: rabbitmq-default-user
       key: password
+  connectionSecret:
+    name: rabbitmq-default-user
   channelConfig:
     globalQos: false
   exchangeConfig:

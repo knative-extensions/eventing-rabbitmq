@@ -14,6 +14,8 @@ spec:
     secretKeyRef:
       name: rabbitmq-default-user
       key: password
+  connectionSecret:
+    name: rabbitmq-default-user # used when exchange and queue are not predeclared
   channelConfig:
     # Value must be between 1 and 1000
     # A value of 1 RabbitMQ Source behaves as a FIFO queue

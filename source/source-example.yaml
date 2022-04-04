@@ -17,6 +17,8 @@ spec:
     secretKeyRef:
       name: RABBITMQ_PASSWORD
       key: RABBITMQ_PASSWORD
+  connectionSecret:
+    name: RABBITMQ_CONNECTION_SECRET
   exchangeConfig:
     name: RABBITMQ_EXCHANGE_CONFIG_NAME
     type: RABBITMQ_EXCHANGE_CONFIG_TYPE
@@ -31,7 +33,6 @@ spec:
     autoDelete: RABBITMQ_QUEUE_CONFIG_AUTO_DELETE
     exclusive: RABBITMQ_QUEUE_CONFIG_EXCLUSIVE
     nowait: RABBITMQ_QUEUE_CONFIG_NOWAIT
-
   sink:
     apiVersion: serving.knative.dev/v1
     kind: Service
