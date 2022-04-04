@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-install Knative Eventing as documented [here](https://knative.dev/docs/install/).
+Install Knative Eventing as documented [here](https://knative.dev/docs/install/).
 
 ## Installation
 

@@ -1,4 +1,4 @@
-# RabbitMQ Knative Eventing Broker
+# Knative Eventing RabbitMQ Broker
 
 RabbitMQ *is a Messaging Broker* - an intermediary for messaging. It gives your applications a common platform to send and receive messages, and your messages a safe place to live until received.
 
@@ -24,13 +24,13 @@ We provide two versions of the RabbitMQ Knative Eventing Broker.
 
 This Broker works by utilizing libraries to manage RabbitMQ resources directly and as name implies does not have have dependencies on other operators. Choose this if you do not manage your clusters lifecycle with the [Cluster Operator](https://github.com/rabbitmq/cluster-operator).
 
-[Install Standalone Broker](./standalone.md)
+[Install Standalone Broker](standalone.md)
 
 ### RabbitMQ Operator Based Broker
 
-This Broker builds on top of [Cluster Operator](https://github.com/rabbitmq/cluster-operator) and [Messaging Topology Operator](https://github.com/rabbitmq/messaging-topology-operator). As such it requires both of them to be installed. This Broker also will only work with RabbitMQ clusters created and managed by the Cluster Operator and as such if you do not manage your RabbitMQ clusters with it, you must use the [Standalone Broker](./standalone.md).
+This Broker builds on top of [Cluster Operator](https://github.com/rabbitmq/cluster-operator) and [Messaging Topology Operator](https://github.com/rabbitmq/messaging-topology-operator). As such it requires both of them to be installed. This Broker also will only work with RabbitMQ clusters created and managed by the Cluster Operator and as such if you do not manage your RabbitMQ clusters with it, you must use the [Standalone Broker](standalone.md).
 
-[Install Operator based Broker](./operator-based.md)
+[Install Operator based Broker](operator-based.md)
 
 ## Autoscaling (optional)
 
