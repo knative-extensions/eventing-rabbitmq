@@ -166,7 +166,6 @@ func TestNewExchange(t *testing.T) {
 						Type:       "direct",
 						Durable:    false,
 						AutoDelete: false,
-						NoWait:     false,
 					},
 					Vhost: "test",
 				},

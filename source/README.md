@@ -170,15 +170,11 @@ Source parameters
 | `exchangeConfig.type` | [Exchange type](https://www.rabbitmq.com/tutorials/amqp-concepts.html#exchanges). Can be `fanout`, `direct`, `topic`, `match` or `headers` |
 | `exchangeConfig.durable` * | Boolean |
 | `exchangeConfig.autoDelete` * | Boolean |
-| `exchangeConfig.internal` * | Boolean |
-| `exchangeConfig.nowait` * | Boolean |
 | `queueConfig` * | Settings for the queue |
 | `queueConfig.name` * | Name of the queue (may be empty) |
 | `queueConfig.routingKey` * | Routing key for the queue |
 | `queueConfig.durable` * | Boolean |
 | `queueConfig.autoDelete` * | Boolean |
-| `queueConfig.exclusive` * | Boolean |
-| `queueConfig.nowait` * | Boolean |
 | `channelConfig.parallelism` * | Int that sets the [Consumer Prefetch Value](https://www.rabbitmq.com/consumer-prefetch.html) and creates `n` parallel consumer processes. Default value is `1`. Value must be between `1` and `1000`. With a value of `1` the RabbitMQ Source process events in FIFO order, values above `1` break message ordering guarantees and can be seen as more performance oriented. |
 | `channelConfig.globalQos` * | Boolean defining how the [Consumer Sharing Limit](https://www.rabbitmq.com/consumer-prefetch.html#sharing-the-limit) is handled. |
 | `sink` | A reference to an [Addressable](https://knative.dev/docs/eventing/#event-consumers) Kubernetes object |
@@ -303,15 +299,7 @@ The Source will provide output information about readiness or errors via the
     durable, so queues that bind to these pre-declared exchanges must also be
     durable.
 
-    8. Exchanges declared as `internal` do not accept accept publishings. Internal
-    exchanges are useful when you wish to implement inter-exchange topologies
-    that should not be exposed to users of the broker.
-
-    9. When noWait is true, declare without waiting for a confirmation from the server.
-    The channel may be closed as a result of an error.  Add a NotifyClose listener
-    to respond to any exceptions.
-
-    10. Optional amqp.Table of arguments that are specific to the server's implementation of
+    8. Optional amqp.Table of arguments that are specific to the server's implementation of
     the exchange can be sent for exchange types that require extra parameters.
     ```
 
@@ -341,14 +329,6 @@ The Source will provide output information about readiness or errors via the
     active consumers will not survive and be removed.  This Lifetime is unlikely
     to be useful.
 
-    6. Exclusive queues are only accessible by the connection that declares them and
-    will be deleted when the connection closes.  Channels on other connections
-    will receive an error when attempting  to declare, bind, consume, purge or
-    delete a queue with the same name.
-
-    7. When noWait is true, the queue will assume to be declared on the server.  A
-    channel exception will arrive if the conditions are met for existing queues
-    or attempting to modify an existing queue from a different connection.
     ```
 
 - [Observability Configuration](https://github.com/knative/eventing/blob/main/config/core/configmaps/observability.yaml)

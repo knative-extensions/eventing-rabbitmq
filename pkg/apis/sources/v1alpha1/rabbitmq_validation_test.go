@@ -34,16 +34,12 @@ var (
 			Type:       "topic",
 			Durable:    true,
 			AutoDelete: false,
-			Internal:   false,
-			NoWait:     false,
 		},
 		QueueConfig: RabbitmqSourceQueueConfigSpec{
 			Name:       "",
 			RoutingKey: "*.critical",
 			Durable:    false,
 			AutoDelete: false,
-			Exclusive:  true,
-			NoWait:     false,
 		},
 		ChannelConfig: RabbitmqChannelConfigSpec{
 			Parallelism: &defaultParallelism,
@@ -222,12 +218,6 @@ func TestRabbitmqSourceCheckChannelParallelismValue(t *testing.T) {
 			parallelism: 1001,
 			allowed:     false,
 		},
-		"invalid update to parallelism value": {
-			spec:        &fullSpec,
-			parallelism: 111,
-			isInUpdate:  true,
-			allowed:     false,
-		},
 		"zero parallelism value in spec on update": {
 			spec:        &fullSpec,
 			parallelism: 0,
@@ -238,7 +228,7 @@ func TestRabbitmqSourceCheckChannelParallelismValue(t *testing.T) {
 			parallelism: 1001,
 			allowed:     false,
 		},
-		"valid channel parallelism value update on a non exclusive source queue": {
+		"valid channel parallelism value update": {
 			spec: &RabbitmqSourceSpec{
 				Brokers:        fullSpec.Brokers,
 				Topic:          fullSpec.Topic,
@@ -248,8 +238,6 @@ func TestRabbitmqSourceCheckChannelParallelismValue(t *testing.T) {
 					RoutingKey: "*.critical",
 					Durable:    false,
 					AutoDelete: false,
-					Exclusive:  false,
-					NoWait:     false,
 				},
 				ChannelConfig:      fullSpec.ChannelConfig,
 				Sink:               fullSpec.Sink,

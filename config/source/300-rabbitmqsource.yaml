@@ -86,18 +86,10 @@ spec:
                   durable:
                     description: Exchange is Durable or not
                     type: boolean
-                  internal:
-                    description: Declare exchange as internal or not. Exchanges declared
-                      as `internal` do not accept accept publishing.
-                    type: boolean
                   name:
                     description: Name of the exchange; Required when predeclared is
                       false.
                     type: string
-                  nowait:
-                    description: Exchange NoWait property. When set to true, declare
-                      without waiting for a confirmation from the server.
-                    type: boolean
                   type:
                     description: Type of exchange e.g. direct, topic, headers, fanout
                     type: string
@@ -138,16 +130,9 @@ spec:
                   durable:
                     description: Queue is Durable or not
                     type: boolean
-                  exclusive:
-                    description: Queue is exclusive or not.
-                    type: boolean
                   name:
                     description: Name of the queue to bind to; required value.
                     type: string
-                  nowait:
-                    description: Queue NoWait property. When set to true, the queue
-                      will assume to be declared on the server.
-                    type: boolean
                   routingKey:
                     description: Routing key of the messages to be received. Multiple
                       routing keys can be specified separated by commas. e.g. key1,key2

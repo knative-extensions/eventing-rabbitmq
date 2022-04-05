@@ -48,8 +48,6 @@ type ExchangeConfig struct {
 	TypeOf     string `envconfig:"RABBITMQ_EXCHANGE_CONFIG_TYPE" required:"true"`
 	Durable    bool   `envconfig:"RABBITMQ_EXCHANGE_CONFIG_DURABLE" required:"false"`
 	AutoDelete bool   `envconfig:"RABBITMQ_EXCHANGE_CONFIG_AUTO_DELETE" required:"false"`
-	Internal   bool   `envconfig:"RABBITMQ_EXCHANGE_CONFIG_INTERNAL" required:"false"`
-	NoWait     bool   `envconfig:"RABBITMQ_EXCHANGE_CONFIG_NOWAIT" required:"false"`
 }
 
 type ChannelConfig struct {
@@ -62,8 +60,6 @@ type QueueConfig struct {
 	RoutingKey string `envconfig:"RABBITMQ_ROUTING_KEY" required:"true"`
 	Durable    bool   `envconfig:"RABBITMQ_QUEUE_CONFIG_DURABLE" required:"false"`
 	AutoDelete bool   `envconfig:"RABBITMQ_QUEUE_CONFIG_AUTO_DELETE" required:"false"`
-	Exclusive  bool   `envconfig:"RABBITMQ_QUEUE_CONFIG_EXCLUSIVE" required:"false"`
-	NoWait     bool   `envconfig:"RABBITMQ_QUEUE_CONFIG_NOWAIT" required:"false"`
 }
 
 type adapterConfig struct {
@@ -214,9 +210,9 @@ func (a *Adapter) ConsumeMessages(channel *wabbit.Channel,
 		"",
 		wabbit.Option{
 			"autoAck":   false,
-			"exclusive": a.config.QueueConfig.Exclusive,
+			"exclusive": false,
 			"noLocal":   false,
-			"noWait":    a.config.QueueConfig.NoWait,
+			"noWait":    false,
 		})
 
 	if err != nil {

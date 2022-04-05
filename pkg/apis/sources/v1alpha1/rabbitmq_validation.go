@@ -19,8 +19,9 @@ package v1alpha1
 import (
 	"context"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+
+	"github.com/google/go-cmp/cmp"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/kmp"
 )
@@ -35,13 +36,9 @@ func (current *RabbitmqSource) Validate(ctx context.Context) *apis.FieldError {
 
 	if apis.IsInUpdate(ctx) {
 		var ignoreSpecFields cmp.Option
-		original := apis.GetBaseline(ctx).(*RabbitmqSource)
+		ignoreSpecFields = cmpopts.IgnoreFields(RabbitmqSourceSpec{}, "ChannelConfig")
 
-		// Channel Parallelism cannot be changed when exclusive Queues are been used
-		// because another Channel is created an it has no access to the exclusive Queue
-		if !current.Spec.QueueConfig.Exclusive {
-			ignoreSpecFields = cmpopts.IgnoreFields(RabbitmqSourceSpec{}, "ChannelConfig")
-		}
+		original := apis.GetBaseline(ctx).(*RabbitmqSource)
 
 		if diff, err := kmp.ShortDiff(original.Spec, current.Spec, ignoreSpecFields); err != nil {
 			return &apis.FieldError{
