@@ -75,10 +75,7 @@ func main() {
 	}
 
 	retryChannel := make(chan bool)
-	if err := env.CreateRabbitMQConnections(retryChannel, logger); err != nil {
-		logger.Errorf("error creating RabbitMQ connections: %s, waiting for a retry", err)
-	}
-	// Wait for retries attempts notification
+	// Wait for RabbitMQ retry messages
 	go func() {
 		for {
 			retry := <-retryChannel
@@ -88,12 +85,14 @@ func main() {
 				break
 			}
 			logger.Warn("recreating RabbitMQ resources")
-
 			if err := env.CreateRabbitMQConnections(retryChannel, logger); err != nil {
 				logger.Errorf("error creating RabbitMQ connections: %s, waiting for a retry", err)
 			}
 		}
 	}()
+	if err := env.CreateRabbitMQConnections(retryChannel, logger); err != nil {
+		logger.Errorf("error creating RabbitMQ connections: %s, waiting for a retry", err)
+	}
 	defer rabbit.CleanupRabbitMQ(env.connection, env.channel, retryChannel, logger)
 
 	connectionArgs := kncloudevents.ConnectionArgs{
@@ -205,7 +204,6 @@ func (env *envConfig) CreateRabbitMQConnections(retryChannel chan<- bool, logger
 	env.channel = channel.(*wabbitamqp.Channel)
 	if err := env.channel.Confirm(false); err != nil {
 		logger.Errorw("Failed to switch connection channel to confirm mode: %s", zap.Error(err))
-		return err
 	}
 	return nil
 }

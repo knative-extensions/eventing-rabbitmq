@@ -24,17 +24,11 @@ import (
 	"go.uber.org/zap"
 )
 
-const cycleRetries = 60
-
 var (
-	retryCounter                                        = 0
-	cycleNumber                                         = 0
-	InitCycleDuration                                   = 1
-	cycleDuration                                       = 1
-	maxCycleDuration                                    = 60
-	retrying                                            = true
-	cleaningUp                                          = false
-	DialFunc          func(string) (wabbit.Conn, error) = wabbitamqp.Dial
+	retryCounter                                    = 0
+	cycleDuration                                   = 2
+	cleaningUp                                      = false
+	DialFunc      func(string) (wabbit.Conn, error) = wabbitamqp.Dial
 )
 
 func SetDialFunc(dialFunc func(uri string) (wabbit.Conn, error)) {
@@ -45,20 +39,6 @@ func SetupRabbitMQ(
 	RabbitMQURL string,
 	retryChannel chan<- bool,
 	logger *zap.SugaredLogger) (wabbit.Conn, wabbit.Channel, error) {
-	// Calculate the current cycle time to sleep in seconds
-	if retryCounter >= cycleRetries {
-		cycleNumber += 1
-		retryCounter = 0
-		if cycleDuration == 1 {
-			cycleDuration += 1
-		} else if cycleDuration < maxCycleDuration {
-			cycleDuration *= cycleDuration
-		} else if cycleDuration > maxCycleDuration {
-			cycleDuration = maxCycleDuration
-		}
-		logger.Warnf("Max retries (%d) reached for a cycle, adjusting duration to %ss", cycleRetries, cycleDuration)
-	}
-
 	retryCounter += 1
 	var err error
 	var conn wabbit.Conn
@@ -69,16 +49,14 @@ func SetupRabbitMQ(
 		logger.Errorw("Failed to open a channel", zap.Error(err))
 	}
 
-	// If there is an error trying to setup rabbit, and the retrying is true retry
-	if err != nil && retrying {
-		time.Sleep(time.Second * time.Duration(cycleDuration*retryCounter))
-		return SetupRabbitMQ(RabbitMQURL, retryChannel, logger)
-	} else if err != nil && !retrying {
+	// If there is an error trying to setup rabbit send a retry msg
+	if err != nil {
+		time.Sleep(time.Second * time.Duration(cycleDuration))
+		retryChannel <- true
 		return nil, nil, err
 	}
-	// if retrying is true and error nil reset the retryCounter and cycle values
-	cycleDuration = InitCycleDuration
-	cycleNumber = 0
+
+	// if there is no error reset the retryCounter and cycle values
 	retryCounter = 0
 	// Wait for a channel or connection close message to rerun the RabbitMQ setup
 	go WatchRabbitMQConnections(conn, channel, RabbitMQURL, retryChannel, logger)
@@ -99,7 +77,7 @@ func WatchRabbitMQConnections(
 	if !cleaningUp {
 		logger.Warn(
 			"Lost connection to RabbitMQ, reconnecting retry number %d. Error: %v",
-			retryCounter+((cycleNumber+1)*cycleRetries),
+			retryCounter,
 			zap.Error(err))
 		CloseRabbitMQConnections(connection, channel, logger)
 		cleaningUp = false

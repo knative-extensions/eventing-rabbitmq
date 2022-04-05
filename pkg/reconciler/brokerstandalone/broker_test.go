@@ -119,7 +119,7 @@ var (
 
 	five         = int32(5)
 	policy       = eventingduckv1.BackoffPolicyExponential
-	backoffDelay = "PT30S"
+	backoffDelay = "PT1S"
 	delivery     = &eventingduckv1.DeliverySpec{
 		DeadLetterSink: &duckv1.Destination{
 			URI: deadLetterSinkAddress,
