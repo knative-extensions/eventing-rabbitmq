@@ -40,7 +40,6 @@ import (
 	clientgotesting "k8s.io/client-go/testing"
 	rabbitduck "knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
-	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
@@ -1180,31 +1179,6 @@ func createQueue() *rabbitv1beta1.Queue {
 			},
 		},
 	}
-}
-
-func createPolicy(broker bool) *rabbitv1beta1.Policy {
-	labels := map[string]string{
-		"eventing.knative.dev/broker":  brokerName,
-		"eventing.knative.dev/trigger": triggerName,
-	}
-	t := triggerWithFilter()
-	var dlxName string
-	if broker {
-		dlxName = naming.BrokerExchangeName(ReadyBroker(), true)
-	} else {
-		dlxName = naming.TriggerDLXExchangeName(t)
-	}
-	return rabbit.NewPolicy(&rabbit.QueueArgs{
-		Name:      queueName,
-		Namespace: testNS,
-		Owner:     *kmeta.NewControllerRef(t),
-		DLXName:   &dlxName,
-		Labels:    labels,
-		RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
-			Name:      rabbitMQBrokerName,
-			Namespace: testNS,
-		},
-	})
 }
 
 func createBinding(withFilter bool) *rabbitv1beta1.Binding {
