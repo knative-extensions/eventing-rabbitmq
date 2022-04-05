@@ -15,9 +15,9 @@ This repository contains the RabbitMQ Knative Eventing Broker and Source impleme
 
 ## Documentation
 
-You can check out the [documentation here](docs/README.md). 
+You can check out the [documentation here](docs/README.md).
 
-## Community 
+## Community
 
 ---
 
