@@ -50,8 +50,8 @@ spec:
               backoffPolicy:
                 description: BackoffPolicy is the retry backoff policy (linear, exponential).
                 type: string
-              brokers:
-                description: Brokers are the Rabbitmq servers the consumer will connect
+              broker:
+                description: Broker are the Rabbitmq servers the consumer will connect
                   to.
                 type: string
               channelConfig:
@@ -218,7 +218,7 @@ spec:
                   up our sources
                 type: string
             required:
-            - brokers
+            - broker
             type: object
           status:
             properties:

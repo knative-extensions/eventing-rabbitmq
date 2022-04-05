@@ -55,7 +55,7 @@ func TestMakeReceiveAdapter(t *testing.T) {
 				Spec: v1alpha12.RabbitmqSourceSpec{
 					ServiceAccountName: "source-svc-acct",
 					Topic:              "topic",
-					Brokers:            "amqp://guest:guest@localhost:5672/",
+					Broker:             "amqp://guest:guest@localhost:5672/",
 					User: v1alpha12.SecretValueFromSource{
 						SecretKeyRef: &corev1.SecretKeySelector{
 							LocalObjectReference: corev1.LocalObjectReference{
