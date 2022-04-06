@@ -19,7 +19,6 @@ metadata:
   namespace: {{ .namespace }}
 spec:
   broker: "rabbitmqc.{{ .namespace }}:5672/"
-  topic: ""
   connectionSecret:
     name: "rabbitmqc-default-user"
   user:

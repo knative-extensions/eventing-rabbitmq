@@ -117,7 +117,7 @@ Event attributes
 | Attribute | Value  | Notes  |
 |-----------|--------|--------|
 | `type` | `dev.knative.rabbitmq.event` | |
-| `source` | `/apis/v1/namespace/*$NS*/rabbitmqsources/*$NAME*#*$TOPIC*` | `NS`, `NAME` and `TOPIC` are derived from the source configuration |
+| `source` | `/apis/v1/namespace/*$NS*/rabbitmqsources/*$NAME*#*$QUEUE_NAME*` | `NS`, `NAME` and `QUEUE_NAME` are derived from the source configuration |
 | `id` | A unique ID | This uses the `MessageId` if available, and a UUID otherwise |
 | `subject` | The ID of the message | Empty string if no message ID is present |
 | `datacontenttype` | `application/json` | Currently static |
@@ -165,7 +165,6 @@ Source parameters
 | `spec.predeclared` | Defines if the source should try to create new queue or use predeclared one (Boolean) |
 | `user.secretKeyRef` | Username for Broker authentication; field `key` in a Kubernetes Secret named `name` |
 | `password.secretKeyRef` | Password for Broker authentication; field `key` in a Kubernetes Secret named `name` |
-| `topic` | The topic for the exchange |
 | `exchangeConfig` | Settings for the exchange |
 | `exchangeConfig.type` | [Exchange type](https://www.rabbitmq.com/tutorials/amqp-concepts.html#exchanges). Can be `fanout`, `direct`, `topic`, `match` or `headers` |
 | `exchangeConfig.durable` * | Boolean |

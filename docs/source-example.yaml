@@ -5,7 +5,6 @@ metadata:
   namespace: rabbitsource
 spec:
   brokers: RABBITMQ_BROKERS
-  topic: RABBITMQ_TOPIC
   retry: 5
   backoffPolicy: "linear"
   backoffDelay: "50ms"

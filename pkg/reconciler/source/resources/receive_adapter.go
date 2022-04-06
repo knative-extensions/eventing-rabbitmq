@@ -46,10 +46,6 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 			Value: args.Source.Spec.Broker,
 		},
 		{
-			Name:  "RABBITMQ_TOPIC",
-			Value: args.Source.Spec.Topic,
-		},
-		{
 			Name: "RABBITMQ_USER",
 			ValueFrom: &corev1.EnvVarSource{
 				SecretKeyRef: args.Source.Spec.User.SecretKeyRef,

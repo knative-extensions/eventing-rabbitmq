@@ -105,9 +105,6 @@ type RabbitmqSourceSpec struct {
 	// Password for rabbitmq connection
 	// +optional
 	Password SecretValueFromSource `json:"password,omitempty"`
-	// Topic topic to consume messages from
-	// +required
-	Topic string `json:"topic,omitempty"`
 	// Predeclared defines if channels and queues are already predeclared and shouldn't be recreated.
 	// This should be used in case the user does not have permission to declare new queues and channels in
 	// RabbitMQ cluster
@@ -160,8 +157,10 @@ const (
 	RabbitmqEventType = "dev.knative.rabbitmq.event"
 )
 
-func RabbitmqEventSource(namespace, rabbitmqSourceName, topic string) string {
-	return fmt.Sprintf("/apis/v1/namespaces/%s/rabbitmqsources/%s#%s", namespace, rabbitmqSourceName, topic)
+// RabbitmqEventSource returns cloud event attribute 'source' for messages published by a rabbitmqsource
+// format is '/apis/v1/namespace/NAMESPACE/rabbitmqsources/NAME#QUEUE_NAME'
+func RabbitmqEventSource(namespace, rabbitmqSourceName, qName string) string {
+	return fmt.Sprintf("/apis/v1/namespaces/%s/rabbitmqsources/%s#%s", namespace, rabbitmqSourceName, qName)
 }
 
 type RabbitmqSourceStatus struct {
