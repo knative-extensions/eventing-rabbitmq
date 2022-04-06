@@ -27,8 +27,8 @@ import (
 var (
 	defaultParallelism = 1
 	fullSpec           = RabbitmqSourceSpec{
-		Brokers: "amqp://guest:guest@localhost:5672/",
-		Topic:   "logs_topic",
+		Broker: "amqp://guest:guest@localhost:5672/",
+		Topic:  "logs_topic",
 		ExchangeConfig: RabbitmqSourceExchangeConfigSpec{
 			Name:       "an-exchange",
 			Type:       "topic",
@@ -76,10 +76,10 @@ func TestRabbitmqSourceCheckImmutableFields(t *testing.T) {
 			},
 			allowed: false,
 		},
-		"Brokers changed": {
+		"Broker changed": {
 			orig: &fullSpec,
 			updated: RabbitmqSourceSpec{
-				Brokers:            "broker1",
+				Broker:             "broker1",
 				Sink:               fullSpec.Sink,
 				ServiceAccountName: fullSpec.ServiceAccountName,
 			},
@@ -230,7 +230,7 @@ func TestRabbitmqSourceCheckChannelParallelismValue(t *testing.T) {
 		},
 		"valid channel parallelism value update": {
 			spec: &RabbitmqSourceSpec{
-				Brokers:        fullSpec.Brokers,
+				Broker:         fullSpec.Broker,
 				Topic:          fullSpec.Topic,
 				ExchangeConfig: fullSpec.ExchangeConfig,
 				QueueConfig: RabbitmqSourceQueueConfigSpec{

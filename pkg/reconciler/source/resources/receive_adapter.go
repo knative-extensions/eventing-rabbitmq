@@ -43,7 +43,7 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 	env := []corev1.EnvVar{
 		{
 			Name:  "RABBITMQ_BROKERS",
-			Value: args.Source.Spec.Brokers,
+			Value: args.Source.Spec.Broker,
 		},
 		{
 			Name:  "RABBITMQ_TOPIC",

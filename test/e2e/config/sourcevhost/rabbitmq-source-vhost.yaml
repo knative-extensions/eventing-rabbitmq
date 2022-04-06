@@ -18,7 +18,7 @@ metadata:
   name: rabbitmq-source-vhost
   namespace: {{ .namespace }}
 spec:
-  brokers: "rabbitmqc.{{ .namespace }}:5672/"
+  broker: "rabbitmqc.{{ .namespace }}:5672/"
   vhost: "test-vhost"
   topic: ""
   connectionSecret:

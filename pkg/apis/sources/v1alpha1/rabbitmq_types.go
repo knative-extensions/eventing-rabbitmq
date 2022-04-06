@@ -96,9 +96,9 @@ type RabbitmqSourceQueueConfigSpec struct {
 }
 
 type RabbitmqSourceSpec struct {
-	// Brokers are the Rabbitmq servers the consumer will connect to.
+	// Broker are the Rabbitmq servers the consumer will connect to.
 	// +required
-	Brokers string `json:"brokers"`
+	Broker string `json:"broker"`
 	// User for rabbitmq connection
 	// +optional
 	User SecretValueFromSource `json:"user,omitempty"`
