@@ -20,7 +20,6 @@ metadata:
 spec:
   broker: "rabbitmqc.{{ .namespace }}:5672/"
   vhost: "test-vhost"
-  topic: ""
   connectionSecret:
     name: "secret-basic-auth"
   user:

@@ -188,9 +188,6 @@ spec:
                       will be resolved using the base URI retrieved from Ref.
                     type: string
                 type: object
-              topic:
-                description: Topic topic to consume messages from
-                type: string
               user:
                 description: User for rabbitmq connection
                 properties:

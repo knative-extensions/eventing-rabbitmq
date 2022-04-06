@@ -130,7 +130,6 @@ metadata:
   namespace: source-demo
 spec:
   broker: "rabbitmq:5672/"
-  topic: ""
   user:
     secretKeyRef:
       name: rabbitmq-default-user

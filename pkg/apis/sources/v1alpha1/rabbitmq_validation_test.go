@@ -28,7 +28,6 @@ var (
 	defaultParallelism = 1
 	fullSpec           = RabbitmqSourceSpec{
 		Broker: "amqp://guest:guest@localhost:5672/",
-		Topic:  "logs_topic",
 		ExchangeConfig: RabbitmqSourceExchangeConfigSpec{
 			Name:       "an-exchange",
 			Type:       "topic",
@@ -67,15 +66,6 @@ func TestRabbitmqSourceCheckImmutableFields(t *testing.T) {
 			updated: fullSpec,
 			allowed: true,
 		},
-		"Topic changed": {
-			orig: &fullSpec,
-			updated: RabbitmqSourceSpec{
-				Topic:              "some-other-topic",
-				Sink:               fullSpec.Sink,
-				ServiceAccountName: fullSpec.ServiceAccountName,
-			},
-			allowed: false,
-		},
 		"Broker changed": {
 			orig: &fullSpec,
 			updated: RabbitmqSourceSpec{
@@ -88,7 +78,6 @@ func TestRabbitmqSourceCheckImmutableFields(t *testing.T) {
 		"Sink.APIVersion changed": {
 			orig: &fullSpec,
 			updated: RabbitmqSourceSpec{
-				Topic: fullSpec.Topic,
 				Sink: &duckv1.Destination{
 					Ref: &duckv1.KReference{
 						APIVersion: "some-other-api-version",
@@ -104,7 +93,6 @@ func TestRabbitmqSourceCheckImmutableFields(t *testing.T) {
 		"Sink.Kind changed": {
 			orig: &fullSpec,
 			updated: RabbitmqSourceSpec{
-				Topic: fullSpec.Topic,
 				Sink: &duckv1.Destination{
 					Ref: &duckv1.KReference{
 						APIVersion: fullSpec.Sink.Ref.APIVersion,
@@ -120,7 +108,6 @@ func TestRabbitmqSourceCheckImmutableFields(t *testing.T) {
 		"Sink.Namespace changed": {
 			orig: &fullSpec,
 			updated: RabbitmqSourceSpec{
-				Topic: fullSpec.Topic,
 				Sink: &duckv1.Destination{
 					Ref: &duckv1.KReference{
 						APIVersion: fullSpec.Sink.Ref.APIVersion,
@@ -136,7 +123,6 @@ func TestRabbitmqSourceCheckImmutableFields(t *testing.T) {
 		"Sink.Name changed": {
 			orig: &fullSpec,
 			updated: RabbitmqSourceSpec{
-				Topic: fullSpec.Topic,
 				Sink: &duckv1.Destination{
 					Ref: &duckv1.KReference{
 						APIVersion: fullSpec.Sink.Ref.APIVersion,
@@ -152,7 +138,6 @@ func TestRabbitmqSourceCheckImmutableFields(t *testing.T) {
 		"ServiceAccountName changed": {
 			orig: &fullSpec,
 			updated: RabbitmqSourceSpec{
-				Topic: fullSpec.Topic,
 				Sink: &duckv1.Destination{
 					Ref: &duckv1.KReference{
 						APIVersion: fullSpec.Sink.Ref.APIVersion,
@@ -231,7 +216,6 @@ func TestRabbitmqSourceCheckChannelParallelismValue(t *testing.T) {
 		"valid channel parallelism value update": {
 			spec: &RabbitmqSourceSpec{
 				Broker:         fullSpec.Broker,
-				Topic:          fullSpec.Topic,
 				ExchangeConfig: fullSpec.ExchangeConfig,
 				QueueConfig: RabbitmqSourceQueueConfigSpec{
 					Name:       "",

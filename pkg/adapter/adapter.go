@@ -66,7 +66,6 @@ type adapterConfig struct {
 	adapter.EnvConfig
 
 	Brokers        string        `envconfig:"RABBITMQ_BROKERS" required:"true"`
-	Topic          string        `envconfig:"RABBITMQ_TOPIC" required:"true"`
 	User           string        `envconfig:"RABBITMQ_USER" required:"false"`
 	Password       string        `envconfig:"RABBITMQ_PASSWORD" required:"false"`
 	Vhost          string        `envconfig:"RABBITMQ_VHOST" required:"false"`

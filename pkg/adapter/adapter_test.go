@@ -124,7 +124,6 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 
 			a := &Adapter{
 				config: &adapterConfig{
-					Topic:   "topic",
 					Brokers: "amqp://guest:guest@localhost:5672/",
 					ExchangeConfig: ExchangeConfig{
 						TypeOf:     "topic",
@@ -205,7 +204,6 @@ func TestAdapter_CreateConn(t *testing.T) {
 
 	a := &Adapter{
 		config: &adapterConfig{
-			Topic:   "",
 			Brokers: "amqp://localhost:5672/%2f",
 			ExchangeConfig: ExchangeConfig{
 				TypeOf:     "direct",
@@ -250,7 +248,6 @@ func TestAdapter_CreateChannel(t *testing.T) {
 
 	a := &Adapter{
 		config: &adapterConfig{
-			Topic:   "",
 			Brokers: "amqp://localhost:5672/%2f",
 			ExchangeConfig: ExchangeConfig{
 				TypeOf:     "direct",
@@ -299,7 +296,6 @@ func TestAdapter_StartAmqpClient(t *testing.T) {
 
 	a := &Adapter{
 		config: &adapterConfig{
-			Topic:       "",
 			Brokers:     "amqp://localhost:5674/%2f",
 			Predeclared: true,
 			QueueConfig: QueueConfig{
@@ -440,7 +436,6 @@ func TestAdapter_PollForMessages(t *testing.T) {
 
 	a := &Adapter{
 		config: &adapterConfig{
-			Topic:   "topic",
 			Brokers: "amqp://guest:guest@localhost:5672/",
 			ExchangeConfig: ExchangeConfig{
 				Name:       "Test-exchange",

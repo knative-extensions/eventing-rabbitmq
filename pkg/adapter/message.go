@@ -174,7 +174,7 @@ func convertToCloudEvent(event *cloudevents.Event, msg wabbit.Delivery, a *Adapt
 	}
 
 	event.SetType(sourcesv1alpha1.RabbitmqEventType)
-	event.SetSource(sourcesv1alpha1.RabbitmqEventSource(a.config.Namespace, a.config.Name, a.config.Topic))
+	event.SetSource(sourcesv1alpha1.RabbitmqEventSource(a.config.Namespace, a.config.Name, a.config.QueueConfig.Name))
 	event.SetSubject(event.ID())
 	event.SetTime(msg.Timestamp())
 	err := event.SetData(msg.ContentType(), msg.Body())

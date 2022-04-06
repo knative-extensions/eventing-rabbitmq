@@ -286,7 +286,7 @@ func (r *Reconciler) UpdateFromMetricsConfigMap(cfg *corev1.ConfigMap) {
 func (r *Reconciler) createCloudEventAttributes(src *v1alpha1.RabbitmqSource) []duckv1.CloudEventAttributes {
 	ceAttribute := duckv1.CloudEventAttributes{
 		Type:   v1alpha1.RabbitmqEventType,
-		Source: v1alpha1.RabbitmqEventSource(src.Namespace, src.Name, src.Spec.Topic),
+		Source: v1alpha1.RabbitmqEventSource(src.Namespace, src.Name, src.Spec.QueueConfig.Name),
 	}
 	return []duckv1.CloudEventAttributes{ceAttribute}
 }
