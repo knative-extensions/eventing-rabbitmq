@@ -24,6 +24,7 @@ import (
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/network"
 	"knative.dev/pkg/tracker"
@@ -39,7 +40,6 @@ import (
 	clientgotesting "k8s.io/client-go/testing"
 	rabbitduck "knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
-	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
@@ -252,7 +252,6 @@ func TestReconcile(t *testing.T) {
 				triggerWithFilter(),
 				createSecret(rabbitURL),
 				markReady(createQueue()),
-				markReady(createPolicy(true)),
 				markReady(createBinding(true)),
 			},
 			WantCreates: []runtime.Object{
@@ -261,7 +260,42 @@ func TestReconcile(t *testing.T) {
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: triggerWithFilterReady(),
 			}},
-		}, {
+		},
+		{
+			Name: "Creates everything ok while using Broker DLQ",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				ReadyBrokerWithDeliverySpec(),
+				triggerWithFilter(),
+				createSecret(rabbitURL),
+				markReady(createQueue()),
+				markReady(createBinding(true)),
+			},
+			WantCreates: []runtime.Object{
+				createDispatcherDeploymentWithRetries(),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: triggerWithFilterReady(),
+			}},
+		},
+		{
+			Name: "Creates everything ok while using Trigger DLQ",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				ReadyBroker(),
+				triggerWithDeliverySpec(),
+				createSecret(rabbitURL),
+				markReady(createQueue()),
+				markReady(createBinding(true)),
+			},
+			WantCreates: []runtime.Object{
+				createDispatcherDeploymentWithRetries(),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: triggerWithDeliverySpecReady(),
+			}},
+		},
+		{
 			Name: "Creates queue ok with CRD",
 			Key:  testKey,
 			Objects: []runtime.Object{
@@ -271,7 +305,6 @@ func TestReconcile(t *testing.T) {
 			},
 			WantCreates: []runtime.Object{
 				createQueue(),
-				createPolicy(true),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: triggerWithQueueNotReady(),
@@ -305,7 +338,6 @@ func TestReconcile(t *testing.T) {
 				triggerWithFilter(),
 				createSecret(rabbitURL),
 				markReady(createQueue()),
-				markReady(createPolicy(true)),
 			},
 			WantCreates: []runtime.Object{
 				createBinding(true),
@@ -321,7 +353,6 @@ func TestReconcile(t *testing.T) {
 				triggerWithFilter(),
 				createSecret(rabbitURL),
 				markReady(createQueue()),
-				markReady(createPolicy(true)),
 			},
 			WithReactors: []clientgotesting.ReactionFunc{
 				InduceFailure("create", "bindings"),
@@ -344,7 +375,6 @@ func TestReconcile(t *testing.T) {
 				triggerWithFilter(),
 				createSecret(rabbitURL),
 				markReady(createQueue()),
-				markReady(createPolicy(true)),
 				markReady(createBinding(true)),
 			},
 			WantCreates: []runtime.Object{
@@ -360,7 +390,6 @@ func TestReconcile(t *testing.T) {
 				ReadyBroker(),
 				makeSubscriberAddressableAsUnstructured(),
 				markReady(createQueue()),
-				markReady(createPolicy(true)),
 				markReady(createBinding(false)),
 				NewTrigger(triggerName, testNS, brokerName,
 					WithTriggerUID(triggerUID),
@@ -388,7 +417,6 @@ func TestReconcile(t *testing.T) {
 				ReadyBroker(),
 				makeSubscriberNotAddressableAsUnstructured(),
 				markReady(createQueue()),
-				markReady(createPolicy(true)),
 				markReady(createBinding(false)),
 				NewTrigger(triggerName, testNS, brokerName,
 					WithTriggerUID(triggerUID),
@@ -419,7 +447,6 @@ func TestReconcile(t *testing.T) {
 					WithTriggerSubscriberURI(subscriberURI)),
 				createSecret(rabbitURL),
 				markReady(createQueue()),
-				markReady(createPolicy(true)),
 				markReady(createBinding(false)),
 			},
 			WithReactors: []clientgotesting.ReactionFunc{
@@ -455,7 +482,6 @@ func TestReconcile(t *testing.T) {
 				createSecret(rabbitURL),
 				createDifferentDispatcherDeployment(),
 				markReady(createQueue()),
-				markReady(createPolicy(true)),
 				markReady(createBinding(false)),
 			},
 			WithReactors: []clientgotesting.ReactionFunc{
@@ -490,7 +516,6 @@ func TestReconcile(t *testing.T) {
 					WithTriggerSubscriberURI(subscriberURI)),
 				createSecret(rabbitURL),
 				markReady(createQueue()),
-				markReady(createPolicy(true)),
 				markReady(createBinding(false)),
 				createDispatcherDeployment(),
 			},
@@ -514,7 +539,6 @@ func TestReconcile(t *testing.T) {
 				triggerWithFilter(),
 				createSecret(rabbitURL),
 				markReady(createQueue()),
-				markReady(createPolicy(true)),
 				markReady(createBinding(true)),
 				createDispatcherDeployment(),
 			},
@@ -533,7 +557,6 @@ func TestReconcile(t *testing.T) {
 					WithDependencyAnnotation(dependencyAnnotation),
 				),
 				markReady(createQueue()),
-				markReady(createPolicy(true)),
 				markReady(createBinding(false)),
 			},
 			WantEvents: []string{
@@ -565,7 +588,6 @@ func TestReconcile(t *testing.T) {
 				),
 				createSecret(rabbitURL),
 				markReady(createQueue()),
-				markReady(createPolicy(true)),
 				markReady(createBinding(false)),
 			},
 			WantErr: false,
@@ -594,7 +616,6 @@ func TestReconcile(t *testing.T) {
 				),
 				createSecret(rabbitURL),
 				markReady(createQueue()),
-				markReady(createPolicy(true)),
 				markReady(createBinding(false)),
 			},
 			WantErr: false,
@@ -623,7 +644,6 @@ func TestReconcile(t *testing.T) {
 				),
 				createSecret(rabbitURL),
 				markReady(createQueue()),
-				markReady(createPolicy(true)),
 				markReady(createBinding(false)),
 			},
 			WantErr: false,
@@ -650,7 +670,6 @@ func TestReconcile(t *testing.T) {
 				),
 				createSecret(rabbitURL),
 				markReady(createQueue()),
-				markReady(createPolicy(true)),
 				markReady(createBinding(false)),
 			},
 			WantErr: true,
@@ -681,7 +700,6 @@ func TestReconcile(t *testing.T) {
 				),
 				createSecret(rabbitURL),
 				markReady(createQueue()),
-				markReady(createPolicy(true)),
 				markReady(createBinding(false)),
 			},
 			WantErr: false,
@@ -713,7 +731,6 @@ func TestReconcile(t *testing.T) {
 					WithTriggerSubscriberURI(subscriberURI)),
 				createSecret(rabbitURL),
 				markReady(createQueue()),
-				markReady(createPolicy(true)),
 				markReady(createBinding(false)),
 				createDispatcherDeploymentWithParallelism(),
 			},
@@ -839,6 +856,22 @@ func ReadyBroker() *eventingv1.Broker {
 		broker.WithExchangeReady())
 }
 
+// Create Ready Broker with delivery spec.
+func ReadyBrokerWithDeliverySpec() *eventingv1.Broker {
+	return broker.NewBroker(brokerName, testNS,
+		broker.WithBrokerUID(brokerUID),
+		broker.WithBrokerClass(brokerClass),
+		broker.WithInitBrokerConditions,
+		broker.WithBrokerConfig(config()),
+		broker.WithIngressAvailable(),
+		broker.WithSecretReady(),
+		broker.WithBrokerDelivery(&eventingduckv1.DeliverySpec{}),
+		broker.WithBrokerAddressURI(brokerAddress),
+		broker.WithDLXReady(),
+		broker.WithDeadLetterSinkReady(),
+		broker.WithExchangeReady())
+}
+
 // Create Ready Broker with proper annotations using the RabbitmqCluster
 func ReadyBrokerWithSecret() *eventingv1.Broker {
 	return broker.NewBroker(brokerName, testNS,
@@ -857,6 +890,17 @@ func ReadyBrokerWithSecret() *eventingv1.Broker {
 func triggerWithFilter() *eventingv1.Trigger {
 	t := NewTrigger(triggerName, testNS, brokerName,
 		WithTriggerUID(triggerUID),
+		WithTriggerSubscriberURI(subscriberURI))
+	t.Spec.Filter = &eventingv1.TriggerFilter{
+		Attributes: map[string]string{"type": "dev.knative.sources.ping"},
+	}
+	return t
+}
+
+func triggerWithDeliverySpec() *eventingv1.Trigger {
+	t := NewTrigger(triggerName, testNS, brokerName,
+		WithTriggerUID(triggerUID),
+		WithTriggerRetry(5, nil, nil),
 		WithTriggerSubscriberURI(subscriberURI))
 	t.Spec.Filter = &eventingv1.TriggerFilter{
 		Attributes: map[string]string{"type": "dev.knative.sources.ping"},
@@ -883,6 +927,23 @@ func triggerWithFilterReady() *eventingv1.Trigger {
 		WithTriggerUID(triggerUID),
 		WithTriggerSubscriberURI(subscriberURI),
 		WithTriggerBrokerReady(),
+		WithTriggerDeadLetterSinkNotConfigured(),
+		WithTriggerDependencyReady(),
+		WithTriggerSubscribed(),
+		WithTriggerSubscriberResolvedSucceeded(),
+		WithTriggerStatusSubscriberURI(subscriberURI))
+	t.Spec.Filter = &eventingv1.TriggerFilter{
+		Attributes: map[string]string{"type": "dev.knative.sources.ping"},
+	}
+	return t
+}
+
+func triggerWithDeliverySpecReady() *eventingv1.Trigger {
+	t := NewTrigger(triggerName, testNS, brokerName,
+		WithTriggerUID(triggerUID),
+		WithTriggerSubscriberURI(subscriberURI),
+		WithTriggerBrokerReady(),
+		WithTriggerRetry(5, nil, nil),
 		WithTriggerDeadLetterSinkNotConfigured(),
 		WithTriggerDependencyReady(),
 		WithTriggerSubscribed(),
@@ -992,6 +1053,29 @@ func createDispatcherDeployment() *appsv1.Deployment {
 	return resources.MakeDispatcherDeployment(args)
 }
 
+func createDispatcherDeploymentWithRetries() *appsv1.Deployment {
+	args := &resources.DispatcherArgs{
+		Trigger: &eventingv1.Trigger{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      triggerName,
+				Namespace: testNS,
+				UID:       triggerUID,
+			},
+			Spec: eventingv1.TriggerSpec{
+				Broker: brokerName,
+			},
+		},
+		Image:              dispatcherImage,
+		RabbitMQSecretName: rabbitSecretName,
+		QueueName:          queueName,
+		BrokerUrlSecretKey: "brokerURL",
+		BrokerIngressURL:   brokerAddress,
+		Subscriber:         subscriberAddress,
+		Delivery:           &eventingduckv1.DeliverySpec{},
+	}
+	return resources.MakeDispatcherDeployment(args)
+}
+
 func createDifferentDispatcherDeployment() *appsv1.Deployment {
 	args := &resources.DispatcherArgs{
 		Trigger: &eventingv1.Trigger{
@@ -1095,31 +1179,6 @@ func createQueue() *rabbitv1beta1.Queue {
 			},
 		},
 	}
-}
-
-func createPolicy(broker bool) *rabbitv1beta1.Policy {
-	labels := map[string]string{
-		"eventing.knative.dev/broker":  brokerName,
-		"eventing.knative.dev/trigger": triggerName,
-	}
-	t := triggerWithFilter()
-	var dlxName string
-	if broker {
-		dlxName = naming.BrokerExchangeName(ReadyBroker(), true)
-	} else {
-		dlxName = naming.TriggerDLXExchangeName(t)
-	}
-	return rabbit.NewPolicy(&rabbit.QueueArgs{
-		Name:      queueName,
-		Namespace: testNS,
-		Owner:     *kmeta.NewControllerRef(t),
-		DLXName:   &dlxName,
-		Labels:    labels,
-		RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
-			Name:      rabbitMQBrokerName,
-			Namespace: testNS,
-		},
-	})
 }
 
 func createBinding(withFilter bool) *rabbitv1beta1.Binding {
