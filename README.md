@@ -11,20 +11,13 @@
 [![Slack](https://img.shields.io/badge/Signup-Knative_Slack-white.svg?logo=slack)](https://slack.knative.dev)
 [![Slack](https://img.shields.io/badge/%23eventing-white.svg?logo=slack&color=522a5e)](https://knative.slack.com/archives/C9JP909F0)
 
-This repository contains a work-in-progress eventing components using RabbitMQ
-as an implementation.
+This repository contains the RabbitMQ Knative Eventing Broker and Source implementations. 
 
-## RabbitMQ Broker
+## Documentation
 
-See [Install and Demo](./broker/README.md)
+You can check out the [documentation here](docs/README.md).
 
-## RabbitMQ Source
-
-See [Install and Demo](./source/README.md)
-
-## Testing
-
-See [Install and Demo](./test/README.md)
+## Community
 
 ---
 

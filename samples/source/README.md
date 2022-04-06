@@ -2,11 +2,11 @@
 
 ## Prerequisites
 
-Same as listed [here](../../source/README.md#prerequisites)
+Same as listed [here](../../docs/source.md#prerequisites)
 
 ## Overview
 
-This demo will use a RabbitMQ Source to fetch messages from a RabbitMQ Exchange, convert them into [CloudEvents](https://cloudevents.io/) and send them to a [Sink](https://knative.dev/docs/eventing/sinks/#about-sinks). The complete list of the Source's config parameters are shown [here](../../source/README.md)
+This demo will use a RabbitMQ Source to fetch messages from a RabbitMQ Exchange, convert them into [CloudEvents](https://cloudevents.io/) and send them to a [Sink](https://knative.dev/docs/eventing/sinks/#about-sinks). The complete list of the Source's config parameters are shown [here](../../docs/source.md)
 
 ## Components
 
@@ -15,7 +15,7 @@ This demo will use a RabbitMQ Source to fetch messages from a RabbitMQ Exchange,
 - [event-display](https://github.com/knative/eventing/tree/main/cmd/event_display)
   which is a tool that logs the CloudEvent that it receives formatted nicely.
 
-- [RabbitMQ Source](../../source/README.md)
+- [RabbitMQ Source](../../docs/source.md)
 
 ## Configuration
 
