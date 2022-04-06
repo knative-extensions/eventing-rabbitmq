@@ -18,7 +18,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  generateName: rabbitmq-broker-perf-send-receive-
+  name: rabbitmq-broker-perf-send-receive
   namespace: perf-eventing
   labels:
     role: rabbitmq-broker-perf-consumer
@@ -59,3 +59,63 @@ spec:
         ports:
         - name: cloudevents
           containerPort: 8080
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: rabbitmq-broker-perf-aggregator
+  namespace: perf-eventing
+  labels:
+    role: rabbitmq-broker-perf-aggregator
+spec:
+  serviceAccountName: perf-eventing
+  restartPolicy: Never
+  containers:
+  - name: aggregator
+    image: ko://knative.dev/eventing/test/test_images/performance
+    args:
+    - "--roles=aggregator"
+      # set to the number of sender + receiver (same image that does both counts 2)
+    - "--expect-records=2"
+    env:
+      - name: GOGC
+        value: "off"
+      - name: POD_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
+      - name: POD_NAMESPACE
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.namespace
+    ports:
+    - name: grpc
+      containerPort: 10000
+    resources:
+      requests:
+        cpu: 1000m
+        memory: 2Gi
+    volumeMounts:
+    - name: config-mako
+      mountPath: /etc/config-mako
+    terminationMessagePolicy: FallbackToLogsOnError
+  - name: mako-stub
+    image: ko://knative.dev/pkg/test/mako/stub-sidecar
+    args:
+      - "-p=10001"
+    ports:
+    - name: quickstore
+      containerPort: 10001
+    volumeMounts:
+      - name: config-mako
+        mountPath: /etc/config-mako
+    terminationMessagePolicy: FallbackToLogsOnError
+    resources:
+      requests:
+        memory: 4Gi
+  volumes:
+  - name: config-mako
+    configMap:
+      name: config-mako

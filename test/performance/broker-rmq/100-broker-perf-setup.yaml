@@ -80,15 +80,16 @@ metadata:
   namespace: perf-eventing
 spec:
   replicas: 1
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-        - matchExpressions:
-          - key: cloud.google.com/machine-family
-            operator: In
-            values:
-            - c2
+  # To tie the test env to a certain type of node VM use this
+  # affinity:
+  #  nodeAffinity:
+  #    requiredDuringSchedulingIgnoredDuringExecution:
+  #      nodeSelectorTerms:
+  #      - matchExpressions:
+  #        - key: cloud.google.com/machine-family
+  #          operator: In
+  #          values:
+  #          - c2
 
 ---
 
@@ -110,10 +111,11 @@ spec:
 apiVersion: eventing.knative.dev/v1
 kind: Trigger
 metadata:
-  name: rabbitmq-broker-perf
+  name: rabbitmq-trigger-perf
   namespace: perf-eventing
   annotations:
-    rabbitmq.eventing.knative.dev/parallelism: "80"
+    # Set this to 1 for FIFO
+    rabbitmq.eventing.knative.dev/prefetchCount: "100"
 spec:
   broker: rabbitmq-test-broker
   subscriber:
