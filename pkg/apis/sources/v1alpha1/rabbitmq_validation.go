@@ -21,7 +21,6 @@ import (
 
 	"github.com/google/go-cmp/cmp/cmpopts"
 
-	"github.com/google/go-cmp/cmp"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/kmp"
 )
@@ -35,9 +34,7 @@ func (current *RabbitmqSource) Validate(ctx context.Context) *apis.FieldError {
 	}
 
 	if apis.IsInUpdate(ctx) {
-		var ignoreSpecFields cmp.Option
-		ignoreSpecFields = cmpopts.IgnoreFields(RabbitmqSourceSpec{}, "ChannelConfig")
-
+		ignoreSpecFields := cmpopts.IgnoreFields(RabbitmqSourceSpec{}, "ChannelConfig")
 		original := apis.GetBaseline(ctx).(*RabbitmqSource)
 
 		if diff, err := kmp.ShortDiff(original.Spec, current.Spec, ignoreSpecFields); err != nil {
