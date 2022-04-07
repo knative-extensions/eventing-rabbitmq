@@ -24,6 +24,7 @@ import (
 )
 
 func Test_SetupRabbitMQReconnections(t *testing.T) {
+	rabbitMQHelper := NewRabbitMQHelper(2)
 	logger := zap.NewNop().Sugar()
 	retryChannel := make(chan bool)
 	testChannel := make(chan bool)
@@ -42,15 +43,15 @@ func Test_SetupRabbitMQReconnections(t *testing.T) {
 	}()
 	<-testChannel
 	// Testing a failing setup
-	_, _, err := SetupRabbitMQ("amqp://localhost:5672/%2f", retryChannel, logger)
+	_, _, err := rabbitMQHelper.SetupRabbitMQ("amqp://localhost:5672/%2f", retryChannel, logger)
 	<-testChannel
 	if err == nil {
 		t.Error("SetupRabbitMQ should fail with the default DialFunc in testing environments")
 	}
-	if retryCounter == 0 {
-		t.Errorf("no retries have been attempted want: > 0, got: %d", retryCounter)
+	if rabbitMQHelper.retryCounter == 0 {
+		t.Errorf("no retries have been attempted want: > 0, got: %d", rabbitMQHelper.retryCounter)
 	}
 	// With this function now the setup works
-	SetDialFunc(amqptest.Dial)
+	rabbitMQHelper.SetDialFunc(amqptest.Dial)
 	retryChannel <- false
 }

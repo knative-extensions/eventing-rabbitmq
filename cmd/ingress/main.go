@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"net/http"
 
-	wabbitamqp "github.com/NeowayLabs/wabbit/amqp"
+	"github.com/NeowayLabs/wabbit"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
@@ -51,8 +51,8 @@ type envConfig struct {
 	BrokerURL    string `envconfig:"BROKER_URL" required:"true"`
 	ExchangeName string `envconfig:"EXCHANGE_NAME" required:"true"`
 
-	connection *wabbitamqp.Conn
-	channel    *wabbitamqp.Channel
+	connection wabbit.Conn
+	channel    wabbit.Channel
 }
 
 func main() {
@@ -74,26 +74,36 @@ func main() {
 		logger.Errorw("Failed to create the metrics exporter", zap.Error(err))
 	}
 
+	rmqHelper := rabbit.NewRabbitMQHelper(1)
 	retryChannel := make(chan bool)
 	// Wait for RabbitMQ retry messages
 	go func() {
+	loop:
 		for {
-			retry := <-retryChannel
-			if !retry {
-				logger.Warn("stopped listenning for RabbitMQ resources retries")
-				close(retryChannel)
-				break
-			}
-			logger.Warn("recreating RabbitMQ resources")
-			if err := env.CreateRabbitMQConnections(retryChannel, logger); err != nil {
-				logger.Errorf("error creating RabbitMQ connections: %s, waiting for a retry", err)
+			select {
+			case retry := <-retryChannel:
+				if !retry {
+					break loop
+				}
+				logger.Warn("recreating RabbitMQ resources")
+				conn, channel, err := env.CreateRabbitMQConnections(rmqHelper, retryChannel, logger)
+				if err != nil {
+					logger.Errorf("error creating RabbitMQ connections: %s, waiting for a retry", err)
+				}
+				env.connection, env.channel = conn, channel
+			case <-ctx.Done():
+				break loop
 			}
 		}
+		logger.Warn("stopped listenning for RabbitMQ resources retries")
+		close(retryChannel)
 	}()
-	if err := env.CreateRabbitMQConnections(retryChannel, logger); err != nil {
+	conn, channel, err := env.CreateRabbitMQConnections(rmqHelper, retryChannel, logger)
+	if err != nil {
 		logger.Errorf("error creating RabbitMQ connections: %s, waiting for a retry", err)
 	}
-	defer rabbit.CleanupRabbitMQ(env.connection, env.channel, retryChannel, logger)
+	env.connection, env.channel = conn, channel
+	defer rmqHelper.CleanupRabbitMQ(env.connection, env.channel, retryChannel, logger)
 
 	connectionArgs := kncloudevents.ConnectionArgs{
 		MaxIdleConns:        defaultMaxIdleConnections,
@@ -195,15 +205,17 @@ func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, err
 	return http.StatusAccepted, nil
 }
 
-func (env *envConfig) CreateRabbitMQConnections(retryChannel chan<- bool, logger *zap.SugaredLogger) error {
-	conn, channel, err := rabbit.SetupRabbitMQ(env.BrokerURL, retryChannel, logger)
+func (env *envConfig) CreateRabbitMQConnections(
+	rmqHelper *rabbit.RabbitMQHelper,
+	retryChannel chan<- bool,
+	logger *zap.SugaredLogger) (wabbit.Conn, wabbit.Channel, error) {
+	conn, channel, err := rmqHelper.SetupRabbitMQ(env.BrokerURL, retryChannel, logger)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
-	env.connection = conn.(*wabbitamqp.Conn)
-	env.channel = channel.(*wabbitamqp.Channel)
+
 	if err := env.channel.Confirm(false); err != nil {
 		logger.Errorw("Failed to switch connection channel to confirm mode: %s", zap.Error(err))
 	}
-	return nil
+	return conn, channel, nil
 }
