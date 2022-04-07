@@ -2313,6 +2313,8 @@ knative.dev/eventing v0.30.1-0.20220330064846-02663e2caa08 h1:/BEUjSZOFNT6OuiQZy
 knative.dev/eventing v0.30.1-0.20220330064846-02663e2caa08/go.mod h1:6hU8ayB9weJ6cqZejOjZiHkqy1PuNA2I9T32hWj2laI=
 knative.dev/eventing v0.30.1-0.20220403190041-06f57ca75d5f h1:hPWq4qaqOtjUJFESDrhsfCPEyMKAcSm+4CDj5hTGzOs=
 knative.dev/eventing v0.30.1-0.20220403190041-06f57ca75d5f/go.mod h1:6hU8ayB9weJ6cqZejOjZiHkqy1PuNA2I9T32hWj2laI=
+knative.dev/eventing v0.30.1-0.20220406140645-dcdd9e0518d7 h1:cBzpa9NPYYjkF5Ez3PHBMNMojUXtWEP7JttU29dHeWs=
+knative.dev/eventing v0.30.1-0.20220406140645-dcdd9e0518d7/go.mod h1:6hU8ayB9weJ6cqZejOjZiHkqy1PuNA2I9T32hWj2laI=
 knative.dev/hack v0.0.0-20220224013837-e1785985d364/go.mod h1:PHt8x8yX5Z9pPquBEfIj0X66f8iWkWfR0S/sarACJrI=
 knative.dev/hack v0.0.0-20220314052818-c9c3ea17a2e9/go.mod h1:PHt8x8yX5Z9pPquBEfIj0X66f8iWkWfR0S/sarACJrI=
 knative.dev/hack v0.0.0-20220318020218-14f832e506f8 h1:7NcKM2USd6d3Vu/jJ4QziMUEUC+Y3yJ9xqusI/Pv0y0=
@@ -2334,6 +2336,8 @@ knative.dev/pkg v0.0.0-20220329144915-0a1ec2e0d46c h1:PLzCwnuPt+bjwiyYrRrsbmiBWR
 knative.dev/pkg v0.0.0-20220329144915-0a1ec2e0d46c/go.mod h1:0A5D5tOLettuVoi5x+0SLGRfrvVemXXtLH247WupPJk=
 knative.dev/pkg v0.0.0-20220401214546-c2f1f3ec291f h1:1+/0tVXahb4v0bW19hewJEnf0UpZiOOO/YpLRi5/+5Y=
 knative.dev/pkg v0.0.0-20220401214546-c2f1f3ec291f/go.mod h1:0A5D5tOLettuVoi5x+0SLGRfrvVemXXtLH247WupPJk=
+knative.dev/pkg v0.0.0-20220406185144-dcd5d7c8a516 h1:XLBqRRpCA3HmSqr6MB4oD8o0jakBQKBaTPzC/kujhEM=
+knative.dev/pkg v0.0.0-20220406185144-dcd5d7c8a516/go.mod h1:0A5D5tOLettuVoi5x+0SLGRfrvVemXXtLH247WupPJk=
 knative.dev/reconciler-test v0.0.0-20220314160418-3b7a0d7f7b4b/go.mod h1:RX+Piu5qCWSN3ciiJCOnWDEwd9v9hawbpW73z4HgKA8=
 knative.dev/reconciler-test v0.0.0-20220317152933-ce683fafefb6 h1:r4CSiXbXtJAnFfQcUZCzMKrnuPVAe3ChLv+6sOVBtaA=
 knative.dev/reconciler-test v0.0.0-20220317152933-ce683fafefb6/go.mod h1:kqLx5ImxclqwC7SR1w+2pzuhqvkHMDVqDzEmbAixkII=
@@ -2341,6 +2345,8 @@ knative.dev/reconciler-test v0.0.0-20220328072550-7d32310c9b3a h1:bH0ttHiLs1jwh4
 knative.dev/reconciler-test v0.0.0-20220328072550-7d32310c9b3a/go.mod h1:wlz1lGyn5fjJYL5PTSL/SOI4xgVpU+q6D4eaa19NsDA=
 knative.dev/reconciler-test v0.0.0-20220331132946-4686fbf645e0 h1:6/Pxkq1x4+Czv6gbnJA+vkb5VEql6jqiKXWvk8M8iYU=
 knative.dev/reconciler-test v0.0.0-20220331132946-4686fbf645e0/go.mod h1:dNSuxm0NYNN/t0zzLhdBBZsxKNDGmae92Uc53qNIRIM=
+knative.dev/reconciler-test v0.0.0-20220406195245-94576b8fe1ae h1:MZO5OC+ZdCJ3h6wN2wYSBiPUXG1XPgweI+w904B3b9Y=
+knative.dev/reconciler-test v0.0.0-20220406195245-94576b8fe1ae/go.mod h1:dNSuxm0NYNN/t0zzLhdBBZsxKNDGmae92Uc53qNIRIM=
 modernc.org/cc v1.0.0/go.mod h1:1Sk4//wdnYJiUIxnW8ddKpaOJCF37yAdqYnkxUpaYxw=
 modernc.org/golex v1.0.0/go.mod h1:b/QX9oBD/LhixY6NDh+IdGv17hgB+51fET1i2kPSmvk=
 modernc.org/mathutil v1.0.0/go.mod h1:wU0vUrJsVWBZ4P6e7xtFJEhFSNsfRLJ8H458uRjg03k=
