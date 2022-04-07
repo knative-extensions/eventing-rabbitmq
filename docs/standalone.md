@@ -30,7 +30,7 @@ ko apply -f config/brokerstandalone/
 
 ## Creating Knative Eventing Broker
 
-You need to provide a kubernetes secret that the Broker will use to create the RabbitMQ resources (Exchanges, Queues, Bindings) as well as consume events from it. The secret must have a brokerURL key and the value is the [amqp connection string](https://www.rabbitmq.com/uri-spec.html).
+You need to provide a kubernetes secret that the Broker will use to create the RabbitMQ resources (Exchanges, Queues, Bindings) as well as consume events from it. The secret must have a brokerURL key, and the value is the [amqp connection string](https://www.rabbitmq.com/uri-spec.html).
 
 For example, if your connection string is `amqp://myusername:mypassword@myrabbitserver:5672` you could create the secret like this:
 

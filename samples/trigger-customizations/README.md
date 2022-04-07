@@ -2,7 +2,7 @@
 
 ## Prerequisites and installation
 
-- Follow instructions listed [here](../../broker/operator-based.md#prerequisites)
+- Follow instructions listed [here](../../docs/operator-based.md#prerequisites)
 - Install [KO](https://github.com/google/ko). It is used to create the images that will be used in this demo
 - Set `KO_DOCKER_REPO` to an accessible container registry
 
@@ -213,7 +213,7 @@ EOF
 
 ### Start watching the results
 Once the event-display pods are up and running, watch for logs in the FIFO event display. Once the sender has been created (and after the delay), you should see
-events being consumed in order. But this sink will take longer to process all of the incoming events.
+events being consumed in order. But this sink will take longer to process all the incoming events.
 
 ```sh
 kubectl -n trigger-demo -l='serving.knative.dev/service=fifo-event-display' logs -c user-container -f

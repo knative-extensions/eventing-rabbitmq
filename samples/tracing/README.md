@@ -16,5 +16,5 @@ to the broker to attach trace headers to the request.
 This directory contains a sample broker/trigger topology similar to the one
 found in the distributed tracing blog post, but with the additional creation of
 a RabbitMQ Cluster and with the broker configured to use it. This sample
-assumes you have setup the `otel-collector.observability` service as shown in
+assumes you have set up the `otel-collector.observability` service as shown in
 the blog post.

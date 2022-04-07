@@ -2,7 +2,7 @@
 
 ## Prerequisites and installation
 
-Same as listed [here](../../broker/operator-based.md#prerequisites)
+Same as listed [here](../../docs/operator-based.md#prerequisites)
 
 ## Overview
 
@@ -15,9 +15,9 @@ Sink while successfully processed events do not.
 - [failer](../../cmd/failer/main.go) is a function which takes in a
   CloudEvent and depending on what the specified HTTP response code in the
   message data is will respond with that. So, to simulate a failure, we just
-  send it a CloudEvent with a payload of 500 and it's going to simulate a
+  send it a CloudEvent with a payload of 500, and it's going to simulate a
   failure, by default it will respond with a 200, hence indicating that it
-  processed the event successfully and it should be considered handled.
+  processed the event successfully, and it should be considered handled.
 
 - [pingsource](https://knative.dev/docs/eventing/samples/ping-source/index.html)
   is a Knative source which sends a CloudEvent on pre-defined intervals.
@@ -25,7 +25,7 @@ Sink while successfully processed events do not.
 - [event-display](https://github.com/knative/eventing/tree/main/cmd/event_display)
   which is a tool that logs the CloudEvent that it receives formatted nicely.
 
-- [RabbitMQ Broker](../../broker/README.md)
+- [RabbitMQ Broker](../../docs/broker.md)
 
 ## Configuration
 
@@ -243,7 +243,7 @@ that 200 is only sent once to the failer since it's processed correctly.
 However, the 500 is sent a total of 6 times because we have specified the retry
 of 5 (original, plus 5 retries for a total of 6 log entries).
 
-However the event-display (the Dead Letter Sink) only sees the failed events
+However, the event-display (the Dead Letter Sink) only sees the failed events
 with the response code set to 500.
 
 ```sh
