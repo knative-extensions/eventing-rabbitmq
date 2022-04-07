@@ -137,8 +137,9 @@ type RabbitmqSourceSpec struct {
 	// +required
 	QueueConfig RabbitmqSourceQueueConfigSpec `json:"queueConfig,omitempty"`
 	// Sink is a reference to an object that will resolve to a domain name to use as the sink.
-	// +optional
-	Sink *duckv1.Destination `json:"sink,omitempty"`
+	// Required property.
+	// +required
+	Sink *duckv1.Destination `json:"sink"`
 	// ServiceAccountName is the name of the ServiceAccount that will be used to run the Receive
 	// Adapter Deployment.
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
