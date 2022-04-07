@@ -21,4 +21,4 @@ To contribute to the project, fork this repository, clone it and make a branch.
 Make sure that an issue exist to describe the fix or new feature that you intend to submit.
 Contributor guidelines for this project can be [found here](CONTRIBUTING.md).
 
-If you want to run the Broker test suite you can follow [the steps described here](test.md)
+If you want to run the Broker test suite you can follow [the steps described here](../test/)
