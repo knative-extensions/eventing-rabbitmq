@@ -70,7 +70,7 @@ func NewExchange(args *ExchangeArgs) *rabbitv1beta1.Exchange {
 			Namespace:       args.Namespace,
 			Name:            args.Name,
 			OwnerReferences: []metav1.OwnerReference{ownerReference},
-			Labels:          ExchangeLabels(args.Broker, args.Trigger, args.Source),
+			Labels:          Labels(args.Broker, args.Trigger, args.Source),
 		},
 		Spec: rabbitv1beta1.ExchangeSpec{
 			Name:                     exchangeName,
@@ -81,25 +81,4 @@ func NewExchange(args *ExchangeArgs) *rabbitv1beta1.Exchange {
 			RabbitmqClusterReference: *args.RabbitmqClusterReference,
 		},
 	}
-}
-
-// ExchangeLabels generates the labels for the Exchange
-// Used by exchanges created by broker, trigger, and source controller
-func ExchangeLabels(b *eventingv1.Broker, t *eventingv1.Trigger, s *v1alpha1.RabbitmqSource) map[string]string {
-	if t != nil {
-		return map[string]string{
-			"eventing.knative.dev/broker":  b.Name,
-			"eventing.knative.dev/trigger": t.Name,
-		}
-	} else if b != nil {
-		return map[string]string{
-			"eventing.knative.dev/broker": b.Name,
-		}
-	} else if s != nil {
-		return map[string]string{
-			"eventing.knative.dev/SourceName": s.Name,
-		}
-	}
-
-	return nil
 }

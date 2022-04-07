@@ -299,7 +299,7 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 				Namespace: b.Spec.Config.Namespace,
 			},
 			Owner:  *kmeta.NewControllerRef(b),
-			Labels: rabbit.QueueLabels(b, nil),
+			Labels: rabbit.Labels(b, nil, nil),
 		})
 		if err != nil {
 			MarkDLXFailed(&b.Status, "QueueFailure", fmt.Sprintf("Failed to reconcile Dead Letter Queue %q : %s", naming.CreateBrokerDeadLetterQueueName(b), err))
@@ -323,7 +323,7 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 			Source:      naming.BrokerExchangeName(b, true),
 			Destination: bindingName,
 			Owner:       *kmeta.NewControllerRef(b),
-			Labels:      rabbit.BindingLabels(b, nil),
+			Labels:      rabbit.Labels(b, nil, nil),
 			Filters: map[string]string{
 				rabbit.DLQBindingKey: b.Name,
 			},

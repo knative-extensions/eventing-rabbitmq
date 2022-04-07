@@ -26,12 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
-
-	"knative.dev/eventing/pkg/apis/eventing"
-	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 )
-
-const TriggerLabelKey = "eventing.knative.dev/trigger"
 
 type QueueArgs struct {
 	Name                     string
@@ -89,20 +84,5 @@ func NewPolicy(args *QueueArgs) *rabbitv1beta1.Policy {
 			Definition:               &runtime.RawExtension{Raw: []byte(fmt.Sprintf(`{"dead-letter-exchange": %q}`, *args.DLXName))},
 			RabbitmqClusterReference: *args.RabbitmqClusterReference,
 		},
-	}
-}
-
-// QueueLabels generates the labels present on the Queue linking the Broker / Trigger to the
-// Queue.
-func QueueLabels(b *eventingv1.Broker, t *eventingv1.Trigger) map[string]string {
-	if t == nil {
-		return map[string]string{
-			eventing.BrokerLabelKey: b.Name,
-		}
-	} else {
-		return map[string]string{
-			eventing.BrokerLabelKey: b.Name,
-			TriggerLabelKey:         t.Name,
-		}
 	}
 }
