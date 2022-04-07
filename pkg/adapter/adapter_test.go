@@ -126,7 +126,7 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 				config: &adapterConfig{
 					Brokers: "amqp://guest:guest@localhost:5672/",
 					ExchangeConfig: ExchangeConfig{
-						TypeOf:     "topic",
+						Type:       "topic",
 						Durable:    true,
 						AutoDelete: false,
 					},
@@ -206,7 +206,7 @@ func TestAdapter_CreateConn(t *testing.T) {
 		config: &adapterConfig{
 			Brokers: "amqp://localhost:5672/%2f",
 			ExchangeConfig: ExchangeConfig{
-				TypeOf:     "direct",
+				Type:       "direct",
 				Durable:    true,
 				AutoDelete: false,
 			},
@@ -250,7 +250,7 @@ func TestAdapter_CreateChannel(t *testing.T) {
 		config: &adapterConfig{
 			Brokers: "amqp://localhost:5672/%2f",
 			ExchangeConfig: ExchangeConfig{
-				TypeOf:     "direct",
+				Type:       "direct",
 				Durable:    true,
 				AutoDelete: false,
 			},
@@ -439,7 +439,7 @@ func TestAdapter_PollForMessages(t *testing.T) {
 			Brokers: "amqp://guest:guest@localhost:5672/",
 			ExchangeConfig: ExchangeConfig{
 				Name:       "Test-exchange",
-				TypeOf:     "topic",
+				Type:       "topic",
 				Durable:    true,
 				AutoDelete: false,
 			},
@@ -454,7 +454,7 @@ func TestAdapter_PollForMessages(t *testing.T) {
 		reporter: statsReporter,
 	}
 
-	err = channel.ExchangeDeclare(a.config.ExchangeConfig.Name, a.config.ExchangeConfig.TypeOf, nil)
+	err = channel.ExchangeDeclare(a.config.ExchangeConfig.Name, a.config.ExchangeConfig.Type, nil)
 
 	if err != nil {
 		t.Errorf("Failed to declare an exchange")

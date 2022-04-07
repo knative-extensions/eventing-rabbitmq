@@ -45,7 +45,7 @@ const resourceGroup = "rabbitmqsources.sources.knative.dev"
 
 type ExchangeConfig struct {
 	Name       string `envconfig:"RABBITMQ_EXCHANGE_CONFIG_NAME" required:"false"`
-	TypeOf     string `envconfig:"RABBITMQ_EXCHANGE_CONFIG_TYPE" required:"true"`
+	Type       string `envconfig:"RABBITMQ_EXCHANGE_CONFIG_TYPE" required:"true"`
 	Durable    bool   `envconfig:"RABBITMQ_EXCHANGE_CONFIG_DURABLE" required:"false"`
 	AutoDelete bool   `envconfig:"RABBITMQ_EXCHANGE_CONFIG_AUTO_DELETE" required:"false"`
 }
