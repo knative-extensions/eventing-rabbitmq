@@ -35,7 +35,7 @@ You can install the latest released version of the [Operator based Knative Rabbi
 kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/latest/download/rabbitmq-broker.yaml
 ```
 
-If you wanted to install a specific version, e.g. v0.25.0, you can run:
+If you wanted to install a specific version, e.g., v0.25.0, you can run:
 
 ```shell
 kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/download/v0.25.0/rabbitmq-broker.yaml

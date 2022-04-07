@@ -19,7 +19,7 @@ an existing RabbitMQ exchange, or create a new exchange if required.
 
 ## Prerequisites
 
-* Follow the [Operator based Broker's Prerequisites Section](../broker/operator-based.md#prerequisites)
+* Follow the [Operator based Broker's Prerequisites Section](operator-based.md#prerequisites)
 
 * Before we can create the Knative Eventing Source, we first need to create a RabbitMQ Cluster:
 
@@ -43,7 +43,7 @@ You can install the latest released version of the [Knative RabbitMQ Source](htt
 kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/latest/download/rabbitmq-source.yaml
 ```
 
-If you wanted to install a specific version, e.g. v0.25.0, you can run:
+If you wanted to install a specific version, e.g., v0.25.0, you can run:
 
 ```shell
 kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/download/v0.25.0/rabbitmq-source.yaml
@@ -160,17 +160,18 @@ Sources are Kubernetes objects. In addition to the standard Kubernetes
 Source parameters
 | Field  | Value  |
 |--------|--------|
-| `spec.brokers` | Host+Port of the Broker, with a trailing "/" |
+| `spec.broker` | Host+Port of the Broker, with a trailing "/" |
 | `spec.vhost` * | VHost where the source resources are located |
 | `spec.predeclared` | Defines if the source should try to create new queue or use predeclared one (Boolean) |
 | `user.secretKeyRef` | Username for Broker authentication; field `key` in a Kubernetes Secret named `name` |
 | `password.secretKeyRef` | Password for Broker authentication; field `key` in a Kubernetes Secret named `name` |
 | `exchangeConfig` | Settings for the exchange |
+| `exchangeConfig.name` * | Name of the exchange |
 | `exchangeConfig.type` | [Exchange type](https://www.rabbitmq.com/tutorials/amqp-concepts.html#exchanges). Can be `fanout`, `direct`, `topic`, `match` or `headers` |
 | `exchangeConfig.durable` * | Boolean |
 | `exchangeConfig.autoDelete` * | Boolean |
 | `queueConfig` * | Settings for the queue |
-| `queueConfig.name` * | Name of the queue (may be empty) |
+| `queueConfig.name` | Name of the queue |
 | `queueConfig.routingKey` * | Routing key for the queue |
 | `queueConfig.durable` * | Boolean |
 | `queueConfig.autoDelete` * | Boolean |
@@ -199,7 +200,7 @@ kind: RabbitmqSource
 metadata:
   name: rabbitmq-source
 spec:
-  brokers: "rabbitmq:5672/"
+  broker: "rabbitmq:5672/"
   user:
     secretKeyRef:
       name: "rabbitmq-secret"
@@ -208,10 +209,9 @@ spec:
     secretKeyRef:
       name: "rabbitmq-secret"
       key: "password"
-  exchangeConfig:
-    type: "fanout"
-    durable: true
-    autoDelete: false
+  queueConfig:
+    name: "a-queue"
+  predeclared: true
   sink:
     ref:
       apiVersion: serving.knative.dev/v1
