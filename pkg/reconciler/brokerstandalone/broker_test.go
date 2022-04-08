@@ -119,7 +119,7 @@ var (
 
 	five         = int32(5)
 	policy       = eventingduckv1.BackoffPolicyExponential
-	backoffDelay = "PT1S"
+	backoffDelay = "PT30S"
 	delivery     = &eventingduckv1.DeliverySpec{
 		DeadLetterSink: &duckv1.Destination{
 			URI: deadLetterSinkAddress,
@@ -280,14 +280,14 @@ func TestReconcile(t *testing.T) {
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(config()),
-					WithExchangeFailed("ExchangeFailure", `Failed to create exchange: network unreachable`)),
+					WithExchangeFailed("ExchangeFailure", `Failed to create exchange: Network unreachable`)),
 			}},
 			WantPatches: []clientgotesting.PatchActionImpl{
 				patchFinalizers(testNS, brokerName),
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`),
-				Eventf(corev1.EventTypeWarning, "InternalError", `network unreachable`),
+				Eventf(corev1.EventTypeWarning, "InternalError", `Network unreachable`),
 			},
 			WantErr: true,
 		}, {

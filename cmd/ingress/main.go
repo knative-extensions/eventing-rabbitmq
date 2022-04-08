@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/NeowayLabs/wabbit"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
@@ -51,14 +50,15 @@ type envConfig struct {
 	BrokerURL    string `envconfig:"BROKER_URL" required:"true"`
 	ExchangeName string `envconfig:"EXCHANGE_NAME" required:"true"`
 
-	connection wabbit.Conn
-	channel    wabbit.Channel
+	connection *amqp.Connection
+	channel    *amqp.Channel
 }
 
 func main() {
 	ctx := signals.NewContext()
+	var err error
 	var env envConfig
-	if err := envconfig.Process("", &env); err != nil {
+	if err = envconfig.Process("", &env); err != nil {
 		logging.FromContext(ctx).Fatal("Failed to process env var: ", err)
 	}
 
@@ -66,43 +66,35 @@ func main() {
 	logger := env.GetLogger()
 	ctx = logging.WithLogger(ctx, logger)
 
-	if err := env.SetupTracing(); err != nil {
-		logger.Errorw("Failed setting up trace publishing", zap.Error(err))
+	if err = env.SetupTracing(); err != nil {
+		logger.Errorw("failed setting up trace publishing", zap.Error(err))
 	}
 
-	if err := env.SetupMetrics(ctx); err != nil {
-		logger.Errorw("Failed to create the metrics exporter", zap.Error(err))
+	if err = env.SetupMetrics(ctx); err != nil {
+		logger.Errorw("failed to create the metrics exporter", zap.Error(err))
 	}
 
 	rmqHelper := rabbit.NewRabbitMQHelper(1)
 	retryChannel := make(chan bool)
 	// Wait for RabbitMQ retry messages
 	go func() {
-	loop:
 		for {
-			select {
-			case retry := <-retryChannel:
-				if !retry {
-					break loop
-				}
-				logger.Warn("recreating RabbitMQ resources")
-				conn, channel, err := env.CreateRabbitMQConnections(rmqHelper, retryChannel, logger)
-				if err != nil {
-					logger.Errorf("error creating RabbitMQ connections: %s, waiting for a retry", err)
-				}
-				env.connection, env.channel = conn, channel
-			case <-ctx.Done():
-				break loop
+			if retry := <-retryChannel; !retry {
+				logger.Warn("stopped listenning for RabbitMQ resources retries")
+				close(retryChannel)
+				break
+			}
+			logger.Warn("recreating RabbitMQ resources")
+			env.connection, env.channel, err = env.CreateRabbitMQConnections(rmqHelper, retryChannel, logger)
+			if err != nil {
+				logger.Errorf("error recreating RabbitMQ connections: %s, waiting for a retry", err)
 			}
 		}
-		logger.Warn("stopped listenning for RabbitMQ resources retries")
-		close(retryChannel)
 	}()
-	conn, channel, err := env.CreateRabbitMQConnections(rmqHelper, retryChannel, logger)
+	env.connection, env.channel, err = env.CreateRabbitMQConnections(rmqHelper, retryChannel, logger)
 	if err != nil {
 		logger.Errorf("error creating RabbitMQ connections: %s, waiting for a retry", err)
 	}
-	env.connection, env.channel = conn, channel
 	defer rmqHelper.CleanupRabbitMQ(env.connection, env.channel, retryChannel, logger)
 
 	connectionArgs := kncloudevents.ConnectionArgs{
@@ -111,8 +103,8 @@ func main() {
 	}
 	kncloudevents.ConfigureConnectionArgs(&connectionArgs)
 	receiver := kncloudevents.NewHTTPMessageReceiver(env.Port)
-	if err := receiver.StartListen(ctx, &env); err != nil {
-		logger.Fatalf("Failed to start listen, %v", err)
+	if err = receiver.StartListen(ctx, &env); err != nil {
+		logger.Fatalf("failed to start listen, %v", err)
 	}
 }
 
@@ -120,26 +112,25 @@ func (env *envConfig) ServeHTTP(writer http.ResponseWriter, request *http.Reques
 	logger := env.GetLogger()
 	// validate request method
 	if request.Method != http.MethodPost {
-		logger.Warn("Unexpected request method", zap.String("method", request.Method))
+		logger.Warn("unexpected request method", zap.String("method", request.Method))
 		writer.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 
 	// validate request URI
 	if request.RequestURI != "/" {
-		logger.Error("Unexpected incoming request uri")
+		logger.Error("unexpected incoming request uri")
 		writer.WriteHeader(http.StatusNotFound)
 		return
 	}
 
 	ctx := request.Context()
-
 	message := cehttp.NewMessageFromHttpRequest(request)
 	defer message.Finish(nil)
 
 	event, err := binding.ToEvent(ctx, message)
 	if err != nil {
-		logger.Warnw("Failed to extract event from request", zap.Error(err))
+		logger.Warnw("failed to extract event from request", zap.Error(err))
 		writer.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -147,7 +138,7 @@ func (env *envConfig) ServeHTTP(writer http.ResponseWriter, request *http.Reques
 	// run validation for the extracted event
 	validationErr := event.Validate()
 	if validationErr != nil {
-		logger.Warnw("Failed to validate extracted event", zap.Error(validationErr))
+		logger.Warnw("failed to validate extracted event", zap.Error(validationErr))
 		writer.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -157,7 +148,7 @@ func (env *envConfig) ServeHTTP(writer http.ResponseWriter, request *http.Reques
 
 	statusCode, err := env.send(event, span)
 	if err != nil {
-		logger.Errorw("Failed to send event", zap.Error(err))
+		logger.Errorw("failed to send event", zap.Error(err))
 	}
 	writer.WriteHeader(statusCode)
 }
@@ -208,14 +199,16 @@ func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, err
 func (env *envConfig) CreateRabbitMQConnections(
 	rmqHelper *rabbit.RabbitMQHelper,
 	retryChannel chan<- bool,
-	logger *zap.SugaredLogger) (wabbit.Conn, wabbit.Channel, error) {
-	conn, channel, err := rmqHelper.SetupRabbitMQ(env.BrokerURL, retryChannel, logger)
+	logger *zap.SugaredLogger) (conn *amqp.Connection, channel *amqp.Channel, err error) {
+	conn, channel, err = rmqHelper.SetupRabbitMQ(env.BrokerURL, retryChannel, logger)
+	if err == nil {
+		err = channel.Confirm(false)
+	}
 	if err != nil {
+		rmqHelper.CloseRabbitMQConnections(conn, channel, logger)
+		go rmqHelper.SignalRetry(retryChannel, true)
 		return nil, nil, err
 	}
 
-	if err := env.channel.Confirm(false); err != nil {
-		logger.Errorw("Failed to switch connection channel to confirm mode: %s", zap.Error(err))
-	}
 	return conn, channel, nil
 }

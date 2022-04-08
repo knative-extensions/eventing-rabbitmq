@@ -265,7 +265,7 @@ func TestAdapter_CreateChannel(t *testing.T) {
 	}
 
 	for i := 1; i <= 2048; i++ {
-		channel, _ := a.CreateChannel(nil, conn.(*amqptest.Conn), logging.FromContext(context.TODO()).Desugar())
+		channel, _ := a.CreateChannel(nil, conn, logging.FromContext(context.TODO()).Desugar())
 		if channel == nil {
 			t.Logf("Failed to open a channel")
 			break

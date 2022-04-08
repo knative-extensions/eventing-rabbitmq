@@ -32,7 +32,7 @@ type Conn struct {
 
 // Dial mock the connection dialing to rabbitmq and
 // returns the established connection or error if something goes wrong
-func Dial(amqpuri string) (wabbit.Conn, error) {
+func Dial(amqpuri string) (*Conn, error) {
 	conn := &Conn{
 		amqpuri:    amqpuri,
 		errSpread:  utils.NewErrBroadcast(),
@@ -163,13 +163,12 @@ func (conn *Conn) Close() error {
 
 	// enables AutoRedial to gracefully shutdown
 	// This isn't wabbit stuff. It's the rabbitmq/amqp way of notify the shutdown
-
-	if !conn.hasAutoRedial {
-		conn.defErrDone <- true
+	if conn.hasAutoRedial {
 		conn.errSpread.Write(nil)
+	} else {
 		conn.errSpread.Delete(conn.errChan)
 		close(conn.errChan)
-		close(conn.defErrDone)
+		conn.defErrDone <- true
 	}
 
 	return nil
@@ -178,9 +177,4 @@ func (conn *Conn) Close() error {
 // Channel creates a new fake channel
 func (conn *Conn) Channel() (wabbit.Channel, error) {
 	return conn.amqpServer.CreateChannel(conn.ConnID, conn)
-}
-
-// Channel creates a new fake channel
-func (conn *Conn) IsClosed() bool {
-	return !conn.isConnected
 }

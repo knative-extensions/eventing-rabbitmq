@@ -19,7 +19,6 @@ package rabbit
 import (
 	"testing"
 
-	"github.com/NeowayLabs/wabbit/amqptest"
 	"go.uber.org/zap"
 )
 
@@ -43,7 +42,7 @@ func Test_SetupRabbitMQReconnections(t *testing.T) {
 	}()
 	<-testChannel
 	// Testing a failing setup
-	_, _, err := rabbitMQHelper.SetupRabbitMQ("amqp://localhost:5672/%2f", retryChannel, logger)
+	conn, channel, err := rabbitMQHelper.SetupRabbitMQ("amqp://localhost:5672/%2f", retryChannel, logger)
 	<-testChannel
 	if err == nil {
 		t.Error("SetupRabbitMQ should fail with the default DialFunc in testing environments")
@@ -51,7 +50,8 @@ func Test_SetupRabbitMQReconnections(t *testing.T) {
 	if rabbitMQHelper.retryCounter == 0 {
 		t.Errorf("no retries have been attempted want: > 0, got: %d", rabbitMQHelper.retryCounter)
 	}
-	// With this function now the setup works
-	rabbitMQHelper.SetDialFunc(amqptest.Dial)
-	retryChannel <- false
+	// Test SignalRetry func
+	rabbitMQHelper.SignalRetry(retryChannel, true)
+	<-testChannel
+	rabbitMQHelper.CleanupRabbitMQ(conn, channel, retryChannel, logger)
 }

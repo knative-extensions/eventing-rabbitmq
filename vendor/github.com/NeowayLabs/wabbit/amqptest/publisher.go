@@ -1,9 +1,6 @@
 package amqptest
 
-import (
-	"github.com/NeowayLabs/wabbit"
-	amqp "github.com/rabbitmq/amqp091-go"
-)
+import "github.com/NeowayLabs/wabbit"
 
 type Publisher struct {
 	channel wabbit.Publisher
@@ -27,13 +24,12 @@ func NewPublisher(conn wabbit.Conn, channel wabbit.Channel) (*Publisher, error) 
 	}, nil
 }
 
-func (pb *Publisher) Publish(exchange, key string, mandatory, immediate bool, msg amqp.Publishing) error {
+func (pb *Publisher) Publish(exc string, route string, message []byte, opt wabbit.Option) error {
 	err := pb.channel.Publish(
-		exchange, // publish to an exchange
-		key,      // routing to 0 or more queues
-		mandatory,
-		immediate,
-		msg,
+		exc,   // publish to an exchange
+		route, // routing to 0 or more queues
+		message,
+		opt,
 	)
 
 	return err

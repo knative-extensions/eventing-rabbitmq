@@ -19,9 +19,7 @@ package rabbit
 import (
 	"time"
 
-	"github.com/NeowayLabs/wabbit/amqp"
-
-	"github.com/NeowayLabs/wabbit"
+	amqp "github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"
 )
 
@@ -29,38 +27,33 @@ type RabbitMQHelper struct {
 	retryCounter  int
 	cycleDuration time.Duration
 	cleaningUp    bool
-	dialFunc      func(string) (wabbit.Conn, error)
 }
 
 func NewRabbitMQHelper(cycleDuration time.Duration) *RabbitMQHelper {
 	return &RabbitMQHelper{
 		cycleDuration: cycleDuration,
-		dialFunc:      amqp.Dial,
 	}
-}
-
-func (r *RabbitMQHelper) SetDialFunc(dialFunc func(uri string) (wabbit.Conn, error)) {
-	r.dialFunc = dialFunc
 }
 
 func (r *RabbitMQHelper) SetupRabbitMQ(
 	RabbitMQURL string,
 	retryChannel chan<- bool,
-	logger *zap.SugaredLogger) (wabbit.Conn, wabbit.Channel, error) {
+	logger *zap.SugaredLogger) (*amqp.Connection, *amqp.Channel, error) {
 	r.retryCounter += 1
 	var err error
-	var conn wabbit.Conn
-	var channel wabbit.Channel
-	if conn, err = r.dialFunc(RabbitMQURL); err != nil {
-		logger.Errorw("Failed to connect to RabbitMQ", zap.Error(err))
+	var conn *amqp.Connection
+	var channel *amqp.Channel
+	if conn, err = amqp.Dial(RabbitMQURL); err != nil {
+		logger.Errorw("failed to connect to RabbitMQ", zap.Error(err))
 	} else if channel, err = conn.Channel(); err != nil {
-		logger.Errorw("Failed to open a channel", zap.Error(err))
+		logger.Errorw("failed to open a channel", zap.Error(err))
 	}
 
 	// If there is an error trying to setup rabbit send a retry msg
 	if err != nil {
+		logger.Warnf("retry number %d", r.retryCounter)
 		time.Sleep(time.Second * r.cycleDuration)
-		go func() { retryChannel <- true }()
+		go r.SignalRetry(retryChannel, true)
 		return nil, nil, err
 	}
 
@@ -72,42 +65,44 @@ func (r *RabbitMQHelper) SetupRabbitMQ(
 }
 
 func (r *RabbitMQHelper) WatchRabbitMQConnections(
-	connection wabbit.Conn,
-	channel wabbit.Channel,
+	connection *amqp.Connection,
+	channel *amqp.Channel,
 	RabbitMQURL string,
 	retryChannel chan<- bool,
 	logger *zap.SugaredLogger) {
 	var err error
 	select {
-	case err = <-connection.NotifyClose(make(chan wabbit.Error)):
-	case err = <-channel.NotifyClose(make(chan wabbit.Error)):
+	case err = <-connection.NotifyClose(make(chan *amqp.Error)):
+	case err = <-channel.NotifyClose(make(chan *amqp.Error)):
 	}
 	if !r.cleaningUp {
 		logger.Warn(
-			"Lost connection to RabbitMQ, reconnecting retry number %d. Error: %v",
-			r.retryCounter,
-			zap.Error(err))
+			"Lost connection to RabbitMQ, reconnecting. Error: %v", zap.Error(err))
 		r.CloseRabbitMQConnections(connection, channel, logger)
-		r.cleaningUp = false
-		retryChannel <- true
+		r.SignalRetry(retryChannel, true)
 	}
 }
 
-func (r *RabbitMQHelper) CloseRabbitMQConnections(connection wabbit.Conn, channel wabbit.Channel, logger *zap.SugaredLogger) {
+func (r *RabbitMQHelper) SignalRetry(retryChannel chan<- bool, retry bool) {
+	retryChannel <- retry
+}
+
+func (r *RabbitMQHelper) CloseRabbitMQConnections(connection *amqp.Connection, channel *amqp.Channel, logger *zap.SugaredLogger) {
 	r.cleaningUp = true
-	if !channel.IsClosed() {
+	if channel != nil && !channel.IsClosed() {
 		if err := channel.Close(); err != nil {
 			logger.Error(err)
 		}
 	}
-	if !connection.IsClosed() {
+	if connection != nil && !connection.IsClosed() {
 		if err := connection.Close(); err != nil {
 			logger.Error(err)
 		}
 	}
+	r.cleaningUp = false
 }
 
-func (r *RabbitMQHelper) CleanupRabbitMQ(connection wabbit.Conn, channel wabbit.Channel, retryChannel chan<- bool, logger *zap.SugaredLogger) {
-	retryChannel <- false
+func (r *RabbitMQHelper) CleanupRabbitMQ(connection *amqp.Connection, channel *amqp.Channel, retryChannel chan<- bool, logger *zap.SugaredLogger) {
+	r.SignalRetry(retryChannel, false)
 	r.CloseRabbitMQConnections(connection, channel, logger)
 }

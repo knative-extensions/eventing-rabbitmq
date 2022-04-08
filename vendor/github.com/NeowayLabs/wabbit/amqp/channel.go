@@ -13,16 +13,21 @@ type Channel struct {
 	*amqp.Channel
 }
 
-func (ch *Channel) Publish(
-	exchange, key string,
-	mandatory, immediate bool,
-	msg amqp.Publishing) error {
+func (ch *Channel) Publish(exc, route string, msg []byte, opt wabbit.Option) error {
+	amqpOpt, err := utils.ConvertOpt(opt)
+
+	if err != nil {
+		return err
+	}
+
+	amqpOpt.Body = msg
+
 	return ch.Channel.Publish(
-		exchange,  // publish to an exchange
-		key,       // routing to 0 or more queues
-		mandatory, // mandatory
-		immediate, // immediate
-		msg,
+		exc,   // publish to an exchange
+		route, // routing to 0 or more queues
+		false, // mandatory
+		false, // immediate
+		amqpOpt,
 	)
 }
 
@@ -336,15 +341,4 @@ func (ch *Channel) NotifyClose(c chan wabbit.Error) chan wabbit.Error {
 	}()
 
 	return c
-}
-
-func (ch *Channel) IsClosed() bool {
-	return ch.Channel == nil || ch.Channel.IsClosed()
-}
-
-func (ch *Channel) PublishWithDeferredConfirm(
-	exchange, key string,
-	mandatory, immediate bool,
-	msg amqp.Publishing) (*amqp.DeferredConfirmation, error) {
-	return ch.Channel.PublishWithDeferredConfirm(exchange, key, mandatory, immediate, msg)
 }

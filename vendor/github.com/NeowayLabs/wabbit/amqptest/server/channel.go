@@ -23,7 +23,7 @@ type (
 		_                  uint32
 		deliveryTagCounter uint64
 
-		confirm, isConnected bool
+		confirm bool
 
 		publishListeners   []chan wabbit.Confirmation
 		muPublishListeners *sync.RWMutex
@@ -52,7 +52,6 @@ func uniqueConsumerTag() string {
 func NewChannel(vhost *VHost) *Channel {
 	c := Channel{
 		VHost:              vhost,
-		isConnected:        true,
 		unacked:            make([]unackData, 0, QueueMaxLen),
 		muUnacked:          &sync.RWMutex{},
 		muConsumer:         &sync.RWMutex{},
@@ -103,31 +102,23 @@ func (ch *Channel) NotifyPublish(confirm chan wabbit.Confirmation) chan wabbit.C
 	return confirm
 }
 
-func (ch *Channel) Publish(
-	exchange, key string,
-	mandatory, immediate bool,
-	msg amqp.Publishing) error {
-	_, err := ch.PublishWithDeferredConfirm(exchange, key, mandatory, immediate, msg)
-	return err
-}
-
-func (ch *Channel) PublishWithDeferredConfirm(
-	exchange, key string,
-	mandatory, immediate bool,
-	msg amqp.Publishing) (*amqp.DeferredConfirmation, error) {
+func (ch *Channel) Publish(exc, route string, msg []byte, opt wabbit.Option) error {
+	hdrs, _ := opt["headers"].(amqp.Table)
+	messageId, _ := opt["messageId"].(string)
+	contentType, _ := opt["contentType"].(string)
 
 	d := NewDelivery(ch,
-		msg.Body,
+		msg,
 		atomic.AddUint64(&ch.deliveryTagCounter, 1),
-		msg.MessageId,
-		wabbit.Option(msg.Headers),
-		msg.ContentType,
+		messageId,
+		wabbit.Option(hdrs),
+		contentType,
 	)
 
-	err := ch.VHost.Publish(exchange, key, d, nil)
+	err := ch.VHost.Publish(exc, route, d, nil)
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if ch.confirm {
@@ -135,11 +126,9 @@ func (ch *Channel) PublishWithDeferredConfirm(
 		for _, l := range ch.publishListeners {
 			l <- confirm
 		}
-
-		return &amqp.DeferredConfirmation{DeliveryTag: confirm.deliveryTag}, nil
 	}
 
-	return nil, nil
+	return nil
 }
 
 // Consume starts a fake consumer of queue
@@ -171,7 +160,7 @@ func (ch *Channel) Consume(queue, consumerName string, _ wabbit.Option) (<-chan 
 	q, ok := ch.queues[queue]
 
 	if !ok {
-		return nil, fmt.Errorf("unknown queue '%s'", queue)
+		return nil, fmt.Errorf("Unknown queue '%s'", queue)
 	}
 
 	go func() {
@@ -327,26 +316,22 @@ func (ch *Channel) Close() error {
 	ch.muConsumer.Lock()
 	defer ch.muConsumer.Unlock()
 
-	if ch.isConnected {
-		for _, consumer := range ch.consumers {
-			consumer.done <- true
-		}
-
-		ch.consumers = make(map[string]consumer)
-
-		// enqueue shall happens only after every consumer of this channel
-		// has stopped.
-		ch.enqueueUnacked()
-
-		ch.muPublishListeners.Lock()
-		defer ch.muPublishListeners.Unlock()
-		for _, c := range ch.publishListeners {
-			close(c)
-		}
-		ch.publishListeners = []chan wabbit.Confirmation{}
-		ch.isConnected = false
-		ch.errSpread.Write(nil)
+	for _, consumer := range ch.consumers {
+		consumer.done <- true
 	}
+
+	ch.consumers = make(map[string]consumer)
+
+	// enqueue shall happens only after every consumer of this channel
+	// has stopped.
+	ch.enqueueUnacked()
+
+	ch.muPublishListeners.Lock()
+	defer ch.muPublishListeners.Unlock()
+	for _, c := range ch.publishListeners {
+		close(c)
+	}
+	ch.publishListeners = []chan wabbit.Confirmation{}
 
 	return nil
 }
@@ -361,9 +346,4 @@ func (ch *Channel) NotifyClose(c chan wabbit.Error) chan wabbit.Error {
 func (ch *Channel) Cancel(consumer string, noWait bool) error {
 	ch.Close()
 	return nil
-}
-
-// Cancel closes deliveries for all consumers
-func (ch *Channel) IsClosed() bool {
-	return !ch.isConnected
 }
