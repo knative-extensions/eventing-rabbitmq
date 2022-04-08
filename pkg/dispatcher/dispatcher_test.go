@@ -374,7 +374,7 @@ func createRabbitAndQueue() (wabbit.Channel, *server.AMQPServer, error) {
 	fakeServer := server.NewServer(rabbitURL)
 	err := fakeServer.Start()
 	if err != nil {
-		return nil, nil, fmt.Errorf("Failed to start RabbitMQ: %s", err)
+		return nil, nil, fmt.Errorf("failed to start RabbitMQ: %s", err)
 	}
 	vh := server.NewVHost("/")
 
@@ -389,7 +389,7 @@ func createRabbitAndQueue() (wabbit.Channel, *server.AMQPServer, error) {
 	)
 	if err != nil {
 		fakeServer.Stop()
-		return nil, nil, fmt.Errorf("Failed to declare exchange: %s", err)
+		return nil, nil, fmt.Errorf("failed to declare exchange: %s", err)
 	}
 
 	_, err = ch.QueueDeclare(queueName,
@@ -404,7 +404,7 @@ func createRabbitAndQueue() (wabbit.Channel, *server.AMQPServer, error) {
 	if err != nil {
 		ch.Close()
 		fakeServer.Stop()
-		return nil, nil, fmt.Errorf("Failed to declare Queue: %s", err)
+		return nil, nil, fmt.Errorf("failed to declare Queue: %s", err)
 	}
 
 	err = ch.QueueBind(queueName, "process.data", exchangeName, nil)
@@ -412,7 +412,7 @@ func createRabbitAndQueue() (wabbit.Channel, *server.AMQPServer, error) {
 	if err != nil {
 		ch.Close()
 		fakeServer.Stop()
-		return nil, nil, fmt.Errorf("Failed to bind Queue: %s", err)
+		return nil, nil, fmt.Errorf("failed to bind Queue: %s", err)
 	}
 	return ch, fakeServer, nil
 }

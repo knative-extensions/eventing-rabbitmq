@@ -163,7 +163,7 @@ func WithDeadLetterSinkReady() BrokerOption {
 	}
 }
 
-// WithDeadLetterSinkReady sets DeadLetterSink condition to failed.
+// WithDeadLetterSinkFailed sets DeadLetterSink condition to failed.
 func WithDeadLetterSinkFailed(reason, msg string) BrokerOption {
 	return func(b *v1.Broker) {
 		MarkDeadLetterSinkFailed(&b.Status, reason, msg)
