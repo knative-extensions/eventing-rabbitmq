@@ -26,8 +26,6 @@ import (
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 )
 
-const TriggerLabelKey = "eventing.knative.dev/trigger"
-
 // QueueArgs are the arguments to create a Trigger's RabbitMQ Queue.
 type QueueArgs struct {
 	QueueName       string

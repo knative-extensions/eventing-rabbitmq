@@ -26,9 +26,8 @@ import (
 )
 
 const (
-	BindingKey           = "x-knative-trigger"
-	DLQBindingKey        = "x-knative-dlq"
-	TriggerDLQBindingKey = "x-knative-trigger-dlq"
+	BindingKey    = "x-knative-trigger"
+	DLQBindingKey = "x-knative-dlq"
 )
 
 type BindingArgs struct {
