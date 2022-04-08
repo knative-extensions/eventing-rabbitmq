@@ -18,13 +18,4 @@ package v1alpha1
 
 import "context"
 
-func (r *RabbitmqSource) SetDefaults(ctx context.Context) {
-	r.Spec.ChannelConfig.SetDefaults(ctx)
-}
-
-func (chConf *RabbitmqChannelConfigSpec) SetDefaults(ctx context.Context) {
-	if chConf.Parallelism == nil {
-		defaultParallelism := 1
-		chConf.Parallelism = &defaultParallelism
-	}
-}
+func (r *RabbitmqSource) SetDefaults(ctx context.Context) {}
