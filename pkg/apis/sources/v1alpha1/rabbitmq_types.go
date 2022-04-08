@@ -59,6 +59,7 @@ type RabbitmqChannelConfigSpec struct {
 	// +optional
 	// +kubebuilder:validation:Minimum:=1
 	// +kubebuilder:validation:Maximum:=1000
+	// +kubebuilder:default:=1
 	Parallelism *int `json:"parallelism,omitempty"`
 	// Channel Qos global property
 	// +optional
