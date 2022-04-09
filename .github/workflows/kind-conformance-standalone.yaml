@@ -19,17 +19,17 @@ jobs:
       fail-fast: false # Keep running if one leg fails.
       matrix:
         k8s-version:
-        - v1.21.2
         - v1.22.1
+        - v1.23.3
 
         # Map between K8S and KinD versions.
         # This is attempting to make it a bit clearer what's being tested.
         # See: https://github.com/kubernetes-sigs/kind/releases/tag/v0.11.1
         include:
-        - k8s-version: v1.21.2
-          kind-image-sha: sha256:9d07ff05e4afefbba983fac311807b3c17a5f36e7061f6cb7e2ba756255b2be4
         - k8s-version: v1.22.1
           kind-image-sha: sha256:100b3558428386d1372591f8d62add85b900538d94db8e455b66ebaf05a3ca3a
+        - k8s-version: v1.23.3
+          kind-image-sha: sha256:0e34f0d0fd448aa2f2819cfd74e99fe5793a6e4938b328f657c8e3f81ee0dfb9
     env:
       GOPATH: ${{ github.workspace }}
 
