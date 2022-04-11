@@ -33,7 +33,6 @@ import (
 const (
 	DefaultManagementPort = 15672
 	BindingKey            = "x-knative-trigger"
-	DLQBindingKey         = "x-knative-dlq"
 	TriggerDLQBindingKey  = "x-knative-trigger-dlq"
 )
 

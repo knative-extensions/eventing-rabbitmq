@@ -162,6 +162,7 @@ func (r *Reconciler) reconcileRabbitObjects(ctx context.Context, source *v1alpha
 		},
 		Source: source,
 		Owner:  *kmeta.NewControllerRef(source),
+		Labels: rabbit.Labels(nil, nil, source),
 	})
 	if err != nil {
 		logger.Error("failed to reconcile queue", "queue", source.Spec.QueueConfig.Name)
@@ -178,6 +179,7 @@ func (r *Reconciler) reconcileRabbitObjects(ctx context.Context, source *v1alpha
 		Source:      source.Spec.ExchangeConfig.Name,
 		Destination: source.Spec.QueueConfig.Name,
 		Owner:       *kmeta.NewControllerRef(source),
+		Labels:      rabbit.Labels(nil, nil, source),
 	})
 	if err != nil {
 		logger.Error("failed to reconcile queue", "queue", source.Spec.QueueConfig.Name)

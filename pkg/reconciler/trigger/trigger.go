@@ -177,7 +177,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 					Namespace: broker.Spec.Config.Namespace,
 				},
 				Owner:  *kmeta.NewControllerRef(t),
-				Labels: rabbit.QueueLabels(broker, t),
+				Labels: rabbit.Labels(broker, t, nil),
 			})
 			if err != nil {
 				logging.FromContext(ctx).Error("Problem reconciling Trigger Queue", zap.Error(err))
@@ -232,7 +232,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 				Namespace: broker.Spec.Config.Namespace,
 			},
 			Owner:   *kmeta.NewControllerRef(t),
-			Labels:  rabbit.QueueLabels(broker, t),
+			Labels:  rabbit.Labels(broker, t, nil),
 			DLXName: dlxName,
 		})
 		if err != nil {
@@ -451,7 +451,7 @@ func (r *Reconciler) reconcileBinding(ctx context.Context, b *eventingv1.Broker,
 		Source:      naming.BrokerExchangeName(b, false),
 		Destination: bindingName,
 		Owner:       *kmeta.NewControllerRef(t),
-		Labels:      rabbit.BindingLabels(b, t),
+		Labels:      rabbit.Labels(b, t, nil),
 		Filters:     filters,
 	})
 }
@@ -470,6 +470,6 @@ func (r *Reconciler) reconcileDLQBinding(ctx context.Context, b *eventingv1.Brok
 		Source:      naming.TriggerDLXExchangeName(t),
 		Destination: bindingName,
 		Owner:       *kmeta.NewControllerRef(t),
-		Labels:      rabbit.BindingLabels(b, t),
+		Labels:      rabbit.Labels(b, t, nil),
 	})
 }

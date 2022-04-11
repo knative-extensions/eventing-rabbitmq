@@ -1256,7 +1256,7 @@ func createExchange(dlx bool) *rabbitv1beta1.Exchange {
 			OwnerReferences: []metav1.OwnerReference{
 				*kmeta.NewControllerRef(broker),
 			},
-			Labels: rabbit.ExchangeLabels(broker, nil, nil),
+			Labels: rabbit.Labels(broker, nil, nil),
 		},
 		Spec: rabbitv1beta1.ExchangeSpec{
 			Name:       exchangeName,
@@ -1308,7 +1308,7 @@ func createQueue(dlx bool) *rabbitv1beta1.Queue {
 			OwnerReferences: []metav1.OwnerReference{
 				*kmeta.NewControllerRef(broker),
 			},
-			Labels: rabbit.ExchangeLabels(broker, nil, nil),
+			Labels: rabbit.Labels(broker, nil, nil),
 		},
 		Spec: rabbitv1beta1.QueueSpec{
 			Name:       queueName,
@@ -1357,7 +1357,7 @@ func createBinding(dlx bool) *rabbitv1beta1.Binding {
 			OwnerReferences: []metav1.OwnerReference{
 				*kmeta.NewControllerRef(broker),
 			},
-			Labels: rabbit.ExchangeLabels(broker, nil, nil),
+			Labels: rabbit.Labels(broker, nil, nil),
 		},
 		Spec: rabbitv1beta1.BindingSpec{
 			Vhost:           "/",
