@@ -17,9 +17,10 @@ limitations under the License.
 package utils
 
 import (
-	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"testing"
 	"time"
+
+	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 )
 
 func TestWithTimeout(t *testing.T) {
