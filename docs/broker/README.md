@@ -82,7 +82,7 @@ If this value is unset, it will default to `1`. This means the trigger will only
 will make the trigger a bottleneck. A slow processing sink will result in low overall throughput. Setting a value higher than 1 will result in `n` events being handled at
 a time by the trigger but ordering won't be guaranteed as events are sent to the sink.
 
-More details and samples can be found [here](../samples/trigger-customizations)
+More details and samples can be found [here](../../samples/trigger-customizations)
 
 ## Next Steps
 - Check out the [Broker-Trigger Samples Directory](../samples/broker-trigger) in this repo and start building your topology with Eventing RabbitMQ!

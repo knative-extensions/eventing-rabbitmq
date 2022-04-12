@@ -5,6 +5,8 @@ based on the [RabbitMQ Protocol Binding for CloudEvents Spec](https://github.com
 which can then be used with Knative Eventing over HTTP. The source can bind to
 an existing RabbitMQ exchange, or create a new exchange if required.
 
+![RabbitMQ Source for Knative Eventing](rabbitmq-knative-source.png)
+
 
 # Table of Contents
 
@@ -337,7 +339,7 @@ ConfigMaps may be used to manage the logging and metrics configuration.
 
 ## Next Steps
 
-Check out the [Source Samples Directory](../samples/source) in this repo and start converting your messages to CloudEvents with Eventing RabbitMQ!
+Check out the [Source Samples Directory](../../samples/source) in this repo and start converting your messages to CloudEvents with Eventing RabbitMQ!
 
 ## Additional Resources
 
