@@ -360,14 +360,6 @@ install: | $(KUBECTL) $(KO) install-knative-eventing install-rabbitmq-cluster-op
 	$(KO) apply --filename config/source
 	$(KUBECTL) wait --for=condition=available deploy/pingsource-mt-adapter --timeout=60s --namespace knative-eventing
 
-.PHONY: install-standalone
-install-standalone: | $(KUBECTL) $(KO) install-knative-eventing install-rabbitmq-cluster-operator ## Install local dev Knative Eventing RabbitMQ Standalone - manages all dependencies, including K8S components
-	$(KO) apply --filename config/brokerstandalone
-	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-standalone-broker-controller --timeout=60s --namespace $(EVENTING_NAMESPACE)
-	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-broker-webhook --timeout=60s --namespace $(EVENTING_NAMESPACE)
-	$(KO) apply --filename config/source
-	$(KUBECTL) wait --for=condition=available deploy/pingsource-mt-adapter --timeout=60s --namespace knative-eventing
-
 .PHONY: test-e2e-publish
 test-e2e-publish: | $(KUBECONFIG) ## Run TestKoPublish end-to-end tests  - assumes a K8S with all necessary components installed (Knative & RabbitMQ)
 	go test -v -race -count=1 -timeout=15m -tags=e2e ./test/e2e/... -run 'TestKoPublish'
@@ -393,12 +385,8 @@ _test-conformance:
 		-run TestBroker.*Conformance.* $(CURDIR)/test/conformance/...
 
 .PHONY: test-conformance
-test-conformance: BROKER_TEMPLATES = $(CURDIR)/test/conformance/testdata/with-operator
+test-conformance: BROKER_TEMPLATES = $(CURDIR)/test/conformance/testdata
 test-conformance: | _test-conformance ## Run conformance tests
-
-.PHONY: test-conformance-standalone
-test-conformance-standalone: BROKER_TEMPLATES = $(CURDIR)/test/conformance/testdata/with-secret
-test-conformance-standalone: _test-conformance ## Run conformance tests for standalone broker
 
 TEST_COMPILATION_TAGS=e2e
 .PHONY: test-compilation
