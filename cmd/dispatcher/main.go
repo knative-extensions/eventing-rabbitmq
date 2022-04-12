@@ -23,7 +23,6 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/NeowayLabs/wabbit"
 	"github.com/NeowayLabs/wabbit/amqp"
 	"github.com/kelseyhightower/envconfig"
 	amqperr "github.com/rabbitmq/amqp091-go"
@@ -31,6 +30,7 @@ import (
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/signals"
 
+	"github.com/NeowayLabs/wabbit"
 	"knative.dev/eventing-rabbitmq/pkg/dispatcher"
 	"knative.dev/eventing-rabbitmq/pkg/utils"
 )

@@ -31,6 +31,7 @@ import (
 
 	"github.com/NeowayLabs/wabbit"
 	"github.com/NeowayLabs/wabbit/amqptest/server"
+
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 
 	ce "github.com/cloudevents/sdk-go/v2/event"
@@ -280,7 +281,7 @@ func TestEndToEnd(t *testing.T) {
 			}
 
 			for i := range tc.rawMessages {
-				err = ch.Publish(exchangeName, "process.data", tc.rawMessages[i], nil)
+				err = ch.Publish(exchangeName, "process.data", tc.rawMessages[i], wabbit.Option{})
 				if err != nil {
 					t.Errorf("Failed to publish raw message %d: %s", i, err)
 				}
@@ -290,7 +291,7 @@ func TestEndToEnd(t *testing.T) {
 				if err != nil {
 					t.Errorf("Failed to marshal the event %d: %s", i, err)
 				}
-				err = ch.Publish(exchangeName, "process.data", b, nil)
+				err = ch.Publish(exchangeName, "process.data", b, wabbit.Option{})
 				if err != nil {
 					t.Errorf("Failed to publish event %d: %s", i, err)
 				}

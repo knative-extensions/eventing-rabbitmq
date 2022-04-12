@@ -149,6 +149,7 @@ func isReady(conditions []v1beta1.Condition) bool {
 	if numConditions == 0 {
 		return false
 	}
+
 	for _, c := range conditions {
 		if c.Status == corev1.ConditionTrue {
 			numConditions--
