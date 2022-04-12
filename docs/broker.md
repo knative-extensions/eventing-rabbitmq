@@ -36,7 +36,7 @@ RabbitMQ *is a Messaging Broker* - an intermediary for messaging. It gives your 
     kubectl apply -f https://github.com/rabbitmq/messaging-topology-operator/releases/latest/download/messaging-topology-operator-with-certmanager.yaml
     ```
 
-    If a custom installation is required, refer to the [topology operator docs](https://github.com/rabbitmq/messaging-topology-operator#quickstart). 
+    If a custom installation is required, refer to the [topology operator docs](https://github.com/rabbitmq/messaging-topology-operator#quickstart).
 
 ### Install rabbitmq-eventing broker
 
