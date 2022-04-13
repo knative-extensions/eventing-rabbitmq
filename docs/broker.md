@@ -7,30 +7,64 @@ RabbitMQ *is a Messaging Broker* - an intermediary for messaging. It gives your 
 # Table of Contents
 
 - [Installation](#installation)
-  - [Standalone Broker](#standalone-broker)
-  - [RabbitMQ Operator Based Broker](#rabbitmq-operator-based-broker)
 - [Autoscaling](#autoscaling-optional)
 - [Next Steps](#next-steps)
 - [Additional Resources](#additional-resources)
 
 ## Installation
+### Prerequisites
 
-We provide two versions of the RabbitMQ Knative Eventing Broker.
+* Install Knative Eventing as documented [here](https://knative.dev/docs/install/).
 
-1. [Standalone Broker](#standalone-broker)
-2. [RabbitMQ operator based Broker](#rabbitmq-operator-based-broker)
+* Install latest released version of the [RabbitMQ Cluster Operator](https://github.com/rabbitmq/cluster-operator).
 
-### Standalone Broker
+    ```
+    kubectl apply -f https://github.com/rabbitmq/cluster-operator/releases/latest/download/cluster-operator.yml
+    ```
 
-This Broker works by utilizing libraries to manage RabbitMQ resources directly and as name implies does not have dependencies on other operators. Choose this if you do not manage your clusters lifecycle with the [Cluster Operator](https://github.com/rabbitmq/cluster-operator).
+* Install latest released version of the [RabbitMQ Messaging Topology Operator](https://github.com/rabbitmq/messaging-topology-operator)
 
-[Install Standalone Broker](standalone.md)
+    Cert Manager is a pre-requisite for the Topology Operator:
 
-### RabbitMQ Operator Based Broker
+    ```
+    kubectl apply -f https://github.com/jetstack/cert-manager/releases/latest/download/cert-manager.yaml
+    ```
 
-This Broker builds on top of [Cluster Operator](https://github.com/rabbitmq/cluster-operator) and [Messaging Topology Operator](https://github.com/rabbitmq/messaging-topology-operator). It requires both of them to be installed. This Broker also will only work with RabbitMQ clusters created and managed by the Cluster Operator. If you do not manage your RabbitMQ clusters with the Operator, you must use the [Standalone Broker](standalone.md).
+    Install the messaging topology operator:
 
-[Install Operator based Broker](operator-based.md)
+    ```
+    kubectl apply -f https://github.com/rabbitmq/messaging-topology-operator/releases/latest/download/messaging-topology-operator-with-certmanager.yaml
+    ```
+
+    If a custom installation is required, refer to the [topology operator docs](https://github.com/rabbitmq/messaging-topology-operator#quickstart).
+
+### Install rabbitmq-eventing broker
+
+Install the latest version of the [Operator based Knative RabbitMQ Broker](https://github.com/knative-sandbox/eventing-rabbitmq/releases/):
+
+```shell
+kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/latest/download/rabbitmq-broker.yaml
+```
+
+Or install a specific version, e.g., v0.25.0, run:
+
+```shell
+kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/download/v0.25.0/rabbitmq-broker.yaml
+```
+
+Or install a nightly version:
+
+```shell
+kubectl apply -f https://storage.googleapis.com/knative-nightly/eventing-rabbitmq/latest/rabbitmq-broker.yaml
+```
+
+For development purposes or to use the latest from the repository, use [`ko`](https://github.com/google/ko) for installation from a local copy of the repository.
+
+```
+ko apply -f config/broker/
+```
+
+Follow the [Broker-Trigger](../samples/broker-trigger) to deploy a basic example of a topology.
 
 ## Autoscaling (optional)
 
@@ -51,8 +85,8 @@ a time by the trigger but ordering won't be guaranteed as events are sent to the
 More details and samples can be found [here](../samples/trigger-customizations)
 
 ## Next Steps
-
 - Check out the [Broker-Trigger Samples Directory](../samples/broker-trigger) in this repo and start building your topology with Eventing RabbitMQ!
+- Follow [CloudEvents Player Source](https://knative.dev/docs/getting-started/first-source/) to setup a Knative Service as a source.
 
 ## Additional Resources
 

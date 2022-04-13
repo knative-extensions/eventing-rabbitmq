@@ -49,7 +49,6 @@ At the time of writing the following targets available:
 ```
 test-compilation                    Build test binaries with e2e tags
 test-conformance                    Run conformance tests
-test-conformance-standalone         Run conformance tests for standalone broker
 test-e2e                            Run all end-to-end tests - manages all dependencies, including K8S components
 test-e2e-broker                     Run Broker end-to-end tests - assumes a K8S with all necessary components installed (Knative & RabbitMQ)
 test-e2e-publish                    Run TestKoPublish end-to-end tests  - assumes a K8S with all necessary components installed (Knative & RabbitMQ)
