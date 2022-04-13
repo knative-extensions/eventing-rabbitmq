@@ -29,4 +29,5 @@ type Service interface {
 	ReconcileExchange(context.Context, *ExchangeArgs) (Result, error)
 	ReconcileQueue(context.Context, *QueueArgs) (Result, error)
 	ReconcileBinding(context.Context, *BindingArgs) (Result, error)
+	ReconcileBrokerDLXPolicy(context.Context, *QueueArgs) (Result, error)
 }

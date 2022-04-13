@@ -581,6 +581,75 @@ func TestReconcile(t *testing.T) {
 				Eventf(corev1.EventTypeWarning, "InternalError", `inducing failure for create bindings`),
 			},
 		}, {
+			Name: "Both exchanges exist, queue exists, binding exists, creates policy fails",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
+					WithBrokerClass(brokerClass),
+					WithBrokerConfig(config()),
+					WithInitBrokerConditions,
+					WithBrokerDelivery(delivery)),
+				createSecretForRabbitmqCluster(),
+				createRabbitMQCluster(),
+				createReadyExchange(false),
+				createReadyExchange(true),
+				createReadyQueue(true),
+				createReadyBinding(true),
+			},
+			WantCreates: []runtime.Object{
+				createPolicy(),
+			},
+			WithReactors: []clientgotesting.ReactionFunc{
+				InduceFailure("create", "policies"),
+			},
+			WantErr: true,
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
+					WithBrokerClass(brokerClass),
+					WithInitBrokerConditions,
+					WithBrokerDelivery(delivery),
+					WithBrokerConfig(config()),
+					WithExchangeReady(),
+					WithDLXReady(),
+					WithDeadLetterSinkFailed("PolicyFailure", `Failed to reconcile RabbitMQ Policy "b.test-namespace.test-broker.dlq.broker-test-uid" : inducing failure for create policies`)),
+			}},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeWarning, "InternalError", `inducing failure for create policies`),
+			},
+		}, {
+			Name: "Both exchanges exist, queue exists, binding exists, policy not ready",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
+					WithBrokerClass(brokerClass),
+					WithBrokerConfig(config()),
+					WithInitBrokerConditions,
+					WithBrokerDelivery(delivery)),
+				createSecretForRabbitmqCluster(),
+				createRabbitMQCluster(),
+				createReadyExchange(false),
+				createReadyExchange(true),
+				createReadyQueue(true),
+				createReadyBinding(true),
+			},
+			WantCreates: []runtime.Object{
+				createPolicy(),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBroker(brokerName, testNS,
+					WithBrokerUID(brokerUID),
+					WithBrokerClass(brokerClass),
+					WithInitBrokerConditions,
+					WithBrokerDelivery(delivery),
+					WithBrokerConfig(config()),
+					WithExchangeReady(),
+					WithDLXReady(),
+					WithDeadLetterSinkFailed("PolicyFailure", `RabbitMQ Policy "b.test-namespace.test-broker.dlq.broker-test-uid" is not ready`)),
+			}},
+		}, {
 			Name: "Both exchanges exist, creates secret, deployment, and service, endpoints not ready",
 			Key:  testKey,
 			Objects: []runtime.Object{
@@ -630,6 +699,7 @@ func TestReconcile(t *testing.T) {
 				createReadyExchange(true),
 				createReadyQueue(true),
 				createReadyBinding(true),
+				createReadyPolicy(),
 				rt.NewEndpoints(ingressServiceName, testNS,
 					rt.WithEndpointsLabels(IngressLabels()),
 					rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
@@ -668,6 +738,7 @@ func TestReconcile(t *testing.T) {
 				createReadyExchange(true),
 				createReadyQueue(true),
 				createReadyBinding(true),
+				createReadyPolicy(),
 				rt.NewEndpoints(ingressServiceName, testNS,
 					rt.WithEndpointsLabels(IngressLabels()),
 					rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
@@ -708,6 +779,7 @@ func TestReconcile(t *testing.T) {
 				createReadyExchange(true),
 				createReadyQueue(true),
 				createReadyBinding(true),
+				createReadyPolicy(),
 				rt.NewEndpoints(ingressServiceName, testNS,
 					rt.WithEndpointsLabels(IngressLabels()),
 					rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
@@ -749,6 +821,7 @@ func TestReconcile(t *testing.T) {
 				createReadyExchange(true),
 				createReadyQueue(true),
 				createReadyBinding(true),
+				createReadyPolicy(),
 				rt.NewEndpoints(ingressServiceName, testNS,
 					rt.WithEndpointsLabels(IngressLabels()),
 					rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
@@ -792,6 +865,7 @@ func TestReconcile(t *testing.T) {
 				createReadyExchange(true),
 				createReadyQueue(true),
 				createReadyBinding(true),
+				createReadyPolicy(),
 				rt.NewEndpoints(ingressServiceName, testNS,
 					rt.WithEndpointsLabels(IngressLabels()),
 					rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
@@ -835,6 +909,7 @@ func TestReconcile(t *testing.T) {
 				createReadyExchange(true),
 				createReadyQueue(true),
 				createReadyBinding(true),
+				createReadyPolicy(),
 				rt.NewEndpoints(ingressServiceName, testNS,
 					rt.WithEndpointsLabels(IngressLabels()),
 					rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
@@ -878,6 +953,7 @@ func TestReconcile(t *testing.T) {
 				createReadyExchange(true),
 				createReadyQueue(true),
 				createReadyBinding(true),
+				createReadyPolicy(),
 				rt.NewEndpoints(ingressServiceName, testNS,
 					rt.WithEndpointsLabels(IngressLabels()),
 					rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
@@ -923,6 +999,7 @@ func TestReconcile(t *testing.T) {
 				createReadyExchange(true),
 				createReadyQueue(true),
 				createReadyBinding(true),
+				createReadyPolicy(),
 				rt.NewEndpoints(ingressServiceName, testNS,
 					rt.WithEndpointsLabels(IngressLabels()),
 					rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
@@ -965,6 +1042,7 @@ func TestReconcile(t *testing.T) {
 				createReadyExchange(true),
 				createReadyQueue(true),
 				createReadyBinding(true),
+				createReadyPolicy(),
 				rt.NewEndpoints(ingressServiceName, testNS,
 					rt.WithEndpointsLabels(IngressLabels()),
 					rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
@@ -1384,6 +1462,53 @@ func createReadyBinding(dlx bool) *rabbitv1beta1.Binding {
 		},
 	}
 	return b
+}
+
+func createPolicy() *rabbitv1beta1.Policy {
+	broker := &eventingv1.Broker{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      brokerName,
+			Namespace: testNS,
+			UID:       brokerUID,
+		},
+	}
+
+	policyName := fmt.Sprintf("b.%s.%s.dlq.broker-test-uid", testNS, brokerName)
+	dlxName := fmt.Sprintf("b.%s.%s.dlx.%s", testNS, brokerName, brokerUID)
+
+	return &rabbitv1beta1.Policy{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: testNS,
+			Name:      policyName,
+			OwnerReferences: []metav1.OwnerReference{
+				*kmeta.NewControllerRef(broker),
+			},
+			Labels: rabbit.Labels(broker, nil, nil),
+		},
+		Spec: rabbitv1beta1.PolicySpec{
+			Name:       policyName,
+			Priority:   0,
+			Pattern:    "^t\\.q\\..",
+			ApplyTo:    "queues",
+			Definition: &runtime.RawExtension{Raw: []byte(fmt.Sprintf(`{"dead-letter-exchange": %q}`, dlxName))},
+			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
+				Name:      rabbitMQBrokerName,
+				Namespace: testNS,
+			},
+		},
+	}
+}
+
+func createReadyPolicy() *rabbitv1beta1.Policy {
+	p := createPolicy()
+	p.Status = rabbitv1beta1.PolicyStatus{
+		Conditions: []rabbitv1beta1.Condition{
+			{
+				Status: corev1.ConditionTrue,
+			},
+		},
+	}
+	return p
 }
 
 func createRabbitMQCluster() *unstructured.Unstructured {

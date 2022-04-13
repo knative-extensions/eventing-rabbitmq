@@ -79,7 +79,28 @@ func NewPolicy(args *QueueArgs) *rabbitv1beta1.Policy {
 		},
 		Spec: v1beta1.PolicySpec{
 			Name:                     args.Name,
+			Priority:                 1,
 			Pattern:                  fmt.Sprintf("^%s$", regexp.QuoteMeta(args.Name)),
+			ApplyTo:                  "queues",
+			Definition:               &runtime.RawExtension{Raw: []byte(fmt.Sprintf(`{"dead-letter-exchange": %q}`, *args.DLXName))},
+			RabbitmqClusterReference: *args.RabbitmqClusterReference,
+		},
+	}
+}
+
+// NewBrokerDLXPolicy configures the broker dead letter exchange for trigger queues that does not have dlx defined
+func NewBrokerDLXPolicy(args *QueueArgs) *rabbitv1beta1.Policy {
+	return &rabbitv1beta1.Policy{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            args.Name,
+			Namespace:       args.Namespace,
+			OwnerReferences: []metav1.OwnerReference{args.Owner},
+			Labels:          args.Labels,
+		},
+		Spec: v1beta1.PolicySpec{
+			Name:                     args.Name,
+			Priority:                 0, // lower priority then policies created for trigger queues to allow overwrite
+			Pattern:                  fmt.Sprintf("^%s.", regexp.QuoteMeta("t.q.")),
 			ApplyTo:                  "queues",
 			Definition:               &runtime.RawExtension{Raw: []byte(fmt.Sprintf(`{"dead-letter-exchange": %q}`, *args.DLXName))},
 			RabbitmqClusterReference: *args.RabbitmqClusterReference,

@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 
+	"k8s.io/utils/pointer"
+
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 
 	"go.uber.org/zap"
@@ -142,7 +144,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *eventingv1.Broker) pk
 		MarkExchangeFailed(&b.Status, "ReconcileFailure", "using secret is not supported with this controller")
 		return nil
 	}
-	return r.reconcileUsingCRD(ctx, b, args)
+	return r.reconcileRabbitResources(ctx, b, args)
 }
 
 // reconcileSecret reconciles the K8s Secret 's'.
@@ -265,7 +267,7 @@ func (r *Reconciler) reconcileDLXDispatcherDeployment(ctx context.Context, b *ev
 	return r.kubeClientSet.AppsV1().Deployments(b.Namespace).Delete(ctx, dispatcherName, metav1.DeleteOptions{})
 }
 
-func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker, args *rabbit.ExchangeArgs) error {
+func (r *Reconciler) reconcileRabbitResources(ctx context.Context, b *eventingv1.Broker, args *rabbit.ExchangeArgs) error {
 	args.Name = naming.BrokerExchangeName(b, false)
 	exchange, err := r.rabbit.ReconcileExchange(ctx, args)
 	if err != nil {
@@ -280,72 +282,105 @@ func (r *Reconciler) reconcileUsingCRD(ctx context.Context, b *eventingv1.Broker
 	args.Name = naming.BrokerExchangeName(b, true)
 	MarkExchangeReady(&b.Status)
 
-	if b.Spec.Delivery != nil && b.Spec.Delivery.DeadLetterSink != nil {
-		dlxExchange, err := r.rabbit.ReconcileExchange(ctx, args)
-		if err != nil {
-			MarkExchangeFailed(&b.Status, "ExchangeFailure", fmt.Sprintf("Failed to reconcile DLX exchange %q: %s", naming.BrokerExchangeName(args.Broker, true), err))
+	if deadLetterEnabled(b) {
+		if err, ready := r.reconcileDeadLetterResources(ctx, b, args); err != nil {
 			return err
-		}
-		if !dlxExchange.Ready {
-			logging.FromContext(ctx).Warnf("DLX exchange %q is not ready", dlxExchange.Name)
-			MarkExchangeFailed(&b.Status, "ExchangeFailure", fmt.Sprintf("DLX exchange %q is not ready", dlxExchange.Name))
+		} else if !ready {
 			return nil
 		}
-
-		queue, err := r.rabbit.ReconcileQueue(ctx, &rabbit.QueueArgs{
-			Name:      naming.CreateBrokerDeadLetterQueueName(b),
-			Namespace: b.Namespace,
-			RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
-				Name:      b.Spec.Config.Name,
-				Namespace: b.Spec.Config.Namespace,
-			},
-			Owner:  *kmeta.NewControllerRef(b),
-			Labels: rabbit.Labels(b, nil, nil),
-		})
-		if err != nil {
-			MarkDLXFailed(&b.Status, "QueueFailure", fmt.Sprintf("Failed to reconcile Dead Letter Queue %q : %s", naming.CreateBrokerDeadLetterQueueName(b), err))
-			return err
-		}
-		if !queue.Ready {
-			logging.FromContext(ctx).Warnf("Queue %q is not ready", queue.Name)
-			MarkDLXFailed(&b.Status, "QueueFailure", fmt.Sprintf("Dead Letter Queue %q is not ready", queue.Name))
-			return nil
-		}
-		MarkDLXReady(&b.Status)
-		bindingName := naming.CreateBrokerDeadLetterQueueName(b)
-		binding, err := r.rabbit.ReconcileBinding(ctx, &rabbit.BindingArgs{
-			Name:      bindingName,
-			Namespace: b.Namespace,
-			RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
-				Name:      b.Spec.Config.Name,
-				Namespace: b.Spec.Config.Namespace,
-			},
-			Vhost:       "/",
-			Source:      naming.BrokerExchangeName(b, true),
-			Destination: bindingName,
-			Owner:       *kmeta.NewControllerRef(b),
-			Labels:      rabbit.Labels(b, nil, nil),
-			Filters: map[string]string{
-				rabbit.DLQBindingKey: b.Name,
-			},
-		})
-		if err != nil {
-			// NB, binding has the same name as the queue.
-			MarkDeadLetterSinkFailed(&b.Status, "DLQ binding", fmt.Sprintf("Failed to reconcile DLQ binding %q : %s", naming.CreateBrokerDeadLetterQueueName(b), err))
-			return err
-		}
-		if !binding.Ready {
-			logging.FromContext(ctx).Warnf("Binding %q is not ready", binding.Name)
-			MarkDeadLetterSinkFailed(&b.Status, "DLQ binding", fmt.Sprintf("DLQ binding %q is not ready", binding.Name))
-			return nil
-		}
-		MarkDeadLetterSinkReady(&b.Status)
 	} else {
 		MarkDLXNotConfigured(&b.Status)
 		MarkDeadLetterSinkNotConfigured(&b.Status)
 	}
 
 	return r.reconcileCommonIngressResources(ctx, resources.MakeSecret(args), b)
+}
+
+func (r *Reconciler) reconcileDeadLetterResources(ctx context.Context, b *eventingv1.Broker, args *rabbit.ExchangeArgs) (error, bool) {
+	dlxExchange, err := r.rabbit.ReconcileExchange(ctx, args)
+	if err != nil {
+		MarkExchangeFailed(&b.Status, "ExchangeFailure", fmt.Sprintf("Failed to reconcile DLX exchange %q: %s", naming.BrokerExchangeName(args.Broker, true), err))
+		return err, false
+	}
+	if !dlxExchange.Ready {
+		logging.FromContext(ctx).Warnf("DLX exchange %q is not ready", dlxExchange.Name)
+		MarkExchangeFailed(&b.Status, "ExchangeFailure", fmt.Sprintf("DLX exchange %q is not ready", dlxExchange.Name))
+		return nil, false
+	}
+
+	queue, err := r.rabbit.ReconcileQueue(ctx, &rabbit.QueueArgs{
+		Name:      naming.CreateBrokerDeadLetterQueueName(b),
+		Namespace: b.Namespace,
+		RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
+			Name:      b.Spec.Config.Name,
+			Namespace: b.Spec.Config.Namespace,
+		},
+		Owner:  *kmeta.NewControllerRef(b),
+		Labels: rabbit.Labels(b, nil, nil),
+	})
+	if err != nil {
+		MarkDLXFailed(&b.Status, "QueueFailure", fmt.Sprintf("Failed to reconcile Dead Letter Queue %q : %s", naming.CreateBrokerDeadLetterQueueName(b), err))
+		return err, false
+	}
+	if !queue.Ready {
+		logging.FromContext(ctx).Warnf("Queue %q is not ready", queue.Name)
+		MarkDLXFailed(&b.Status, "QueueFailure", fmt.Sprintf("Dead Letter Queue %q is not ready", queue.Name))
+		return nil, false
+	}
+	MarkDLXReady(&b.Status)
+
+	bindingName := naming.CreateBrokerDeadLetterQueueName(b)
+	binding, err := r.rabbit.ReconcileBinding(ctx, &rabbit.BindingArgs{
+		Name:      bindingName,
+		Namespace: b.Namespace,
+		RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
+			Name:      b.Spec.Config.Name,
+			Namespace: b.Spec.Config.Namespace,
+		},
+		Vhost:       "/",
+		Source:      naming.BrokerExchangeName(b, true),
+		Destination: bindingName,
+		Owner:       *kmeta.NewControllerRef(b),
+		Labels:      rabbit.Labels(b, nil, nil),
+		Filters: map[string]string{
+			rabbit.DLQBindingKey: b.Name,
+		},
+	})
+	if err != nil {
+		// NB, binding has the same name as the queue.
+		MarkDeadLetterSinkFailed(&b.Status, "DLQ binding", fmt.Sprintf("Failed to reconcile DLQ binding %q : %s", bindingName, err))
+		return err, false
+	}
+	if !binding.Ready {
+		logging.FromContext(ctx).Warnf("Binding %q is not ready", binding.Name)
+		MarkDeadLetterSinkFailed(&b.Status, "DLQ binding", fmt.Sprintf("DLQ binding %q is not ready", binding.Name))
+		return nil, false
+	}
+
+	policyName := naming.CreateBrokerDeadLetterQueueName(b) // same name as the DL queue
+	policy, err := r.rabbit.ReconcileBrokerDLXPolicy(ctx, &rabbit.QueueArgs{
+		Name:      policyName,
+		Namespace: b.Namespace,
+		RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
+			Name:      b.Spec.Config.Name,
+			Namespace: b.Spec.Config.Namespace,
+		},
+		Owner:   *kmeta.NewControllerRef(b),
+		Labels:  rabbit.Labels(b, nil, nil),
+		DLXName: pointer.String(args.Name),
+	})
+	if err != nil {
+		MarkDeadLetterSinkFailed(&b.Status, "PolicyFailure", fmt.Sprintf("Failed to reconcile RabbitMQ Policy %q : %s", policyName, err))
+		return err, false
+	}
+	if !policy.Ready {
+		logging.FromContext(ctx).Warnf("RabbitMQ Policy %q is not ready", policyName)
+		MarkDeadLetterSinkFailed(&b.Status, "PolicyFailure", fmt.Sprintf("RabbitMQ Policy %q is not ready", policyName))
+		return nil, false
+	}
+
+	MarkDeadLetterSinkReady(&b.Status)
+	return nil, true
 }
 
 // reconcileCommonIngressResources that are shared between implementations using CRDs or libraries.
@@ -379,7 +414,7 @@ func (r *Reconciler) reconcileCommonIngressResources(ctx context.Context, s *cor
 	// If there's a Dead Letter Sink, then create a dispatcher for it. Note that this is for
 	// the whole broker, unlike for the Trigger, where we create one dispatcher per Trigger.
 	var dlsURI *apis.URL
-	if b.Spec.Delivery != nil && b.Spec.Delivery.DeadLetterSink != nil {
+	if deadLetterEnabled(b) {
 		dlsURI, err = r.uriResolver.URIFromDestinationV1(ctx, *b.Spec.Delivery.DeadLetterSink, b)
 		if err != nil {
 			logging.FromContext(ctx).Error("Unable to get the DeadLetterSink URI", zap.Error(err))
@@ -400,4 +435,8 @@ func (r *Reconciler) reconcileCommonIngressResources(ctx context.Context, s *cor
 		return err
 	}
 	return nil
+}
+
+func deadLetterEnabled(b *eventingv1.Broker) bool {
+	return b.Spec.Delivery != nil && b.Spec.Delivery.DeadLetterSink != nil
 }

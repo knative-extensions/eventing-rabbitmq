@@ -56,9 +56,9 @@ func CreateBrokerDeadLetterQueueName(b *eventingv1.Broker) string {
 }
 
 // CreateTriggerQueueName creates a queue name for Trigger events.
-// Format is t.Namespace.Name.TriggerUID
+// Format is t.q.Namespace.Name.TriggerUID
 func CreateTriggerQueueName(t *eventingv1.Trigger) string {
-	triggerQueueBase := fmt.Sprintf("t.%s.%s.", t.Namespace, t.Name)
+	triggerQueueBase := fmt.Sprintf("t.q.%s.%s.", t.Namespace, t.Name)
 	return kmeta.ChildName(triggerQueueBase, string(t.GetUID()))
 }
 

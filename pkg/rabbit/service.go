@@ -69,7 +69,7 @@ func (r *Rabbit) ReconcileExchange(ctx context.Context, args *ExchangeArgs) (Res
 }
 
 func (r *Rabbit) ReconcileQueue(ctx context.Context, args *QueueArgs) (Result, error) {
-	logging.FromContext(ctx).Info("Reconciling queue")
+	logging.FromContext(ctx).Infow("Reconciling queue", zap.String("name", args.Name))
 
 	want := NewQueue(args)
 	queue, err := r.RabbitmqV1beta1().Queues(args.Namespace).Get(ctx, want.Name, metav1.GetOptions{})
@@ -116,7 +116,7 @@ func (r *Rabbit) ReconcileQueue(ctx context.Context, args *QueueArgs) (Result, e
 }
 
 func (r *Rabbit) ReconcileBinding(ctx context.Context, args *BindingArgs) (Result, error) {
-	logging.FromContext(ctx).Info("Reconciling binding")
+	logging.FromContext(ctx).Infow("Reconciling binding", zap.String("name", args.Name))
 
 	want, err := NewBinding(args)
 	if err != nil {
@@ -140,6 +140,32 @@ func (r *Rabbit) ReconcileBinding(ctx context.Context, args *BindingArgs) (Resul
 	return Result{
 		Name:  want.Name,
 		Ready: isReady(current.Status.Conditions),
+	}, nil
+}
+
+func (r *Rabbit) ReconcileBrokerDLXPolicy(ctx context.Context, args *QueueArgs) (Result, error) {
+	logging.FromContext(ctx).Infow("Reconciling broker dead letter policy", zap.String("name", args.Name))
+
+	want := NewBrokerDLXPolicy(args)
+	policy, err := r.RabbitmqV1beta1().Policies(args.Namespace).Get(ctx, args.Name, metav1.GetOptions{})
+	if apierrs.IsNotFound(err) {
+		logging.FromContext(ctx).Debugw("Creating rabbitmq policy", zap.String("name", args.Name))
+		policy, err = r.RabbitmqV1beta1().Policies(args.Namespace).Create(ctx, want, metav1.CreateOptions{})
+	} else if err != nil {
+		return Result{}, fmt.Errorf("error creating rabbitmq policy: %w", err)
+	} else if !equality.Semantic.DeepDerivative(want.Spec, policy.Spec) {
+		desired := policy.DeepCopy()
+		desired.Spec = want.Spec
+		logging.FromContext(ctx).Debugw("Updating rabbitmq policy", zap.String("name", args.Name))
+		policy, err = r.RabbitmqV1beta1().Policies(args.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
+	}
+	if err != nil {
+		return Result{}, err
+	}
+
+	return Result{
+		Name:  want.Name,
+		Ready: isReady(policy.Status.Conditions),
 	}, nil
 }
 
