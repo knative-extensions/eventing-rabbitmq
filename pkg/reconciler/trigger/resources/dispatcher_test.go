@@ -23,6 +23,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/pointer"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	"knative.dev/pkg/apis"
@@ -63,11 +64,13 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 				Retry:         Int32Ptr(10),
 				BackoffPolicy: &exponentialBackoff,
 				BackoffDelay:  ptr.String("20s"),
+				Timeout:       pointer.StringPtr("PT10S"),
 			})),
 			want: deployment(
 				withEnv(corev1.EnvVar{Name: "RETRY", Value: "10"}),
 				withEnv(corev1.EnvVar{Name: "BACKOFF_POLICY", Value: "exponential"}),
 				withEnv(corev1.EnvVar{Name: "BACKOFF_DELAY", Value: "20s"}),
+				withEnv(corev1.EnvVar{Name: "TIMEOUT", Value: "10s"}),
 			),
 		},
 		{

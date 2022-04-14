@@ -101,6 +101,10 @@ func (h *fakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	if len(h.responseEvents) > 0 {
 		// write the response event out if there are any
+		if len(h.processingTime) > 0 {
+			time.Sleep(h.processingTime[h.receiveCount])
+		}
+
 		ev := h.responseEvents[h.receiveCount]
 		w.Header()["ce-specversion"] = []string{"1.0"}
 		w.Header()["ce-id"] = []string{ev.ID()}
@@ -168,6 +172,8 @@ func TestEndToEnd(t *testing.T) {
 		// Delivery configuration
 		maxRetries    int
 		backoffPolicy eventingduckv1.BackoffPolicyType
+		// timeout for dispatcher
+		timeout time.Duration
 
 		// Processing time for subscribers
 		processingTime []time.Duration
@@ -239,7 +245,9 @@ func TestEndToEnd(t *testing.T) {
 		"One event, long processing time, failed": {
 			subscriberReceiveCount:   1,
 			subscriberHandlers:       []handlerFunc{accepted},
-			processingTime:           []time.Duration{time.Second * 35},
+			timeout:                  time.Second * 2,
+			processingTime:           []time.Duration{time.Second * 5},
+			responseEvents:           []ce.Event{createEvent(responseData)},
 			events:                   []ce.Event{createEvent(eventData)},
 			expectedSubscriberBodies: []string{expectedData},
 			consumeErr:               context.Canceled,
@@ -332,6 +340,7 @@ func TestEndToEnd(t *testing.T) {
 				BackoffDelay:     backoffDelay,
 				BackoffPolicy:    backoffPolicy,
 				WorkerCount:      1,
+				Timeout:          tc.timeout,
 			}
 
 			ctx, cancel := context.WithCancel(context.Background())
