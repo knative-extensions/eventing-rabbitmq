@@ -19,7 +19,7 @@ an existing RabbitMQ exchange, or create a new exchange if required.
 
 ## Prerequisites
 
-* Follow the [Operator based Broker's Prerequisites Section](operator-based.md#prerequisites)
+* Follow the [Broker's Prerequisites Section](broker.md#prerequisites)
 
 * Before we can create the Knative Eventing Source, we first need to create a RabbitMQ Cluster:
 
