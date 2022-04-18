@@ -81,7 +81,7 @@ To run the constant load test:
 ko apply --filename test/performance/broker-setup/300-broker-constant-load-setup.yaml
 ```
 
-## 5/5. Download & visualise Knative Eventing RabbitMQ benchmark results
+## 5/5. Download & visualize Knative Eventing RabbitMQ benchmark results
 
 Pre-requisite: [gnuplot](http://www.gnuplot.info/) (on macOS it's `brew install gnuplot`)
 
@@ -104,7 +104,7 @@ gnuplot -c latency-throughput.plg eventing-rabbitmq-broker-perf-results.csv 0.5 
 
 ![latency-throughput](latency-throughput.png)
 
-To visualise just the end-to-end event latency, run:
+To visualize just the end-to-end event latency, run:
 
 ```sh
 gnuplot -c latency.plg eventing-rabbitmq-broker-perf-results.csv 0.5 0 1100
@@ -112,7 +112,7 @@ gnuplot -c latency.plg eventing-rabbitmq-broker-perf-results.csv 0.5 0 1100
 
 ![latency](latency.png)
 
-To visualise just the end-to-end event throughput, run:
+To visualize just the end-to-end event throughput, run:
 
 ```sh
 gnuplot -c throughput.plg eventing-rabbitmq-broker-perf-results.csv 0.5 0 1100
