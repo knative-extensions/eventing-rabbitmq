@@ -106,3 +106,15 @@ func (r *RabbitMQHelper) CleanupRabbitMQ(connection *amqp.Connection, channel *a
 	r.SignalRetry(retryChannel, false)
 	r.CloseRabbitMQConnections(connection, channel, logger)
 }
+
+func (r *RabbitMQHelper) RetryHandler(rabbitSetupfunc func(rmqHelper *RabbitMQHelper, retryChannel chan<- bool, logger *zap.SugaredLogger), retryChannel chan bool, logger *zap.SugaredLogger) {
+	for {
+		if retry := <-retryChannel; !retry {
+			logger.Warn("stopped listenning for RabbitMQ resources retries")
+			close(retryChannel)
+			break
+		}
+		logger.Warn("recreating RabbitMQ resources")
+		rabbitSetupfunc(r, retryChannel, logger)
+	}
+}

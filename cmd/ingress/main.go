@@ -30,6 +30,7 @@ import (
 	"go.opencensus.io/plugin/ochttp/propagation/tracecontext"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
+
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	"knative.dev/eventing-rabbitmq/pkg/utils"
 	"knative.dev/eventing/pkg/kncloudevents"
@@ -77,24 +78,8 @@ func main() {
 	rmqHelper := rabbit.NewRabbitMQHelper(1)
 	retryChannel := make(chan bool)
 	// Wait for RabbitMQ retry messages
-	go func() {
-		for {
-			if retry := <-retryChannel; !retry {
-				logger.Warn("stopped listenning for RabbitMQ resources retries")
-				close(retryChannel)
-				break
-			}
-			logger.Warn("recreating RabbitMQ resources")
-			env.connection, env.channel, err = env.CreateRabbitMQConnections(rmqHelper, retryChannel, logger)
-			if err != nil {
-				logger.Errorf("error recreating RabbitMQ connections: %s, waiting for a retry", err)
-			}
-		}
-	}()
-	env.connection, env.channel, err = env.CreateRabbitMQConnections(rmqHelper, retryChannel, logger)
-	if err != nil {
-		logger.Errorf("error creating RabbitMQ connections: %s, waiting for a retry", err)
-	}
+	go rmqHelper.RetryHandler(env.CreateRabbitMQConnections, retryChannel, logger)
+	env.CreateRabbitMQConnections(rmqHelper, retryChannel, logger)
 	defer rmqHelper.CleanupRabbitMQ(env.connection, env.channel, retryChannel, logger)
 
 	connectionArgs := kncloudevents.ConnectionArgs{
@@ -199,16 +184,18 @@ func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, err
 func (env *envConfig) CreateRabbitMQConnections(
 	rmqHelper *rabbit.RabbitMQHelper,
 	retryChannel chan<- bool,
-	logger *zap.SugaredLogger) (conn *amqp.Connection, channel *amqp.Channel, err error) {
-	conn, channel, err = rmqHelper.SetupRabbitMQ(env.BrokerURL, retryChannel, logger)
+	logger *zap.SugaredLogger) {
+	conn, channel, err := rmqHelper.SetupRabbitMQ(env.BrokerURL, retryChannel, logger)
 	if err == nil {
 		err = channel.Confirm(false)
 	}
 	if err != nil {
 		rmqHelper.CloseRabbitMQConnections(conn, channel, logger)
 		go rmqHelper.SignalRetry(retryChannel, true)
-		return nil, nil, err
+		if err != nil {
+			env.connection, env.channel = nil, nil
+			logger.Errorf("error recreating RabbitMQ connections: %s, waiting for a retry", err)
+		}
 	}
-
-	return conn, channel, nil
+	env.connection, env.channel = conn, channel
 }

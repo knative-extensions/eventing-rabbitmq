@@ -23,16 +23,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/NeowayLabs/wabbit"
 	"github.com/cloudevents/sdk-go/observability/opencensus/v2/client"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/pkg/errors"
-	amqperr "github.com/rabbitmq/amqp091-go"
+	amqp "github.com/rabbitmq/amqp091-go"
 	"go.opencensus.io/plugin/ochttp/propagation/tracecontext"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
+
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/pkg/logging"
@@ -53,11 +53,15 @@ type Dispatcher struct {
 
 // ConsumeFromQueue consumes messages from the given message channel and queue.
 // When the context is cancelled a context.Canceled error is returned.
-func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel wabbit.Channel, queueName string) error {
+func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel *amqp.Channel, queueName string) error {
 	msgs, err := channel.Consume(
 		queueName, // queue
 		"",        // consumer
-		wabbit.Option{
+		false,
+		false,
+		false,
+		false,
+		amqp.Table{
 			"autoAck":   false,
 			"exclusive": false,
 			"noLocal":   false,
@@ -81,7 +85,7 @@ func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel wabbit.Channe
 
 	wg := &sync.WaitGroup{}
 	wg.Add(d.WorkerCount)
-	workerQueue := make(chan wabbit.Delivery, d.WorkerCount)
+	workerQueue := make(chan amqp.Delivery, d.WorkerCount)
 
 	for i := 0; i < d.WorkerCount; i++ {
 		go func() {
@@ -105,7 +109,7 @@ func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel wabbit.Channe
 				logging.FromContext(ctx).Warn("message channel closed, stopping message consumers")
 				close(workerQueue)
 				wg.Wait()
-				return amqperr.ErrClosed
+				return amqp.ErrClosed
 			}
 			workerQueue <- msg
 		}
@@ -128,9 +132,9 @@ func isSuccess(ctx context.Context, result protocol.Result) bool {
 	return false
 }
 
-func (d *Dispatcher) dispatch(ctx context.Context, msg wabbit.Delivery, ceClient cloudevents.Client) {
+func (d *Dispatcher) dispatch(ctx context.Context, msg amqp.Delivery, ceClient cloudevents.Client) {
 	event := cloudevents.NewEvent()
-	err := json.Unmarshal(msg.Body(), &event)
+	err := json.Unmarshal(msg.Body, &event)
 	if err != nil {
 		logging.FromContext(ctx).Warn("failed to unmarshal event (NACK-ing and not re-queueing): ", err)
 		err = msg.Nack(false, false)
@@ -185,12 +189,12 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg wabbit.Delivery, ceClient
 	}
 }
 
-func readSpan(ctx context.Context, msg wabbit.Delivery) (context.Context, *trace.Span) {
-	traceparent, ok := msg.Headers()["traceparent"].(string)
+func readSpan(ctx context.Context, msg amqp.Delivery) (context.Context, *trace.Span) {
+	traceparent, ok := msg.Headers["traceparent"].(string)
 	if !ok {
 		return ctx, nil
 	}
-	tracestate, ok := msg.Headers()["tracestate"].(string)
+	tracestate, ok := msg.Headers["tracestate"].(string)
 	if !ok {
 		return ctx, nil
 	}

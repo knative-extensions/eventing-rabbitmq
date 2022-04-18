@@ -23,16 +23,15 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/NeowayLabs/wabbit"
-	"github.com/NeowayLabs/wabbit/amqp"
 	"github.com/kelseyhightower/envconfig"
-	amqperr "github.com/rabbitmq/amqp091-go"
+	amqp "github.com/rabbitmq/amqp091-go"
+
+	"knative.dev/eventing-rabbitmq/pkg/dispatcher"
+	"knative.dev/eventing-rabbitmq/pkg/rabbit"
+	"knative.dev/eventing-rabbitmq/pkg/utils"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/signals"
-
-	"knative.dev/eventing-rabbitmq/pkg/dispatcher"
-	"knative.dev/eventing-rabbitmq/pkg/utils"
 )
 
 type envConfig struct {
@@ -49,13 +48,13 @@ type envConfig struct {
 	BackoffPolicy string        `envconfig:"BACKOFF_POLICY" required:"false"`
 	BackoffDelay  time.Duration `envconfig:"BACKOFF_DELAY" default:"50ms" required:"false"`
 
-	connection *amqp.Conn
-	channel    wabbit.Channel
+	connection *amqp.Connection
+	channel    *amqp.Channel
 }
 
 func main() {
 	ctx := signals.NewContext()
-
+	var err error
 	var env envConfig
 	if err := envconfig.Process("", &env); err != nil {
 		logging.FromContext(ctx).Fatal("Failed to process env var: ", err)
@@ -64,10 +63,10 @@ func main() {
 	env.SetComponent(dispatcher.ComponentName)
 	logger := env.GetLogger()
 	ctx = logging.WithLogger(ctx, logger)
-	if err := env.SetupTracing(); err != nil {
+	if err = env.SetupTracing(); err != nil {
 		logger.Errorw("Failed setting up trace publishing", zap.Error(err))
 	}
-	if err := env.SetupMetrics(ctx); err != nil {
+	if err = env.SetupMetrics(ctx); err != nil {
 		logger.Errorw("Failed to create the metrics exporter", zap.Error(err))
 	}
 
@@ -83,19 +82,12 @@ func main() {
 	backoffDelay := env.BackoffDelay
 	logging.FromContext(ctx).Infow("Setting BackoffDelay", zap.Any("backoffDelay", backoffDelay))
 
-	env.setupRabbitMQ(ctx)
-	defer func() {
-		err := env.connection.Close()
-		if err != nil && !errors.Is(err, amqperr.ErrClosed) {
-			logging.FromContext(ctx).Warn("Failed to close connection: ", err)
-		}
-	}()
-	defer func() {
-		err := env.channel.Close()
-		if err != nil && !errors.Is(err, amqperr.ErrClosed) {
-			logging.FromContext(ctx).Warn("Failed to close channel: ", err)
-		}
-	}()
+	rmqHelper := rabbit.NewRabbitMQHelper(1)
+	retryChannel := make(chan bool)
+	// Wait for RabbitMQ retry messages
+	go rmqHelper.RetryHandler(env.CreateRabbitMQConnections, retryChannel, logger)
+	env.CreateRabbitMQConnections(rmqHelper, retryChannel, logger)
+	defer rmqHelper.CleanupRabbitMQ(env.connection, env.channel, retryChannel, logger)
 
 	d := &dispatcher.Dispatcher{
 		BrokerIngressURL: env.BrokerIngressURL,
@@ -107,14 +99,11 @@ func main() {
 	}
 
 	for {
-		if err := d.ConsumeFromQueue(ctx, env.channel, env.QueueName); err != nil {
+		if err = d.ConsumeFromQueue(ctx, env.channel, env.QueueName); err != nil {
 			// ignore ctx cancelled and channel closed errors
-			if errors.Is(err, amqperr.ErrClosed) {
-				env.setupRabbitMQ(ctx)
+			if errors.Is(err, amqp.ErrClosed) {
 				continue
-			}
-
-			if errors.Is(err, context.Canceled) {
+			} else if errors.Is(err, context.Canceled) {
 				return
 			}
 
@@ -124,27 +113,26 @@ func main() {
 	}
 }
 
-func (env *envConfig) setupRabbitMQ(ctx context.Context) {
-	var err error
-
-	if env.connection == nil || env.connection.IsClosed() {
-		env.connection, err = amqp.Dial(env.RabbitURL)
+func (env *envConfig) CreateRabbitMQConnections(
+	rmqHelper *rabbit.RabbitMQHelper,
+	retryChannel chan<- bool,
+	logger *zap.SugaredLogger) {
+	conn, channel, err := rmqHelper.SetupRabbitMQ(env.RabbitURL, retryChannel, logger)
+	if err == nil {
+		err = env.channel.Qos(
+			env.Parallelism, // prefetch count
+			0,               // prefetch size
+			false,           // global
+		)
+	}
+	if err != nil {
+		rmqHelper.CloseRabbitMQConnections(conn, channel, logger)
+		go rmqHelper.SignalRetry(retryChannel, true)
 		if err != nil {
-			logging.FromContext(ctx).Fatal("Failed to connect to RabbitMQ: ", err)
+			env.connection, env.channel = nil, nil
+			logger.Errorf("error recreating RabbitMQ connections: %s, waiting for a retry", err)
 		}
+		env.connection, env.channel = nil, nil
 	}
-
-	env.channel, err = env.connection.Channel()
-	if err != nil {
-		logging.FromContext(ctx).Fatal("Failed to open a channel: ", err)
-	}
-
-	err = env.channel.Qos(
-		env.Parallelism, // prefetch count
-		0,               // prefetch size
-		false,           // global
-	)
-	if err != nil {
-		logging.FromContext(ctx).Fatal("Failed to create QoS: ", err)
-	}
+	env.connection, env.channel = conn, channel
 }
