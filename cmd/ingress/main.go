@@ -34,6 +34,7 @@ import (
 	"knative.dev/eventing-rabbitmq/pkg/utils"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/pkg/logging"
+	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/signals"
 )
 
@@ -57,6 +58,10 @@ type envConfig struct {
 func main() {
 	ctx := signals.NewContext()
 	var err error
+
+	// Report stats on Go memory usage every 30 seconds.
+	metrics.MemStatsOrDie(ctx)
+
 	var env envConfig
 	if err = envconfig.Process("", &env); err != nil {
 		logging.FromContext(ctx).Fatal("Failed to process env var: ", err)
