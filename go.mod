@@ -33,6 +33,7 @@ require (
 )
 
 require (
+	github.com/google/uuid v1.3.0
 	github.com/rickb777/date v1.13.0
 	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9
 )
@@ -76,7 +77,6 @@ require (
 	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/mako v0.0.0-20190821191249-122f8dcef9e3 // indirect
-	github.com/google/uuid v1.3.0 // indirect
 	github.com/googleapis/gnostic v0.5.5 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect

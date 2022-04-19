@@ -21,18 +21,22 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
+	"github.com/google/uuid"
 	"github.com/kelseyhightower/envconfig"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"go.opencensus.io/plugin/ochttp/propagation/tracecontext"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
+	"knative.dev/eventing-rabbitmq/pkg/broker/ingress"
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	"knative.dev/eventing-rabbitmq/pkg/utils"
 	"knative.dev/eventing/pkg/kncloudevents"
+	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/signals"
@@ -42,6 +46,9 @@ const (
 	defaultMaxIdleConnections        = 1000
 	defaultMaxIdleConnectionsPerHost = 1000
 	component                        = "rabbitmq-ingress"
+
+	// noDuration signals that the dispatch step hasn't started
+	noDuration = -1
 )
 
 type envConfig struct {
@@ -53,6 +60,13 @@ type envConfig struct {
 
 	connection *amqp.Connection
 	channel    *amqp.Channel
+
+	ContainerName   string `envconfig:"CONTAINER_NAME" default:"ingress"`
+	PodName         string `envconfig:"POD_NAME" default:"rabbitmq-broker-ingress"`
+	BrokerName      string `envconfig:"BROKER_NAME"`
+	BrokerNamespace string `envconfig:"BROKER_NAMESPACE"`
+
+	reporter ingress.StatsReporter
 }
 
 func main() {
@@ -101,6 +115,8 @@ func main() {
 		logger.Errorf("error creating RabbitMQ connections: %s, waiting for a retry", err)
 	}
 	defer rmqHelper.CleanupRabbitMQ(env.connection, env.channel, retryChannel, logger)
+
+	env.reporter = ingress.NewStatsReporter(env.ContainerName, kmeta.ChildName(env.PodName, uuid.New().String()))
 
 	connectionArgs := kncloudevents.ConnectionArgs{
 		MaxIdleConns:        defaultMaxIdleConnections,
@@ -151,17 +167,28 @@ func (env *envConfig) ServeHTTP(writer http.ResponseWriter, request *http.Reques
 	span := trace.FromContext(ctx)
 	defer span.End()
 
-	statusCode, err := env.send(event, span)
+	reporterArgs := &ingress.ReportArgs{
+		Namespace:  env.BrokerNamespace,
+		BrokerName: env.BrokerName,
+		EventType:  event.Type(),
+	}
+
+	statusCode, dispatchTime, err := env.send(event, span)
 	if err != nil {
 		logger.Errorw("failed to send event", zap.Error(err))
 	}
+	if dispatchTime > noDuration {
+		_ = env.reporter.ReportEventDispatchTime(reporterArgs, statusCode, dispatchTime)
+	}
+	_ = env.reporter.ReportEventCount(reporterArgs, statusCode)
+
 	writer.WriteHeader(statusCode)
 }
 
-func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, error) {
+func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, time.Duration, error) {
 	bytes, err := json.Marshal(event)
 	if err != nil {
-		return http.StatusBadRequest, fmt.Errorf("failed to marshal event, %w", err)
+		return http.StatusBadRequest, noDuration, fmt.Errorf("failed to marshal event, %w", err)
 	}
 
 	tp, ts := (&tracecontext.HTTPFormat{}).SpanContextToHeaders(span.SpanContext())
@@ -176,7 +203,7 @@ func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, err
 	for key, val := range event.Extensions() {
 		headers[key] = val
 	}
-
+	start := time.Now()
 	dc, err := env.channel.PublishWithDeferredConfirm(
 		env.ExchangeName,
 		"",    // routing key
@@ -190,15 +217,15 @@ func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, err
 		})
 
 	if err != nil {
-		return http.StatusInternalServerError, fmt.Errorf("failed to publish message: %w", err)
+		return http.StatusInternalServerError, noDuration, fmt.Errorf("failed to publish message: %w", err)
 	}
 
 	ack := dc.Wait()
+	dispatchTime := time.Since(start)
 	if !ack {
-		return http.StatusInternalServerError, errors.New("failed to publish message: nacked")
+		return http.StatusInternalServerError, noDuration, errors.New("failed to publish message: nacked")
 	}
-
-	return http.StatusAccepted, nil
+	return http.StatusAccepted, dispatchTime, nil
 }
 
 func (env *envConfig) CreateRabbitMQConnections(
