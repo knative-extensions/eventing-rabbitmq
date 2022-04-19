@@ -1224,6 +1224,7 @@ func createDispatcherDeployment() *appsv1.Deployment {
 	}
 	args := &resources.DispatcherArgs{
 		Broker:             broker,
+		Delivery:           delivery,
 		Image:              dispatcherImage,
 		RabbitMQSecretName: rabbitBrokerSecretName,
 		QueueName:          "b.test-namespace.test-broker.dlq.broker-test-uid",

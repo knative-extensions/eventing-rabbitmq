@@ -242,6 +242,7 @@ func (r *Reconciler) reconcileDLXDispatcherDeployment(ctx context.Context, b *ev
 			Broker: b,
 			Image:  r.dispatcherImage,
 			//ServiceAccountName string
+			Delivery:           b.Spec.Delivery,
 			RabbitMQSecretName: resources.SecretName(b.Name),
 			QueueName:          naming.CreateBrokerDeadLetterQueueName(b),
 			BrokerUrlSecretKey: resources.BrokerURLSecretKey,

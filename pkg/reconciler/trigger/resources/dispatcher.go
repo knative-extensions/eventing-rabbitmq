@@ -116,6 +116,13 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 					Value: string(*args.Delivery.BackoffPolicy),
 				})
 		}
+		if args.Delivery.BackoffDelay != nil {
+			dispatcher.Env = append(dispatcher.Env,
+				corev1.EnvVar{
+					Name:  "BACKOFF_DELAY",
+					Value: *args.Delivery.BackoffDelay,
+				})
+		}
 	}
 	if parallelism, ok := args.Trigger.ObjectMeta.Annotations[ParallelismAnnotation]; ok {
 		dispatcher.Env = append(dispatcher.Env,

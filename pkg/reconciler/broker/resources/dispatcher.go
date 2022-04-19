@@ -23,6 +23,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	reconcilersource "knative.dev/eventing/pkg/reconciler/source"
@@ -39,8 +40,9 @@ const (
 // DispatcherArgs are the arguments to create a Broker's Dispatcher Deployment that handles
 // DeadLetterSink deliveries.
 type DispatcherArgs struct {
-	Broker *eventingv1.Broker
-	Image  string
+	Delivery *eventingduckv1.DeliverySpec
+	Broker   *eventingv1.Broker
+	Image    string
 	//ServiceAccountName string
 	RabbitMQHost       string
 	RabbitMQSecretName string
@@ -87,6 +89,36 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 	}}
 	if args.Configs != nil {
 		envs = append(envs, args.Configs.ToEnvVars()...)
+	}
+	if args.Delivery != nil {
+		if args.Delivery.Retry != nil {
+			envs = append(envs,
+				corev1.EnvVar{
+					Name:  "RETRY",
+					Value: fmt.Sprint(*args.Delivery.Retry),
+				})
+
+		} else {
+			envs = append(envs,
+				corev1.EnvVar{
+					Name:  "RETRY",
+					Value: "5",
+				})
+		}
+		if args.Delivery.BackoffPolicy != nil {
+			envs = append(envs,
+				corev1.EnvVar{
+					Name:  "BACKOFF_POLICY",
+					Value: string(*args.Delivery.BackoffPolicy),
+				})
+		}
+		if args.Delivery.BackoffDelay != nil {
+			envs = append(envs,
+				corev1.EnvVar{
+					Name:  "BACKOFF_DELAY",
+					Value: *args.Delivery.BackoffDelay,
+				})
+		}
 	}
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
