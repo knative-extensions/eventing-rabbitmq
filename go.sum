@@ -1719,6 +1719,8 @@ knative.dev/eventing v0.30.1-0.20220415141711-ff55a456c3f9 h1:Cf5i43bXtjFTvq12Jt
 knative.dev/eventing v0.30.1-0.20220415141711-ff55a456c3f9/go.mod h1:Ld/pcIDX2nr7MvBOruoFFonzzDdpGbKsWDOYvpRoofo=
 knative.dev/eventing v0.30.1-0.20220419135228-39eef14419d8 h1:DQ8m49UoM3q6+nqk6gN7A2qQXghkMuQMnmqICDfW4Tc=
 knative.dev/eventing v0.30.1-0.20220419135228-39eef14419d8/go.mod h1:XgJY27IxyBjmu/mz53cVlz+oMPPzzRaVXlPmWKCqEd8=
+knative.dev/eventing v0.31.0 h1:Bu1cBSwxAT1BsaexQ6PJPWc1mxx2LF/DeszvYEIytJ0=
+knative.dev/eventing v0.31.0/go.mod h1:XgJY27IxyBjmu/mz53cVlz+oMPPzzRaVXlPmWKCqEd8=
 knative.dev/hack v0.0.0-20220328133751-f06773764ce3/go.mod h1:PHt8x8yX5Z9pPquBEfIj0X66f8iWkWfR0S/sarACJrI=
 knative.dev/hack v0.0.0-20220407171644-0e0784b13cef h1:tIBTdo8Ui1oVYyaQV9kup1qA3Rp9YQosS7c5fhjHnMc=
 knative.dev/hack v0.0.0-20220407171644-0e0784b13cef/go.mod h1:PHt8x8yX5Z9pPquBEfIj0X66f8iWkWfR0S/sarACJrI=
