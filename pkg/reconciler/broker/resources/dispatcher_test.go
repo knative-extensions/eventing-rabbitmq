@@ -23,8 +23,10 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "knative.dev/eventing/pkg/apis/duck/v1"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	"knative.dev/pkg/apis"
+	"knative.dev/pkg/ptr"
 	"knative.dev/pkg/system"
 
 	_ "knative.dev/pkg/system/testing"
@@ -49,6 +51,7 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 	broker := &eventingv1.Broker{
 		ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: ns},
 	}
+	linear := v1.BackoffPolicyLinear
 	args := &DispatcherArgs{
 		Broker:             broker,
 		Image:              image,
@@ -58,6 +61,11 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 		BrokerUrlSecretKey: brokerURLKey,
 		Subscriber:         sURL,
 		BrokerIngressURL:   bURL,
+		Delivery: &v1.DeliverySpec{
+			Retry:         ptr.Int32(10),
+			BackoffDelay:  ptr.String("20s"),
+			BackoffPolicy: &linear,
+		},
 	}
 
 	got := MakeDispatcherDeployment(args)
@@ -122,6 +130,15 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 						}, {
 							Name:  "BROKER_INGRESS_URL",
 							Value: brokerIngressURL,
+						}, {
+							Name:  "RETRY",
+							Value: "10",
+						}, {
+							Name:  "BACKOFF_POLICY",
+							Value: "linear",
+						}, {
+							Name:  "BACKOFF_DELAY",
+							Value: "20s",
 						}},
 					}},
 				},

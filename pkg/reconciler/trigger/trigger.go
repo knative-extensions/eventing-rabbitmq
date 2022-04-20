@@ -209,7 +209,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 			}
 			t.Status.MarkDeadLetterSinkResolvedSucceeded()
 			t.Status.DeadLetterSinkURI = deadLetterSinkURI
-			_, err = r.reconcileDLXDispatcherDeployment(ctx, t, deadLetterSinkURI)
+			_, err = r.reconcileDispatcherDeployment(ctx, t, deadLetterSinkURI, t.Spec.Delivery, true)
 			if err != nil {
 				logging.FromContext(ctx).Error("Problem reconciling DLX dispatcher Deployment", zap.Error(err))
 				t.Status.MarkDependencyFailed("DeploymentFailure", "%v", err)
@@ -293,7 +293,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		delivery = broker.Spec.Delivery
 	}
 
-	_, err = r.reconcileDispatcherDeployment(ctx, t, subscriberURI, delivery)
+	_, err = r.reconcileDispatcherDeployment(ctx, t, subscriberURI, delivery, false)
 	if err != nil {
 		logging.FromContext(ctx).Error("Problem reconciling dispatcher Deployment", zap.Error(err))
 		t.Status.MarkDependencyFailed("DeploymentFailure", "%v", err)
@@ -328,7 +328,7 @@ func (r *Reconciler) reconcileDeployment(ctx context.Context, d *v1.Deployment) 
 }
 
 // reconcileDispatcherDeployment reconciles Trigger's dispatcher deployment.
-func (r *Reconciler) reconcileDispatcherDeployment(ctx context.Context, t *eventingv1.Trigger, sub *apis.URL, delivery *eventingduckv1.DeliverySpec) (*v1.Deployment, error) {
+func (r *Reconciler) reconcileDispatcherDeployment(ctx context.Context, t *eventingv1.Trigger, sub *apis.URL, delivery *eventingduckv1.DeliverySpec, dlq bool) (*v1.Deployment, error) {
 	rabbitmqSecret, err := r.getRabbitmqSecret(ctx, t)
 	if err != nil {
 		return nil, err
@@ -337,39 +337,23 @@ func (r *Reconciler) reconcileDispatcherDeployment(ctx context.Context, t *event
 	if err != nil {
 		return nil, err
 	}
-	expected := resources.MakeDispatcherDeployment(&resources.DispatcherArgs{
-		Trigger:            t,
-		Image:              r.dispatcherImage,
-		RabbitMQSecretName: rabbitmqSecret.Name,
-		QueueName:          naming.CreateTriggerQueueName(t),
-		BrokerUrlSecretKey: brokerresources.BrokerURLSecretKey,
-		BrokerIngressURL:   b.Status.Address.URL,
-		Subscriber:         sub,
-		Delivery:           delivery,
-		Configs:            r.configs,
-	})
-	return r.reconcileDeployment(ctx, expected)
-}
 
-// reconcileDispatcherDeployment reconciles Trigger's dispatcher deployment.
-func (r *Reconciler) reconcileDLXDispatcherDeployment(ctx context.Context, t *eventingv1.Trigger, sub *apis.URL) (*v1.Deployment, error) {
-	rabbitmqSecret, err := r.getRabbitmqSecret(ctx, t)
-	if err != nil {
-		return nil, err
+	queueName := naming.CreateTriggerQueueName(t)
+	if dlq {
+		// overwrite to a dlq queueName if it's a dlq
+		queueName = naming.CreateTriggerDeadLetterQueueName(t)
 	}
-	b, err := r.brokerLister.Brokers(t.Namespace).Get(t.Spec.Broker)
-	if err != nil {
-		return nil, err
-	}
+
 	expected := resources.MakeDispatcherDeployment(&resources.DispatcherArgs{
 		Trigger:            t,
 		Image:              r.dispatcherImage,
 		RabbitMQSecretName: rabbitmqSecret.Name,
-		QueueName:          naming.CreateTriggerDeadLetterQueueName(t),
+		QueueName:          queueName,
 		BrokerUrlSecretKey: brokerresources.BrokerURLSecretKey,
 		BrokerIngressURL:   b.Status.Address.URL,
 		Subscriber:         sub,
-		DLX:                true,
+		DLX:                dlq,
+		Delivery:           delivery,
 		Configs:            r.configs,
 	})
 	return r.reconcileDeployment(ctx, expected)

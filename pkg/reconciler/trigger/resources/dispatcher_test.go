@@ -26,6 +26,7 @@ import (
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	"knative.dev/pkg/apis"
+	"knative.dev/pkg/ptr"
 	"knative.dev/pkg/system"
 	_ "knative.dev/pkg/system/testing"
 )
@@ -57,14 +58,16 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 			want: deployment(),
 		},
 		{
-			name: "with retry and backoff",
+			name: "with delivery spec",
 			args: dispatcherArgs(withDelivery(&eventingduckv1.DeliverySpec{
 				Retry:         Int32Ptr(10),
 				BackoffPolicy: &exponentialBackoff,
+				BackoffDelay:  ptr.String("20s"),
 			})),
 			want: deployment(
 				withEnv(corev1.EnvVar{Name: "RETRY", Value: "10"}),
 				withEnv(corev1.EnvVar{Name: "BACKOFF_POLICY", Value: "exponential"}),
+				withEnv(corev1.EnvVar{Name: "BACKOFF_DELAY", Value: "20s"}),
 			),
 		},
 		{
