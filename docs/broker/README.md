@@ -8,8 +8,10 @@ RabbitMQ *is a Messaging Broker* - an intermediary for messaging. It gives your 
 
 - [Installation](#installation)
 - [Autoscaling](#autoscaling-optional)
-- [Next Steps](#next-steps)
+- [Customizations](#customizations)
 - [Additional Resources](#additional-resources)
+- [Delivery Failures and Delivery Spec](#delivery-failures-and-delivery-spec)
+- [Troubleshooting](#troubleshooting)
 
 ## Installation
 ### Prerequisites
@@ -66,13 +68,15 @@ ko apply -f config/broker/
 
 Follow the [Broker-Trigger](../samples/broker-trigger) to deploy a basic example of a topology.
 
-## Autoscaling (optional)
+## Customizations
+
+### Autoscaling (optional)
 
 To get autoscaling (scale to zero as well as up from 0), you can also optionally
 install
 [KEDA based autoscaler](https://github.com/knative-sandbox/eventing-autoscaler-keda).
 
-## Trigger Pre-Fetch Count
+### Trigger Pre-Fetch Count
 Trigger has a configurable annotation `rabbitmq.eventing.knative.dev/parallelism`. The following are effects of setting this parameter to `n`:
 
 - Prefetch count is set to this value on the RabbitMQ channel and queue created for this trigger. The channel will receive a maximum of `n` number of messages at once.
@@ -83,6 +87,28 @@ will make the trigger a bottleneck. A slow processing sink will result in low ov
 a time by the trigger but ordering won't be guaranteed as events are sent to the sink.
 
 More details and samples can be found [here](../../samples/trigger-customizations)
+
+## Delivery Failures and Delivery Spec
+A subset of HTTP status codes from a sink are considered a [retryable error](https://github.com/knative/specs/blob/main/specs/eventing/data-plane.md#event-acknowledgement-and-delivery-retry)
+(404, 409, 429 and 5xx). When this occurs, delivery spec (available on Trigger and Broker) can specify how messages are retried and "dead-lettered". Reference
+[Configuring Broker event delivery](https://knative.dev/docs/eventing/event-delivery/#configuring-broker-event-delivery)
+for more information.
+
+If no delivery spec is defined on a trigger, it will fallback to the broker delivery spec. If a delivery spec isn't defined on the
+broker either, the message will be NACK-ed and dropped after the first failure.
+
+## Troubleshooting
+If the messaging topology isn't working as expected, the conditions on brokers and triggers can highlight errors encountered as well as give a reason for the failure. Below is a list of conditions and how they're used:
+
+| Component | Condition              | Usage                                                                                                                                                                                                                                     |
+|-----------|------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Broker    | ExchangeReady          | Used to show progress with creating exchanges for the broker as well as any dead letter exchanges.                                                                                                                                        |
+| Broker    | DLXReady               | For any errors related to creating or updating the dead letter queue for the broker. Will say `DeadLetterSinkNotConfigured` when delivery spec isn't defined.                                                                             |
+| Broker    | DeadLetterSinkReady    | For any errors with creating a binding between the dead letter exchange and queue. Also used for any error with creating a dispatcher for the dead letter queue. Will say `DeadLetterSinkNotConfigured` when delivery spec isn't defined. |
+| Trigger   | BrokerReady            | For any broker related issues such as: broker not ready, broker not found etc.                                                                                                                                                            |
+| Trigger   | DependencyReady        | For any failures when reconciling a triggers dependency such as Queue, Exchange, Binding or the dispatcher Deployment                                                                                                                     |
+| Trigger   | DeadLetterSinkResolved | Highlight any errors resolving the dead letter sink's URI. May also be `DeadLetterSinkNotConfigured` when delivery spec isn't defined.                                                                                                    |
+| Trigger   | SubscriberResolved     | Highlight any errors resolving the trigger's subscriber URI                                                                                                                                                                               |
 
 ## Next Steps
 - Check out the [Broker-Trigger Samples Directory](../samples/broker-trigger) in this repo and start building your topology with Eventing RabbitMQ!
