@@ -18,6 +18,8 @@ an existing RabbitMQ exchange, or create a new exchange if required.
 - [Configuration Options](#configuration-options)
 - [Next Steps](#next-steps)
 - [Additional Resources](#additional-resources)
+- [Upgrade](#upgrade)
+- [Uninstall](#uninstall)
 
 ## Prerequisites
 
@@ -345,3 +347,31 @@ Check out the [Source Samples Directory](../../samples/source) in this repo and 
 
 - [RabbitMQ Docs](https://www.rabbitmq.com/documentation.html)
 - [Knative Docs](https://knative.dev/docs/)
+
+## Upgrade
+Prior to upgrading eventing-rabbitmq, Knative and its components should be updated according to instructions [here](https://knative.dev/docs/install/upgrade/). Be sure to pay attention to any
+steps for upgrading Custom Resource Definitions (CRDs) and only upgrade one minor version at a time.
+
+Upgrade eventing-rabbitmq one minor version at a time while following any migration steps outlined in release notes to migrate the RabbitMQ Source CRD.
+Components and resources can be applied in a similar fashion to installation:
+
+```shell
+kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/download/knative-v1.4.0/rabbitmq-source.yaml
+```
+
+## Uninstall
+### Remove eventing-rabbitmq components and resources
+Use `kubectl delete --filename <installation-file>` to remove the components installed during [Installation](#installation). For example:
+
+```shell
+kubectl delete --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/download/v0.25.0/rabbitmq-source.yaml
+```
+
+If `ko` was used to install, can also be used for uninstallation:
+
+```
+ko delete -f config/source/
+```
+
+### Uninstall Knative Serving and Eventing
+Follow the instructions [here](https://knative.dev/docs/install/uninstall/#uninstalling-optional-channel-messaging-layers) to uninstall Knative components.

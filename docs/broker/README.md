@@ -7,11 +7,13 @@ RabbitMQ *is a Messaging Broker* - an intermediary for messaging. It gives your 
 # Table of Contents
 
 - [Installation](#installation)
-- [Autoscaling](#autoscaling-optional)
 - [Customizations](#customizations)
-- [Additional Resources](#additional-resources)
 - [Delivery Failures and Delivery Spec](#delivery-failures-and-delivery-spec)
 - [Troubleshooting](#troubleshooting)
+- [Next Steps](#next-steps)
+- [Additional Resources](#additional-resources)
+- [Upgrade](#upgrade)
+- [Uninstall](#uninstall)
 
 ## Installation
 ### Prerequisites
@@ -40,7 +42,7 @@ RabbitMQ *is a Messaging Broker* - an intermediary for messaging. It gives your 
 
     If a custom installation is required, refer to the [topology operator docs](https://github.com/rabbitmq/messaging-topology-operator#quickstart).
 
-### Install rabbitmq-eventing broker
+### Install eventing-rabbitmq broker
 
 Install the latest version of the [Operator based Knative RabbitMQ Broker](https://github.com/knative-sandbox/eventing-rabbitmq/releases/):
 
@@ -118,4 +120,39 @@ If the messaging topology isn't working as expected, the conditions on brokers a
 
 - [RabbitMQ Docs](https://www.rabbitmq.com/documentation.html)
 - [RabbitMQ Operator Docs](https://www.rabbitmq.com/kubernetes/operator/operator-overview.html)
+- [RabbitMQ Operator Production Example](https://github.com/rabbitmq/cluster-operator/tree/main/docs/examples/production-ready#production-example)
 - [Knative Docs](https://knative.dev/docs/)
+
+## Upgrade
+Prior to upgrading eventing-rabbitmq, Knative and its components should be updated according to instructions [here](https://knative.dev/docs/install/upgrade/). Be sure to pay attention to any
+steps for upgrading Custom Resource Definitions (CRDs) and only upgrade one minor version at a time.
+
+Upgrade eventing-rabbitmq by applying the newer version:
+```shell
+kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/download/knative-v1.4.0/rabbitmq-broker.yaml
+```
+
+## Uninstall
+### Remove eventing-rabbitmq components and resources
+Use `kubectl delete --filename <installation-file>` to remove the components installed during [Installation](#install-eventing-rabbitmq-broker). For example:
+
+```shell
+kubectl delete --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/download/v0.25.0/rabbitmq-broker.yaml
+```
+
+If `ko` was used to install, can also be used for uninstallation:
+
+```
+ko delete -f config/broker/
+```
+
+### Remove RabbitMQ Cluster and Topology Operators
+
+To remove RabbitMQ cluster and topology operators, use similar `kubectl delete` commands with the files used for installation:
+
+```
+kubectl delete -f https://github.com/rabbitmq/cluster-operator/releases/latest/download/cluster-operator.yml
+```
+
+### Uninstall Knative Serving and Eventing
+Follow the instructions [here](https://knative.dev/docs/install/uninstall/#uninstalling-optional-channel-messaging-layers) to uninstall Knative components.
