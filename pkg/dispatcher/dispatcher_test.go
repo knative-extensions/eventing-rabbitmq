@@ -61,6 +61,9 @@ type fakeHandler struct {
 	exitAfter    int
 	receiveCount int
 
+	// How long to wait before responding.
+	processingTime []time.Duration
+
 	// handlers for various requests
 	handlers []handlerFunc
 
@@ -98,6 +101,10 @@ func (h *fakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	if len(h.responseEvents) > 0 {
 		// write the response event out if there are any
+		if len(h.processingTime) > 0 {
+			time.Sleep(h.processingTime[h.receiveCount])
+		}
+
 		ev := h.responseEvents[h.receiveCount]
 		w.Header()["ce-specversion"] = []string{"1.0"}
 		w.Header()["ce-id"] = []string{ev.ID()}
@@ -107,7 +114,11 @@ func (h *fakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Header()["content-type"] = []string{"application/json"}
 		w.Write(ev.Data())
 	} else {
-		h.handlers[h.receiveCount](w, r)
+		if len(h.processingTime) > 0 {
+			h.handlers[h.receiveCount](w, r, h.processingTime[h.receiveCount])
+		} else {
+			h.handlers[h.receiveCount](w, r, 0)
+		}
 	}
 	h.receiveCount++
 	h.exitAfter--
@@ -116,13 +127,15 @@ func (h *fakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-type handlerFunc func(http.ResponseWriter, *http.Request)
+type handlerFunc func(http.ResponseWriter, *http.Request, time.Duration)
 
-func accepted(writer http.ResponseWriter, req *http.Request) {
+func accepted(writer http.ResponseWriter, req *http.Request, delay time.Duration) {
+	time.Sleep(delay)
 	writer.WriteHeader(http.StatusOK)
 }
 
-func failed(writer http.ResponseWriter, req *http.Request) {
+func failed(writer http.ResponseWriter, req *http.Request, delay time.Duration) {
+	time.Sleep(delay)
 	writer.WriteHeader(500)
 }
 
@@ -159,6 +172,11 @@ func TestEndToEnd(t *testing.T) {
 		// Delivery configuration
 		maxRetries    int
 		backoffPolicy eventingduckv1.BackoffPolicyType
+		// timeout for dispatcher
+		timeout time.Duration
+
+		// Processing time for subscribers
+		processingTime []time.Duration
 
 		// Cloud Events to queue to Rabbit
 		events []ce.Event
@@ -224,6 +242,16 @@ func TestEndToEnd(t *testing.T) {
 			expectedBrokerBodies:     []string{expectedResponseData},
 			consumeErr:               context.Canceled,
 		},
+		"One event, long processing time, failed": {
+			subscriberReceiveCount:   1,
+			subscriberHandlers:       []handlerFunc{accepted},
+			timeout:                  time.Second * 2,
+			processingTime:           []time.Duration{time.Second * 5},
+			responseEvents:           []ce.Event{createEvent(responseData)},
+			events:                   []ce.Event{createEvent(eventData)},
+			expectedSubscriberBodies: []string{expectedData},
+			consumeErr:               context.Canceled,
+		},
 		// ** With retries **
 		"One event, 2 failures, 3rd one succeeds no response, linear retry, 2 retries": {
 			subscriberReceiveCount:   3,
@@ -262,6 +290,7 @@ func TestEndToEnd(t *testing.T) {
 				done:           subscriberDone,
 				exitAfter:      tc.subscriberReceiveCount,
 				responseEvents: tc.responseEvents,
+				processingTime: tc.processingTime,
 			}
 			subscriber := httptest.NewServer(subscriberHandler)
 			defer subscriber.Close()
@@ -311,6 +340,7 @@ func TestEndToEnd(t *testing.T) {
 				BackoffDelay:     backoffDelay,
 				BackoffPolicy:    backoffPolicy,
 				WorkerCount:      1,
+				Timeout:          tc.timeout,
 			}
 
 			ctx, cancel := context.WithCancel(context.Background())
@@ -340,7 +370,7 @@ func TestEndToEnd(t *testing.T) {
 				case <-brokerDone:
 					brokerFinished = true
 					t.Logf("Broker Done")
-				case <-time.After(5 * time.Second):
+				case <-time.After(40 * time.Second):
 					t.Fatalf("Timed out the test. Subscriber or Broker did not get the wanted events: SubscriberFinished: %v BrokerFinished: %v", subscriberFinished, brokerFinished)
 				}
 			}

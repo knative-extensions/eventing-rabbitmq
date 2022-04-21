@@ -21,9 +21,11 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	"knative.dev/eventing/pkg/apis/feature"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/injection/sharedmain"
+	"knative.dev/pkg/logging"
 	"knative.dev/pkg/signals"
 	"knative.dev/pkg/webhook"
 	"knative.dev/pkg/webhook/certificates"
@@ -40,10 +42,14 @@ var ourTypes = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
 }
 
 func NewValidationAdmissionController(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
-	// A function that infuses the context passed to ConvertTo/ConvertFrom/SetDefaults with custom metadata.
+	featureStore := feature.NewStore(logging.FromContext(ctx).Named("feature-config-store"))
+	featureStore.WatchConfigs(cmw)
+
+	// Decorate contexts with the current state of the config.
 	ctxFunc := func(ctx context.Context) context.Context {
-		return ctx
+		return featureStore.ToContext(ctx)
 	}
+
 	callbacks := map[schema.GroupVersionKind]validation.Callback{
 		v1.SchemeGroupVersion.WithKind("Broker"):  validation.NewCallback(rabbitv1.ValidateBroker, webhook.Create, webhook.Update),
 		v1.SchemeGroupVersion.WithKind("Trigger"): validation.NewCallback(rabbitv1.ValidateTrigger(ctx), webhook.Create, webhook.Update),

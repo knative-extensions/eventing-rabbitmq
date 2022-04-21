@@ -48,6 +48,7 @@ type envConfig struct {
 	Retry         int           `envconfig:"RETRY" required:"false"`
 	BackoffPolicy string        `envconfig:"BACKOFF_POLICY" required:"false"`
 	BackoffDelay  time.Duration `envconfig:"BACKOFF_DELAY" default:"50ms" required:"false"`
+	Timeout       time.Duration `envconfig:"TIMEOUT" default:"0s" required:"false"`
 
 	connection *amqp.Conn
 	channel    wabbit.Channel
@@ -102,6 +103,7 @@ func main() {
 		SubscriberURL:    env.SubscriberURL,
 		MaxRetries:       env.Retry,
 		BackoffDelay:     backoffDelay,
+		Timeout:          env.Timeout,
 		BackoffPolicy:    backoffPolicy,
 		WorkerCount:      env.Parallelism,
 	}

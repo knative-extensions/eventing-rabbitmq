@@ -33,6 +33,7 @@ import (
 	"go.opencensus.io/plugin/ochttp/propagation/tracecontext"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
+	"knative.dev/eventing-rabbitmq/pkg/utils"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/pkg/logging"
@@ -47,6 +48,7 @@ type Dispatcher struct {
 	SubscriberURL    string
 	MaxRetries       int
 	BackoffDelay     time.Duration
+	Timeout          time.Duration
 	BackoffPolicy    eventingduckv1.BackoffPolicyType
 	WorkerCount      int
 }
@@ -68,10 +70,16 @@ func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel wabbit.Channe
 		return errors.Wrap(err, "create consumer")
 	}
 
-	ceClient, err := client.NewClientHTTP([]cehttp.Option{cehttp.WithIsRetriableFunc(func(statusCode int) bool {
+	topts := []cehttp.Option{cehttp.WithIsRetriableFunc(func(statusCode int) bool {
 		retry, _ := kncloudevents.SelectiveRetry(ctx, &http.Response{StatusCode: statusCode}, nil)
 		return retry
-	})}, nil)
+	})}
+
+	if d.Timeout != 0 {
+		topts = append(topts, utils.WithTimeout(d.Timeout))
+	}
+
+	ceClient, err := client.NewClientHTTP(topts, nil)
 	if err != nil {
 		return errors.Wrap(err, "create http client")
 	}

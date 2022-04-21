@@ -32,7 +32,10 @@ require (
 	sigs.k8s.io/controller-runtime v0.11.1
 )
 
-require k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9
+require (
+	github.com/rickb777/date v1.13.0
+	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9
+)
 
 require (
 	cloud.google.com/go v0.99.0 // indirect
@@ -96,7 +99,6 @@ require (
 	github.com/prometheus/common v0.32.1 // indirect
 	github.com/prometheus/procfs v0.6.0 // indirect
 	github.com/prometheus/statsd_exporter v0.21.0 // indirect
-	github.com/rickb777/date v1.13.0 // indirect
 	github.com/rickb777/plural v1.2.1 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/rogpeppe/fastuuid v1.2.0 // indirect

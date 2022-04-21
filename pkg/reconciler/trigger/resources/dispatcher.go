@@ -23,6 +23,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/rickb777/date/period"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
@@ -121,6 +122,14 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 				corev1.EnvVar{
 					Name:  "BACKOFF_DELAY",
 					Value: *args.Delivery.BackoffDelay,
+				})
+		}
+		if args.Delivery.Timeout != nil {
+			timeout, _ := period.Parse(*args.Delivery.Timeout)
+			dispatcher.Env = append(dispatcher.Env,
+				corev1.EnvVar{
+					Name:  "TIMEOUT",
+					Value: timeout.DurationApprox().String(),
 				})
 		}
 	}
