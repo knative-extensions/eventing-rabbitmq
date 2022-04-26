@@ -89,7 +89,7 @@ func TestCreateBrokerDeadLetterQueueName(t *testing.T) {
 }
 
 func TestCreateTriggerQueueName(t *testing.T) {
-	want := "t.q.foobar.testtrigger.triggeruid"
+	want := "t.foobar.testtrigger.triggeruid"
 	got := CreateTriggerQueueName(&eventingv1.Trigger{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,

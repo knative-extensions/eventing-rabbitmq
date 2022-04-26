@@ -995,7 +995,7 @@ func triggerWithQueueNotReady() *eventingv1.Trigger {
 		WithTriggerBrokerReady(),
 		WithTriggerDeadLetterSinkNotConfigured(),
 		WithTriggerDependencyReady(),
-		WithTriggerDependencyFailed("QueueFailure", `Queue "t.q.test-namespace.test-trigger.test-trigger-uid" is not ready`))
+		WithTriggerDependencyFailed("QueueFailure", `Queue "t.test-namespace.test-trigger.test-trigger-uid" is not ready`))
 
 	t.Spec.Filter = &eventingv1.TriggerFilter{
 		Attributes: map[string]string{"type": "dev.knative.sources.ping"},
@@ -1011,7 +1011,7 @@ func triggerWithBindingNotReady() *eventingv1.Trigger {
 		WithTriggerBrokerReady(),
 		WithTriggerDeadLetterSinkNotConfigured(),
 		WithTriggerDependencyReady(),
-		WithTriggerDependencyFailed("BindingFailure", `Binding "t.q.test-namespace.test-trigger.test-trigger-uid" is not ready`))
+		WithTriggerDependencyFailed("BindingFailure", `Binding "t.test-namespace.test-trigger.test-trigger-uid" is not ready`))
 
 	t.Spec.Filter = &eventingv1.TriggerFilter{
 		Attributes: map[string]string{"type": "dev.knative.sources.ping"},
@@ -1162,7 +1162,7 @@ func createQueue() *rabbitv1beta1.Queue {
 	t := triggerWithFilter()
 	return &rabbitv1beta1.Queue{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "t.q.test-namespace.test-trigger.test-trigger-uid",
+			Name:      "t.test-namespace.test-trigger.test-trigger-uid",
 			Namespace: testNS,
 			OwnerReferences: []metav1.OwnerReference{
 				*kmeta.NewControllerRef(t),
@@ -1182,7 +1182,7 @@ func createQueue() *rabbitv1beta1.Queue {
 }
 
 func createBinding(withFilter bool) *rabbitv1beta1.Binding {
-	bindingName := fmt.Sprintf("t.q.%s.%s.test-trigger-uid", testNS, triggerName)
+	bindingName := fmt.Sprintf("t.%s.%s.test-trigger-uid", testNS, triggerName)
 	labels := map[string]string{
 		"eventing.knative.dev/broker":  brokerName,
 		"eventing.knative.dev/trigger": triggerName,
