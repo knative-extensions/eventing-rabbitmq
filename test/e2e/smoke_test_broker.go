@@ -27,5 +27,6 @@ func SmokeTestBroker() *feature.Feature {
 
 	f.Setup("install a broker", broker.Install())
 	f.Alpha("RabbitMQ broker").Must("goes ready", AllGoReady)
+	f.Teardown("Delete feature resources", f.DeleteResources)
 	return f
 }

@@ -52,6 +52,6 @@ func ConcurrentAdapterProcessingTest() *feature.Feature {
 			t.Fatalf("expected processing to happen concurrently but were sequential. time elapsed between events: %v", diff)
 		}
 	})
-
+	f.Teardown("Delete feature resources", f.DeleteResources)
 	return f
 }

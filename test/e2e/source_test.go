@@ -53,6 +53,6 @@ func DirectSourceTest() *feature.Feature {
 				// TODO: Use constraint matching instead of just counting number of events.
 				eventshub.StoreFromContext(ctx, "recorder").AssertAtLeast(t, eventsNumber)
 			})
-
+	f.Teardown("Delete feature resources", f.DeleteResources)
 	return f
 }
