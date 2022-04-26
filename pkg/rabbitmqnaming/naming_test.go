@@ -102,6 +102,20 @@ func TestCreateTriggerQueueName(t *testing.T) {
 	}
 }
 
+func TestCreateTriggerQueueRabbitName(t *testing.T) {
+	want := "foobar.testtrigger.brokeruid"
+	got := CreateTriggerQueueRabbitName(&eventingv1.Trigger{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      triggerName,
+			UID:       triggerUID,
+		},
+	}, brokerUID)
+	if want != got {
+		t.Errorf("Unexpected name for foobar/testtrigger Queue: want:\n%q\ngot:\n%q", want, got)
+	}
+}
+
 func TestCreateTriggerDeadLetterQueueName(t *testing.T) {
 	want := "t.foobar.testtrigger.dlq.triggeruid"
 	got := CreateTriggerDeadLetterQueueName(&eventingv1.Trigger{

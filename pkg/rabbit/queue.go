@@ -31,6 +31,7 @@ import (
 type QueueArgs struct {
 	Name                     string
 	Namespace                string
+	QueueName                string
 	RabbitmqClusterReference *rabbitv1beta1.RabbitmqClusterReference
 	Owner                    metav1.OwnerReference
 	Labels                   map[string]string
@@ -40,12 +41,16 @@ type QueueArgs struct {
 }
 
 func NewQueue(args *QueueArgs) *rabbitv1beta1.Queue {
-	// queue configurations for triggers
+	// queue configurations for broker and trigger
 	durable := true
 	autoDelete := false
 	queueName := args.Name
 	vhost := "/"
+	if args.QueueName != "" {
+		queueName = args.QueueName
+	}
 
+	// queue configurations for source
 	if args.Source != nil {
 		durable = args.Source.Spec.QueueConfig.Durable
 		autoDelete = args.Source.Spec.QueueConfig.AutoDelete

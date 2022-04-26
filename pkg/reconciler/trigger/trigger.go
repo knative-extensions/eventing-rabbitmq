@@ -224,6 +224,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		queue, err := r.rabbit.ReconcileQueue(ctx, &rabbit.QueueArgs{
 			Name:      triggerQueueName,
 			Namespace: t.Namespace,
+			QueueName: naming.CreateTriggerQueueRabbitName(t, string(broker.GetUID())),
 			RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
 				Name:      broker.Spec.Config.Name,
 				Namespace: broker.Spec.Config.Namespace,
@@ -335,7 +336,7 @@ func (r *Reconciler) reconcileDispatcherDeployment(ctx context.Context, t *event
 		return nil, err
 	}
 
-	queueName := naming.CreateTriggerQueueName(t)
+	queueName := naming.CreateTriggerQueueRabbitName(t, string(b.GetUID()))
 	if dlq {
 		// overwrite to a dlq queueName if it's a dlq
 		queueName = naming.CreateTriggerDeadLetterQueueName(t)

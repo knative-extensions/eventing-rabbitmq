@@ -119,6 +119,35 @@ func TestNewQueue(t *testing.T) {
 			},
 		},
 		{
+			name: "creates a queue with a name different from crd name",
+			args: &rabbit.QueueArgs{
+				Name:      triggerName,
+				QueueName: "a-random-queue-name",
+				Namespace: namespace,
+				RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
+					Name: rabbitmqcluster,
+				},
+				Owner:  owner,
+				Labels: map[string]string{"cool": "label"},
+			},
+			want: &rabbitv1beta1.Queue{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:            triggerName,
+					Namespace:       namespace,
+					OwnerReferences: []metav1.OwnerReference{owner},
+					Labels:          map[string]string{"cool": "label"},
+				},
+				Spec: rabbitv1beta1.QueueSpec{
+					Name:       "a-random-queue-name",
+					Durable:    true,
+					AutoDelete: false,
+					RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
+						Name: rabbitmqcluster,
+					},
+				},
+			},
+		},
+		{
 			name: "creates a queue for source",
 			args: &rabbit.QueueArgs{
 				Name:      sourceName,

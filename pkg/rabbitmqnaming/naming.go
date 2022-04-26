@@ -55,11 +55,20 @@ func CreateBrokerDeadLetterQueueName(b *eventingv1.Broker) string {
 	return kmeta.ChildName(dlqBase, string(b.GetUID()))
 }
 
-// CreateTriggerQueueName creates a queue name for Trigger events.
+// CreateTriggerQueueName creates a queue (crd) name for Trigger events.
 // Format is t.q.Namespace.Name.TriggerUID
 func CreateTriggerQueueName(t *eventingv1.Trigger) string {
 	triggerQueueBase := fmt.Sprintf("t.q.%s.%s.", t.Namespace, t.Name)
 	return kmeta.ChildName(triggerQueueBase, string(t.GetUID()))
+}
+
+// CreateTriggerQueueRabbitName creates a RabbitMQ queue name for Trigger events.
+// Format is Namespace.Name.BrokerUID
+// Character limit for both namespace and trigger name are 63 and for broker UUID is 36.
+// RabbitMQ queue name character limit is 255.
+func CreateTriggerQueueRabbitName(t *eventingv1.Trigger, brokerUID string) string {
+	triggerQueueBase := fmt.Sprintf("%s.%s.", t.Namespace, t.Name)
+	return triggerQueueBase + brokerUID
 }
 
 // CreateTriggerDeadLetterQueueName creates a dead letter queue name for Trigger
