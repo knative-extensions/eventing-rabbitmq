@@ -1488,7 +1488,7 @@ func createPolicy() *rabbitv1beta1.Policy {
 		Spec: rabbitv1beta1.PolicySpec{
 			Name:       policyName,
 			Priority:   0,
-			Pattern:    "^t\\.q\\..",
+			Pattern:    "broker-test-uid$",
 			ApplyTo:    "queues",
 			Definition: &runtime.RawExtension{Raw: []byte(fmt.Sprintf(`{"dead-letter-exchange": %q}`, dlxName))},
 			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{

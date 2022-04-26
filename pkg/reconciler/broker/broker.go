@@ -365,9 +365,10 @@ func (r *Reconciler) reconcileDeadLetterResources(ctx context.Context, b *eventi
 			Name:      b.Spec.Config.Name,
 			Namespace: b.Spec.Config.Namespace,
 		},
-		Owner:   *kmeta.NewControllerRef(b),
-		Labels:  rabbit.Labels(b, nil, nil),
-		DLXName: pointer.String(args.Name),
+		Owner:     *kmeta.NewControllerRef(b),
+		Labels:    rabbit.Labels(b, nil, nil),
+		DLXName:   pointer.String(args.Name),
+		BrokerUID: string(b.GetUID()),
 	})
 	if err != nil {
 		MarkDeadLetterSinkFailed(&b.Status, "PolicyFailure", fmt.Sprintf("Failed to reconcile RabbitMQ Policy %q : %s", policyName, err))

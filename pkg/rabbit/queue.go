@@ -36,6 +36,7 @@ type QueueArgs struct {
 	Labels                   map[string]string
 	DLXName                  *string
 	Source                   *v1alpha1.RabbitmqSource
+	BrokerUID                string
 }
 
 func NewQueue(args *QueueArgs) *rabbitv1beta1.Queue {
@@ -100,7 +101,7 @@ func NewBrokerDLXPolicy(args *QueueArgs) *rabbitv1beta1.Policy {
 		Spec: v1beta1.PolicySpec{
 			Name:                     args.Name,
 			Priority:                 0, // lower priority then policies created for trigger queues to allow overwrite
-			Pattern:                  fmt.Sprintf("^%s.", regexp.QuoteMeta("t.q.")),
+			Pattern:                  fmt.Sprintf("%s$", regexp.QuoteMeta(args.BrokerUID)),
 			ApplyTo:                  "queues",
 			Definition:               &runtime.RawExtension{Raw: []byte(fmt.Sprintf(`{"dead-letter-exchange": %q}`, *args.DLXName))},
 			RabbitmqClusterReference: *args.RabbitmqClusterReference,

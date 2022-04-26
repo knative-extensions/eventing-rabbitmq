@@ -295,9 +295,10 @@ func TestNewBrokerDLXPolicy(t *testing.T) {
 					Name:      rabbitmqcluster,
 					Namespace: "a-namespace",
 				},
-				Owner:   owner,
-				Labels:  map[string]string{"cool": "label"},
-				DLXName: pointer.String("an-exchange"),
+				Owner:     owner,
+				Labels:    map[string]string{"cool": "label"},
+				DLXName:   pointer.String("an-exchange"),
+				BrokerUID: "a-broker-uuid-owfnwdoij",
 			},
 			want: &rabbitv1beta1.Policy{
 				ObjectMeta: metav1.ObjectMeta{
@@ -308,7 +309,7 @@ func TestNewBrokerDLXPolicy(t *testing.T) {
 				},
 				Spec: rabbitv1beta1.PolicySpec{
 					Name:       "a-policy-name",
-					Pattern:    "^t\\.q\\..",
+					Pattern:    "a-broker-uuid-owfnwdoij$",
 					ApplyTo:    "queues",
 					Priority:   0,
 					Definition: &runtime.RawExtension{Raw: []byte(fmt.Sprintf(`{"dead-letter-exchange": %q}`, "an-exchange"))},
