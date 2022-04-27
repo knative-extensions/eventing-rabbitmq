@@ -86,7 +86,7 @@ func NewPolicy(args *QueueArgs) *rabbitv1beta1.Policy {
 		Spec: v1beta1.PolicySpec{
 			Name:                     args.Name,
 			Priority:                 1,
-			Pattern:                  fmt.Sprintf("^%s$", regexp.QuoteMeta(args.Name)),
+			Pattern:                  fmt.Sprintf("^%s$", regexp.QuoteMeta(args.QueueName)),
 			ApplyTo:                  "queues",
 			Definition:               &runtime.RawExtension{Raw: []byte(fmt.Sprintf(`{"dead-letter-exchange": %q}`, *args.DLXName))},
 			RabbitmqClusterReference: *args.RabbitmqClusterReference,

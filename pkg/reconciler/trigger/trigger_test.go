@@ -1200,7 +1200,7 @@ func createBinding(withFilter bool) *rabbitv1beta1.Binding {
 		Spec: rabbitv1beta1.BindingSpec{
 			Vhost:           "/",
 			DestinationType: "queue",
-			Destination:     bindingName,
+			Destination:     queueName,
 			Source:          "b.test-namespace.test-broker.broker-test-uid",
 			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
 				Name:      rabbitMQBrokerName,

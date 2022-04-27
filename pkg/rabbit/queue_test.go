@@ -232,6 +232,7 @@ func TestNewPolicy(t *testing.T) {
 				Owner:   owner,
 				Labels:  map[string]string{"cool": "label"},
 				DLXName: pointer.String("an-exchange"),
+				QueueName: "a-trigger-queue-name",
 			},
 			want: &rabbitv1beta1.Policy{
 				ObjectMeta: metav1.ObjectMeta{
@@ -242,7 +243,7 @@ func TestNewPolicy(t *testing.T) {
 				},
 				Spec: rabbitv1beta1.PolicySpec{
 					Name:       triggerName,
-					Pattern:    fmt.Sprintf("^%s$", regexp.QuoteMeta(triggerName)),
+					Pattern:    fmt.Sprintf("^%s$", regexp.QuoteMeta("a-trigger-queue-name")),
 					ApplyTo:    "queues",
 					Priority:   1,
 					Definition: &runtime.RawExtension{Raw: []byte(fmt.Sprintf(`{"dead-letter-exchange": %q}`, "an-exchange"))},
@@ -264,6 +265,7 @@ func TestNewPolicy(t *testing.T) {
 				Owner:   owner,
 				Labels:  map[string]string{"cool": "label"},
 				DLXName: pointer.String("an-exchange"),
+				QueueName: "a-trigger-queue-name",
 			},
 			want: &rabbitv1beta1.Policy{
 				ObjectMeta: metav1.ObjectMeta{
@@ -274,7 +276,7 @@ func TestNewPolicy(t *testing.T) {
 				},
 				Spec: rabbitv1beta1.PolicySpec{
 					Name:       triggerName,
-					Pattern:    fmt.Sprintf("^%s$", regexp.QuoteMeta(triggerName)),
+					Pattern:    fmt.Sprintf("^%s$", regexp.QuoteMeta("a-trigger-queue-name")),
 					ApplyTo:    "queues",
 					Priority:   1,
 					Definition: &runtime.RawExtension{Raw: []byte(fmt.Sprintf(`{"dead-letter-exchange": %q}`, "an-exchange"))},
