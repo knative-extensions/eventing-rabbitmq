@@ -229,9 +229,9 @@ func TestNewPolicy(t *testing.T) {
 				RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
 					Name: rabbitmqcluster,
 				},
-				Owner:   owner,
-				Labels:  map[string]string{"cool": "label"},
-				DLXName: pointer.String("an-exchange"),
+				Owner:     owner,
+				Labels:    map[string]string{"cool": "label"},
+				DLXName:   pointer.String("an-exchange"),
 				QueueName: "a-trigger-queue-name",
 			},
 			want: &rabbitv1beta1.Policy{
@@ -262,9 +262,9 @@ func TestNewPolicy(t *testing.T) {
 					Name:      rabbitmqcluster,
 					Namespace: "a-namespace",
 				},
-				Owner:   owner,
-				Labels:  map[string]string{"cool": "label"},
-				DLXName: pointer.String("an-exchange"),
+				Owner:     owner,
+				Labels:    map[string]string{"cool": "label"},
+				DLXName:   pointer.String("an-exchange"),
 				QueueName: "a-trigger-queue-name",
 			},
 			want: &rabbitv1beta1.Policy{
