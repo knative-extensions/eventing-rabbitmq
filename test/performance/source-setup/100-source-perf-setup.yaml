@@ -1,0 +1,214 @@
+# Copyright 2022 The Knative Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: perf-eventing
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-mako
+  namespace: perf-eventing
+data:
+  dev.config: |
+    # Create this benchmark with the mako tool: mako create_benchmark dev.config
+    # Update this benchmark with the mako tool: mako update_benchmark dev.config
+    # Learn more about the mako tool at
+    # https://github.com/google/mako/blob/master/docs/CLI.md.
+
+    project_name: "Knative"
+    benchmark_name: "Development - RabbitMQ Source Latency & Throughput"
+    description: "Measure latency and throughput of the Source."
+    benchmark_key: '6552586517741568'
+
+    # Human owners for manual benchmark adjustments.
+    owner_list: "ikhaprov@vmware.com"
+    owner_list: "glazu@vmware.com"
+    owner_list: "benm@vmware.com"
+    owner_list: "gfreites@vmware.com"
+    # Only this robot should publish data to Mako for this key!
+    owner_list: "mako-job@knative-eventing-performance.iam.gserviceaccount.com"
+    # Define the name and type for x-axis of run charts
+    input_value_info: {
+      value_key: "t"
+      label: "time"
+      type: TIMESTAMP
+    }
+    # Note: value_key is stored repeatedly and should be very short (ideally one or two characters).
+    metric_info_list: {
+      value_key: "pl"
+      label: "publish-latency"
+    }
+    metric_info_list: {
+      value_key: "pe"
+      label: "publish-errors"
+    }
+    metric_info_list: {
+      value_key: "st"
+      label: "send-throughput"
+    }
+    metric_info_list: {
+      value_key: "dl"
+      label: "deliver-latency"
+    }
+    metric_info_list: {
+      value_key: "de"
+      label: "deliver-errors"
+    }
+    metric_info_list: {
+      value_key: "dt"
+      label: "deliver-throughput"
+    }
+    metric_info_list: {
+      value_key: "pet"
+      label: "publish-failure-throughput"
+    }
+    metric_info_list: {
+      value_key: "det"
+      label: "deliver-failure-throughput"
+    }
+
+---
+
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata:
+  name: rabbitmq-test-cluster
+  namespace: perf-eventing
+spec:
+  replicas: 1
+  # To tie the test env to a certain type of node VM use this
+  # affinity:
+  #  nodeAffinity:
+  #    requiredDuringSchedulingIgnoredDuringExecution:
+  #      nodeSelectorTerms:
+  #      - matchExpressions:
+  #        - key: cloud.google.com/machine-family
+  #          operator: In
+  #          values:
+  #          - c2
+
+---
+
+apiVersion: sources.knative.dev/v1alpha1
+kind: RabbitmqSource
+metadata:
+  name: rabbitmq-source
+  namespace: perf-eventing
+spec:
+  broker: "rabbitmq:5672/"
+  user:
+    secretKeyRef:
+      name: rabbitmq-default-user
+      key: username
+  password:
+    secretKeyRef:
+      name: rabbitmq-default-user
+      key: password
+  connectionSecret:
+    name: rabbitmq-default-user # used when exchange and queue are not predeclared
+  channelConfig:
+    # Value must be between 1 and 1000
+    # A value of 1 RabbitMQ Source behaves as a FIFO queue
+    # Values above 1 break message ordering guarantees and can be seen as more performance oriented
+    # parallelism: 10
+    globalQos: false
+  exchangeConfig:
+    name: "eventing-rabbitmq-source"
+    type: "fanout"
+    durable: false
+    autoDelete: false
+  queueConfig:
+    name: "eventing-rabbitmq-source"
+    routingKey: ""
+    durable: false
+    # TODO: Why is the queue not deleted 30 minutes after the source is deleted?
+    # https://github.com/knative-sandbox/eventing-rabbitmq/issues/528
+    autoDelete: true
+  sink:
+    ref:
+      apiVersion: serving.knative.dev/v1
+      kind: Service
+      name: rabbitmq-source-sink
+      namespace: source-demo
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: perf-eventing
+  namespace: perf-eventing
+
+---
+
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: perf-eventing
+rules:
+  - apiGroups: [""]
+    resources: ["nodes", "pods"]
+    verbs: ["list"]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: perf-eventing
+subjects:
+  - kind: ServiceAccount
+    name: perf-eventing
+    namespace: perf-eventing
+roleRef:
+  kind: ClusterRole
+  name: perf-eventing
+  apiGroup: rbac.authorization.k8s.io
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq-source-perf-consumer
+  namespace: perf-eventing
+spec:
+  selector:
+    role: rabbitmq-source-perf-consumer
+  ports:
+  - name: http
+    port: 80
+    targetPort: cloudevents
+    protocol: TCP
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq-source-perf-aggregator
+  namespace: perf-eventing
+spec:
+  selector:
+    role: rabbitmq-source-perf-aggregator
+  ports:
+  - name: grpc
+    port: 10000
+    targetPort: grpc
+    protocol: TCP
