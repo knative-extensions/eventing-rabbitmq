@@ -32,8 +32,8 @@ data:
     # https://github.com/google/mako/blob/master/docs/CLI.md.
 
     project_name: "Knative"
-    benchmark_name: "Development - RabbitMQ Broker Latency & Throughput"
-    description: "Measure latency and throughput of the broker."
+    benchmark_name: "Development - RabbitMQ Source Latency & Throughput"
+    description: "Measure latency and throughput of the Source."
     benchmark_key: '6552586517741568'
 
     # Human owners for manual benchmark adjustments.
@@ -105,52 +105,47 @@ spec:
 
 ---
 
-apiVersion: eventing.knative.dev/v1
-kind: Broker
+apiVersion: sources.knative.dev/v1alpha1
+kind: RabbitmqSource
 metadata:
-  name: rabbitmq-test-broker
+  name: rabbitmq-source
   namespace: perf-eventing
-  annotations:
-    eventing.knative.dev/broker.class: RabbitMQBroker
 spec:
-  config:
-    apiVersion: rabbitmq.com/v1beta1
-    kind: RabbitmqCluster
-    name: rabbitmq-test-cluster
-
----
-
-apiVersion: eventing.knative.dev/v1
-kind: Trigger
-metadata:
-  name: rabbitmq-trigger-perf
-  namespace: perf-eventing
-  annotations:
-    # Set this to 1 for FIFO
-    rabbitmq.eventing.knative.dev/prefetchCount: "100"
-spec:
-  broker: rabbitmq-test-broker
-  subscriber:
+  broker: "rabbitmq:5672/"
+  user:
+    secretKeyRef:
+      name: rabbitmq-default-user
+      key: username
+  password:
+    secretKeyRef:
+      name: rabbitmq-default-user
+      key: password
+  connectionSecret:
+    name: rabbitmq-default-user # used when exchange and queue are not predeclared
+  channelConfig:
+    # Value must be between 1 and 1000
+    # A value of 1 RabbitMQ Source behaves as a FIFO queue
+    # Values above 1 break message ordering guarantees and can be seen as more performance oriented
+    # parallelism: 10
+    globalQos: false
+  exchangeConfig:
+    name: "eventing-rabbitmq-source"
+    type: "fanout"
+    durable: false
+    autoDelete: false
+  queueConfig:
+    name: "eventing-rabbitmq-source"
+    routingKey: ""
+    durable: false
+    # TODO: Why is the queue not deleted 30 minutes after the source is deleted?
+    # https://github.com/knative-sandbox/eventing-rabbitmq/issues/528
+    autoDelete: true
+  sink:
     ref:
-      apiVersion: v1
+      apiVersion: serving.knative.dev/v1
       kind: Service
-      name: rabbitmq-broker-perf-consumer
-
----
-
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: eventing-broker-ingress
-  namespace: perf-eventing
-
----
-
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: eventing-broker-filter
-  namespace: perf-eventing
+      name: rabbitmq-source-sink
+      namespace: source-demo
 
 ---
 
@@ -188,46 +183,14 @@ roleRef:
 
 ---
 
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: eventing-broker-ingress
-  namespace: perf-eventing
-subjects:
-  - kind: ServiceAccount
-    name: eventing-broker-ingress
-    namespace: perf-eventing
-roleRef:
-  kind: ClusterRole
-  name: eventing-broker-ingress
-  apiGroup: rbac.authorization.k8s.io
-
----
-
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: eventing-broker-filter
-  namespace: perf-eventing
-subjects:
-  - kind: ServiceAccount
-    name: eventing-broker-filter
-    namespace: perf-eventing
-roleRef:
-  kind: ClusterRole
-  name: eventing-broker-filter
-  apiGroup: rbac.authorization.k8s.io
-
----
-
 apiVersion: v1
 kind: Service
 metadata:
-  name: rabbitmq-broker-perf-consumer
+  name: rabbitmq-source-perf-consumer
   namespace: perf-eventing
 spec:
   selector:
-    role: rabbitmq-broker-perf-consumer
+    role: rabbitmq-source-perf-consumer
   ports:
   - name: http
     port: 80
@@ -239,11 +202,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: rabbitmq-broker-perf-aggregator
+  name: rabbitmq-source-perf-aggregator
   namespace: perf-eventing
 spec:
   selector:
-    role: rabbitmq-broker-perf-aggregator
+    role: rabbitmq-source-perf-aggregator
   ports:
   - name: grpc
     port: 10000
