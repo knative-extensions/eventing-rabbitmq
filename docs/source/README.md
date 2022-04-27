@@ -349,8 +349,9 @@ Check out the [Source Samples Directory](../../samples/source) in this repo and 
 - [Knative Docs](https://knative.dev/docs/)
 
 ## Upgrade
-Prior to upgrading eventing-rabbitmq, Knative and its components should be updated according to instructions [here](https://knative.dev/docs/install/upgrade/). Be sure to pay attention to any
+- Prior to upgrading eventing-rabbitmq, Knative and its components should be updated according to instructions [here](https://knative.dev/docs/install/upgrade/). Be sure to pay attention to any
 steps for upgrading Custom Resource Definitions (CRDs) and only upgrade one minor version at a time.
+- Upgrade [RabbitMQ Cluster Operator](https://github.com/rabbitmq/cluster-operator) and [RabbitMQ Topology Operator](https://github.com/rabbitmq/messaging-topology-operator)
 
 Upgrade eventing-rabbitmq one minor version at a time while following any migration steps outlined in release notes to migrate the RabbitMQ Source CRD.
 Components and resources can be applied in a similar fashion to installation:
