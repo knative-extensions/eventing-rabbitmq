@@ -84,7 +84,7 @@ const (
 	triggerUID  = "test-trigger-uid"
 
 	rabbitURL = "amqp://localhost:5672/%2f"
-	queueName = "t.test-namespace.test-trigger.test-trigger-uid"
+	queueName = "test-namespace.test-trigger.broker-test-uid"
 
 	dispatcherImage = "dispatcherimage"
 
@@ -1162,7 +1162,7 @@ func createQueue() *rabbitv1beta1.Queue {
 	t := triggerWithFilter()
 	return &rabbitv1beta1.Queue{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      queueName,
+			Name:      "t.test-namespace.test-trigger.test-trigger-uid",
 			Namespace: testNS,
 			OwnerReferences: []metav1.OwnerReference{
 				*kmeta.NewControllerRef(t),
@@ -1200,7 +1200,7 @@ func createBinding(withFilter bool) *rabbitv1beta1.Binding {
 		Spec: rabbitv1beta1.BindingSpec{
 			Vhost:           "/",
 			DestinationType: "queue",
-			Destination:     bindingName,
+			Destination:     queueName,
 			Source:          "b.test-namespace.test-broker.broker-test-uid",
 			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
 				Name:      rabbitMQBrokerName,

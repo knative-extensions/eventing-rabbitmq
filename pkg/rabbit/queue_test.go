@@ -119,6 +119,35 @@ func TestNewQueue(t *testing.T) {
 			},
 		},
 		{
+			name: "creates a queue with a name different from crd name",
+			args: &rabbit.QueueArgs{
+				Name:      triggerName,
+				QueueName: "a-random-queue-name",
+				Namespace: namespace,
+				RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
+					Name: rabbitmqcluster,
+				},
+				Owner:  owner,
+				Labels: map[string]string{"cool": "label"},
+			},
+			want: &rabbitv1beta1.Queue{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:            triggerName,
+					Namespace:       namespace,
+					OwnerReferences: []metav1.OwnerReference{owner},
+					Labels:          map[string]string{"cool": "label"},
+				},
+				Spec: rabbitv1beta1.QueueSpec{
+					Name:       "a-random-queue-name",
+					Durable:    true,
+					AutoDelete: false,
+					RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
+						Name: rabbitmqcluster,
+					},
+				},
+			},
+		},
+		{
 			name: "creates a queue for source",
 			args: &rabbit.QueueArgs{
 				Name:      sourceName,
@@ -200,9 +229,10 @@ func TestNewPolicy(t *testing.T) {
 				RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
 					Name: rabbitmqcluster,
 				},
-				Owner:   owner,
-				Labels:  map[string]string{"cool": "label"},
-				DLXName: pointer.String("an-exchange"),
+				Owner:     owner,
+				Labels:    map[string]string{"cool": "label"},
+				DLXName:   pointer.String("an-exchange"),
+				QueueName: "a-trigger-queue-name",
 			},
 			want: &rabbitv1beta1.Policy{
 				ObjectMeta: metav1.ObjectMeta{
@@ -213,8 +243,9 @@ func TestNewPolicy(t *testing.T) {
 				},
 				Spec: rabbitv1beta1.PolicySpec{
 					Name:       triggerName,
-					Pattern:    fmt.Sprintf("^%s$", regexp.QuoteMeta(triggerName)),
+					Pattern:    fmt.Sprintf("^%s$", regexp.QuoteMeta("a-trigger-queue-name")),
 					ApplyTo:    "queues",
+					Priority:   1,
 					Definition: &runtime.RawExtension{Raw: []byte(fmt.Sprintf(`{"dead-letter-exchange": %q}`, "an-exchange"))},
 					RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
 						Name: rabbitmqcluster,
@@ -231,9 +262,10 @@ func TestNewPolicy(t *testing.T) {
 					Name:      rabbitmqcluster,
 					Namespace: "a-namespace",
 				},
-				Owner:   owner,
-				Labels:  map[string]string{"cool": "label"},
-				DLXName: pointer.String("an-exchange"),
+				Owner:     owner,
+				Labels:    map[string]string{"cool": "label"},
+				DLXName:   pointer.String("an-exchange"),
+				QueueName: "a-trigger-queue-name",
 			},
 			want: &rabbitv1beta1.Policy{
 				ObjectMeta: metav1.ObjectMeta{
@@ -244,8 +276,9 @@ func TestNewPolicy(t *testing.T) {
 				},
 				Spec: rabbitv1beta1.PolicySpec{
 					Name:       triggerName,
-					Pattern:    fmt.Sprintf("^%s$", regexp.QuoteMeta(triggerName)),
+					Pattern:    fmt.Sprintf("^%s$", regexp.QuoteMeta("a-trigger-queue-name")),
 					ApplyTo:    "queues",
+					Priority:   1,
 					Definition: &runtime.RawExtension{Raw: []byte(fmt.Sprintf(`{"dead-letter-exchange": %q}`, "an-exchange"))},
 					RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
 						Name:      rabbitmqcluster,
@@ -257,6 +290,70 @@ func TestNewPolicy(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			got := rabbit.NewPolicy(tt.args)
+			if !equality.Semantic.DeepDerivative(tt.want, got) {
+				t.Errorf("Unexpected Policy resource: want:\n%+v\ngot:\n%+v\ndiff:\n%+v", tt.want, got, cmp.Diff(tt.want, got))
+			}
+		})
+	}
+}
+
+func TestNewBrokerDLXPolicy(t *testing.T) {
+	var (
+		namespace       = "foobar"
+		brokerName      = "testbroker"
+		brokerUID       = types.UID("broker-test-uid")
+		rabbitmqcluster = "testrabbitmqcluster"
+		owner           = metav1.OwnerReference{
+			Kind:       "Broker",
+			APIVersion: "eventing.knative.dev/v1",
+			Name:       brokerName,
+			UID:        brokerUID,
+		}
+	)
+
+	for _, tt := range []struct {
+		name    string
+		args    *rabbit.QueueArgs
+		want    *rabbitv1beta1.Policy
+		wantErr string
+	}{
+		{
+			name: "creates a policy for queues using broker dead letter queue",
+			args: &rabbit.QueueArgs{
+				Name:      "a-policy-name",
+				Namespace: namespace,
+				RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
+					Name:      rabbitmqcluster,
+					Namespace: "a-namespace",
+				},
+				Owner:     owner,
+				Labels:    map[string]string{"cool": "label"},
+				DLXName:   pointer.String("an-exchange"),
+				BrokerUID: "a-broker-uuid-owfnwdoij",
+			},
+			want: &rabbitv1beta1.Policy{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:            "a-policy-name",
+					Namespace:       namespace,
+					OwnerReferences: []metav1.OwnerReference{owner},
+					Labels:          map[string]string{"cool": "label"},
+				},
+				Spec: rabbitv1beta1.PolicySpec{
+					Name:       "a-policy-name",
+					Pattern:    "a-broker-uuid-owfnwdoij$",
+					ApplyTo:    "queues",
+					Priority:   0,
+					Definition: &runtime.RawExtension{Raw: []byte(fmt.Sprintf(`{"dead-letter-exchange": %q}`, "an-exchange"))},
+					RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
+						Name:      rabbitmqcluster,
+						Namespace: "a-namespace",
+					},
+				},
+			},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			got := rabbit.NewBrokerDLXPolicy(tt.args)
 			if !equality.Semantic.DeepDerivative(tt.want, got) {
 				t.Errorf("Unexpected Policy resource: want:\n%+v\ngot:\n%+v\ndiff:\n%+v", tt.want, got, cmp.Diff(tt.want, got))
 			}

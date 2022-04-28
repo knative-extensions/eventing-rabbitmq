@@ -138,12 +138,13 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		logging.FromContext(ctx).Info("Dependency is not ready")
 		return nil
 	}
-
+	triggerQueueName := naming.CreateTriggerQueueName(t)
 	if !isUsingOperator(broker) {
 		t.Status.MarkDependencyFailed("ReconcileFailure", "using secret is not supported with this controller")
 		return nil
 	} else {
 		var dlxName *string
+
 		if t.Spec.Delivery != nil && t.Spec.Delivery.DeadLetterSink != nil {
 			// If there's DeadLetterSink, we need to create a DLX that's specific for this Trigger as well
 			// as a Queue for it, and Dispatcher that pulls from that queue.
@@ -215,18 +216,15 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 				t.Status.MarkDependencyFailed("DeploymentFailure", "%v", err)
 				return err
 			}
-		} else if broker.Spec.Delivery != nil && broker.Spec.Delivery.DeadLetterSink != nil {
-			t.Status.MarkDeadLetterSinkNotConfigured()
-			// If Trigger DLQ isn't defined but the Broker has a DLQ, then use that
-			dlxName = ptr.String(naming.BrokerExchangeName(broker, true))
 		} else {
 			// There's no Delivery spec, so just mark is as there's no DeadLetterSink Configured for it.
 			t.Status.MarkDeadLetterSinkNotConfigured()
 		}
 
 		queue, err := r.rabbit.ReconcileQueue(ctx, &rabbit.QueueArgs{
-			Name:      naming.CreateTriggerQueueName(t),
+			Name:      triggerQueueName,
 			Namespace: t.Namespace,
+			QueueName: naming.CreateTriggerQueueRabbitName(t, string(broker.GetUID())),
 			RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
 				Name:      broker.Spec.Config.Name,
 				Namespace: broker.Spec.Config.Namespace,
@@ -338,7 +336,7 @@ func (r *Reconciler) reconcileDispatcherDeployment(ctx context.Context, t *event
 		return nil, err
 	}
 
-	queueName := naming.CreateTriggerQueueName(t)
+	queueName := naming.CreateTriggerQueueRabbitName(t, string(b.GetUID()))
 	if dlq {
 		// overwrite to a dlq queueName if it's a dlq
 		queueName = naming.CreateTriggerDeadLetterQueueName(t)
@@ -433,7 +431,7 @@ func (r *Reconciler) reconcileBinding(ctx context.Context, b *eventingv1.Broker,
 		},
 		Vhost:       "/",
 		Source:      naming.BrokerExchangeName(b, false),
-		Destination: bindingName,
+		Destination: naming.CreateTriggerQueueRabbitName(t, string(b.GetUID())),
 		Owner:       *kmeta.NewControllerRef(t),
 		Labels:      rabbit.Labels(b, t, nil),
 		Filters:     filters,

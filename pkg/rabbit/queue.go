@@ -31,20 +31,26 @@ import (
 type QueueArgs struct {
 	Name                     string
 	Namespace                string
+	QueueName                string
 	RabbitmqClusterReference *rabbitv1beta1.RabbitmqClusterReference
 	Owner                    metav1.OwnerReference
 	Labels                   map[string]string
 	DLXName                  *string
 	Source                   *v1alpha1.RabbitmqSource
+	BrokerUID                string
 }
 
 func NewQueue(args *QueueArgs) *rabbitv1beta1.Queue {
-	// queue configurations for triggers
+	// queue configurations for broker and trigger
 	durable := true
 	autoDelete := false
 	queueName := args.Name
 	vhost := "/"
+	if args.QueueName != "" {
+		queueName = args.QueueName
+	}
 
+	// queue configurations for source
 	if args.Source != nil {
 		durable = args.Source.Spec.QueueConfig.Durable
 		autoDelete = args.Source.Spec.QueueConfig.AutoDelete
@@ -79,7 +85,28 @@ func NewPolicy(args *QueueArgs) *rabbitv1beta1.Policy {
 		},
 		Spec: v1beta1.PolicySpec{
 			Name:                     args.Name,
-			Pattern:                  fmt.Sprintf("^%s$", regexp.QuoteMeta(args.Name)),
+			Priority:                 1,
+			Pattern:                  fmt.Sprintf("^%s$", regexp.QuoteMeta(args.QueueName)),
+			ApplyTo:                  "queues",
+			Definition:               &runtime.RawExtension{Raw: []byte(fmt.Sprintf(`{"dead-letter-exchange": %q}`, *args.DLXName))},
+			RabbitmqClusterReference: *args.RabbitmqClusterReference,
+		},
+	}
+}
+
+// NewBrokerDLXPolicy configures the broker dead letter exchange for trigger queues that does not have dlx defined
+func NewBrokerDLXPolicy(args *QueueArgs) *rabbitv1beta1.Policy {
+	return &rabbitv1beta1.Policy{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            args.Name,
+			Namespace:       args.Namespace,
+			OwnerReferences: []metav1.OwnerReference{args.Owner},
+			Labels:          args.Labels,
+		},
+		Spec: v1beta1.PolicySpec{
+			Name:                     args.Name,
+			Priority:                 0, // lower priority then policies created for trigger queues to allow overwrite
+			Pattern:                  fmt.Sprintf("%s$", regexp.QuoteMeta(args.BrokerUID)),
 			ApplyTo:                  "queues",
 			Definition:               &runtime.RawExtension{Raw: []byte(fmt.Sprintf(`{"dead-letter-exchange": %q}`, *args.DLXName))},
 			RabbitmqClusterReference: *args.RabbitmqClusterReference,
