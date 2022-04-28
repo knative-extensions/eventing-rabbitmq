@@ -45,9 +45,7 @@ spec:
         - name: GOGC
           value: "off"
         - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
+          value: rabbitmq-broker-perf-send-receive
         - name: POD_NAMESPACE
           valueFrom:
             fieldRef:

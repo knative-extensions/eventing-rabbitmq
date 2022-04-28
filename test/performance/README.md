@@ -89,7 +89,11 @@ To run the constant load test:
 ```
 ko apply --filename test/performance/broker-setup/300-broker-constant-load-setup.yaml
 ```
-
+``
+To run the multi consumer load test:
+```
+ko apply --filename test/performance/broker-setup/400-broker-multi-consumer-setup.yaml
+```
 ## 5/5. Download & visualize Knative Eventing RabbitMQ benchmark results
 
 Pre-requisite: [gnuplot](http://www.gnuplot.info/) (on macOS it's `brew install gnuplot`)
@@ -104,6 +108,7 @@ cd $GOPATH/src/knative.dev/eventing-rabbitmq/test/performance
 curl http://localhost:10001/results > eventing-rabbitmq-broker-perf-results.csv
 gnuplot -c latency-throughput.plg eventing-rabbitmq-broker-perf-results.csv 0.8 0 1100
 # this can take up to 5 minutes to render ¯\_(ツ)_/¯
+Try using higher values for the multi-consumer test setup
 ```
 
 > What do the `0.8 0 1100` arguments mean?

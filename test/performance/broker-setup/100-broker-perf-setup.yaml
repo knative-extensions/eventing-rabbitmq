@@ -135,6 +135,9 @@ spec:
       apiVersion: v1
       kind: Service
       name: rabbitmq-broker-perf-consumer
+  filter:
+    attributes:
+      source: rabbitmq-broker-perf-send-receive
 
 ---
 
