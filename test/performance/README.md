@@ -1,3 +1,5 @@
+# Performance Tests
+
 ## 1/5. Pre-requisites
 
 - GKE 1.21 with autoscaling
@@ -47,6 +49,9 @@ curl -sL https://github.com/jetstack/cert-manager/releases/download/v1.7.2/cert-
 # Installing RabbitMQ Messaging Topology Operator with cert-manager integration ... https://github.com/rabbitmq/messaging-topology-operator/releases
 kubectl apply --filename https://github.com/rabbitmq/messaging-topology-operator/releases/download/v1.5.0/messaging-topology-operator-with-certmanager.yaml
 
+
+### Broker Benchmarks 
+
 # Installing Knative Eventing RabbitMQ Broker ... https://github.com/knative-sandbox/eventing-rabbitmq/releases
 kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/download/knative-v1.3.1/rabbitmq-broker.yaml
 ```
@@ -59,7 +64,6 @@ cd $GOPATH/src/knative-dev/eventing-rabbitmq
 ko apply --filename config/broker
 ```
 
-
 ## 4/5. Run Knative Eventing RabbitMQ benchmarks
 
 ```sh
@@ -71,8 +75,9 @@ kubectl wait --for=condition=AllReplicasReady=true rmq/rabbitmq-test-cluster --t
 kubectl wait --for=condition=IngressReady=true brokers/rabbitmq-test-broker --timeout=10m --namespace perf-eventing
 kubectl wait --for=condition=SubscriberResolved=true triggers/rabbitmq-broker-perf --timeout=10m --namespace perf-eventing
 ```
-The default setup has a Trigger's Prefetch value of:
-`rabbitmq.eventing.knative.dev/prefetchCount: "100"`
+The default setup has a Trigger's Parallelism value of:
+`rabbitmq.eventing.knative.dev/parallelism: "100"`
+
 Change this value to try different scenarios better reflecting your application needs
 
 Now run any of the two test types.
