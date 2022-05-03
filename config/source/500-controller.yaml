@@ -54,11 +54,8 @@ spec:
                 - all
           volumeMounts:
           resources:
-            limits:
-              cpu: 100m
-              memory: 30Mi
             requests:
-              cpu: 20m
-              memory: 20Mi
+              cpu: 100m
+              memory: 100Mi
       serviceAccount: rabbitmq-controller-manager
       terminationGracePeriodSeconds: 10
