@@ -112,6 +112,54 @@ If the messaging topology isn't working as expected, the conditions on brokers a
 | Trigger   | DeadLetterSinkResolved | Highlight any errors resolving the dead letter sink's URI. May also be `DeadLetterSinkNotConfigured` when delivery spec isn't defined.                                                                                                    |
 | Trigger   | SubscriberResolved     | Highlight any errors resolving the trigger's subscriber URI                                                                                                                                                                               |
 
+The [Broker/Trigger](https://knative.dev/docs/eventing/broker/) implementation adds a few components that could become points of failure. Consider the following trivial case of a single producer and single consumer:
+
+                +------------+
++----------+    |            |    +----------+
+| Producer +---->  RabbitMQ  +----> Consumer |
++----------+    |            |    +----------+
+                +------------+ 
+
+If this was accomplished using Knative and eventing-rabbitmq, it would result in the following components:
+
+                                    +------------+
++----------+   +--------------+     |            |     +------------+   +----------+
+| Producer +--->    Ingress   +----->  RabbitMQ  +-----> Dispatcher +---> Consumer |
++----------+   +--------------+     |            |     +------------+   +----------+
+                                    +------------+
+
+The Broker will always create a single `Ingress` pod that's responsible for ingress into the system. Any source that wishes to post events to the system will send requests to the ingress pod.
+`Dispatcher` pods are means of egress from the system. They act as consumers of RabbitMQ and pass the event along to the sinks. Note: Dispatcher pods are also used for dead letter messaging.
+The following outlines some of the issues that users can encounter with eventing-rabbitmq components and ways to mitigate them:
+
+### Common Issues
+1. Broker not Ready
+   - Check the conditions on the Broker.
+   - If conditions weren't helpful, check logs of `rabbitmq-broker-controller` pod.
+1. Trigger not Ready
+   - Check the conditions on the Trigger.
+   - If conditions weren't helpful, check logs of `rabbitmq-broker-controller` pod.
+1. Ingress not responding
+   - Check that the ingress pod is running and is reachable by the source.
+   - Ingress pod will wait indefinitely for RabbitMQ to confirm receipt of an event. Check the RabbitMQ dashboard for received events in the queue.
+   - Check that the RabbitMQ server hasn't raised any alarms such as a [Memory Alarm](https://www.rabbitmq.com/memory.html) with too many events.
+   - Check logs on the ingress pod.
+1. Ingress responding with non 2xx status
+   - Check that the RabbitMQ server is reachable by the ingress pod.
+   - Check logs on the ingress pod for details on encountered errors.
+1. Events not delivered to sinks
+   - Ensure dispatcher pod can reach the sink's URL.
+   - Ensure messages exist in the queue used by the dispatcher.
+   - Check logs on the dispatcher pod.
+   - Check `DeliverySpec` and any dead message queues for failed messages.
+1. Unable to delete Broker or Trigger
+   - Ensure RabbitMQ server is reachable.
+   - Check resources created by Broker/Trigger such as Queues, Exchanges, Policies etc.
+
+For reference, the ingress and dispatcher pods' code can be found [here](../../cmd/ingress/main.go) and [here](../../cmd/dispatcher/main.go) respectively. If an undocumented issue is encountered, please open an issue [here](https://github.com/knative-sandbox/eventing-rabbitmq/issues/new/choose) 
+
+Consult the [RabbitMQ Troubleshooting Guide](https://www.rabbitmq.com/troubleshooting.html) for any RabbitMQ specific issues that may arise.
+
 ## Next Steps
 - Check out the [Broker-Trigger Samples Directory](../samples/broker-trigger) in this repo and start building your topology with Eventing RabbitMQ!
 - Follow [CloudEvents Player Source](https://knative.dev/docs/getting-started/first-source/) to setup a Knative Service as a source.
