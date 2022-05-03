@@ -88,7 +88,7 @@ kind: RabbitmqSource
 metadata:
   name: rabbitmq-source
 spec:
-  brokers: "rabbitmq:5672/"
+  broker: "rabbitmq:5672/"
   user:
     secretKeyRef:
       name: rabbitmq-default-user
