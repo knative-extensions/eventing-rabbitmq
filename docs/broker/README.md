@@ -118,7 +118,7 @@ The [Broker/Trigger](https://knative.dev/docs/eventing/broker/) implementation a
 +----------+    |            |    +----------+
 | Producer +---->  RabbitMQ  +----> Consumer |
 +----------+    |            |    +----------+
-                +------------+ 
+                +------------+
 
 If this was accomplished using Knative and eventing-rabbitmq, it would result in the following components:
 
@@ -156,7 +156,7 @@ The following outlines some of the issues that users can encounter with eventing
    - Ensure RabbitMQ server is reachable.
    - Check resources created by Broker/Trigger such as Queues, Exchanges, Policies etc.
 
-For reference, the ingress and dispatcher pods' code can be found [here](../../cmd/ingress/main.go) and [here](../../cmd/dispatcher/main.go) respectively. If an undocumented issue is encountered, please open an issue [here](https://github.com/knative-sandbox/eventing-rabbitmq/issues/new/choose) 
+For reference, the ingress and dispatcher pods' code can be found [here](../../cmd/ingress/main.go) and [here](../../cmd/dispatcher/main.go) respectively. If an undocumented issue is encountered, please open an issue [here](https://github.com/knative-sandbox/eventing-rabbitmq/issues/new/choose)
 
 Consult the [RabbitMQ Troubleshooting Guide](https://www.rabbitmq.com/troubleshooting.html) for any RabbitMQ specific issues that may arise.
 
