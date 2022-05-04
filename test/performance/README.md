@@ -4,7 +4,7 @@
 
 - GKE 1.21 with autoscaling
 - kubectl 1.21
-- [ko 0.9.3](https://github.com/google/ko/releases/tag/v0.9.3) + [`KO_DOCKER_REPO`](https://github.com/knative/eventing/blob/main/DEVELOPMENT.md#setup-your-environment)
+- [ko v0.11.2](https://github.com/google/ko/releases/tag/v0.11.2) + [`KO_DOCKER_REPO`](https://github.com/knative/eventing/blob/main/DEVELOPMENT.md#setup-your-environment)
 - A git clone of [knative-sandbox/eventing-rabbitmq](https://github.com/knative-sandbox/eventing-rabbitmq) at tag `knative-v1.3.1`
 
 
@@ -67,7 +67,7 @@ cd $GOPATH/src/knative-dev/eventing-rabbitmq
 ko apply --filename config/broker
 ```
 
-### Run Knative Eventing RabbitMQ benchmarks
+### Run Knative Eventing Broker RabbitMQ benchmarks
 
 ```sh
 cd $GOPATH/src/knative.dev/eventing-rabbitmq
@@ -85,33 +85,33 @@ Change this value to try different scenarios better reflecting your application 
 
 Now run any of the two test types.
 To run the increasing load test:
-```
+```sh
 ko apply --filename test/performance/broker-setup/200-broker-increasing-load-setup.yaml
 ```
 To run the constant load test:
-```
+```sh
 ko apply --filename test/performance/broker-setup/300-broker-constant-load-setup.yaml
 ```
-``
 To run the multi consumer load test:
-```
+```sh
 ko apply --filename test/performance/broker-setup/400-broker-multi-consumer-setup.yaml
 ```
+
+[Click here to learn how to visualize the results](#download-&-visualize-knative-eventing-rabbitmq-benchmark-results)
 
 ### Cleanup
 
 To cleanup performance tests resources run:
-```
+```sh
 kubectl delete --filename test/performance/broker-setup/200-broker-increasing-load-setup.yaml
 ```
 and/or:
-```
+```sh
 kubectl delete --filename test/performance/broker-setup/300-broker-constant-load-setup.yaml
 kubectl delete --filename test/performance/broker-setup/400-broker-multi-consumer-setup.yaml
-
 ```
 finally:
-```
+```sh
 kubectl delete --filename test/performance/broker-setup/100-broker-perf-setup.yaml
 ```
 
@@ -125,51 +125,46 @@ cd $GOPATH/src/knative-dev/eventing-rabbitmq
 ko apply --filename config/source
 ```
 
-### Run Knative Eventing RabbitMQ benchmarks
+### Run Knative Eventing RabbitMQ Source benchmarks
 
 ```sh
 cd $GOPATH/src/knative.dev/eventing-rabbitmq
-ko apply --filename test/performance/broker-setup/100-broker-perf-setup.yaml
+ko apply --filename test/performance/source-setup/100-rabbitmq-setup.yaml
 kubectl wait --for=condition=AllReplicasReady=true rmq/rabbitmq-test-cluster --timeout=10m --namespace perf-eventing
 kubectl wait --for=condition=IngressReady=true brokers/rabbitmq-test-broker --timeout=10m --namespace perf-eventing
-kubectl wait --for=condition=SubscriberResolved=true triggers/rabbitmq-broker-perf --timeout=10m --namespace perf-eventing
+kubectl apply --filename test/performance/source-setup/200-source-perf-setup.yaml
+
 ```
-The default setup has a Trigger's Parallelism value of:
-`rabbitmq.eventing.knative.dev/parallelism: 100`
+The default setup has a Source's Parallelism value of:
+`channel.parallelism: 100`
 
 Change this value to try different scenarios better reflecting your application needs
 
 Now run any of the two test types.
 To run the increasing load test:
-```
-ko apply --filename test/performance/broker-setup/200-broker-increasing-load-setup.yaml
+```sh
+ko apply --filename test/performance/source-setup/300-source-increasing-load-setup.yaml
 ```
 To run the constant load test:
-```
-ko apply --filename test/performance/broker-setup/300-broker-constant-load-setup.yaml
-```
-``
-To run the multi consumer load test:
-```
-ko apply --filename test/performance/broker-setup/400-broker-multi-consumer-setup.yaml
+```sh
+ko apply --filename test/performance/source-setup/400-source-constant-load-setup.yaml
 ```
 
-[Click here to visualize the results](#download-&-visualize-knative-eventing-rabbitmq-benchmark-results)
+[Click here to learn how to visualize the results](#download-&-visualize-knative-eventing-rabbitmq-benchmark-results)
 
 ### Cleanup
 
 To cleanup performance tests resources run:
-```
+```sh
 kubectl delete --filename test/performance/source-setup/200-source-increasing-load-setup.yaml
 ```
 and/or:
-```
+```sh
 kubectl delete --filename test/performance/source-setup/300-broker-constant-load-setup.yaml
 kubectl delete --filename test/performance/source-setup/400-broker-multi-consumer-setup.yaml
-
 ```
 finally:
-```
+```sh
 kubectl delete --filename test/performance/broker-setup/100-source-perf-setup.yaml
 ```
 
