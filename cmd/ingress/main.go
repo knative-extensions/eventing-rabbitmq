@@ -17,7 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -185,19 +184,17 @@ func (env *envConfig) ServeHTTP(writer http.ResponseWriter, request *http.Reques
 	writer.WriteHeader(statusCode)
 }
 
-func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, time.Duration, error) {
-	bytes, err := json.Marshal(event)
-	if err != nil {
-		return http.StatusBadRequest, noDuration, fmt.Errorf("failed to marshal event, %w", err)
-	}
-
+func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, error) {
 	tp, ts := (&tracecontext.HTTPFormat{}).SpanContextToHeaders(span.SpanContext())
 	headers := amqp.Table{
-		"type":        event.Type(),
-		"source":      event.Source(),
-		"subject":     event.Subject(),
-		"traceparent": tp,
-		"tracestate":  ts,
+		"content-type":   event.DataContentType(),
+		"ce-specversion": event.SpecVersion(),
+		"ce-type":        event.Type(),
+		"ce-source":      event.Source(),
+		"ce-subject":     event.Subject(),
+		"ce-id":          event.ID(),
+		"traceparent":    tp,
+		"tracestate":     ts,
 	}
 
 	for key, val := range event.Extensions() {
@@ -211,11 +208,11 @@ func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, tim
 		false, // immediate
 		amqp.Publishing{
 			Headers:      headers,
-			ContentType:  "application/json",
-			Body:         bytes,
+			MessageId:    event.ID(),
+			ContentType:  event.DataContentType(),
+			Body:         event.Data(),
 			DeliveryMode: amqp.Persistent,
 		})
-
 	if err != nil {
 		return http.StatusInternalServerError, noDuration, fmt.Errorf("failed to publish message: %w", err)
 	}
