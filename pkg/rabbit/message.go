@@ -42,9 +42,7 @@ const (
 	contentTypeHeader = "content-type"
 )
 
-var (
-	specs = spec.WithPrefix(prefix)
-)
+var specs = spec.WithPrefix(prefix)
 
 // Message holds a rabbitmq message.
 // this message *can* be read several times safely

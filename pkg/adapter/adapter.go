@@ -287,7 +287,7 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 		req,
 		a.logger)
 	if err != nil {
-		a.logger.Error("error writting event to http", zap.Error(err))
+		a.logger.Error("error writing event to http", zap.Error(err))
 		return err
 	}
 
