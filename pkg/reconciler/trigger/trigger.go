@@ -312,7 +312,7 @@ func (r *Reconciler) reconcileDeployment(ctx context.Context, d *v1.Deployment) 
 		return d, nil
 	} else if err != nil {
 		return nil, err
-	} else if !equality.Semantic.DeepEqual(d.Spec.Template, current.Spec.Template) {
+	} else if !equality.Semantic.DeepDerivative(d.Spec.Template, current.Spec.Template) {
 		// Don't modify the informers copy.
 		desired := current.DeepCopy()
 		desired.Spec = d.Spec

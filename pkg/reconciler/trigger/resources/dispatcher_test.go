@@ -56,7 +56,7 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 		{
 			name: "base",
 			args: dispatcherArgs(),
-			want: deployment(),
+			want: deployment(withEnv(corev1.EnvVar{Name: "PARALLELISM", Value: "1"})),
 		},
 		{
 			name: "with delivery spec",
@@ -71,12 +71,16 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 				withEnv(corev1.EnvVar{Name: "BACKOFF_POLICY", Value: "exponential"}),
 				withEnv(corev1.EnvVar{Name: "BACKOFF_DELAY", Value: "20s"}),
 				withEnv(corev1.EnvVar{Name: "TIMEOUT", Value: "10s"}),
+				withEnv(corev1.EnvVar{Name: "PARALLELISM", Value: "1"}),
 			),
 		},
 		{
 			name: "with dlx",
 			args: dispatcherArgs(withDLX),
-			want: deployment(deploymentNamed("testtrigger-dlx-dispatcher")),
+			want: deployment(
+				deploymentNamed("testtrigger-dlx-dispatcher"),
+				withEnv(corev1.EnvVar{Name: "PARALLELISM", Value: "1"}),
+			),
 		},
 		{
 			name: "with parallelism",

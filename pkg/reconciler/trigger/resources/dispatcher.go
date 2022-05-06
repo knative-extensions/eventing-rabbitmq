@@ -139,6 +139,12 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 				Name:  "PARALLELISM",
 				Value: parallelism,
 			})
+	} else {
+		dispatcher.Env = append(dispatcher.Env,
+			corev1.EnvVar{
+				Name:  "PARALLELISM",
+				Value: "1",
+			})
 	}
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
