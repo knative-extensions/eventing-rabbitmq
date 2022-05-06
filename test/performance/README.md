@@ -129,7 +129,7 @@ ko apply --filename config/source
 
 ```sh
 cd $GOPATH/src/knative.dev/eventing-rabbitmq
-ko apply --filename test/performance/source-setup/100-rabbitmq-setup.yaml
+kubectl apply --filename test/performance/source-setup/100-rabbitmq-setup.yaml
 kubectl wait --for=condition=AllReplicasReady=true rmq/rabbitmq-test-cluster --timeout=10m --namespace perf-eventing
 kubectl wait --for=condition=IngressReady=true brokers/rabbitmq-test-broker --timeout=10m --namespace perf-eventing
 export EXCHANGE_NAME=$(kubectl get exchanges -n perf-eventing -o jsonpath={.items[0].metadata.name})
