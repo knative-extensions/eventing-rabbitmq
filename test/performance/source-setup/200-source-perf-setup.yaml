@@ -13,13 +13,6 @@
 # limitations under the License.
 
 apiVersion: v1
-kind: Namespace
-metadata:
-  name: perf-eventing
-
----
-
-apiVersion: v1
 kind: ConfigMap
 metadata:
   name: config-mako
@@ -32,8 +25,8 @@ data:
     # https://github.com/google/mako/blob/master/docs/CLI.md.
 
     project_name: "Knative"
-    benchmark_name: "Development - RabbitMQ Broker Latency & Throughput"
-    description: "Measure latency and throughput of the broker."
+    benchmark_name: "Development - RabbitMQ Source Latency & Throughput"
+    description: "Measure latency and throughput of the Source."
     benchmark_key: '6552586517741568'
 
     # Human owners for manual benchmark adjustments.
@@ -86,74 +79,51 @@ data:
 ---
 
 apiVersion: rabbitmq.com/v1beta1
-kind: RabbitmqCluster
+kind: Binding
 metadata:
-  name: rabbitmq-test-cluster
+  name: binding
   namespace: perf-eventing
 spec:
-  replicas: 1
-  # To tie the test env to a certain type of node VM use this
-  # affinity:
-  #  nodeAffinity:
-  #    requiredDuringSchedulingIgnoredDuringExecution:
-  #      nodeSelectorTerms:
-  #      - matchExpressions:
-  #        - key: cloud.google.com/machine-family
-  #          operator: In
-  #          values:
-  #          - c2
-
----
-
-apiVersion: eventing.knative.dev/v1
-kind: Broker
-metadata:
-  name: rabbitmq-test-broker
-  namespace: perf-eventing
-  annotations:
-    eventing.knative.dev/broker.class: RabbitMQBroker
-spec:
-  config:
-    apiVersion: rabbitmq.com/v1beta1
-    kind: RabbitmqCluster
+  source: $EXCHANGE_NAME
+  destination: source-queue
+  destinationType: queue
+  rabbitmqClusterReference:
     name: rabbitmq-test-cluster
 
 ---
 
-apiVersion: eventing.knative.dev/v1
-kind: Trigger
+apiVersion: sources.knative.dev/v1alpha1
+kind: RabbitmqSource
 metadata:
-  name: rabbitmq-trigger-perf
+  name: rabbitmq-source
   namespace: perf-eventing
-  annotations:
-    # Set this to 1 for FIFO
-    rabbitmq.eventing.knative.dev/parallelism: "100"
 spec:
-  broker: rabbitmq-test-broker
-  subscriber:
+  broker: "rabbitmq-test-cluster:5672/"
+  user:
+    secretKeyRef:
+      name: rabbitmq-test-cluster-default-user
+      key: username
+  password:
+    secretKeyRef:
+      name: rabbitmq-test-cluster-default-user
+      key: password
+  predeclared: true
+  channelConfig:
+    # Value must be between 1 and 1000
+    # A value of 1 RabbitMQ Source behaves as a FIFO queue
+    # Values above 1 break message ordering guarantees and can be seen as more performance oriented
+    parallelism: 100
+    globalQos: false
+  exchangeConfig:
+    name: $EXCHANGE_NAME
+  queueConfig:
+    name: "source-queue"
+  sink:
     ref:
       apiVersion: v1
       kind: Service
-      name: rabbitmq-broker-perf-consumer
-  filter:
-    attributes:
-      source: rabbitmq-broker-perf-send-receive
-
----
-
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: eventing-broker-ingress
-  namespace: perf-eventing
-
----
-
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: eventing-broker-filter
-  namespace: perf-eventing
+      name: rabbitmq-source-perf-consumer
+      namespace: perf-eventing
 
 ---
 
@@ -191,46 +161,14 @@ roleRef:
 
 ---
 
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: eventing-broker-ingress
-  namespace: perf-eventing
-subjects:
-  - kind: ServiceAccount
-    name: eventing-broker-ingress
-    namespace: perf-eventing
-roleRef:
-  kind: ClusterRole
-  name: eventing-broker-ingress
-  apiGroup: rbac.authorization.k8s.io
-
----
-
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: eventing-broker-filter
-  namespace: perf-eventing
-subjects:
-  - kind: ServiceAccount
-    name: eventing-broker-filter
-    namespace: perf-eventing
-roleRef:
-  kind: ClusterRole
-  name: eventing-broker-filter
-  apiGroup: rbac.authorization.k8s.io
-
----
-
 apiVersion: v1
 kind: Service
 metadata:
-  name: rabbitmq-broker-perf-consumer
+  name: rabbitmq-source-perf-consumer
   namespace: perf-eventing
 spec:
   selector:
-    role: rabbitmq-broker-perf-consumer
+    role: rabbitmq-source-perf-consumer
   ports:
   - name: http
     port: 80
@@ -242,11 +180,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: rabbitmq-broker-perf-aggregator
+  name: rabbitmq-source-perf-aggregator
   namespace: perf-eventing
 spec:
   selector:
-    role: rabbitmq-broker-perf-aggregator
+    role: rabbitmq-source-perf-aggregator
   ports:
   - name: grpc
     port: 10000

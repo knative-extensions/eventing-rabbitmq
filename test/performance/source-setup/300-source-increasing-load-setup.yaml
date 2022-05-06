@@ -11,17 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
-# To run this:
-# ko resolve -f 300-broker-perf-consumer-job.yml | kubectl create -f -
+
 
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: rabbitmq-broker-perf-send-receive
+  name: rabbitmq-source-perf-send-receive
   namespace: perf-eventing
   labels:
-    role: rabbitmq-broker-perf-consumer
+    role: rabbitmq-source-perf-consumer
 spec:
   completions: 1
   parallelism: 1
@@ -29,7 +27,7 @@ spec:
   template:
     metadata:
       labels:
-        role: rabbitmq-broker-perf-consumer
+        role: rabbitmq-source-perf-consumer
     spec:
       serviceAccountName: perf-eventing
       restartPolicy: Never
@@ -39,20 +37,20 @@ spec:
         args:
         - "--roles=sender,receiver"
         - "--sink=http://rabbitmq-test-broker-broker-ingress.perf-eventing.svc.cluster.local/"
-        - "--aggregator=rabbitmq-broker-perf-aggregator:10000"
-        - "--pace=1000:300"
+        - "--aggregator=rabbitmq-source-perf-aggregator:10000"
+        - "--pace=500:30,600:30,700:30,800:30,900:30,1000:30"
         env:
         - name: GOGC
           value: "off"
         - name: POD_NAME
-          value: rabbitmq-broker-perf-send-receive
+          value: rabbitmq-source-perf-send-receive
         - name: POD_NAMESPACE
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
         resources:
           requests:
-            cpu: 2
+            cpu: 1
             memory: 2Gi
         ports:
         - name: cloudevents
@@ -63,10 +61,10 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
-  name: rabbitmq-broker-perf-aggregator
+  name: rabbitmq-source-perf-aggregator
   namespace: perf-eventing
   labels:
-    role: rabbitmq-broker-perf-aggregator
+    role: rabbitmq-source-perf-aggregator
 spec:
   serviceAccountName: perf-eventing
   restartPolicy: Never
