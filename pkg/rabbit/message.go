@@ -153,15 +153,20 @@ func (m *Message) ReadBinary(ctx context.Context, encoder binding.BinaryWriter) 
 	}
 
 	for k, v := range m.Headers {
-		if strings.HasPrefix(k, prefix) {
-			attr := m.version.Attribute(k)
+		if k == contentTypeHeader {
+			err = encoder.SetAttribute(m.version.AttributeFromKind(spec.DataContentType), string(v))
+		} else {
+			prefixedK := k
+			if !strings.HasPrefix(prefixedK, prefix) {
+				prefixedK = prefix + k
+			}
+
+			attr := m.version.Attribute(prefixedK)
 			if attr != nil {
 				err = encoder.SetAttribute(attr, string(v))
 			} else {
-				err = encoder.SetExtension(strings.TrimPrefix(k, prefix), string(v))
+				err = encoder.SetExtension(strings.TrimPrefix(prefixedK, prefix), string(v))
 			}
-		} else if k == contentTypeHeader {
-			err = encoder.SetAttribute(m.version.AttributeFromKind(spec.DataContentType), string(v))
 		}
 
 		if err != nil {

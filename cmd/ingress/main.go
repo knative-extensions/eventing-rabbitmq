@@ -189,10 +189,12 @@ func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, err
 	headers := amqp.Table{
 		"content-type":   event.DataContentType(),
 		"ce-specversion": event.SpecVersion(),
+		"ce-time":        cloudevents.Timestamp{Time: event.Time().UTC()}.String(),
 		"ce-type":        event.Type(),
 		"ce-source":      event.Source(),
 		"ce-subject":     event.Subject(),
 		"ce-id":          event.ID(),
+		"ce-schemaurl":   event.DataSchema(),
 		"traceparent":    tp,
 		"tracestate":     ts,
 	}

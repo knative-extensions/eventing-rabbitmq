@@ -141,7 +141,12 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg wabbit.Delivery, ceClient
 	msgBinding := rabbit.NewMessageFromDelivery(ComponentName, "", "", msg)
 	event, err := binding.ToEvent(cloudevents.WithEncodingBinary(ctx), msgBinding)
 	if err != nil {
-		logging.FromContext(ctx).Error("error creating event from delivery")
+		logging.FromContext(ctx).Warn("failed creating event from delivery, err (NACK-ing and not re-queueing): ", err)
+		err = msg.Nack(false, false)
+		if err != nil {
+			logging.FromContext(ctx).Warn("failed to NACK event: ", err)
+		}
+		return
 	}
 
 	ctx, span := readSpan(ctx, msg)
