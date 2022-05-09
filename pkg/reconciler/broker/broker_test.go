@@ -1017,7 +1017,8 @@ func TestReconcile(t *testing.T) {
 					WithDeadLetterSinkResolvedSucceeded(delivery.DeadLetterSink.URI),
 					WithSecretReady(),
 					WithBrokerAddressURI(brokerAddress),
-					WithExchangeReady()),
+					WithExchangeReady(),
+					WithBrokerReady),
 			}},
 			WantCreates: []runtime.Object{
 				createIngressService(),

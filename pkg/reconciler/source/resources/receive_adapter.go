@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/rickb777/date/period"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -151,9 +152,10 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 	}
 
 	if args.Source.Spec.BackoffDelay != nil {
+		p, _ := period.Parse(*args.Source.Spec.BackoffDelay)
 		env = append(env, corev1.EnvVar{
 			Name:  "HTTP_SENDER_BACKOFF_DELAY",
-			Value: *args.Source.Spec.BackoffDelay,
+			Value: p.DurationApprox().String(),
 		})
 	}
 
