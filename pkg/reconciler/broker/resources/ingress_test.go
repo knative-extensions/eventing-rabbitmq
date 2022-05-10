@@ -98,6 +98,18 @@ func TestMakeIngressDeployment(t *testing.T) {
 						}, {
 							Name:  "EXCHANGE_NAME",
 							Value: brokerExchangeName,
+						}, {
+							Name:  "CONTAINER_NAME",
+							Value: "ingress",
+						}, {
+							Name:  "POD_NAME",
+							Value: "testbroker-broker-ingress",
+						}, {
+							Name:  "BROKER_NAME",
+							Value: "testbroker",
+						}, {
+							Name:  "BROKER_NAMESPACE",
+							Value: "testnamespace",
 						}},
 						Ports: []corev1.ContainerPort{{
 							ContainerPort: 8080,

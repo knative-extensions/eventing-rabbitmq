@@ -48,6 +48,8 @@ type IngressArgs struct {
 
 // MakeIngressDeployment creates the in-memory representation of the Broker's ingress Deployment.
 func MakeIngressDeployment(args *IngressArgs) *appsv1.Deployment {
+	DeploymentName := fmt.Sprintf("%s-broker-ingress", args.Broker.Name)
+
 	envs := []corev1.EnvVar{{
 		Name:  system.NamespaceEnvKey,
 		Value: system.Namespace(),
@@ -64,6 +66,18 @@ func MakeIngressDeployment(args *IngressArgs) *appsv1.Deployment {
 	}, {
 		Name:  "EXCHANGE_NAME",
 		Value: naming.BrokerExchangeName(args.Broker, false),
+	}, {
+		Name:  "CONTAINER_NAME",
+		Value: ingressContainerName,
+	}, {
+		Name:  "POD_NAME",
+		Value: DeploymentName,
+	}, {
+		Name:  "BROKER_NAME",
+		Value: args.Broker.Name,
+	}, {
+		Name:  "BROKER_NAMESPACE",
+		Value: args.Broker.Namespace,
 	}}
 	if args.Configs != nil {
 		envs = append(envs, args.Configs.ToEnvVars()...)
@@ -72,7 +86,7 @@ func MakeIngressDeployment(args *IngressArgs) *appsv1.Deployment {
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: args.Broker.Namespace,
-			Name:      fmt.Sprintf("%s-broker-ingress", args.Broker.Name),
+			Name:      DeploymentName,
 			OwnerReferences: []metav1.OwnerReference{
 				*kmeta.NewControllerRef(args.Broker),
 			},

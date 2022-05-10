@@ -28,6 +28,7 @@ import (
 	amqperr "github.com/rabbitmq/amqp091-go"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/pkg/logging"
+	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/signals"
 
 	"github.com/NeowayLabs/wabbit"
@@ -56,6 +57,9 @@ type envConfig struct {
 
 func main() {
 	ctx := signals.NewContext()
+
+	// Report stats on Go memory usage every 30 seconds.
+	metrics.MemStatsOrDie(ctx)
 
 	var env envConfig
 	if err := envconfig.Process("", &env); err != nil {
