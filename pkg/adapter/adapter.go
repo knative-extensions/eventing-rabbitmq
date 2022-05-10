@@ -272,7 +272,7 @@ func (a *Adapter) processMessages(wg *sync.WaitGroup, queue <-chan wabbit.Delive
 }
 
 func (a *Adapter) postMessage(msg wabbit.Delivery) error {
-	a.logger.Info("url ->" + a.httpMessageSender.Target)
+	a.logger.Info("target: " + a.httpMessageSender.Target)
 	req, err := a.httpMessageSender.NewCloudEventRequest(a.context)
 	if err != nil {
 		return err

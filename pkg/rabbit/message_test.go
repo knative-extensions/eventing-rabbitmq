@@ -98,8 +98,8 @@ func TestProtocol_MsgReadBinary(t *testing.T) {
 		version: specs.Version("1.0"),
 		headers: map[string][]byte{
 			"content-type": []byte(testContentType),
-			"ce-id":        []byte(msgId),
-			"ce-ext":       []byte("test extension"),
+			"id":           []byte(msgId),
+			"ext":          []byte("test extension"),
 		},
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -194,12 +194,12 @@ func TestProtocol_NewMessage(t *testing.T) {
 		},
 	}, {
 		name:        "msg with version",
-		headers:     map[string][]byte{"ce-specversion": []byte("1.0")},
+		headers:     map[string][]byte{"specversion": []byte("1.0")},
 		contentType: testContentType,
 		want: &Message{
 			ContentType: testContentType,
 			version:     specs.Version("1.0"),
-			Headers:     map[string][]byte{"ce-specversion": []byte("1.0")},
+			Headers:     map[string][]byte{"specversion": []byte("1.0")},
 		},
 	}, {
 		name:        "msg with format",
@@ -274,12 +274,12 @@ func TestProtocol_MsgGetExtension(t *testing.T) {
 		want:    "",
 	}, {
 		name:    "get msg extension",
-		headers: map[string][]byte{"ce-extension": []byte("test")},
+		headers: map[string][]byte{"extension": []byte("test")},
 		extName: "extension",
 		want:    "test",
 	}, {
 		name:    "get msg extension different value",
-		headers: map[string][]byte{"ce-different": []byte("testing this again 1")},
+		headers: map[string][]byte{"different": []byte("testing this again 1")},
 		extName: "different",
 		want:    "testing this again 1",
 	}} {
@@ -375,11 +375,12 @@ func TestProtocol_NewMessageFromDelivery(t *testing.T) {
 		name:    "set content type header",
 		headers: map[string][]byte{"content-type": []byte(testContentType)},
 		delivery: &origamqp.Delivery{
-			MessageId: msgId,
-			Timestamp: msgTime,
-			Headers:   amqp091.Table{"content-type": testContentType},
+			MessageId:   msgId,
+			Timestamp:   msgTime,
+			ContentType: testContentType,
+			Headers:     amqp091.Table{},
 		},
-		want: &Message{Headers: map[string][]byte{"content-type": []byte(testContentType)}, ContentType: testContentType},
+		want: &Message{Headers: make(map[string][]byte), ContentType: testContentType},
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
 			tt := tt
@@ -389,9 +390,8 @@ func TestProtocol_NewMessageFromDelivery(t *testing.T) {
 				Delivery: tt.delivery,
 			}
 			got := NewMessageFromDelivery(sourceName, namespace, queueName, m)
-			//got.Headers["time"] = []byte(time.String())
-			if _, ok := tt.want.Headers["ce-source"]; !ok {
-				tt.want.Headers["ce-source"] = []byte(source)
+			if _, ok := tt.want.Headers["source"]; !ok {
+				tt.want.Headers["source"] = []byte(source)
 			}
 			if !compareMessages(got, tt.want) {
 				t.Errorf("Unexpected message want:\n%v\ngot:\n%v", tt.want, got)

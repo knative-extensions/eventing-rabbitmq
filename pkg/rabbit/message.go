@@ -40,6 +40,7 @@ import (
 const (
 	prefix            = "ce-"
 	contentTypeHeader = "content-type"
+	specversionHeader = "specversion"
 )
 
 var specs = spec.WithPrefix(prefix)
@@ -91,22 +92,20 @@ func ConvertMessageToHTTPRequest(
 // NewMessageFromDelivery returns a binding.Message that holds the provided RabbitMQ Message.
 // The returned binding.Message *can* be read several times safely
 func NewMessageFromDelivery(sourceName, namespace, queueName string, msg wabbit.Delivery) *Message {
-	var contentType string
 	headers := make(map[string][]byte, len(msg.Headers()))
 	for key, val := range msg.Headers() {
 		k := strings.ToLower(key)
 		if k == contentTypeHeader {
-			contentType = val.(string)
+			continue
 		}
-
 		headers[k] = []byte(fmt.Sprint(val))
 	}
 
-	if _, ok := headers["ce-source"]; !ok {
-		headers["ce-source"] = []byte(sourcesv1alpha1.RabbitmqEventSource(namespace, sourceName, queueName))
+	if _, ok := headers["source"]; !ok {
+		headers["source"] = []byte(sourcesv1alpha1.RabbitmqEventSource(namespace, sourceName, queueName))
 	}
 
-	return NewMessage(msg.Body(), contentType, headers)
+	return NewMessage(msg.Body(), msg.ContentType(), headers)
 }
 
 // NewMessage returns a binding.Message that holds the provided rabbitmq message components.
@@ -119,7 +118,7 @@ func NewMessage(value []byte, contentType string, headers map[string][]byte) *Me
 			Headers:     headers,
 			format:      ft,
 		}
-	} else if v := specs.Version(string(headers[specs.PrefixedSpecVersionName()])); v != nil {
+	} else if v := specs.Version(string(headers[specversionHeader])); v != nil {
 		return &Message{
 			Value:       value,
 			ContentType: contentType,
@@ -156,16 +155,11 @@ func (m *Message) ReadBinary(ctx context.Context, encoder binding.BinaryWriter) 
 		if k == contentTypeHeader {
 			err = encoder.SetAttribute(m.version.AttributeFromKind(spec.DataContentType), string(v))
 		} else {
-			prefixedK := k
-			if !strings.HasPrefix(prefixedK, prefix) {
-				prefixedK = prefix + k
-			}
-
-			attr := m.version.Attribute(prefixedK)
+			attr := m.version.Attribute(prefix + k)
 			if attr != nil {
 				err = encoder.SetAttribute(attr, string(v))
 			} else {
-				err = encoder.SetExtension(strings.TrimPrefix(prefixedK, prefix), string(v))
+				err = encoder.SetExtension(k, string(v))
 			}
 		}
 
@@ -199,7 +193,7 @@ func (m *Message) GetAttribute(k spec.Kind) (spec.Attribute, interface{}) {
 }
 
 func (m *Message) GetExtension(name string) interface{} {
-	return string(m.Headers[prefix+name])
+	return string(m.Headers[name])
 }
 
 func (m *Message) Finish(error) error {
@@ -212,15 +206,18 @@ func ConvertToCloudEvent(event *cloudevents.Event, msg wabbit.Delivery, namespac
 	} else {
 		event.SetID(string(uuid.NewUUID()))
 	}
+	if event.Type() == "" {
+		event.SetType(sourcesv1alpha1.RabbitmqEventType)
+	}
+	if event.Source() == "" {
+		event.SetSource(sourcesv1alpha1.RabbitmqEventSource(namespace, sourceName, queueName))
+	}
 
-	event.SetType(sourcesv1alpha1.RabbitmqEventType)
-	event.SetSource(sourcesv1alpha1.RabbitmqEventSource(namespace, sourceName, queueName))
 	event.SetSubject(event.ID())
 	event.SetTime(msg.Timestamp())
 	err := event.SetData(msg.ContentType(), msg.Body())
 	if err != nil {
 		return err
 	}
-
 	return nil
 }

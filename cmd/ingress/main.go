@@ -184,24 +184,25 @@ func (env *envConfig) ServeHTTP(writer http.ResponseWriter, request *http.Reques
 	writer.WriteHeader(statusCode)
 }
 
-func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, error) {
+func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, time.Duration, error) {
 	tp, ts := (&tracecontext.HTTPFormat{}).SpanContextToHeaders(span.SpanContext())
 	headers := amqp.Table{
-		"content-type":   event.DataContentType(),
-		"ce-specversion": event.SpecVersion(),
-		"ce-time":        cloudevents.Timestamp{Time: event.Time().UTC()}.String(),
-		"ce-type":        event.Type(),
-		"ce-source":      event.Source(),
-		"ce-subject":     event.Subject(),
-		"ce-id":          event.ID(),
-		"ce-schemaurl":   event.DataSchema(),
-		"traceparent":    tp,
-		"tracestate":     ts,
+		"content-type": event.DataContentType(),
+		"specversion":  event.SpecVersion(),
+		"time":         cloudevents.Timestamp{Time: event.Time().UTC()}.String(),
+		"type":         event.Type(),
+		"source":       event.Source(),
+		"subject":      event.Subject(),
+		"id":           event.ID(),
+		"schemaurl":    event.DataSchema(),
+		"traceparent":  tp,
+		"tracestate":   ts,
 	}
 
 	for key, val := range event.Extensions() {
 		headers[key] = val
 	}
+
 	start := time.Now()
 	dc, err := env.channel.PublishWithDeferredConfirm(
 		env.ExchangeName,
