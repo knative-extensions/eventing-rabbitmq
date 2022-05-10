@@ -95,9 +95,6 @@ func NewMessageFromDelivery(sourceName, namespace, queueName string, msg wabbit.
 	headers := make(map[string][]byte, len(msg.Headers()))
 	for key, val := range msg.Headers() {
 		k := strings.ToLower(key)
-		if k == contentTypeHeader {
-			continue
-		}
 		headers[k] = []byte(fmt.Sprint(val))
 	}
 
@@ -154,7 +151,8 @@ func (m *Message) ReadBinary(ctx context.Context, encoder binding.BinaryWriter) 
 	for k, v := range m.Headers {
 		if k == contentTypeHeader {
 			err = encoder.SetAttribute(m.version.AttributeFromKind(spec.DataContentType), string(v))
-		} else {
+			// avoid converting any RabbitMQ related headers to the CloudEvent
+		} else if !strings.HasPrefix(k, "x-") {
 			attr := m.version.Attribute(prefix + k)
 			if attr != nil {
 				err = encoder.SetAttribute(attr, string(v))
@@ -162,7 +160,6 @@ func (m *Message) ReadBinary(ctx context.Context, encoder binding.BinaryWriter) 
 				err = encoder.SetExtension(k, string(v))
 			}
 		}
-
 		if err != nil {
 			return
 		}
@@ -171,7 +168,6 @@ func (m *Message) ReadBinary(ctx context.Context, encoder binding.BinaryWriter) 
 	if m.Value != nil {
 		err = encoder.SetData(bytes.NewBuffer(m.Value))
 	}
-
 	return
 }
 

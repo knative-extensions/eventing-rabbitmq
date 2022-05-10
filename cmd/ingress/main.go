@@ -194,7 +194,7 @@ func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, tim
 		"source":       event.Source(),
 		"subject":      event.Subject(),
 		"id":           event.ID(),
-		"schemaurl":    event.DataSchema(),
+		"dataschema":   event.DataSchema(),
 		"traceparent":  tp,
 		"tracestate":   ts,
 	}

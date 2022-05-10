@@ -155,9 +155,7 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg wabbit.Delivery, ceClient
 		span.AddAttributes(client.EventTraceAttributes(event)...)
 	}
 
-	logging.FromContext(ctx).Debugf("Got event as: %+v", *event)
 	ctx = cloudevents.ContextWithTarget(ctx, d.SubscriberURL)
-
 	if d.BackoffPolicy == eventingduckv1.BackoffPolicyLinear {
 		ctx = cloudevents.ContextWithRetriesLinearBackoff(ctx, d.BackoffDelay, d.MaxRetries)
 	} else {
@@ -171,10 +169,7 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg wabbit.Delivery, ceClient
 			logging.FromContext(ctx).Warn("failed to NACK event: ", err)
 		}
 		return
-	}
-
-	logging.FromContext(ctx).Debugf("Got Response: %+v", response)
-	if response != nil {
+	} else if response != nil {
 		logging.FromContext(ctx).Infof("Sending an event: %+v", response)
 		ctx = cloudevents.ContextWithTarget(ctx, d.BrokerIngressURL)
 		result := ceClient.Send(ctx, *response)

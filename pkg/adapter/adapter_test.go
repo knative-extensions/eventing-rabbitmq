@@ -67,18 +67,18 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 			reqBody:   `{"test":"test"}`,
 			withMsgId: true,
 			reqHeaders: http.Header{
-				"Ce-Specversion": []string{"1.0"},
-				"Ce-Source":      []string{"example/source.uri"},
-				"Ce-Testheader":  []string{"testHeader"},
+				"Specversion": []string{"1.0"},
+				"Source":      []string{"example/source.uri"},
+				"Testheader":  []string{"testHeader"},
 			},
 			data: map[string]interface{}{
 				"test": "test",
 			},
 			headers: wabbit.Option{
-				"ce-specversion": "1.0",
-				"ce-source":      "example/source.uri",
-				"ce-testheader":  "testHeader",
-				"ignore":         "ignore",
+				"specversion": "1.0",
+				"source":      "example/source.uri",
+				"testheader":  "testHeader",
+				"ignore":      "ignore",
 			},
 			isCe: true,
 		},
@@ -167,8 +167,7 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 			if err != nil {
 				t.Errorf("Error unmarshaling wanted request body %s %s", tc.reqBody, err)
 			}
-
-			err = json.Unmarshal([]byte(tc.reqBody), &gotBody)
+			err = json.Unmarshal(m.Body(), &gotBody)
 			if err != nil {
 				t.Errorf("Error unmarshaling got request body %s %s", h.body, err)
 			}
@@ -180,17 +179,24 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 			if tc.isCe {
 				ceHeaders := http.Header{}
 				for key, value := range h.header {
-					if strings.HasPrefix(key, "Ce-") {
-						ceHeaders[key] = value
-					}
+					ceHeaders[strings.TrimPrefix(key, "Ce-")] = value
 				}
 
-				if len(ceHeaders) > 0 && len(ceHeaders) != len(tc.reqHeaders) && !reflect.DeepEqual(ceHeaders, tc.reqHeaders) {
+				if !compareHeaders(tc.reqHeaders, ceHeaders, t) {
 					t.Errorf("Expected request headers '%s', but got '%s' %s", tc.reqHeaders, ceHeaders, err)
 				}
 			}
 		})
 	}
+}
+
+func compareHeaders(expected, received http.Header, t *testing.T) bool {
+	for key, val := range expected {
+		if val2, ok := received[key]; !ok || val[0] != val2[0] {
+			return false
+		}
+	}
+	return true
 }
 
 func TestAdapter_CreateConn(t *testing.T) {
