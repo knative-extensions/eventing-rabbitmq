@@ -30,7 +30,7 @@ import (
 func TestMakeReceiveAdapter(t *testing.T) {
 	var retry int32 = 5
 	parallelism := 10
-	backoffDelay := "50ms"
+	backoffDelay := "PT0.1S"
 
 	for _, tt := range []struct {
 		name          string
@@ -259,7 +259,7 @@ func TestMakeReceiveAdapter(t *testing.T) {
 										},
 										{
 											Name:  "HTTP_SENDER_BACKOFF_DELAY",
-											Value: "50ms",
+											Value: "100ms",
 										},
 									},
 								},

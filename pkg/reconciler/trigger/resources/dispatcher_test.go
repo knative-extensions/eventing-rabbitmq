@@ -63,7 +63,7 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 			args: dispatcherArgs(withDelivery(&eventingduckv1.DeliverySpec{
 				Retry:         Int32Ptr(10),
 				BackoffPolicy: &exponentialBackoff,
-				BackoffDelay:  ptr.String("20s"),
+				BackoffDelay:  ptr.String("PT20S"),
 				Timeout:       pointer.StringPtr("PT10S"),
 			})),
 			want: deployment(

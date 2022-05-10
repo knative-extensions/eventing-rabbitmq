@@ -118,10 +118,11 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 				})
 		}
 		if args.Delivery.BackoffDelay != nil {
+			p, _ := period.Parse(*args.Delivery.BackoffDelay)
 			dispatcher.Env = append(dispatcher.Env,
 				corev1.EnvVar{
 					Name:  "BACKOFF_DELAY",
-					Value: *args.Delivery.BackoffDelay,
+					Value: p.DurationApprox().String(),
 				})
 		}
 		if args.Delivery.Timeout != nil {

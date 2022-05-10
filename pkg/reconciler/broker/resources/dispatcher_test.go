@@ -63,7 +63,7 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 		BrokerIngressURL:   bURL,
 		Delivery: &v1.DeliverySpec{
 			Retry:         ptr.Int32(10),
-			BackoffDelay:  ptr.String("20s"),
+			BackoffDelay:  ptr.String("PT20S"),
 			BackoffPolicy: &linear,
 		},
 	}
