@@ -162,12 +162,10 @@ func (m *Message) ReadBinary(ctx context.Context, encoder binding.BinaryWriter) 
 				}
 			}
 		}
-<<<<<<< HEAD
+
 		if !contentTypeSet && err == nil {
 			err = encoder.SetAttribute(m.version.AttributeFromKind(spec.DataContentType), m.ContentType)
 		}
-=======
->>>>>>> db544fd9 (fixed adapter's unit tests)
 		if err != nil {
 			return
 		}
