@@ -78,7 +78,6 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 				"specversion": "1.0",
 				"source":      "example/source.uri",
 				"testheader":  "testHeader",
-				"ignore":      "ignore",
 			},
 			isCe: true,
 		},
@@ -167,7 +166,7 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 			if err != nil {
 				t.Errorf("Error unmarshaling wanted request body %s %s", tc.reqBody, err)
 			}
-			err = json.Unmarshal(m.Body(), &gotBody)
+			err = json.Unmarshal(h.body, &gotBody)
 			if err != nil {
 				t.Errorf("Error unmarshaling got request body %s %s", h.body, err)
 			}
