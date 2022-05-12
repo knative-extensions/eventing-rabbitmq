@@ -23,6 +23,7 @@ import (
 	"github.com/rickb777/date/period"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
@@ -189,6 +190,15 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 							Image:           args.Image,
 							ImagePullPolicy: "IfNotPresent",
 							Env:             env,
+							// This resource requests and limits comes from performance testing 1500msgs/s with a parallelism of 1000
+							Resources: corev1.ResourceRequirements{
+								Requests: corev1.ResourceList{
+									corev1.ResourceCPU:    resource.MustParse("600m"),
+									corev1.ResourceMemory: resource.MustParse("30Mi")},
+								Limits: corev1.ResourceList{
+									corev1.ResourceCPU:    resource.MustParse("4000m"),
+									corev1.ResourceMemory: resource.MustParse("500Mi")},
+							},
 						},
 					},
 				},

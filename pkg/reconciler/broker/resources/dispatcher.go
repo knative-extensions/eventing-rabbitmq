@@ -21,6 +21,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/rickb777/date/period"
@@ -146,6 +147,15 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 						Name:  dispatcherContainerName,
 						Image: args.Image,
 						Env:   envs,
+						// This resource requests and limits comes from performance testing 1500msgs/s with a parallelism of 1000
+						Resources: corev1.ResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("600m"),
+								corev1.ResourceMemory: resource.MustParse("30Mi")},
+							Limits: corev1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("4000m"),
+								corev1.ResourceMemory: resource.MustParse("500Mi")},
+						},
 					}},
 				},
 			},

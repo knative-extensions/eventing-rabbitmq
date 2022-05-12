@@ -24,6 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/rickb777/date/period"
+	"k8s.io/apimachinery/pkg/api/resource"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
@@ -91,6 +92,14 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 			Name:  "BROKER_INGRESS_URL",
 			Value: args.BrokerIngressURL.String(),
 		}},
+		Resources: corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("600m"),
+				corev1.ResourceMemory: resource.MustParse("30Mi")},
+			Limits: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("4000m"),
+				corev1.ResourceMemory: resource.MustParse("500Mi")},
+		},
 	}
 	if args.Configs != nil {
 		dispatcher.Env = append(dispatcher.Env, args.Configs.ToEnvVars()...)
