@@ -10,7 +10,7 @@
 
 ## Install Knative Serving
 
-We install a specific version of Knative - [v1.3.1](https://github.com/knative/eventing/releases/tag/knative-v1.0.0) - as this is a point-in-time guide.
+We install a specific version of Knative - [v1.3.1](https://github.com/knative/eventing/releases/tag/knative-v1.3.1) - as this is a point-in-time guide.
 While we expect subsequent versions to continue working the same way, in the absence of automated tests that ensure this, we stick to exact versions that we have tested manually.
 
 ```sh
