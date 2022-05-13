@@ -91,8 +91,7 @@ a time by the trigger but ordering won't be guaranteed as events are sent to the
 More details and samples can be found [here](../../samples/trigger-customizations)
 
 ## Delivery Failures and Delivery Spec
-A subset of HTTP status codes from a sink are considered a [retryable error](https://github.com/knative/specs/blob/main/specs/eventing/data-plane.md#event-acknowledgement-and-delivery-retry)
-(404, 409, 429 and 5xx). When this occurs, delivery spec (available on Trigger and Broker) can specify how messages are retried and "dead-lettered". Reference
+A subset of HTTP status codes from a sink are considered a [retryable error](https://github.com/knative/specs/blob/main/specs/eventing/data-plane.md#event-acknowledgement-and-delivery-retry). When this occurs, delivery spec (available on Trigger and Broker) can specify how messages are retried and "dead-lettered". Reference
 [Configuring Broker event delivery](https://knative.dev/docs/eventing/event-delivery/#configuring-broker-event-delivery)
 for more information.
 
