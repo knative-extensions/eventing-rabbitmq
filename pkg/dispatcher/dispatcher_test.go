@@ -20,23 +20,30 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"net/http"
+	"net/http/httptest"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/NeowayLabs/wabbit"
 	"github.com/NeowayLabs/wabbit/amqptest/server"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 const (
-	rabbitURL    = "amqp://localhost:5672/%2f"
-	queueName    = "queue"
-	exchangeName = "default/knative-testbroker"
-	/*eventData            = `{"testdata":"testdata"}`
+	rabbitURL            = "amqp://localhost:5672/%2f"
+	queueName            = "queue"
+	exchangeName         = "default/knative-testbroker"
+	eventData            = `{"testdata":"testdata"}`
 	eventData2           = `{"testdata":"testdata2"}`
 	responseData         = `{"testresponse":"testresponsedata"}`
 	expectedData         = `"{\"testdata\":\"testdata\"}"`
 	expectedData2        = `"{\"testdata\":\"testdata2\"}"`
-	expectedResponseData = `"{\"testresponse\":\"testresponsedata\"}"`*/
+	expectedResponseData = `"{\"testresponse\":\"testresponsedata\"}"`
 )
 
 func TestFailToConsume(t *testing.T) {
@@ -105,7 +112,7 @@ func createRabbitAndQueue() (wabbit.Channel, *server.AMQPServer, error) {
 	return ch, fakeServer, nil
 }
 
-/* func TestEndToEnd(t *testing.T) {
+func TestEndToEnd(t *testing.T) {
 	t.Skip()
 	testCases := map[string]struct {
 		// Subscriber config, how many events to expect, how to respond, etc.
@@ -381,7 +388,6 @@ type fakeHandler struct {
 	responseEvents []ce.Event
 }
 
-
 func (h *fakeHandler) getBodies() []string {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -462,4 +468,4 @@ func createEvent(data string) ce.Event {
 
 func stringSort(x, y string) bool {
 	return x < y
-} */
+}
