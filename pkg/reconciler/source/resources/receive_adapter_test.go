@@ -81,7 +81,6 @@ func TestMakeReceiveAdapter(t *testing.T) {
 					QueueConfig: v1alpha12.RabbitmqSourceQueueConfigSpec{
 						Name:       "",
 						RoutingKey: "*.critical",
-						Durable:    false,
 						AutoDelete: false,
 					},
 					ChannelConfig: v1alpha12.RabbitmqChannelConfigSpec{
@@ -211,10 +210,6 @@ func TestMakeReceiveAdapter(t *testing.T) {
 										{
 											Name:  "RABBITMQ_QUEUE_CONFIG_NAME",
 											Value: "",
-										},
-										{
-											Name:  "RABBITMQ_QUEUE_CONFIG_DURABLE",
-											Value: "false",
 										},
 										{
 											Name:  "RABBITMQ_QUEUE_CONFIG_AUTO_DELETE",

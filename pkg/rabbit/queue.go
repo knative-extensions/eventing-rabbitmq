@@ -28,6 +28,8 @@ import (
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 )
 
+const QuorumQueueType = "quorum"
+
 type QueueArgs struct {
 	Name                     string
 	Namespace                string
@@ -42,7 +44,6 @@ type QueueArgs struct {
 
 func NewQueue(args *QueueArgs) *rabbitv1beta1.Queue {
 	// queue configurations for broker and trigger
-	durable := true
 	autoDelete := false
 	queueName := args.Name
 	vhost := "/"
@@ -52,7 +53,6 @@ func NewQueue(args *QueueArgs) *rabbitv1beta1.Queue {
 
 	// queue configurations for source
 	if args.Source != nil {
-		durable = args.Source.Spec.QueueConfig.Durable
 		autoDelete = args.Source.Spec.QueueConfig.AutoDelete
 		queueName = args.Source.Spec.QueueConfig.Name
 		vhost = args.Source.Spec.Vhost
@@ -67,8 +67,9 @@ func NewQueue(args *QueueArgs) *rabbitv1beta1.Queue {
 		},
 		Spec: rabbitv1beta1.QueueSpec{
 			Name:                     queueName,
+			Type:                     QuorumQueueType,
 			Vhost:                    vhost,
-			Durable:                  durable,
+			Durable:                  true,
 			AutoDelete:               autoDelete,
 			RabbitmqClusterReference: *args.RabbitmqClusterReference,
 		},

@@ -89,9 +89,6 @@ type RabbitmqSourceQueueConfigSpec struct {
 	// Multiple routing keys can be specified separated by commas. e.g. key1,key2
 	// +optional
 	RoutingKey string `json:"routingKey,omitempty"`
-	// Queue is Durable or not
-	// +optional
-	Durable bool `json:"durable,omitempty"`
 	// +optional
 	AutoDelete bool `json:"autoDelete,omitempty"`
 }

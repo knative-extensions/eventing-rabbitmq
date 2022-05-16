@@ -37,7 +37,6 @@ var (
 		QueueConfig: RabbitmqSourceQueueConfigSpec{
 			Name:       "",
 			RoutingKey: "*.critical",
-			Durable:    false,
 			AutoDelete: false,
 		},
 		ChannelConfig: RabbitmqChannelConfigSpec{
@@ -220,7 +219,6 @@ func TestRabbitmqSourceCheckChannelParallelismValue(t *testing.T) {
 				QueueConfig: RabbitmqSourceQueueConfigSpec{
 					Name:       "",
 					RoutingKey: "*.critical",
-					Durable:    false,
 					AutoDelete: false,
 				},
 				ChannelConfig:      fullSpec.ChannelConfig,

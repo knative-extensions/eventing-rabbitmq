@@ -1389,6 +1389,7 @@ func createQueue(dlx bool) *rabbitv1beta1.Queue {
 		},
 		Spec: rabbitv1beta1.QueueSpec{
 			Name:       queueName,
+			Type:       rabbit.QuorumQueueType,
 			Vhost:      "/",
 			Durable:    true,
 			AutoDelete: false,

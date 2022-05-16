@@ -91,10 +91,6 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 			Value: args.Source.Spec.QueueConfig.Name,
 		},
 		{
-			Name:  "RABBITMQ_QUEUE_CONFIG_DURABLE",
-			Value: strconv.FormatBool(args.Source.Spec.QueueConfig.Durable),
-		},
-		{
 			Name:  "RABBITMQ_QUEUE_CONFIG_AUTO_DELETE",
 			Value: strconv.FormatBool(args.Source.Spec.QueueConfig.AutoDelete),
 		},

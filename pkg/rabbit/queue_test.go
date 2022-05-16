@@ -163,7 +163,6 @@ func TestNewQueue(t *testing.T) {
 					Spec: v1alpha1.RabbitmqSourceSpec{
 						QueueConfig: v1alpha1.RabbitmqSourceQueueConfigSpec{
 							Name:       "a-test-queue",
-							Durable:    false,
 							AutoDelete: false,
 						},
 						Vhost: "test",
@@ -179,8 +178,9 @@ func TestNewQueue(t *testing.T) {
 				},
 				Spec: rabbitv1beta1.QueueSpec{
 					Name:       "a-test-queue",
+					Type:       rabbit.QuorumQueueType,
 					Vhost:      "test",
-					Durable:    false,
+					Durable:    true,
 					AutoDelete: false,
 					RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
 						ConnectionSecret: &v1.LocalObjectReference{

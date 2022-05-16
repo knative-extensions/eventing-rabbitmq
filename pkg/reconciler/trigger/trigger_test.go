@@ -1171,6 +1171,7 @@ func createQueue() *rabbitv1beta1.Queue {
 		},
 		Spec: rabbitv1beta1.QueueSpec{
 			Name:    queueName,
+			Type:    rabbit.QuorumQueueType,
 			Vhost:   "/",
 			Durable: true,
 			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{

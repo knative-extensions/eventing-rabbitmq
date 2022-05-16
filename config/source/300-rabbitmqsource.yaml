@@ -128,9 +128,6 @@ spec:
                 properties:
                   autoDelete:
                     type: boolean
-                  durable:
-                    description: Queue is Durable or not
-                    type: boolean
                   name:
                     description: Name of the queue to bind to; required value.
                     type: string

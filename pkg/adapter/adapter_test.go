@@ -131,7 +131,6 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 					},
 					QueueConfig: QueueConfig{
 						Name:       "",
-						Durable:    false,
 						AutoDelete: false,
 					},
 				},
@@ -217,7 +216,6 @@ func TestAdapter_CreateConn(t *testing.T) {
 			},
 			QueueConfig: QueueConfig{
 				Name:       "",
-				Durable:    false,
 				AutoDelete: false,
 			},
 		},
@@ -261,7 +259,6 @@ func TestAdapter_CreateChannel(t *testing.T) {
 			},
 			QueueConfig: QueueConfig{
 				Name:       "",
-				Durable:    false,
 				AutoDelete: false,
 			},
 		},
@@ -305,7 +302,6 @@ func TestAdapter_StartAmqpClient(t *testing.T) {
 			Predeclared: true,
 			QueueConfig: QueueConfig{
 				Name:       testQueue,
-				Durable:    false,
 				AutoDelete: false,
 			},
 		},
@@ -450,7 +446,6 @@ func TestAdapter_PollForMessages(t *testing.T) {
 			},
 			QueueConfig: QueueConfig{
 				Name:       "",
-				Durable:    false,
 				AutoDelete: false,
 			},
 		},
@@ -466,8 +461,7 @@ func TestAdapter_PollForMessages(t *testing.T) {
 	}
 
 	queue, err := channel.QueueDeclare("", wabbit.Option{
-		"durable": a.config.QueueConfig.Durable,
-		"delete":  a.config.QueueConfig.AutoDelete,
+		"delete": a.config.QueueConfig.AutoDelete,
 	})
 	if err != nil {
 		t.Errorf(err.Error())
