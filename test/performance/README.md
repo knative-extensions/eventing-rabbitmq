@@ -42,12 +42,12 @@ kubectl apply --filename https://github.com/knative/eventing/releases/download/k
 kubectl apply --filename https://github.com/rabbitmq/cluster-operator/releases/download/v1.13.0/cluster-operator.yml
 
 # Installing cert-manager 1.5.x ... https://github.com/jetstack/cert-manager/releases
-curl -sL https://github.com/jetstack/cert-manager/releases/download/v1.7.2/cert-manager.yaml \
+curl -sL https://github.com/jetstack/cert-manager/releases/download/v1.8.0/cert-manager.yaml \
 | sed 's/kube-system/cert-manager/' \
 | kubectl apply --namespace cert-manager --filename -
 
 # Installing RabbitMQ Messaging Topology Operator with cert-manager integration ... https://github.com/rabbitmq/messaging-topology-operator/releases
-kubectl apply --filename https://github.com/rabbitmq/messaging-topology-operator/releases/download/v1.5.0/messaging-topology-operator-with-certmanager.yaml
+kubectl apply --filename https://github.com/rabbitmq/messaging-topology-operator/releases/download/v1.6.0/messaging-topology-operator-with-certmanager.yaml
 
 
 # Installing Knative Eventing RabbitMQ Broker ... https://github.com/knative-sandbox/eventing-rabbitmq/releases

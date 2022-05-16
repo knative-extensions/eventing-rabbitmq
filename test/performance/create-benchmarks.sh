@@ -67,7 +67,7 @@ fi
 RELEASE_VERSION=$1
 
 if [ -z "$KO_DOCKER_REPO" ]; then
-  echo "Please set KO_DOCKER_REPO env variable before runing this script"
+  echo "Please set KO_DOCKER_REPO env variable before running this script"
   exit
 fi
 
@@ -94,7 +94,7 @@ do
     run_tests multi-consumer broker 400 2000
   fi
   echo "Cleaning broker perf tests resources\n"
-  cleanup broker 
+  cleanup broker
 done
 
 mkdir $results_path/source $results_path/source/constant-load $results_path/source/increasing-load
@@ -106,7 +106,7 @@ do
   kubectl apply -f $script_path/source-setup/100-rabbitmq-setup.yaml
   kubectl wait --for=condition=AllReplicasReady=true rmq/rabbitmq-test-cluster --timeout=10m --namespace perf-eventing
   kubectl wait --for=condition=IngressReady=true brokers/rabbitmq-test-broker --timeout=10m --namespace perf-eventing
-  sleep 10 # for some reason without this sleep the next steps fail most of the time
+  sleep 10 # for some reason without this sleep the next steps fail most of the time, suspecting about RMQ reconciling delays
   export EXCHANGE_NAME=$(kubectl get exchanges -n perf-eventing -o jsonpath={.items[0].metadata.name})
   echo "Binding Ingress Exchange $EXCHANGE_NAME to RabbitMQ's Source\n"
   envsubst < $script_path/source-setup/200-source-perf-setup.yaml | kubectl apply -f -
