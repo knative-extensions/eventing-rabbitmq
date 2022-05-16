@@ -180,7 +180,7 @@ kubectl port-forward rabbitmq-broker/source-perf-aggregator 10001:10001 --namesp
 # in a new split/tab/window
 cd $GOPATH/src/knative.dev/eventing-rabbitmq/test/performance
 curl http://localhost:10001/results > eventing-rabbitmq-broker/source-perf-results.csv
-gnuplot -c latency-throughput.plg eventing-rabbitmq-broker/source-perf-results.csv 0.8 0 1100
+gnuplot -c test/performance/latency-throughput.plg eventing-rabbitmq-broker/source-perf-results.csv 0.8 0 1100
 # this can take up to 5 minutes to render ¯\_(ツ)_/¯
 Try using higher boundaries values for the multi-consumer test setup
 ```

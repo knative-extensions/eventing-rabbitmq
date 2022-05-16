@@ -18,7 +18,6 @@ package dispatcher
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"sync"
 	"time"
@@ -26,6 +25,7 @@ import (
 	"github.com/NeowayLabs/wabbit"
 	"github.com/cloudevents/sdk-go/observability/opencensus/v2/client"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
+	"github.com/cloudevents/sdk-go/v2/binding"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/pkg/errors"
@@ -33,6 +33,7 @@ import (
 	"go.opencensus.io/plugin/ochttp/propagation/tracecontext"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
+	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	"knative.dev/eventing-rabbitmq/pkg/utils"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/eventing/pkg/kncloudevents"
@@ -137,10 +138,10 @@ func isSuccess(ctx context.Context, result protocol.Result) bool {
 }
 
 func (d *Dispatcher) dispatch(ctx context.Context, msg wabbit.Delivery, ceClient cloudevents.Client) {
-	event := cloudevents.NewEvent()
-	err := json.Unmarshal(msg.Body(), &event)
+	msgBinding := rabbit.NewMessageFromDelivery(ComponentName, "", "", msg)
+	event, err := binding.ToEvent(cloudevents.WithEncodingBinary(ctx), msgBinding)
 	if err != nil {
-		logging.FromContext(ctx).Warn("failed to unmarshal event (NACK-ing and not re-queueing): ", err)
+		logging.FromContext(ctx).Warn("failed creating event from delivery, err (NACK-ing and not re-queueing): ", err)
 		err = msg.Nack(false, false)
 		if err != nil {
 			logging.FromContext(ctx).Warn("failed to NACK event: ", err)
@@ -151,29 +152,24 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg wabbit.Delivery, ceClient
 	ctx, span := readSpan(ctx, msg)
 	defer span.End()
 	if span.IsRecordingEvents() {
-		span.AddAttributes(client.EventTraceAttributes(&event)...)
+		span.AddAttributes(client.EventTraceAttributes(event)...)
 	}
 
-	logging.FromContext(ctx).Debugf("Got event as: %+v", event)
 	ctx = cloudevents.ContextWithTarget(ctx, d.SubscriberURL)
-
 	if d.BackoffPolicy == eventingduckv1.BackoffPolicyLinear {
 		ctx = cloudevents.ContextWithRetriesLinearBackoff(ctx, d.BackoffDelay, d.MaxRetries)
 	} else {
 		ctx = cloudevents.ContextWithRetriesExponentialBackoff(ctx, d.BackoffDelay, d.MaxRetries)
 	}
 
-	response, result := ceClient.Request(ctx, event)
+	response, result := ceClient.Request(ctx, *event)
 	if !isSuccess(ctx, result) {
 		logging.FromContext(ctx).Warnf("Failed to deliver to %q", d.SubscriberURL)
 		if err := msg.Nack(false, false); err != nil {
 			logging.FromContext(ctx).Warn("failed to NACK event: ", err)
 		}
 		return
-	}
-
-	logging.FromContext(ctx).Debugf("Got Response: %+v", response)
-	if response != nil {
+	} else if response != nil {
 		logging.FromContext(ctx).Infof("Sending an event: %+v", response)
 		ctx = cloudevents.ContextWithTarget(ctx, d.BrokerIngressURL)
 		result := ceClient.Send(ctx, *response)

@@ -17,7 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -186,23 +185,24 @@ func (env *envConfig) ServeHTTP(writer http.ResponseWriter, request *http.Reques
 }
 
 func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, time.Duration, error) {
-	bytes, err := json.Marshal(event)
-	if err != nil {
-		return http.StatusBadRequest, noDuration, fmt.Errorf("failed to marshal event, %w", err)
-	}
-
 	tp, ts := (&tracecontext.HTTPFormat{}).SpanContextToHeaders(span.SpanContext())
 	headers := amqp.Table{
-		"type":        event.Type(),
-		"source":      event.Source(),
-		"subject":     event.Subject(),
-		"traceparent": tp,
-		"tracestate":  ts,
+		"content-type": event.DataContentType(),
+		"specversion":  event.SpecVersion(),
+		"time":         cloudevents.Timestamp{Time: event.Time().UTC()}.String(),
+		"type":         event.Type(),
+		"source":       event.Source(),
+		"subject":      event.Subject(),
+		"id":           event.ID(),
+		"dataschema":   event.DataSchema(),
+		"traceparent":  tp,
+		"tracestate":   ts,
 	}
 
 	for key, val := range event.Extensions() {
 		headers[key] = val
 	}
+
 	start := time.Now()
 	dc, err := env.channel.PublishWithDeferredConfirm(
 		env.ExchangeName,
@@ -211,11 +211,11 @@ func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, tim
 		false, // immediate
 		amqp.Publishing{
 			Headers:      headers,
-			ContentType:  "application/json",
-			Body:         bytes,
+			MessageId:    event.ID(),
+			ContentType:  event.DataContentType(),
+			Body:         event.Data(),
 			DeliveryMode: amqp.Persistent,
 		})
-
 	if err != nil {
 		return http.StatusInternalServerError, noDuration, fmt.Errorf("failed to publish message: %w", err)
 	}

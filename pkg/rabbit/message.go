@@ -14,22 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package rabbitmq
+package rabbit
 
 import (
 	"bytes"
 	"context"
 	"fmt"
+	nethttp "net/http"
 	"strings"
 
+	"go.uber.org/zap"
 	sourcesv1alpha1 "knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 
 	"github.com/NeowayLabs/wabbit"
-
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
 	"github.com/cloudevents/sdk-go/v2/binding/format"
 	"github.com/cloudevents/sdk-go/v2/binding/spec"
+	"github.com/cloudevents/sdk-go/v2/protocol/http"
 
 	"k8s.io/apimachinery/pkg/util/uuid"
 )
@@ -37,11 +39,12 @@ import (
 const (
 	prefix            = "ce-"
 	contentTypeHeader = "content-type"
+	specversionHeader = "specversion"
+	traceparent       = "traceparent"
+	tracestate        = "tracestate"
 )
 
-var (
-	specs = spec.WithPrefix(prefix)
-)
+var specs = spec.WithPrefix(prefix)
 
 // Message holds a rabbitmq message.
 // this message *can* be read several times safely
@@ -53,25 +56,52 @@ type Message struct {
 	version     spec.Version
 }
 
-// Check if http.Message implements binding.Message
+// Check if rabbit.Message implements binding.Message
 var _ binding.Message = (*Message)(nil)
 var _ binding.MessageMetadataReader = (*Message)(nil)
 
+func ConvertMessageToHTTPRequest(
+	ctx context.Context,
+	sourceName, namespace, queueName string,
+	msg wabbit.Delivery,
+	req *nethttp.Request,
+	logger *zap.Logger) error {
+	msgBinding := NewMessageFromDelivery(sourceName, namespace, queueName, msg)
+	defer func() {
+		err := msgBinding.Finish(nil)
+		if err != nil {
+			logger.Error("Something went wrong while trying to finalizing the message", zap.Error(err))
+		}
+	}()
+	// if the msg is a cloudevent send it as it is to http
+	if msgBinding.ReadEncoding() != binding.EncodingUnknown {
+		return http.WriteRequest(cloudevents.WithEncodingBinary(ctx), msgBinding, req)
+	}
+	// if the rabbitmq msg is not a cloudevent transform it into one
+	event := cloudevents.NewEvent()
+	err := ConvertToCloudEvent(&event, msg, namespace, sourceName, queueName)
+	if err != nil {
+		logger.Error("Error converting RabbitMQ msg to CloudEvent", zap.Error(err))
+		return err
+	}
+	return http.WriteRequest(ctx, binding.ToMessage(&event), req)
+}
+
 // NewMessageFromDelivery returns a binding.Message that holds the provided RabbitMQ Message.
 // The returned binding.Message *can* be read several times safely
-func NewMessageFromDelivery(msg wabbit.Delivery) *Message {
-	var contentType string
+func NewMessageFromDelivery(sourceName, namespace, queueName string, msg wabbit.Delivery) *Message {
 	headers := make(map[string][]byte, len(msg.Headers()))
 	for key, val := range msg.Headers() {
-		k := strings.ToLower(key)
-		if k == contentTypeHeader {
-			contentType = val.(string)
+		if key == traceparent || key == tracestate {
+			continue
 		}
-
-		headers[k] = []byte(fmt.Sprint(val))
+		k := strings.ToLower(key)
+		headers[strings.TrimPrefix(k, prefix)] = []byte(fmt.Sprint(val))
 	}
-
-	return NewMessage(msg.Body(), contentType, headers)
+	if _, ok := headers["source"]; !ok {
+		headers["source"] = []byte(sourcesv1alpha1.RabbitmqEventSource(namespace, sourceName, queueName))
+	}
+	return NewMessage(msg.Body(), msg.ContentType(), headers)
 }
 
 // NewMessage returns a binding.Message that holds the provided rabbitmq message components.
@@ -84,7 +114,7 @@ func NewMessage(value []byte, contentType string, headers map[string][]byte) *Me
 			Headers:     headers,
 			format:      ft,
 		}
-	} else if v := specs.Version(string(headers[specs.PrefixedSpecVersionName()])); v != nil {
+	} else if v := specs.Version(string(headers[specversionHeader])); v != nil {
 		return &Message{
 			Value:       value,
 			ContentType: contentType,
@@ -116,19 +146,25 @@ func (m *Message) ReadBinary(ctx context.Context, encoder binding.BinaryWriter) 
 	if m.version == nil {
 		return binding.ErrNotBinary
 	}
-
+	var contentTypeSet bool
 	for k, v := range m.Headers {
-		if strings.HasPrefix(k, prefix) {
-			attr := m.version.Attribute(k)
-			if attr != nil {
-				err = encoder.SetAttribute(attr, string(v))
-			} else {
-				err = encoder.SetExtension(strings.TrimPrefix(k, prefix), string(v))
-			}
-		} else if k == contentTypeHeader {
+		if k == contentTypeHeader {
+			contentTypeSet = true
 			err = encoder.SetAttribute(m.version.AttributeFromKind(spec.DataContentType), string(v))
+			// avoid converting any RabbitMQ related headers to the CloudEvent
+		} else if !strings.HasPrefix(k, "x-") {
+			attr := m.version.Attribute(prefix + k)
+			if err == nil {
+				if attr != nil {
+					err = encoder.SetAttribute(attr, string(v))
+				} else {
+					err = encoder.SetExtension(k, string(v))
+				}
+			}
 		}
-
+		if !contentTypeSet && err == nil {
+			err = encoder.SetAttribute(m.version.AttributeFromKind(spec.DataContentType), m.ContentType)
+		}
 		if err != nil {
 			return
 		}
@@ -137,7 +173,6 @@ func (m *Message) ReadBinary(ctx context.Context, encoder binding.BinaryWriter) 
 	if m.Value != nil {
 		err = encoder.SetData(bytes.NewBuffer(m.Value))
 	}
-
 	return
 }
 
@@ -145,7 +180,6 @@ func (m *Message) ReadStructured(ctx context.Context, encoder binding.Structured
 	if m.format != nil {
 		return encoder.SetStructuredEvent(ctx, m.format, bytes.NewReader(m.Value))
 	}
-
 	return binding.ErrNotStructured
 }
 
@@ -154,33 +188,35 @@ func (m *Message) GetAttribute(k spec.Kind) (spec.Attribute, interface{}) {
 	if attr != nil {
 		return attr, string(m.Headers[attr.PrefixedName()])
 	}
-
 	return nil, nil
 }
 
 func (m *Message) GetExtension(name string) interface{} {
-	return string(m.Headers[prefix+name])
+	return string(m.Headers[name])
 }
 
 func (m *Message) Finish(error) error {
 	return nil
 }
 
-func convertToCloudEvent(event *cloudevents.Event, msg wabbit.Delivery, a *Adapter) error {
+func ConvertToCloudEvent(event *cloudevents.Event, msg wabbit.Delivery, namespace, sourceName, queueName string) error {
 	if msg.MessageId() != "" {
 		event.SetID(msg.MessageId())
 	} else {
 		event.SetID(string(uuid.NewUUID()))
 	}
+	if event.Type() == "" {
+		event.SetType(sourcesv1alpha1.RabbitmqEventType)
+	}
+	if event.Source() == "" {
+		event.SetSource(sourcesv1alpha1.RabbitmqEventSource(namespace, sourceName, queueName))
+	}
 
-	event.SetType(sourcesv1alpha1.RabbitmqEventType)
-	event.SetSource(sourcesv1alpha1.RabbitmqEventSource(a.config.Namespace, a.config.Name, a.config.QueueConfig.Name))
 	event.SetSubject(event.ID())
 	event.SetTime(msg.Timestamp())
 	err := event.SetData(msg.ContentType(), msg.Body())
 	if err != nil {
 		return err
 	}
-
 	return nil
 }

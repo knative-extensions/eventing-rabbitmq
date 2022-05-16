@@ -85,7 +85,7 @@ func main() {
 			contentType = "application/cloudevents+json"
 			headers = amqp.Table{}
 			body = fmt.Sprintf(`{
-				"id": %d,
+				"id": "%d",
 				"type": "knative.producer.e2etest",
 				"source": "example/source.uri",
 				"data": "Hello, CEWorld!",
@@ -95,7 +95,7 @@ func main() {
 		case 2:
 			contentType = "text/plain"
 			headers = amqp.Table{}
-			body = fmt.Sprintf(`{ "id": %d, "message": "Hello, World!" }`, i)
+			body = fmt.Sprintf(`{ "id": "%d", "message": "Hello, World!" }`, i)
 		}
 
 		err = ch.Publish(

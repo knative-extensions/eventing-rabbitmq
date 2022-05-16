@@ -28,12 +28,9 @@ import (
 	"github.com/NeowayLabs/wabbit/amqp"
 	"github.com/NeowayLabs/wabbit/amqptest"
 
-	cloudevents "github.com/cloudevents/sdk-go/v2"
-	"github.com/cloudevents/sdk-go/v2/binding"
-	"github.com/cloudevents/sdk-go/v2/protocol/http"
-
 	"go.uber.org/zap"
 
+	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	"knative.dev/eventing/pkg/adapter/v2"
 	v1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/eventing/pkg/kncloudevents"
@@ -256,58 +253,41 @@ func (a *Adapter) PollForMessages(channel *wabbit.Channel,
 
 func (a *Adapter) processMessages(wg *sync.WaitGroup, queue <-chan wabbit.Delivery) {
 	defer wg.Done()
-
 	for msg := range queue {
-		a.logger.Info("Received: ", zap.Any("value", string(msg.Body())))
-
+		a.logger.Info("Received: ", zap.String("MessageId", msg.MessageId()))
 		if err := a.postMessage(msg); err == nil {
 			a.logger.Info("Successfully sent event to sink")
 			err = msg.Ack(false)
 			if err != nil {
-				a.logger.Error("Sending Ack failed with Delivery Tag")
+				a.logger.Error("sending Ack failed with Delivery Tag")
 			}
 		} else {
-			a.logger.Error("Sending event to sink failed: ", zap.Error(err))
+			a.logger.Error("sending event to sink failed: ", zap.Error(err))
 			err = msg.Nack(false, false)
 			if err != nil {
-				a.logger.Error("Sending Nack failed with Delivery Tag")
+				a.logger.Error("sending Nack failed with Delivery Tag")
 			}
 		}
 	}
 }
 
 func (a *Adapter) postMessage(msg wabbit.Delivery) error {
-	a.logger.Info("url ->" + a.httpMessageSender.Target)
+	a.logger.Info("target: " + a.httpMessageSender.Target)
 	req, err := a.httpMessageSender.NewCloudEventRequest(a.context)
 	if err != nil {
 		return err
 	}
 
-	var msgBinding binding.Message = NewMessageFromDelivery(msg)
-
-	defer func() {
-		err := msgBinding.Finish(nil)
-		if err != nil {
-			a.logger.Error("Something went wrong while trying to finalizing the message", zap.Error(err))
-		}
-	}()
-
-	// if the msg is a cloudevent send it as it is to http
-	if msgBinding.ReadEncoding() == binding.EncodingUnknown {
-		// if the rabbitmq msg is not a cloudevent transform it into one
-		event := cloudevents.NewEvent()
-		err = convertToCloudEvent(&event, msg, a)
-		if err != nil {
-			a.logger.Error("Error converting RabbitMQ msg to CloudEvent", zap.Error(err))
-			return err
-		}
-
-		msgBinding = binding.ToMessage(&event)
-	}
-
-	err = http.WriteRequest(a.context, msgBinding, req)
+	err = rabbit.ConvertMessageToHTTPRequest(
+		a.context,
+		a.config.Name,
+		a.config.Namespace,
+		a.config.QueueConfig.Name,
+		msg,
+		req,
+		a.logger)
 	if err != nil {
-		a.logger.Error(fmt.Sprintf("Error writting event to http, encoding: %s", msgBinding.ReadEncoding()), zap.Error(err))
+		a.logger.Error("error writing event to http", zap.Error(err))
 		return err
 	}
 
@@ -323,12 +303,12 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 	})
 
 	if err != nil {
-		a.logger.Error("Error while sending the message", zap.Error(err))
+		a.logger.Error("error while sending the message", zap.Error(err))
 		return err
 	}
 
 	if res.StatusCode/100 != 2 {
-		a.logger.Error("Unexpected status code", zap.Int("status code", res.StatusCode))
+		a.logger.Error("unexpected status code", zap.Int("status code", res.StatusCode))
 		return fmt.Errorf("%d %s", res.StatusCode, nethttp.StatusText(res.StatusCode))
 	}
 
