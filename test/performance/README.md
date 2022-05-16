@@ -73,10 +73,11 @@ ko apply --filename config/broker
 cd $GOPATH/src/knative.dev/eventing-rabbitmq
 # If this directory is missing, run:
 # git clone https://github.com/knative-sandbox/eventing-rabbitmq $GOPATH/src/knative.dev/eventing-rabbitmq
-ko apply --filename test/performance/broker-setup/100-broker-perf-setup.yaml
+export PARALLELISM=100
+envsubst < test/performance/source-setup/100-broker-perf-setup.yaml | ko apply --filename -
 kubectl wait --for=condition=AllReplicasReady=true rmq/rabbitmq-test-cluster --timeout=10m --namespace perf-eventing
 kubectl wait --for=condition=IngressReady=true brokers/rabbitmq-test-broker --timeout=10m --namespace perf-eventing
-kubectl wait --for=condition=SubscriberResolved=true triggers/rabbitmq-broker-perf --timeout=10m --namespace perf-eventing
+kubectl wait --for=condition=SubscriberResolved=true triggers/rabbitmq-trigger-perf --timeout=10m --namespace perf-eventing
 ```
 The default setup has a Trigger's Parallelism value of:
 `rabbitmq.eventing.knative.dev/parallelism: "100"`
@@ -94,7 +95,7 @@ ko apply --filename test/performance/broker-setup/300-broker-constant-load-setup
 ```
 To run the multi consumer load test:
 ```sh
-ko apply --filename test/performance/broker-setup/400-broker-multi-consumer-setup.yaml
+envsubst < test/performance/broker-setup/400-broker-multi-consumer-setup.yaml | ko apply --filename -
 ```
 
 [Click here to learn how to visualize the results](#download-&-visualize-knative-eventing-rabbitmq-benchmark-results)
@@ -133,6 +134,7 @@ kubectl apply --filename test/performance/source-setup/100-rabbitmq-setup.yaml
 kubectl wait --for=condition=AllReplicasReady=true rmq/rabbitmq-test-cluster --timeout=10m --namespace perf-eventing
 kubectl wait --for=condition=IngressReady=true brokers/rabbitmq-test-broker --timeout=10m --namespace perf-eventing
 export EXCHANGE_NAME=$(kubectl get exchanges -n perf-eventing -o jsonpath={.items[0].metadata.name})
+export PARALLELISM=100
 envsubst < test/performance/source-setup/200-source-perf-setup.yaml | kubectl apply --filename -
 ```
 The default setup has a Source's Parallelism value of:
@@ -208,3 +210,22 @@ gnuplot -c throughput.plg eventing-rabbitmq-broker-perf-results.csv 0.8 0 1100
 ```
 
 ![throughput](./results/release-v1.3/broker/increasing-load/prefetch-100-throughput.png)
+
+## Create Results for a Release
+
+There is a script for this in the performance tests directory:
+
+```sh
+cd $GOPATH/src/knative.dev/eventing-rabbitmq/test/performance/
+sh ./create-benchmarks.sh -h
+```
+And to create the release results:
+```sh
+sh ./create-benchmarks.sh release-vx.y
+```
+
+Verify that everything is working in the results directory
+```sh
+cd $GOPATH/src/knative.dev/eventing-rabbitmq/test/performance/results/release-vx.y
+```
+And there you go, your result graphs have been generated!

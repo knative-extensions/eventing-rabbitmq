@@ -127,7 +127,7 @@ metadata:
   namespace: perf-eventing
   annotations:
     # Set this to 1 for FIFO
-    rabbitmq.eventing.knative.dev/parallelism: "100"
+    rabbitmq.eventing.knative.dev/parallelism: "$PARALLELISM"
 spec:
   broker: rabbitmq-test-broker
   subscriber:

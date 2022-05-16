@@ -112,7 +112,7 @@ spec:
     # Value must be between 1 and 1000
     # A value of 1 RabbitMQ Source behaves as a FIFO queue
     # Values above 1 break message ordering guarantees and can be seen as more performance oriented
-    parallelism: 100
+    parallelism: $PARALLELISM
     globalQos: false
   exchangeConfig:
     name: $EXCHANGE_NAME
