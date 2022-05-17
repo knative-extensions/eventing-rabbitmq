@@ -216,10 +216,10 @@ func TestReconcile(t *testing.T) {
 					WithBrokerClass(brokerClass),
 					WithInitBrokerConditions,
 					WithBrokerConfig(invalidConfigForRabbitOperator()),
-					WithExchangeFailed("ExchangeCredentialsUnavailable", `Failed to get arguments for creating exchange: Broker.Spec.Config configuration not supported, only [kind: Secret, apiVersion: v1 or kind: RabbitmqCluster, apiVersion: rabbitmq.com/v1beta1]`)),
+					WithExchangeFailed("ExchangeCredentialsUnavailable", `Failed to get arguments for creating exchange: Broker.Spec.Config configuration not supported, only [kind: RabbitmqCluster, apiVersion: rabbitmq.com/v1beta1]`)),
 			}},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "InternalError", `Broker.Spec.Config configuration not supported, only [kind: Secret, apiVersion: v1 or kind: RabbitmqCluster, apiVersion: rabbitmq.com/v1beta1]`),
+				Eventf(corev1.EventTypeWarning, "InternalError", `Broker.Spec.Config configuration not supported, only [kind: RabbitmqCluster, apiVersion: rabbitmq.com/v1beta1]`),
 			},
 		}, {
 			Name: "Broker does not exist",

@@ -37,8 +37,6 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/network"
-
-	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
 )
 
 // This file contains the logic dealing with how to handle Broker.Spec.Config.
@@ -68,12 +66,6 @@ func (r *Reconciler) rabbitmqURL(ctx context.Context, b *eventingv1.Broker) (*ur
 		gvk := fmt.Sprintf("%s.%s", b.Spec.Config.Kind, b.Spec.Config.APIVersion)
 
 		switch gvk {
-		case "Secret.v1":
-			u, err := r.rabbitmqURLFromSecret(ctx, b.Spec.Config)
-			if err != nil {
-				logging.FromContext(ctx).Errorw("Unable to load RabbitMQ Broker URL from Broker.Spec.Config as v1:Secret.", zap.Error(err))
-			}
-			return u, err
 		case "RabbitmqCluster.rabbitmq.com/v1beta1":
 			u, err := r.rabbitmqURLFromRabbit(ctx, b.Spec.Config)
 			if err != nil {
@@ -81,24 +73,10 @@ func (r *Reconciler) rabbitmqURL(ctx context.Context, b *eventingv1.Broker) (*ur
 			}
 			return u, err
 		default:
-			return nil, errors.New("Broker.Spec.Config configuration not supported, only [kind: Secret, apiVersion: v1 or kind: RabbitmqCluster, apiVersion: rabbitmq.com/v1beta1]")
+			return nil, errors.New("Broker.Spec.Config configuration not supported, only [kind: RabbitmqCluster, apiVersion: rabbitmq.com/v1beta1]")
 		}
 	}
 	return nil, errors.New("Broker.Spec.Config is required")
-}
-
-func (r *Reconciler) rabbitmqURLFromSecret(ctx context.Context, ref *duckv1.KReference) (*url.URL, error) {
-	s, err := r.kubeClientSet.CoreV1().Secrets(ref.Namespace).Get(ctx, ref.Name, metav1.GetOptions{})
-
-	if err != nil {
-		return nil, err
-	}
-	val := s.Data[resources.BrokerURLSecretKey]
-	if val == nil {
-		return nil, fmt.Errorf("secret missing key %s", resources.BrokerURLSecretKey)
-	}
-
-	return url.Parse(string(val))
 }
 
 func (r *Reconciler) rabbitmqURLFromRabbit(ctx context.Context, ref *duckv1.KReference) (*url.URL, error) {

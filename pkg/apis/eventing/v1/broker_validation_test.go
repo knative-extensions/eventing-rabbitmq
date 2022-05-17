@@ -185,7 +185,7 @@ func TestValidate(t *testing.T) {
 				},
 			},
 		}},
-		want: apis.ErrGeneric("Configuration not supported, only [kind: Secret, apiVersion: v1 or kind: RabbitmqCluster, apiVersion: rabbitmq.com/v1beta1]").ViaField("spec").ViaField("config"),
+		want: apis.ErrGeneric("Configuration not supported, only [kind: RabbitmqCluster, apiVersion: rabbitmq.com/v1beta1]").ViaField("spec").ViaField("config"),
 	}, {
 		name: "invalid config, no namespace",
 		b: RabbitBroker{eventingv1.Broker{
@@ -195,8 +195,8 @@ func TestValidate(t *testing.T) {
 			Spec: eventingv1.BrokerSpec{
 				Config: &duckv1.KReference{
 					Name:       "name",
-					Kind:       "Secret",
-					APIVersion: "v1",
+					Kind:       "RabbitmqCluster",
+					APIVersion: "rabbitmq.com/v1beta1",
 				},
 			},
 		}},
@@ -226,7 +226,7 @@ func TestValidate(t *testing.T) {
 				Config: &duckv1.KReference{
 					Namespace: "namespace",
 					Name:      "name",
-					Kind:      "Secret",
+					Kind:      "RabbitmqCluster",
 				},
 			},
 		}},
@@ -246,21 +246,6 @@ func TestValidate(t *testing.T) {
 			},
 		}},
 		want: apis.ErrMissingField("spec.config.kind"),
-	}, {
-		name: "valid config, secret",
-		b: RabbitBroker{eventingv1.Broker{
-			ObjectMeta: metav1.ObjectMeta{
-				Annotations: map[string]string{"eventing.knative.dev/broker.class": "RabbitMQBroker"},
-			},
-			Spec: eventingv1.BrokerSpec{
-				Config: &duckv1.KReference{
-					Namespace:  "namespace",
-					Name:       "name",
-					Kind:       "Secret",
-					APIVersion: "v1",
-				},
-			},
-		}},
 	}, {
 		name: "valid config, rabbitmqcluster",
 		b: RabbitBroker{eventingv1.Broker{
@@ -306,9 +291,6 @@ func TestValidateFunc(t *testing.T) {
 	}, {
 		name: "valid with RabbitmqCluster",
 		b:    createRabbitMQBrokerValidRabbitMQCluster(),
-	}, {
-		name: "valid with Secret",
-		b:    createRabbitMQBrokerValidSecret(),
 	}}
 
 	for _, test := range tests {
@@ -375,33 +357,6 @@ func createRabbitMQBrokerInvalid() *unstructured.Unstructured {
 				"config": map[string]interface{}{
 					"namespace": "namespace",
 					"name":      "name",
-				},
-			},
-		},
-	}
-}
-
-func createRabbitMQBrokerValidSecret() *unstructured.Unstructured {
-	annotations := map[string]interface{}{
-		"eventing.knative.dev/broker.class": "RabbitMQBroker",
-	}
-
-	return &unstructured.Unstructured{
-		Object: map[string]interface{}{
-			"apiVersion": "eventing.knative.dev/v1",
-			"kind":       "Broker",
-			"metadata": map[string]interface{}{
-				"creationTimestamp": nil,
-				"namespace":         "namespace",
-				"name":              "broker",
-				"annotations":       annotations,
-			},
-			"spec": map[string]interface{}{
-				"config": map[string]interface{}{
-					"namespace":  "namespace",
-					"name":       "name",
-					"kind":       "Secret",
-					"apiVersion": "v1",
 				},
 			},
 		},
