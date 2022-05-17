@@ -98,10 +98,9 @@ func (b *RabbitBroker) Validate(ctx context.Context) *apis.FieldError {
 		gvk := fmt.Sprintf("%s.%s", b.Spec.Config.Kind, b.Spec.Config.APIVersion)
 
 		switch gvk {
-		case "Secret.v1":
 		case "RabbitmqCluster.rabbitmq.com/v1beta1":
 		default:
-			errs = errs.Also(apis.ErrGeneric("Configuration not supported, only [kind: Secret, apiVersion: v1 or kind: RabbitmqCluster, apiVersion: rabbitmq.com/v1beta1]")).ViaField("spec").ViaField("config")
+			errs = errs.Also(apis.ErrGeneric("Configuration not supported, only [kind: RabbitmqCluster, apiVersion: rabbitmq.com/v1beta1]")).ViaField("spec").ViaField("config")
 		}
 	}
 	if errs.Error() == "" {
