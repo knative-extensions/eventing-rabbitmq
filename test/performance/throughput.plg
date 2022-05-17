@@ -1,4 +1,13 @@
 csv_file = ARG1
 set datafile separator comma
+
+if (!(ARG5 eq "")) {
+  set terminal png size 1800,1200
+  set output ARG5
+}
+
 plot csv_file u 1:5 with lines title "Sender throughput", csv_file u 1:8 with lines title "Receiver throughput"
-pause -1
+
+if (ARG5 eq "") {
+  pause -1
+}

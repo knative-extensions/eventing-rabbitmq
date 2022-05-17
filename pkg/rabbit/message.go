@@ -162,6 +162,7 @@ func (m *Message) ReadBinary(ctx context.Context, encoder binding.BinaryWriter) 
 				}
 			}
 		}
+
 		if !contentTypeSet && err == nil {
 			err = encoder.SetAttribute(m.version.AttributeFromKind(spec.DataContentType), m.ContentType)
 		}
