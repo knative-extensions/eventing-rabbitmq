@@ -22,6 +22,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
@@ -136,6 +137,14 @@ func deployment(opts ...func(*appsv1.Deployment)) *appsv1.Deployment {
 					Containers: []corev1.Container{{
 						Name:  "dispatcher",
 						Image: image,
+						Resources: corev1.ResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("600m"),
+								corev1.ResourceMemory: resource.MustParse("30Mi")},
+							Limits: corev1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("4000m"),
+								corev1.ResourceMemory: resource.MustParse("400Mi")},
+						},
 						Env: []corev1.EnvVar{{
 							Name:  system.NamespaceEnvKey,
 							Value: system.Namespace(),

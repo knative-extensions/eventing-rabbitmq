@@ -22,6 +22,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
@@ -82,6 +83,14 @@ func TestMakeIngressDeployment(t *testing.T) {
 					Containers: []corev1.Container{{
 						Image: image,
 						Name:  "ingress",
+						Resources: corev1.ResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("400m"),
+								corev1.ResourceMemory: resource.MustParse("20Mi")},
+							Limits: corev1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("1000m"),
+								corev1.ResourceMemory: resource.MustParse("300Mi")},
+						},
 						Env: []corev1.EnvVar{{
 							Name:  system.NamespaceEnvKey,
 							Value: system.Namespace(),

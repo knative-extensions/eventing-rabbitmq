@@ -22,6 +22,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "knative.dev/eventing/pkg/apis/duck/v1"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
@@ -105,6 +106,14 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 					Containers: []corev1.Container{{
 						Name:  "dispatcher",
 						Image: image,
+						Resources: corev1.ResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("600m"),
+								corev1.ResourceMemory: resource.MustParse("30Mi")},
+							Limits: corev1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("4000m"),
+								corev1.ResourceMemory: resource.MustParse("400Mi")},
+						},
 						Env: []corev1.EnvVar{{
 							Name:  system.NamespaceEnvKey,
 							Value: system.Namespace(),

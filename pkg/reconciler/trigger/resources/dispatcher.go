@@ -92,13 +92,14 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 			Name:  "BROKER_INGRESS_URL",
 			Value: args.BrokerIngressURL.String(),
 		}},
+		// This resource requests and limits comes from performance testing 1500msgs/s with a parallelism of 1000
 		Resources: corev1.ResourceRequirements{
 			Requests: corev1.ResourceList{
 				corev1.ResourceCPU:    resource.MustParse("600m"),
 				corev1.ResourceMemory: resource.MustParse("30Mi")},
 			Limits: corev1.ResourceList{
 				corev1.ResourceCPU:    resource.MustParse("4000m"),
-				corev1.ResourceMemory: resource.MustParse("500Mi")},
+				corev1.ResourceMemory: resource.MustParse("400Mi")},
 		},
 	}
 	if args.Configs != nil {
