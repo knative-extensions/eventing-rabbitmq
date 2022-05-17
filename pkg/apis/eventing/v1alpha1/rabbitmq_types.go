@@ -35,7 +35,7 @@ type RabbitmqBrokerConfig struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   RabbitmqBrokerConfigSpec   `json:"spec,omitempty"`
+	Spec RabbitmqBrokerConfigSpec `json:"spec,omitempty"`
 }
 
 var _ runtime.Object = (*RabbitmqBrokerConfig)(nil)
@@ -43,9 +43,7 @@ var _ resourcesemantics.GenericCRD = (*RabbitmqBrokerConfig)(nil)
 var _ apis.Defaultable = (*RabbitmqBrokerConfig)(nil)
 var _ apis.Validatable = (*RabbitmqBrokerConfig)(nil)
 
-type RabbitmqBrokerConfigSpec struct {
-
-}
+type RabbitmqBrokerConfigSpec struct{}
 
 func (s *RabbitmqBrokerConfig) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("RabbitmqBrokerConfig")
