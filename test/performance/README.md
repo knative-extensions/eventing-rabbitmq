@@ -39,7 +39,7 @@ kubectl apply --filename https://github.com/knative/eventing/releases/download/k
 kubectl apply --filename https://github.com/knative/eventing/releases/download/knative-v1.3.1/mt-channel-broker.yaml
 
 # Installing RabbitMQ Operator ... https://github.com/rabbitmq/cluster-operator/releases
-kubectl apply --filename https://github.com/rabbitmq/cluster-operator/releases/download/v1.12.1/cluster-operator.yml
+kubectl apply --filename https://github.com/rabbitmq/cluster-operator/releases/download/v1.13.0/cluster-operator.yml
 
 # Installing cert-manager 1.5.x ... https://github.com/jetstack/cert-manager/releases
 curl -sL https://github.com/jetstack/cert-manager/releases/download/v1.7.2/cert-manager.yaml \
