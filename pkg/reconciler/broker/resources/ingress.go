@@ -124,8 +124,8 @@ func MakeIngressDeployment(args *IngressArgs) *appsv1.Deployment {
 						// This resource requests and limits comes from performance testing 1500msgs/s with a parallelism of 1000
 						Resources: corev1.ResourceRequirements{
 							Requests: corev1.ResourceList{
-								corev1.ResourceCPU:    resource.MustParse("400m"),
-								corev1.ResourceMemory: resource.MustParse("20Mi")},
+								corev1.ResourceCPU:    resource.MustParse("150m"),
+								corev1.ResourceMemory: resource.MustParse("10Mi")},
 							Limits: corev1.ResourceList{
 								corev1.ResourceCPU:    resource.MustParse("1000m"),
 								corev1.ResourceMemory: resource.MustParse("300Mi")},

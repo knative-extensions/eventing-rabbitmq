@@ -156,8 +156,8 @@ func TestMakeReceiveAdapter(t *testing.T) {
 									ImagePullPolicy: "IfNotPresent",
 									Resources: corev1.ResourceRequirements{
 										Requests: corev1.ResourceList{
-											corev1.ResourceCPU:    resource.MustParse("600m"),
-											corev1.ResourceMemory: resource.MustParse("30Mi")},
+											corev1.ResourceCPU:    resource.MustParse("300m"),
+											corev1.ResourceMemory: resource.MustParse("10Mi")},
 										Limits: corev1.ResourceList{
 											corev1.ResourceCPU:    resource.MustParse("4000m"),
 											corev1.ResourceMemory: resource.MustParse("400Mi")},

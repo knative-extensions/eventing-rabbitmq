@@ -24,7 +24,7 @@ jobs:
 
         # Map between K8s and KinD versions.
         # This is attempting to make it a bit clearer what's being tested.
-        # See: https://github.com/kubernetes-sigs/kind/releases/tag/v0.11.1
+        # See: https://github.com/kubernetes-sigs/kind/releases/tag/v0.12.0
         include:
         - k8s-version: v1.22.1
           kind-image-sha: sha256:100b3558428386d1372591f8d62add85b900538d94db8e455b66ebaf05a3ca3a
