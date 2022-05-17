@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1
+package v1alpha1
 
 import (
 	"context"
@@ -42,6 +42,7 @@ func ValidateTrigger(ctx context.Context) func(context.Context, *unstructured.Un
 	}
 }
 
+// +k8s:deepcopy-gen=false
 type RabbitTrigger struct {
 	eventingv1.Trigger
 	Client versioned.Interface

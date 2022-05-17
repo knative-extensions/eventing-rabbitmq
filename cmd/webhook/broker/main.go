@@ -32,7 +32,7 @@ import (
 	"knative.dev/pkg/webhook/resourcesemantics"
 	"knative.dev/pkg/webhook/resourcesemantics/validation"
 
-	rabbitv1 "knative.dev/eventing-rabbitmq/pkg/apis/eventing/v1"
+	rabbitv1 "knative.dev/eventing-rabbitmq/pkg/apis/eventing/v1alpha1"
 	v1 "knative.dev/eventing/pkg/apis/eventing/v1"
 )
 
