@@ -128,7 +128,7 @@ func MakeIngressDeployment(args *IngressArgs) *appsv1.Deployment {
 								corev1.ResourceMemory: resource.MustParse("10Mi")},
 							Limits: corev1.ResourceList{
 								corev1.ResourceCPU:    resource.MustParse("1000m"),
-								corev1.ResourceMemory: resource.MustParse("300Mi")},
+								corev1.ResourceMemory: resource.MustParse("400Mi")},
 						},
 					}},
 				},

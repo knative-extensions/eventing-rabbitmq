@@ -154,7 +154,7 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 								corev1.ResourceMemory: resource.MustParse("15Mi")},
 							Limits: corev1.ResourceList{
 								corev1.ResourceCPU:    resource.MustParse("4000m"),
-								corev1.ResourceMemory: resource.MustParse("400Mi")},
+								corev1.ResourceMemory: resource.MustParse("500Mi")},
 						},
 					}},
 				},

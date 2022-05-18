@@ -89,7 +89,7 @@ func TestMakeIngressDeployment(t *testing.T) {
 								corev1.ResourceMemory: resource.MustParse("10Mi")},
 							Limits: corev1.ResourceList{
 								corev1.ResourceCPU:    resource.MustParse("1000m"),
-								corev1.ResourceMemory: resource.MustParse("300Mi")},
+								corev1.ResourceMemory: resource.MustParse("400Mi")},
 						},
 						Env: []corev1.EnvVar{{
 							Name:  system.NamespaceEnvKey,
