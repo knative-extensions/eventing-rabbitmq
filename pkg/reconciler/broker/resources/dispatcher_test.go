@@ -109,7 +109,7 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 						Resources: corev1.ResourceRequirements{
 							Requests: corev1.ResourceList{
 								corev1.ResourceCPU:    resource.MustParse("300m"),
-								corev1.ResourceMemory: resource.MustParse("10Mi")},
+								corev1.ResourceMemory: resource.MustParse("15Mi")},
 							Limits: corev1.ResourceList{
 								corev1.ResourceCPU:    resource.MustParse("4000m"),
 								corev1.ResourceMemory: resource.MustParse("400Mi")},
