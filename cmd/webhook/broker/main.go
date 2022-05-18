@@ -38,8 +38,8 @@ import (
 )
 
 var ourTypes = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
-	v1.SchemeGroupVersion.WithKind("Broker"):  &rabbitv1.RabbitBroker{},
-	v1.SchemeGroupVersion.WithKind("Trigger"): &v1.Trigger{},
+	v1.SchemeGroupVersion.WithKind("Broker"):                                                             &rabbitv1.RabbitBroker{},
+	v1.SchemeGroupVersion.WithKind("Trigger"):                                                            &v1.Trigger{},
 	schema.GroupVersion{Group: eventing.GroupName, Version: "v1alpha1"}.WithKind("RabbitmqBrokerConfig"): &rabbitv1.RabbitmqBrokerConfig{},
 }
 
@@ -53,8 +53,8 @@ func NewValidationAdmissionController(ctx context.Context, cmw configmap.Watcher
 	}
 
 	callbacks := map[schema.GroupVersionKind]validation.Callback{
-		v1.SchemeGroupVersion.WithKind("Broker"):  validation.NewCallback(rabbitv1.ValidateBroker, webhook.Create, webhook.Update),
-		v1.SchemeGroupVersion.WithKind("Trigger"): validation.NewCallback(rabbitv1.ValidateTrigger(ctx), webhook.Create, webhook.Update),
+		v1.SchemeGroupVersion.WithKind("Broker"):               validation.NewCallback(rabbitv1.ValidateBroker, webhook.Create, webhook.Update),
+		v1.SchemeGroupVersion.WithKind("Trigger"):              validation.NewCallback(rabbitv1.ValidateTrigger(ctx), webhook.Create, webhook.Update),
 		v1.SchemeGroupVersion.WithKind("RabbitmqBrokerConfig"): validation.NewCallback(rabbitv1.ValidateRabbitmqBrokerConfig, webhook.Create, webhook.Update),
 	}
 	return validation.NewAdmissionController(ctx,

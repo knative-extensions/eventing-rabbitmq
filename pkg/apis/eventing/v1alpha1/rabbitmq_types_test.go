@@ -17,8 +17,9 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"knative.dev/eventing/pkg/apis/eventing"
 	"testing"
+
+	"knative.dev/eventing/pkg/apis/eventing"
 )
 
 func TestRabbitmqBrokerConfig_GetGroupVersionKind(t *testing.T) {

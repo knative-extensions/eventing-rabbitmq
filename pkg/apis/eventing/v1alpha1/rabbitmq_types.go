@@ -44,7 +44,7 @@ var _ resourcesemantics.GenericCRD = (*RabbitmqBrokerConfig)(nil)
 var _ apis.Defaultable = (*RabbitmqBrokerConfig)(nil)
 var _ apis.Validatable = (*RabbitmqBrokerConfig)(nil)
 
-type RabbitmqBrokerConfigSpec struct{
+type RabbitmqBrokerConfigSpec struct {
 	// RabbitmqClusterReference stores a reference to RabbitmqCluster. This will get used to create resources on the RabbitMQ Broker.
 	RabbitmqClusterReference *v1beta1.RabbitmqClusterReference `json:"rabbitmqClusterReference,omitempty"`
 
