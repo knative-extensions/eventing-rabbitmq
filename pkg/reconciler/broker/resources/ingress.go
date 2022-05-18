@@ -21,6 +21,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
@@ -120,6 +121,16 @@ func MakeIngressDeployment(args *IngressArgs) *appsv1.Deployment {
 							ContainerPort: 8080,
 							Name:          "http",
 						}},
+						// This resource requests and limits comes from performance testing 1500msgs/s with a parallelism of 1000
+						// more info in this issue: https://github.com/knative-sandbox/eventing-rabbitmq/issues/703
+						Resources: corev1.ResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("150m"),
+								corev1.ResourceMemory: resource.MustParse("32Mi")},
+							Limits: corev1.ResourceList{
+								corev1.ResourceCPU:    resource.MustParse("1000m"),
+								corev1.ResourceMemory: resource.MustParse("400Mi")},
+						},
 					}},
 				},
 			},

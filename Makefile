@@ -77,7 +77,7 @@ releases-gcloud:
 	$(OPEN) https://cloud.google.com/sdk/docs/quickstart
 
 KO_RELEASES := https://github.com/google/ko/releases
-KO_VERSION := 0.9.3
+KO_VERSION := 0.11.2
 KO_BIN_DIR := $(LOCAL_BIN)/ko_$(KO_VERSION)_$(PLATFORM)_x86_64
 KO_URL := $(KO_RELEASES)/download/v$(KO_VERSION)/$(notdir $(KO_BIN_DIR)).tar.gz
 KO := $(KO_BIN_DIR)/ko
@@ -95,7 +95,7 @@ releases-ko:
 	$(OPEN) $(KO_RELEASES)
 
 KIND_RELEASES := https://github.com/kubernetes-sigs/kind/releases
-KIND_VERSION := 0.11.1
+KIND_VERSION := 0.12.0
 KIND_URL := $(KIND_RELEASES)/download/v$(KIND_VERSION)/kind-$(platform)-amd64
 KIND := $(LOCAL_BIN)/kind_$(KIND_VERSION)_$(platform)_amd64
 $(KIND): | $(CURL) $(LOCAL_BIN)
@@ -131,7 +131,7 @@ releases-envsubst:
 
 KUBECTL_RELEASES := https://github.com/kubernetes/kubernetes/tags
 # Keep this in sync with KIND_K8S_VERSION
-KUBECTL_VERSION := 1.22.1
+KUBECTL_VERSION := 1.24.0
 KUBECTL_BIN := kubectl-$(KUBECTL_VERSION)-$(platform)-amd64
 KUBECTL_URL := https://storage.googleapis.com/kubernetes-release/release/v$(KUBECTL_VERSION)/bin/$(platform)/amd64/kubectl
 KUBECTL := $(LOCAL_BIN)/$(KUBECTL_BIN)
@@ -313,7 +313,7 @@ install-rabbitmq-cluster-operator: | $(KUBECONFIG) $(KUBECTL) ## Install RabbitM
 # https://github.com/jetstack/cert-manager/releases
 # ⚠️  You may want to keep this in sync with RABBITMQ_TOPOLOGY_OPERATOR_VERSION
 # In other words, don't upgrade cert-manager to a version that was released AFTER RABBITMQ_TOPOLOGY_OPERATOR_VERSION
-CERT_MANAGER_VERSION ?= 1.7.0
+CERT_MANAGER_VERSION ?= 1.8.0
 .PHONY: install-cert-manager
 install-cert-manager: | $(KUBECONFIG) $(KUBECTL) ## Install Cert Manager - dependency of RabbitMQ Topology Operator
 	$(KUBECTL) $(K_CMD) --filename \
@@ -321,13 +321,13 @@ install-cert-manager: | $(KUBECONFIG) $(KUBECTL) ## Install Cert Manager - depen
 	$(KUBECTL) wait --for=condition=available deploy/cert-manager-webhook --timeout=60s --namespace $(CERT_MANAGER_NAMESPACE)
 
 # https://github.com/rabbitmq/messaging-topology-operator/releases
-RABBITMQ_TOPOLOGY_OPERATOR_VERSION ?= 1.4.1
+RABBITMQ_TOPOLOGY_OPERATOR_VERSION ?= 1.6.0
 .PHONY: install-rabbitmq-topology-operator
 install-rabbitmq-topology-operator: | install-cert-manager $(KUBECTL) ## Install RabbitMQ Topology Operator
 	$(KUBECTL) $(K_CMD) --filename \
 		https://github.com/rabbitmq/messaging-topology-operator/releases/download/v$(RABBITMQ_TOPOLOGY_OPERATOR_VERSION)/messaging-topology-operator-with-certmanager.yaml
 
-KNATIVE_VERSION ?= 1.1.0
+KNATIVE_VERSION ?= 1.4.0
 
 # https://github.com/knative/serving/releases
 .PHONY: install-knative-serving

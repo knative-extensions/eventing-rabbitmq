@@ -24,6 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/rickb777/date/period"
+	"k8s.io/apimachinery/pkg/api/resource"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
@@ -91,6 +92,16 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 			Name:  "BROKER_INGRESS_URL",
 			Value: args.BrokerIngressURL.String(),
 		}},
+		// This resource requests and limits comes from performance testing 1500msgs/s with a parallelism of 1000
+		// more info in this issue: https://github.com/knative-sandbox/eventing-rabbitmq/issues/703
+		Resources: corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("300m"),
+				corev1.ResourceMemory: resource.MustParse("64Mi")},
+			Limits: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("4000m"),
+				corev1.ResourceMemory: resource.MustParse("600Mi")},
+		},
 	}
 	if args.Configs != nil {
 		dispatcher.Env = append(dispatcher.Env, args.Configs.ToEnvVars()...)

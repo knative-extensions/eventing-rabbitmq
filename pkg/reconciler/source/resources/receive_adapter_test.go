@@ -22,6 +22,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1alpha12 "knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
@@ -153,6 +154,14 @@ func TestMakeReceiveAdapter(t *testing.T) {
 									Name:            "receive-adapter",
 									Image:           "test-image",
 									ImagePullPolicy: "IfNotPresent",
+									Resources: corev1.ResourceRequirements{
+										Requests: corev1.ResourceList{
+											corev1.ResourceCPU:    resource.MustParse("300m"),
+											corev1.ResourceMemory: resource.MustParse("64Mi")},
+										Limits: corev1.ResourceList{
+											corev1.ResourceCPU:    resource.MustParse("4000m"),
+											corev1.ResourceMemory: resource.MustParse("600Mi")},
+									},
 									Env: []corev1.EnvVar{
 										{
 											Name:  "RABBITMQ_BROKERS",
