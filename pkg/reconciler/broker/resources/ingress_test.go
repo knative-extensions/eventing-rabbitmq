@@ -86,7 +86,7 @@ func TestMakeIngressDeployment(t *testing.T) {
 						Resources: corev1.ResourceRequirements{
 							Requests: corev1.ResourceList{
 								corev1.ResourceCPU:    resource.MustParse("150m"),
-								corev1.ResourceMemory: resource.MustParse("10Mi")},
+								corev1.ResourceMemory: resource.MustParse("32Mi")},
 							Limits: corev1.ResourceList{
 								corev1.ResourceCPU:    resource.MustParse("1000m"),
 								corev1.ResourceMemory: resource.MustParse("400Mi")},

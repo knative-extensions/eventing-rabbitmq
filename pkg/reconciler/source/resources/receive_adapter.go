@@ -191,13 +191,14 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 							ImagePullPolicy: "IfNotPresent",
 							Env:             env,
 							// This resource requests and limits comes from performance testing 1500msgs/s with a parallelism of 1000
+							// more info in this issue: https://github.com/knative-sandbox/eventing-rabbitmq/issues/703
 							Resources: corev1.ResourceRequirements{
 								Requests: corev1.ResourceList{
 									corev1.ResourceCPU:    resource.MustParse("300m"),
-									corev1.ResourceMemory: resource.MustParse("15Mi")},
+									corev1.ResourceMemory: resource.MustParse("64Mi")},
 								Limits: corev1.ResourceList{
 									corev1.ResourceCPU:    resource.MustParse("4000m"),
-									corev1.ResourceMemory: resource.MustParse("500Mi")},
+									corev1.ResourceMemory: resource.MustParse("600Mi")},
 							},
 						},
 					},

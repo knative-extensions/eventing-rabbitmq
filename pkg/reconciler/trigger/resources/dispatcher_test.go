@@ -140,10 +140,10 @@ func deployment(opts ...func(*appsv1.Deployment)) *appsv1.Deployment {
 						Resources: corev1.ResourceRequirements{
 							Requests: corev1.ResourceList{
 								corev1.ResourceCPU:    resource.MustParse("300m"),
-								corev1.ResourceMemory: resource.MustParse("15Mi")},
+								corev1.ResourceMemory: resource.MustParse("64Mi")},
 							Limits: corev1.ResourceList{
 								corev1.ResourceCPU:    resource.MustParse("4000m"),
-								corev1.ResourceMemory: resource.MustParse("500Mi")},
+								corev1.ResourceMemory: resource.MustParse("600Mi")},
 						},
 						Env: []corev1.EnvVar{{
 							Name:  system.NamespaceEnvKey,
