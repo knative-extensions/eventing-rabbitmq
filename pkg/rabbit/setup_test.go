@@ -23,17 +23,15 @@ import (
 )
 
 func Test_SetupRabbitMQReconnections(t *testing.T) {
-	rabbitMQHelper := NewRabbitMQHelper(2)
+	rabbitMQHelper := NewRabbitMQHelper(2, make(chan bool))
 	logger := zap.NewNop().Sugar()
-	retryChannel := make(chan bool)
 	testChannel := make(chan bool)
 	// Drain messages in the retryChannel
 	go func() {
 		testChannel <- true
 		for {
-			retry := <-retryChannel
+			retry := rabbitMQHelper.WaitForRetrySignal()
 			if !retry {
-				close(retryChannel)
 				close(testChannel)
 				break
 			}
@@ -42,7 +40,7 @@ func Test_SetupRabbitMQReconnections(t *testing.T) {
 	}()
 	<-testChannel
 	// Testing a failing setup
-	conn, channel, err := rabbitMQHelper.SetupRabbitMQ("amqp://localhost:5672/%2f", retryChannel, logger)
+	conn, channel, err := rabbitMQHelper.SetupRabbitMQ("amqp://localhost:5672/%2f", logger)
 	<-testChannel
 	if err == nil {
 		t.Error("SetupRabbitMQ should fail with the default DialFunc in testing environments")
@@ -51,7 +49,7 @@ func Test_SetupRabbitMQReconnections(t *testing.T) {
 		t.Errorf("no retries have been attempted want: > 0, got: %d", rabbitMQHelper.retryCounter)
 	}
 	// Test SignalRetry func
-	rabbitMQHelper.SignalRetry(retryChannel, true)
+	rabbitMQHelper.SignalRetry(true)
 	<-testChannel
-	rabbitMQHelper.CleanupRabbitMQ(conn, channel, retryChannel, logger)
+	rabbitMQHelper.CleanupRabbitMQ(conn, channel, logger)
 }

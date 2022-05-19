@@ -92,31 +92,28 @@ func main() {
 		logger.Errorw("failed to create the metrics exporter", zap.Error(err))
 	}
 
-	rmqHelper := rabbit.NewRabbitMQHelper(1)
-	retryChannel := make(chan bool)
+	rmqHelper := rabbit.NewRabbitMQHelper(1, make(chan bool))
 	// Wait for RabbitMQ retry messages
 	go func() {
 		for {
-			if retry := <-retryChannel; !retry {
+			if retry := rmqHelper.WaitForRetrySignal(); !retry {
 				logger.Warn("stopped listenning for RabbitMQ resources retries")
-				close(retryChannel)
 				break
 			}
 			logger.Warn("recreating RabbitMQ resources")
-			env.connection, env.channel, err = env.CreateRabbitMQConnections(rmqHelper, retryChannel, logger)
+			env.connection, env.channel, err = env.CreateRabbitMQConnections(rmqHelper, logger)
 			if err != nil {
 				logger.Errorf("error recreating RabbitMQ connections: %s, waiting for a retry", err)
 			}
 		}
 	}()
-	env.connection, env.channel, err = env.CreateRabbitMQConnections(rmqHelper, retryChannel, logger)
+	env.connection, env.channel, err = env.CreateRabbitMQConnections(rmqHelper, logger)
 	if err != nil {
 		logger.Errorf("error creating RabbitMQ connections: %s, waiting for a retry", err)
 	}
-	defer rmqHelper.CleanupRabbitMQ(env.connection, env.channel, retryChannel, logger)
+	defer rmqHelper.CleanupRabbitMQ(env.connection, env.channel, logger)
 
 	env.reporter = ingress.NewStatsReporter(env.ContainerName, kmeta.ChildName(env.PodName, uuid.New().String()))
-
 	connectionArgs := kncloudevents.ConnectionArgs{
 		MaxIdleConns:        defaultMaxIdleConnections,
 		MaxIdleConnsPerHost: defaultMaxIdleConnectionsPerHost,
@@ -230,15 +227,15 @@ func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, tim
 
 func (env *envConfig) CreateRabbitMQConnections(
 	rmqHelper *rabbit.RabbitMQHelper,
-	retryChannel chan<- bool,
 	logger *zap.SugaredLogger) (conn *amqp.Connection, channel *amqp.Channel, err error) {
-	conn, channel, err = rmqHelper.SetupRabbitMQ(env.BrokerURL, retryChannel, logger)
+	conn, channel, err = rmqHelper.SetupRabbitMQ(env.BrokerURL, logger)
 	if err == nil {
 		err = channel.Confirm(false)
 	}
 	if err != nil {
 		rmqHelper.CloseRabbitMQConnections(conn, channel, logger)
-		go rmqHelper.SignalRetry(retryChannel, true)
+		logger.Warn("Retrying RabbitMQ connections setup")
+		go rmqHelper.SignalRetry(true)
 		return nil, nil, err
 	}
 
