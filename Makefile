@@ -400,3 +400,5 @@ reset:
 manifests:
 	controller-gen crd paths="./pkg/apis/sources/v1alpha1" output:crd:artifacts:config=config/source/
 	mv config/source/sources.knative.dev_rabbitmqsources.yaml config/source/300-rabbitmqsource.yaml
+	controller-gen crd paths="./pkg/apis/eventing/v1alpha1" output:crd:artifacts:config=config/broker/
+	mv config/broker/eventing.knative.dev_rabbitmqbrokerconfigs.yaml config/broker/300-rabbitmqbrokerconfig.yaml

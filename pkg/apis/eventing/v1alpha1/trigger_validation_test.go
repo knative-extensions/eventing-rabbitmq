@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1_test
+package v1alpha1_test
 
 import (
 	"context"
@@ -24,7 +24,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	v1 "knative.dev/eventing-rabbitmq/pkg/apis/eventing/v1"
+	v1 "knative.dev/eventing-rabbitmq/pkg/apis/eventing/v1alpha1"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	"knative.dev/eventing/pkg/client/clientset/versioned/fake"
 	"knative.dev/pkg/apis"

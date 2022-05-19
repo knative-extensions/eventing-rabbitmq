@@ -1,0 +1,83 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.8.0
+  creationTimestamp: null
+  name: rabbitmqbrokerconfigs.eventing.knative.dev
+spec:
+  group: eventing.knative.dev
+  names:
+    categories:
+    - all
+    - knative
+    - eventing
+    kind: RabbitmqBrokerConfig
+    listKind: RabbitmqBrokerConfigList
+    plural: rabbitmqbrokerconfigs
+    shortNames:
+    - rmqbrokerconfig
+    singular: rabbitmqbrokerconfig
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: RabbitmqBrokerConfig is the Schema for the RabbitmqBrokerConfig
+          API.
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            properties:
+              queueType:
+                default: quorum
+                enum:
+                - quorum
+                - classic
+                type: string
+              rabbitmqClusterReference:
+                description: RabbitmqClusterReference stores a reference to RabbitmqCluster.
+                  This will get used to create resources on the RabbitMQ Broker.
+                properties:
+                  connectionSecret:
+                    description: Secret contains the http management uri for the RabbitMQ
+                      cluster. The Secret must contain the key `uri`, `username` and
+                      `password` or operator will error. Have to set either name or
+                      connectionSecret, but not both.
+                    properties:
+                      name:
+                        description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                          TODO: Add other useful fields. apiVersion, kind, uid?'
+                        type: string
+                    type: object
+                  name:
+                    description: The name of the RabbitMQ cluster to reference. Have
+                      to set either name or connectionSecret, but not both.
+                    type: string
+                  namespace:
+                    description: The namespace of the RabbitMQ cluster to reference.
+                      Defaults to the namespace of the requested resource if omitted.
+                    type: string
+                type: object
+            type: object
+        type: object
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
