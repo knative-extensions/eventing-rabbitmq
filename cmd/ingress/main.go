@@ -111,7 +111,7 @@ func main() {
 	if err != nil {
 		logger.Errorf("error creating RabbitMQ connections: %s, waiting for a retry", err)
 	}
-	defer rmqHelper.CleanupRabbitMQ(env.connection, env.channel, logger)
+	defer rmqHelper.CleanupRabbitMQ(env.connection, logger)
 
 	env.reporter = ingress.NewStatsReporter(env.ContainerName, kmeta.ChildName(env.PodName, uuid.New().String()))
 	connectionArgs := kncloudevents.ConnectionArgs{
@@ -233,11 +233,10 @@ func (env *envConfig) CreateRabbitMQConnections(
 		err = channel.Confirm(false)
 	}
 	if err != nil {
-		rmqHelper.CloseRabbitMQConnections(conn, channel, logger)
+		rmqHelper.CloseRabbitMQConnections(conn, logger)
 		logger.Warn("Retrying RabbitMQ connections setup")
 		go rmqHelper.SignalRetry(true)
 		return nil, nil, err
 	}
-
 	return conn, channel, nil
 }

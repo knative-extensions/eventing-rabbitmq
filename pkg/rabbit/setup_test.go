@@ -40,7 +40,7 @@ func Test_SetupRabbitMQReconnections(t *testing.T) {
 	}()
 	<-testChannel
 	// Testing a failing setup
-	conn, channel, err := rabbitMQHelper.SetupRabbitMQ("amqp://localhost:5672/%2f", logger)
+	conn, _, err := rabbitMQHelper.SetupRabbitMQ("amqp://localhost:5672/%2f", logger)
 	<-testChannel
 	if err == nil {
 		t.Error("SetupRabbitMQ should fail with the default DialFunc in testing environments")
@@ -51,5 +51,5 @@ func Test_SetupRabbitMQReconnections(t *testing.T) {
 	// Test SignalRetry func
 	rabbitMQHelper.SignalRetry(true)
 	<-testChannel
-	rabbitMQHelper.CleanupRabbitMQ(conn, channel, logger)
+	rabbitMQHelper.CleanupRabbitMQ(conn, logger)
 }
