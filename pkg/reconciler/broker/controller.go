@@ -34,6 +34,7 @@ import (
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	reconcilersource "knative.dev/eventing/pkg/reconciler/source"
 
+	"knative.dev/eventing-rabbitmq/pkg/brokerconfig"
 	bindinginformer "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/informers/rabbitmq.com/v1beta1/binding"
 	exchangeinformer "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/informers/rabbitmq.com/v1beta1/exchange"
 	policyinformer "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/informers/rabbitmq.com/v1beta1/policy"
@@ -52,7 +53,6 @@ import (
 
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
-	"knative.dev/pkg/injection/clients/dynamicclient"
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/resolver"
@@ -100,7 +100,6 @@ func NewController(
 
 	r := &Reconciler{
 		eventingClientSet:         eventingclient.Get(ctx),
-		dynamicClientSet:          dynamicclient.Get(ctx),
 		kubeClientSet:             kubeclient.Get(ctx),
 		brokerLister:              brokerInformer.Lister(),
 		secretLister:              secretInformer.Lister(),
@@ -115,6 +114,7 @@ func NewController(
 		rabbitClientSet:           rabbitmqclient.Get(ctx),
 		configs:                   reconcilersource.WatchConfigurations(ctx, ComponentName, cmw),
 		rabbit:                    rabbit.New(ctx),
+		brokerConfig:              brokerconfig.New(ctx),
 	}
 
 	impl := brokerreconciler.NewImpl(ctx, r, BrokerClass)

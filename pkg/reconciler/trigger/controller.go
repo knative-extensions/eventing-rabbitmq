@@ -35,6 +35,7 @@ import (
 
 	v1 "knative.dev/eventing/pkg/apis/eventing/v1"
 
+	"knative.dev/eventing-rabbitmq/pkg/brokerconfig"
 	bindinginformer "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/informers/rabbitmq.com/v1beta1/binding"
 	exchangeinformer "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/informers/rabbitmq.com/v1beta1/exchange"
 	brokerinformer "knative.dev/eventing/pkg/client/injection/informers/eventing/v1/broker"
@@ -103,6 +104,7 @@ func NewController(
 		rabbitClientSet:              rabbitmqclient.Get(ctx),
 		configs:                      reconcilersource.WatchConfigurations(ctx, component, cmw),
 		rabbit:                       rabbit.New(ctx),
+		brokerConfig:                 brokerconfig.New(ctx),
 	}
 
 	impl := triggerreconciler.NewImpl(ctx, r)

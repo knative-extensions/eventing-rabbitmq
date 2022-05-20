@@ -61,3 +61,15 @@ rules:
     - "delete"
     - "patch"
     - "watch"
+  - apiGroups:
+    - eventing.knative.dev
+    resources:
+    - rabbitmqbrokerconfigs
+    verbs:
+    - "get"
+    - "list"
+    - "create"
+    - "update"
+    - "delete"
+    - "patch"
+    - "watch"

@@ -38,6 +38,8 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 
 	clientgotesting "k8s.io/client-go/testing"
+	"knative.dev/eventing-rabbitmq/pkg/apis/eventing/v1alpha1"
+	"knative.dev/eventing-rabbitmq/pkg/brokerconfig"
 	rabbitduck "knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker"
@@ -77,8 +79,9 @@ const (
 	brokerName  = "test-broker"
 	brokerUID   = "broker-test-uid"
 
-	rabbitSecretName   = "test-broker-broker-rabbit"
-	rabbitMQBrokerName = "rabbitbrokerhere"
+	rabbitSecretName         = "test-broker-broker-rabbit"
+	rabbitMQBrokerName       = "rabbitbrokerhere"
+	rabbitMQBrokerConfigName = "rabbitbrokerconfig"
 
 	triggerName = "test-trigger"
 	triggerUID  = "test-trigger-uid"
@@ -147,6 +150,10 @@ func init() {
 }
 
 func TestReconcile(t *testing.T) {
+	brokerConfigs := map[string]*duckv1.KReference{
+		"rabbitmqClusterConfig": configWithRabbitMQCluster(),
+		"rabbitmqBrokerConfig":  configWithRabbitMQBrokerConfig(),
+	}
 	table := TableTest{
 		{
 			Name: "bad workqueue key",
@@ -164,20 +171,6 @@ func TestReconcile(t *testing.T) {
 			Key:     testKey,
 			Objects: []runtime.Object{NewTrigger(triggerName, testNS, brokerName, WithTriggerDeleted)},
 		}, {
-			Name: "Trigger being deleted, not my broker",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				broker.NewBroker(brokerName, testNS,
-					broker.WithBrokerClass("not-my-broker"),
-					broker.WithBrokerConfig(config()),
-					broker.WithInitBrokerConditions),
-				NewTrigger(triggerName, testNS, brokerName,
-					WithTriggerUID(triggerUID),
-					WithInitTriggerConditions,
-					WithTriggerDeleted,
-					WithTriggerSubscriberURI(subscriberURI)),
-			},
-		}, {
 			Name: "Broker does not exist",
 			Key:  testKey,
 			Objects: []runtime.Object{
@@ -193,565 +186,592 @@ func TestReconcile(t *testing.T) {
 					WithInitTriggerConditions,
 					WithTriggerBrokerFailed("BrokerDoesNotExist", `Broker "test-broker" does not exist`)),
 			}},
-		}, {
-			Name: "Not my broker class - no status updates",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				broker.NewBroker(brokerName, testNS,
-					broker.WithBrokerClass("not-my-broker"),
-					broker.WithBrokerConfig(config()),
-					broker.WithInitBrokerConditions),
-				NewTrigger(triggerName, testNS, brokerName,
-					WithTriggerUID(triggerUID),
-					WithInitTriggerConditions,
-					WithTriggerSubscriberURI(subscriberURI)),
-			},
-		}, {
-			Name: "Broker not reconciled yet",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				NewBroker(brokerName, testNS,
-					WithBrokerClass(brokerClass),
-					WithBrokerConfig(config())),
-				NewTrigger(triggerName, testNS, brokerName,
-					WithTriggerUID(triggerUID),
-					WithInitTriggerConditions,
-					WithTriggerSubscriberURI(subscriberURI),
-					WithTriggerBrokerNotConfigured()),
-			},
-		}, {
-			Name: "Broker not ready yet",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				broker.NewBroker(brokerName, testNS,
-					broker.WithBrokerClass(brokerClass),
-					broker.WithBrokerConfig(config()),
-					broker.WithInitBrokerConditions,
-					broker.WithExchangeFailed("noexchange", "NoExchange")),
-				NewTrigger(triggerName, testNS, brokerName,
-					WithTriggerUID(triggerUID),
-					WithInitTriggerConditions,
-					WithTriggerSubscriberURI(subscriberURI),
-					WithTriggerBrokerFailed("noexchange", "NoExchange")),
-			},
-		}, {
-			Name: "Does not work with secret",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				ReadyBrokerWithSecret(),
-				triggerWithFilter(),
-			},
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: triggerWithUnsupportedBrokerConfig(),
-			}},
-		}, {
-			Name: "Creates everything ok",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				ReadyBroker(),
-				triggerWithFilter(),
-				createSecret(rabbitURL),
-				markReady(createQueue()),
-				markReady(createBinding(true)),
-			},
-			WantCreates: []runtime.Object{
-				createDispatcherDeployment(),
-			},
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: triggerWithFilterReady(),
-			}},
-		},
-		{
-			Name: "Creates everything ok while using Broker DLQ",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				ReadyBrokerWithDeliverySpec(),
-				triggerWithFilter(),
-				createSecret(rabbitURL),
-				markReady(createQueue()),
-				markReady(createBinding(true)),
-			},
-			WantCreates: []runtime.Object{
-				createDispatcherDeploymentWithRetries(),
-			},
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: triggerWithFilterReady(),
-			}},
-		},
-		{
-			Name: "Creates everything ok while using Trigger DLQ",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				ReadyBroker(),
-				triggerWithDeliverySpec(),
-				createSecret(rabbitURL),
-				markReady(createQueue()),
-				markReady(createBinding(true)),
-			},
-			WantCreates: []runtime.Object{
-				createDispatcherDeploymentWithRetries(),
-			},
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: triggerWithDeliverySpecReady(),
-			}},
-		},
-		{
-			Name: "Creates queue ok with CRD",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				ReadyBroker(),
-				triggerWithFilter(),
-				createSecret(rabbitURL),
-			},
-			WantCreates: []runtime.Object{
-				createQueue(),
-			},
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: triggerWithQueueNotReady(),
-			}},
-		}, {
-			Name: "Create queue fails with CRD",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				ReadyBroker(),
-				triggerWithFilter(),
-				createSecret(rabbitURL),
-			},
-			WithReactors: []clientgotesting.ReactionFunc{
-				InduceFailure("create", "queues"),
-			},
-			WantErr: true,
-			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for create queues"),
-			},
-			WantCreates: []runtime.Object{
-				createQueue(),
-			},
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: triggerWithQueueCreateFailure(),
-			}},
-		}, {
-			Name: "Queue exists, creates binding ok with CRD",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				ReadyBroker(),
-				triggerWithFilter(),
-				createSecret(rabbitURL),
-				markReady(createQueue()),
-			},
-			WantCreates: []runtime.Object{
-				createBinding(true),
-			},
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: triggerWithBindingNotReady(),
-			}},
-		}, {
-			Name: "Queue exists, create binding fails with CRD",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				ReadyBroker(),
-				triggerWithFilter(),
-				createSecret(rabbitURL),
-				markReady(createQueue()),
-			},
-			WithReactors: []clientgotesting.ReactionFunc{
-				InduceFailure("create", "bindings"),
-			},
-			WantErr: true,
-			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for create bindings"),
-			},
-			WantCreates: []runtime.Object{
-				createBinding(true),
-			},
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: triggerWithBindingCreateFailure(),
-			}},
-		}, {
-			Name: "Queue, binding exist, creates dispatcher deployment",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				ReadyBroker(),
-				triggerWithFilter(),
-				createSecret(rabbitURL),
-				markReady(createQueue()),
-				markReady(createBinding(true)),
-			},
-			WantCreates: []runtime.Object{
-				createDispatcherDeployment(),
-			},
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: triggerWithFilterReady(),
-			}},
-		}, {
-			Name: "Creates everything with ref",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				ReadyBroker(),
-				makeSubscriberAddressableAsUnstructured(),
-				markReady(createQueue()),
-				markReady(createBinding(false)),
-				NewTrigger(triggerName, testNS, brokerName,
-					WithTriggerUID(triggerUID),
-					WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS)),
-				createSecret(rabbitURL),
-			},
-			WantCreates: []runtime.Object{
-				createDispatcherDeployment(),
-			},
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewTrigger(triggerName, testNS, brokerName,
-					WithTriggerUID(triggerUID),
-					WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS),
-					WithTriggerBrokerReady(),
-					WithTriggerDeadLetterSinkNotConfigured(),
-					WithTriggerDependencyReady(),
-					WithTriggerSubscribed(),
-					WithTriggerSubscriberResolvedSucceeded(),
-					WithTriggerStatusSubscriberURI(subscriberURI)),
-			}},
-		}, {
-			Name: "Fails to resolve ref",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				ReadyBroker(),
-				makeSubscriberNotAddressableAsUnstructured(),
-				markReady(createQueue()),
-				markReady(createBinding(false)),
-				NewTrigger(triggerName, testNS, brokerName,
-					WithTriggerUID(triggerUID),
-					WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS)),
-				createSecret(rabbitURL),
-			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "InternalError", `address not set for &ObjectReference{Kind:Service,Namespace:test-namespace,Name:subscriber-name,UID:,APIVersion:serving.knative.dev/v1,ResourceVersion:,FieldPath:,}`),
-			},
-			WantErr: true,
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewTrigger(triggerName, testNS, brokerName,
-					WithTriggerUID(triggerUID),
-					WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS),
-					WithInitTriggerConditions,
-					WithTriggerBrokerReady(),
-					WithTriggerDeadLetterSinkNotConfigured(),
-					WithTriggerDependencyReady(),
-					WithTriggerSubscriberResolvedFailed("Unable to get the Subscriber's URI", `address not set for &ObjectReference{Kind:Service,Namespace:test-namespace,Name:subscriber-name,UID:,APIVersion:serving.knative.dev/v1,ResourceVersion:,FieldPath:,}`)),
-			}},
-		}, {
-			Name: "Deployment creation fails",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				ReadyBroker(),
-				NewTrigger(triggerName, testNS, brokerName,
-					WithTriggerUID(triggerUID),
-					WithTriggerSubscriberURI(subscriberURI)),
-				createSecret(rabbitURL),
-				markReady(createQueue()),
-				markReady(createBinding(false)),
-			},
-			WithReactors: []clientgotesting.ReactionFunc{
-				InduceFailure("create", "deployments"),
-			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for create deployments"),
-			},
-			WantErr: true,
-			WantCreates: []runtime.Object{
-				createDispatcherDeployment(),
-			},
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewTrigger(triggerName, testNS, brokerName,
-					WithTriggerUID(triggerUID),
-					WithTriggerSubscriberURI(subscriberURI),
-					WithInitTriggerConditions,
-					WithTriggerBrokerReady(),
-					WithTriggerDeadLetterSinkNotConfigured(),
-					WithTriggerSubscribed(),
-					WithTriggerSubscriberResolvedSucceeded(),
-					WithTriggerStatusSubscriberURI(subscriberURI),
-					WithTriggerDependencyFailed("DeploymentFailure", "inducing failure for create deployments")),
-			}},
-		}, {
-			Name: "Deployment update fails",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				ReadyBroker(),
-				NewTrigger(triggerName, testNS, brokerName,
-					WithTriggerUID(triggerUID),
-					WithTriggerSubscriberURI(subscriberURI)),
-				createSecret(rabbitURL),
-				createDifferentDispatcherDeployment(),
-				markReady(createQueue()),
-				markReady(createBinding(false)),
-			},
-			WithReactors: []clientgotesting.ReactionFunc{
-				InduceFailure("update", "deployments"),
-			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for update deployments"),
-			},
-			WantErr: true,
-			WantUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: createDispatcherDeployment(),
-			}},
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewTrigger(triggerName, testNS, brokerName,
-					WithTriggerUID(triggerUID),
-					WithTriggerSubscriberURI(subscriberURI),
-					WithInitTriggerConditions,
-					WithTriggerBrokerReady(),
-					WithTriggerDeadLetterSinkNotConfigured(),
-					WithTriggerSubscribed(),
-					WithTriggerSubscriberResolvedSucceeded(),
-					WithTriggerStatusSubscriberURI(subscriberURI),
-					WithTriggerDependencyFailed("DeploymentFailure", "inducing failure for update deployments")),
-			}},
-		}, {
-			Name: "Everything ready, nop",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				ReadyBroker(),
-				NewTrigger(triggerName, testNS, brokerName,
-					WithTriggerUID(triggerUID),
-					WithTriggerSubscriberURI(subscriberURI)),
-				createSecret(rabbitURL),
-				markReady(createQueue()),
-				markReady(createBinding(false)),
-				createDispatcherDeployment(),
-			},
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewTrigger(triggerName, testNS, brokerName,
-					WithTriggerUID(triggerUID),
-					WithTriggerSubscriberURI(subscriberURI),
-					WithInitTriggerConditions,
-					WithTriggerBrokerReady(),
-					WithTriggerDeadLetterSinkNotConfigured(),
-					WithTriggerSubscribed(),
-					WithTriggerDependencyReady(),
-					WithTriggerSubscriberResolvedSucceeded(),
-					WithTriggerStatusSubscriberURI(subscriberURI)),
-			}},
-		}, {
-			Name: "Everything ready with filter, nop",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				ReadyBroker(),
-				triggerWithFilter(),
-				createSecret(rabbitURL),
-				markReady(createQueue()),
-				markReady(createBinding(true)),
-				createDispatcherDeployment(),
-			},
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: triggerWithFilterReady(),
-			}},
-		}, {
-			Name: "Dependency doesn't exist",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				ReadyBroker(),
-				NewTrigger(triggerName, testNS, brokerName,
-					WithTriggerUID(triggerUID),
-					WithTriggerSubscriberURI(subscriberURI),
-					WithInitTriggerConditions,
-					WithDependencyAnnotation(dependencyAnnotation),
-				),
-				markReady(createQueue()),
-				markReady(createBinding(false)),
-			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "InternalError", "propagating dependency readiness: getting the dependency: pingsources.sources.knative.dev \"test-ping-source\" not found"),
-			},
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewTrigger(triggerName, testNS, brokerName,
-					WithTriggerUID(triggerUID),
-					WithTriggerSubscriberURI(subscriberURI),
-					// The first reconciliation will initialize the status conditions.
-					WithInitTriggerConditions,
-					WithDependencyAnnotation(dependencyAnnotation),
-					WithTriggerBrokerReady(),
-					WithTriggerDependencyFailed("DependencyDoesNotExist", "Dependency does not exist: pingsources.sources.knative.dev \"test-ping-source\" not found"),
-				),
-			}},
-			WantErr: true,
-		}, {
-			Name: "The status of Dependency is False",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				ReadyBroker(),
-				makeFalseStatusPingSource(),
-				NewTrigger(triggerName, testNS, brokerName,
-					WithTriggerUID(triggerUID),
-					WithTriggerSubscriberURI(subscriberURI),
-					WithInitTriggerConditions,
-					WithDependencyAnnotation(dependencyAnnotation),
-				),
-				createSecret(rabbitURL),
-				markReady(createQueue()),
-				markReady(createBinding(false)),
-			},
-			WantErr: false,
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewTrigger(triggerName, testNS, brokerName,
-					WithTriggerUID(triggerUID),
-					// The first reconciliation will initialize the status conditions.
-					WithInitTriggerConditions,
-					WithTriggerSubscriberURI(subscriberURI),
-					WithDependencyAnnotation(dependencyAnnotation),
-					WithTriggerBrokerReady(),
-					WithTriggerDependencyFailed("NotFound", ""),
-				),
-			}},
-		}, {
-			Name: "The status of Dependency is Unknown",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				ReadyBroker(),
-				makeUnknownStatusCronJobSource(),
-				NewTrigger(triggerName, testNS, brokerName,
-					WithTriggerUID(triggerUID),
-					WithTriggerSubscriberURI(subscriberURI),
-					WithInitTriggerConditions,
-					WithDependencyAnnotation(dependencyAnnotation),
-				),
-				createSecret(rabbitURL),
-				markReady(createQueue()),
-				markReady(createBinding(false)),
-			},
-			WantErr: false,
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewTrigger(triggerName, testNS, brokerName,
-					WithTriggerUID(triggerUID),
-					WithTriggerSubscriberURI(subscriberURI),
-					// The first reconciliation will initialize the status conditions.
-					WithInitTriggerConditions,
-					WithDependencyAnnotation(dependencyAnnotation),
-					WithTriggerBrokerReady(),
-					WithTriggerDependencyUnknown("", ""),
-				),
-			}},
-		}, {
-			Name: "Dependency generation not equal",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				ReadyBroker(),
-				makeGenerationNotEqualPingSource(),
-				NewTrigger(triggerName, testNS, brokerName,
-					WithTriggerUID(triggerUID),
-					WithTriggerSubscriberURI(subscriberURI),
-					WithInitTriggerConditions,
-					WithDependencyAnnotation(dependencyAnnotation),
-				),
-				createSecret(rabbitURL),
-				markReady(createQueue()),
-				markReady(createBinding(false)),
-			},
-			WantErr: false,
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewTrigger(triggerName, testNS, brokerName,
-					WithTriggerUID(triggerUID),
-					WithTriggerSubscriberURI(subscriberURI),
-					// The first reconciliation will initialize the status conditions.
-					WithInitTriggerConditions,
-					WithDependencyAnnotation(dependencyAnnotation),
-					WithTriggerBrokerReady(),
-					WithTriggerDependencyUnknown("GenerationNotEqual", fmt.Sprintf("The dependency's metadata.generation, %q, is not equal to its status.observedGeneration, %q.", currentGeneration, outdatedGeneration))),
-			}},
-		}, {
-			Name: "Malformed dependency annotation",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				ReadyBroker(),
-				NewTrigger(triggerName, testNS, brokerName,
-					WithTriggerUID(triggerUID),
-					WithTriggerSubscriberURI(subscriberURI),
-					WithInitTriggerConditions,
-					WithDependencyAnnotation(malformedDependencyAnnotation),
-				),
-				createSecret(rabbitURL),
-				markReady(createQueue()),
-				markReady(createBinding(false)),
-			},
-			WantErr: true,
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewTrigger(triggerName, testNS, brokerName,
-					WithTriggerUID(triggerUID),
-					WithTriggerSubscriberURI(subscriberURI),
-					// The first reconciliation will initialize the status conditions.
-					WithInitTriggerConditions,
-					WithDependencyAnnotation(malformedDependencyAnnotation),
-					WithTriggerBrokerReady(),
-					WithTriggerDependencyFailed("ReferenceError", "Unable to unmarshal objectReference from dependency annotation of trigger: invalid character ':' after top-level value")),
-			}},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "UpdateFailed", "Failed to update status for \"test-trigger\": The provided annotation was not a corev1.ObjectReference: \"\\\"kind\\\":\\\"PingSource\\\"\": metadata.annotations[knative.dev/dependency]\ninvalid character ':' after top-level value"),
-			},
-		}, {
-			Name: "Dependency ready",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				ReadyBroker(),
-				makeReadyPingSource(),
-				NewTrigger(triggerName, testNS, brokerName,
-					WithTriggerUID(triggerUID),
-					WithTriggerSubscriberURI(subscriberURI),
-					WithInitTriggerConditions,
-					WithDependencyAnnotation(dependencyAnnotation),
-				),
-				createSecret(rabbitURL),
-				markReady(createQueue()),
-				markReady(createBinding(false)),
-			},
-			WantErr: false,
-			WantCreates: []runtime.Object{
-				createDispatcherDeployment(),
-			},
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewTrigger(triggerName, testNS, brokerName,
-					WithTriggerUID(triggerUID),
-					WithTriggerSubscriberURI(subscriberURI),
-					// The first reconciliation will initialize the status conditions.
-					WithInitTriggerConditions,
-					WithDependencyAnnotation(dependencyAnnotation),
-					WithTriggerBrokerReady(),
-					WithTriggerDeadLetterSinkNotConfigured(),
-					WithTriggerSubscribed(),
-					WithTriggerStatusSubscriberURI(subscriberURI),
-					WithTriggerSubscriberResolvedSucceeded(),
-					WithTriggerDependencyReady(),
-				),
-			}},
-		}, {
-			Name: "Deployment updated when parallelism value is removed",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				ReadyBroker(),
-				NewTrigger(triggerName, testNS, brokerName,
-					WithTriggerUID(triggerUID),
-					WithTriggerSubscriberURI(subscriberURI)),
-				createSecret(rabbitURL),
-				markReady(createQueue()),
-				markReady(createBinding(false)),
-				createDispatcherDeploymentWithParallelism(),
-			},
-			WantUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: createDispatcherDeployment(),
-			}},
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewTrigger(triggerName, testNS, brokerName,
-					WithTriggerUID(triggerUID),
-					WithTriggerSubscriberURI(subscriberURI),
-					WithInitTriggerConditions,
-					WithTriggerBrokerReady(),
-					WithTriggerDeadLetterSinkNotConfigured(),
-					WithTriggerSubscribed(),
-					WithTriggerDependencyReady(),
-					WithTriggerSubscriberResolvedSucceeded(),
-					WithTriggerStatusSubscriberURI(subscriberURI)),
-			}},
 		},
 	}
-
+	for name, config := range brokerConfigs {
+		table = append(table, TableTest{
+			{
+				Name: fmt.Sprintf("%s: Trigger being deleted, not my broker", name),
+				Key:  testKey,
+				Objects: []runtime.Object{
+					broker.NewBroker(brokerName, testNS,
+						broker.WithBrokerClass("not-my-broker"),
+						broker.WithBrokerConfig(config),
+						broker.WithInitBrokerConditions),
+					NewTrigger(triggerName, testNS, brokerName,
+						WithTriggerUID(triggerUID),
+						WithInitTriggerConditions,
+						WithTriggerDeleted,
+						WithTriggerSubscriberURI(subscriberURI)),
+				},
+			}, {
+				Name: fmt.Sprintf("%s: Not my broker class - no status updates", name),
+				Key:  testKey,
+				Objects: []runtime.Object{
+					broker.NewBroker(brokerName, testNS,
+						broker.WithBrokerClass("not-my-broker"),
+						broker.WithBrokerConfig(config),
+						broker.WithInitBrokerConditions),
+					NewTrigger(triggerName, testNS, brokerName,
+						WithTriggerUID(triggerUID),
+						WithInitTriggerConditions,
+						WithTriggerSubscriberURI(subscriberURI)),
+				},
+			}, {
+				Name: fmt.Sprintf("%s: Broker not reconciled yet", name),
+				Key:  testKey,
+				Objects: []runtime.Object{
+					NewBroker(brokerName, testNS,
+						WithBrokerClass(brokerClass),
+						WithBrokerConfig(config)),
+					NewTrigger(triggerName, testNS, brokerName,
+						WithTriggerUID(triggerUID),
+						WithInitTriggerConditions,
+						WithTriggerSubscriberURI(subscriberURI),
+						WithTriggerBrokerNotConfigured()),
+				},
+			}, {
+				Name: fmt.Sprintf("%s: Broker not ready yet", name),
+				Key:  testKey,
+				Objects: []runtime.Object{
+					broker.NewBroker(brokerName, testNS,
+						broker.WithBrokerClass(brokerClass),
+						broker.WithBrokerConfig(config),
+						broker.WithInitBrokerConditions,
+						broker.WithExchangeFailed("noexchange", "NoExchange")),
+					NewTrigger(triggerName, testNS, brokerName,
+						WithTriggerUID(triggerUID),
+						WithInitTriggerConditions,
+						WithTriggerSubscriberURI(subscriberURI),
+						WithTriggerBrokerFailed("noexchange", "NoExchange")),
+				},
+			}, {
+				Name: fmt.Sprintf("%s: Creates everything ok", name),
+				Key:  testKey,
+				Objects: []runtime.Object{
+					ReadyBroker(config),
+					triggerWithFilter(),
+					createSecret(rabbitURL),
+					createRabbitMQBrokerConfig(),
+					markReady(createQueue()),
+					markReady(createBinding(true)),
+				},
+				WantCreates: []runtime.Object{
+					createDispatcherDeployment(),
+				},
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+					Object: triggerWithFilterReady(),
+				}},
+			}, {
+				Name: fmt.Sprintf("%s: Creates everything ok while using Broker DLQ", name),
+				Key:  testKey,
+				Objects: []runtime.Object{
+					ReadyBrokerWithDeliverySpec(config),
+					triggerWithFilter(),
+					createSecret(rabbitURL),
+					createRabbitMQBrokerConfig(),
+					markReady(createQueue()),
+					markReady(createBinding(true)),
+				},
+				WantCreates: []runtime.Object{
+					createDispatcherDeploymentWithRetries(),
+				},
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+					Object: triggerWithFilterReady(),
+				}},
+			},
+			{
+				Name: fmt.Sprintf("%s: Creates everything ok while using Trigger DLQ", name),
+				Key:  testKey,
+				Objects: []runtime.Object{
+					ReadyBroker(config),
+					triggerWithDeliverySpec(),
+					createSecret(rabbitURL),
+					createRabbitMQBrokerConfig(),
+					markReady(createQueue()),
+					markReady(createBinding(true)),
+				},
+				WantCreates: []runtime.Object{
+					createDispatcherDeploymentWithRetries(),
+				},
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+					Object: triggerWithDeliverySpecReady(),
+				}},
+			},
+			{
+				Name: fmt.Sprintf("%s: Creates queue ok with CRD", name),
+				Key:  testKey,
+				Objects: []runtime.Object{
+					ReadyBroker(config),
+					triggerWithFilter(),
+					createSecret(rabbitURL),
+					createRabbitMQBrokerConfig(),
+				},
+				WantCreates: []runtime.Object{
+					createQueue(),
+				},
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+					Object: triggerWithQueueNotReady(),
+				}},
+			}, {
+				Name: fmt.Sprintf("%s: Create queue fails with CRD", name),
+				Key:  testKey,
+				Objects: []runtime.Object{
+					ReadyBroker(config),
+					triggerWithFilter(),
+					createSecret(rabbitURL),
+					createRabbitMQBrokerConfig(),
+				},
+				WithReactors: []clientgotesting.ReactionFunc{
+					InduceFailure("create", "queues"),
+				},
+				WantErr: true,
+				WantEvents: []string{
+					Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for create queues"),
+				},
+				WantCreates: []runtime.Object{
+					createQueue(),
+				},
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+					Object: triggerWithQueueCreateFailure(),
+				}},
+			}, {
+				Name: fmt.Sprintf("%s: Queue exists, creates binding ok with CRD", name),
+				Key:  testKey,
+				Objects: []runtime.Object{
+					ReadyBroker(config),
+					triggerWithFilter(),
+					createSecret(rabbitURL),
+					createRabbitMQBrokerConfig(),
+					markReady(createQueue()),
+				},
+				WantCreates: []runtime.Object{
+					createBinding(true),
+				},
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+					Object: triggerWithBindingNotReady(),
+				}},
+			}, {
+				Name: fmt.Sprintf("%s: Queue exists, create binding fails with CRD", name),
+				Key:  testKey,
+				Objects: []runtime.Object{
+					ReadyBroker(config),
+					triggerWithFilter(),
+					createSecret(rabbitURL),
+					createRabbitMQBrokerConfig(),
+					markReady(createQueue()),
+				},
+				WithReactors: []clientgotesting.ReactionFunc{
+					InduceFailure("create", "bindings"),
+				},
+				WantErr: true,
+				WantEvents: []string{
+					Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for create bindings"),
+				},
+				WantCreates: []runtime.Object{
+					createBinding(true),
+				},
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+					Object: triggerWithBindingCreateFailure(),
+				}},
+			}, {
+				Name: fmt.Sprintf("%s: Queue, binding exist, creates dispatcher deployment", name),
+				Key:  testKey,
+				Objects: []runtime.Object{
+					ReadyBroker(config),
+					triggerWithFilter(),
+					createSecret(rabbitURL),
+					createRabbitMQBrokerConfig(),
+					markReady(createQueue()),
+					markReady(createBinding(true)),
+				},
+				WantCreates: []runtime.Object{
+					createDispatcherDeployment(),
+				},
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+					Object: triggerWithFilterReady(),
+				}},
+			}, {
+				Name: fmt.Sprintf("%s: Creates everything with ref", name),
+				Key:  testKey,
+				Objects: []runtime.Object{
+					ReadyBroker(config),
+					makeSubscriberAddressableAsUnstructured(),
+					markReady(createQueue()),
+					markReady(createBinding(false)),
+					NewTrigger(triggerName, testNS, brokerName,
+						WithTriggerUID(triggerUID),
+						WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS)),
+					createSecret(rabbitURL),
+					createRabbitMQBrokerConfig(),
+				},
+				WantCreates: []runtime.Object{
+					createDispatcherDeployment(),
+				},
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+					Object: NewTrigger(triggerName, testNS, brokerName,
+						WithTriggerUID(triggerUID),
+						WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS),
+						WithTriggerBrokerReady(),
+						WithTriggerDeadLetterSinkNotConfigured(),
+						WithTriggerDependencyReady(),
+						WithTriggerSubscribed(),
+						WithTriggerSubscriberResolvedSucceeded(),
+						WithTriggerStatusSubscriberURI(subscriberURI)),
+				}},
+			}, {
+				Name: fmt.Sprintf("%s: Fails to resolve ref", name),
+				Key:  testKey,
+				Objects: []runtime.Object{
+					ReadyBroker(config),
+					makeSubscriberNotAddressableAsUnstructured(),
+					markReady(createQueue()),
+					markReady(createBinding(false)),
+					NewTrigger(triggerName, testNS, brokerName,
+						WithTriggerUID(triggerUID),
+						WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS)),
+					createSecret(rabbitURL),
+					createRabbitMQBrokerConfig(),
+				},
+				WantEvents: []string{
+					Eventf(corev1.EventTypeWarning, "InternalError", `address not set for &ObjectReference{Kind:Service,Namespace:test-namespace,Name:subscriber-name,UID:,APIVersion:serving.knative.dev/v1,ResourceVersion:,FieldPath:,}`),
+				},
+				WantErr: true,
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+					Object: NewTrigger(triggerName, testNS, brokerName,
+						WithTriggerUID(triggerUID),
+						WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS),
+						WithInitTriggerConditions,
+						WithTriggerBrokerReady(),
+						WithTriggerDeadLetterSinkNotConfigured(),
+						WithTriggerDependencyReady(),
+						WithTriggerSubscriberResolvedFailed("Unable to get the Subscriber's URI", `address not set for &ObjectReference{Kind:Service,Namespace:test-namespace,Name:subscriber-name,UID:,APIVersion:serving.knative.dev/v1,ResourceVersion:,FieldPath:,}`)),
+				}},
+			}, {
+				Name: fmt.Sprintf("%s: Deployment creation fails", name),
+				Key:  testKey,
+				Objects: []runtime.Object{
+					ReadyBroker(config),
+					NewTrigger(triggerName, testNS, brokerName,
+						WithTriggerUID(triggerUID),
+						WithTriggerSubscriberURI(subscriberURI)),
+					createSecret(rabbitURL),
+					createRabbitMQBrokerConfig(),
+					markReady(createQueue()),
+					markReady(createBinding(false)),
+				},
+				WithReactors: []clientgotesting.ReactionFunc{
+					InduceFailure("create", "deployments"),
+				},
+				WantEvents: []string{
+					Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for create deployments"),
+				},
+				WantErr: true,
+				WantCreates: []runtime.Object{
+					createDispatcherDeployment(),
+				},
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+					Object: NewTrigger(triggerName, testNS, brokerName,
+						WithTriggerUID(triggerUID),
+						WithTriggerSubscriberURI(subscriberURI),
+						WithInitTriggerConditions,
+						WithTriggerBrokerReady(),
+						WithTriggerDeadLetterSinkNotConfigured(),
+						WithTriggerSubscribed(),
+						WithTriggerSubscriberResolvedSucceeded(),
+						WithTriggerStatusSubscriberURI(subscriberURI),
+						WithTriggerDependencyFailed("DeploymentFailure", "inducing failure for create deployments")),
+				}},
+			}, {
+				Name: fmt.Sprintf("%s: Deployment update fails", name),
+				Key:  testKey,
+				Objects: []runtime.Object{
+					ReadyBroker(config),
+					NewTrigger(triggerName, testNS, brokerName,
+						WithTriggerUID(triggerUID),
+						WithTriggerSubscriberURI(subscriberURI)),
+					createSecret(rabbitURL),
+					createRabbitMQBrokerConfig(),
+					createDifferentDispatcherDeployment(),
+					markReady(createQueue()),
+					markReady(createBinding(false)),
+				},
+				WithReactors: []clientgotesting.ReactionFunc{
+					InduceFailure("update", "deployments"),
+				},
+				WantEvents: []string{
+					Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for update deployments"),
+				},
+				WantErr: true,
+				WantUpdates: []clientgotesting.UpdateActionImpl{{
+					Object: createDispatcherDeployment(),
+				}},
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+					Object: NewTrigger(triggerName, testNS, brokerName,
+						WithTriggerUID(triggerUID),
+						WithTriggerSubscriberURI(subscriberURI),
+						WithInitTriggerConditions,
+						WithTriggerBrokerReady(),
+						WithTriggerDeadLetterSinkNotConfigured(),
+						WithTriggerSubscribed(),
+						WithTriggerSubscriberResolvedSucceeded(),
+						WithTriggerStatusSubscriberURI(subscriberURI),
+						WithTriggerDependencyFailed("DeploymentFailure", "inducing failure for update deployments")),
+				}},
+			}, {
+				Name: fmt.Sprintf("%s: Everything ready, nop", name),
+				Key:  testKey,
+				Objects: []runtime.Object{
+					ReadyBroker(config),
+					NewTrigger(triggerName, testNS, brokerName,
+						WithTriggerUID(triggerUID),
+						WithTriggerSubscriberURI(subscriberURI)),
+					createSecret(rabbitURL),
+					createRabbitMQBrokerConfig(),
+					markReady(createQueue()),
+					markReady(createBinding(false)),
+					createDispatcherDeployment(),
+				},
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+					Object: NewTrigger(triggerName, testNS, brokerName,
+						WithTriggerUID(triggerUID),
+						WithTriggerSubscriberURI(subscriberURI),
+						WithInitTriggerConditions,
+						WithTriggerBrokerReady(),
+						WithTriggerDeadLetterSinkNotConfigured(),
+						WithTriggerSubscribed(),
+						WithTriggerDependencyReady(),
+						WithTriggerSubscriberResolvedSucceeded(),
+						WithTriggerStatusSubscriberURI(subscriberURI)),
+				}},
+			}, {
+				Name: fmt.Sprintf("%s: Everything ready with filter, nop", name),
+				Key:  testKey,
+				Objects: []runtime.Object{
+					ReadyBroker(config),
+					triggerWithFilter(),
+					createSecret(rabbitURL),
+					createRabbitMQBrokerConfig(),
+					markReady(createQueue()),
+					markReady(createBinding(true)),
+					createDispatcherDeployment(),
+				},
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+					Object: triggerWithFilterReady(),
+				}},
+			}, {
+				Name: fmt.Sprintf("%s: Dependency doesn't exist", name),
+				Key:  testKey,
+				Objects: []runtime.Object{
+					ReadyBroker(config),
+					NewTrigger(triggerName, testNS, brokerName,
+						WithTriggerUID(triggerUID),
+						WithTriggerSubscriberURI(subscriberURI),
+						WithInitTriggerConditions,
+						WithDependencyAnnotation(dependencyAnnotation),
+					),
+					markReady(createQueue()),
+					markReady(createBinding(false)),
+				},
+				WantEvents: []string{
+					Eventf(corev1.EventTypeWarning, "InternalError", "propagating dependency readiness: getting the dependency: pingsources.sources.knative.dev \"test-ping-source\" not found"),
+				},
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+					Object: NewTrigger(triggerName, testNS, brokerName,
+						WithTriggerUID(triggerUID),
+						WithTriggerSubscriberURI(subscriberURI),
+						// The first reconciliation will initialize the status conditions.
+						WithInitTriggerConditions,
+						WithDependencyAnnotation(dependencyAnnotation),
+						WithTriggerBrokerReady(),
+						WithTriggerDependencyFailed("DependencyDoesNotExist", "Dependency does not exist: pingsources.sources.knative.dev \"test-ping-source\" not found"),
+					),
+				}},
+				WantErr: true,
+			}, {
+				Name: fmt.Sprintf("%s: The status of Dependency is False", name),
+				Key:  testKey,
+				Objects: []runtime.Object{
+					ReadyBroker(config),
+					makeFalseStatusPingSource(),
+					NewTrigger(triggerName, testNS, brokerName,
+						WithTriggerUID(triggerUID),
+						WithTriggerSubscriberURI(subscriberURI),
+						WithInitTriggerConditions,
+						WithDependencyAnnotation(dependencyAnnotation),
+					),
+					createSecret(rabbitURL),
+					createRabbitMQBrokerConfig(),
+					markReady(createQueue()),
+					markReady(createBinding(false)),
+				},
+				WantErr: false,
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+					Object: NewTrigger(triggerName, testNS, brokerName,
+						WithTriggerUID(triggerUID),
+						// The first reconciliation will initialize the status conditions.
+						WithInitTriggerConditions,
+						WithTriggerSubscriberURI(subscriberURI),
+						WithDependencyAnnotation(dependencyAnnotation),
+						WithTriggerBrokerReady(),
+						WithTriggerDependencyFailed("NotFound", ""),
+					),
+				}},
+			}, {
+				Name: fmt.Sprintf("%s: The status of Dependency is Unknown", name),
+				Key:  testKey,
+				Objects: []runtime.Object{
+					ReadyBroker(config),
+					makeUnknownStatusCronJobSource(),
+					NewTrigger(triggerName, testNS, brokerName,
+						WithTriggerUID(triggerUID),
+						WithTriggerSubscriberURI(subscriberURI),
+						WithInitTriggerConditions,
+						WithDependencyAnnotation(dependencyAnnotation),
+					),
+					createSecret(rabbitURL),
+					createRabbitMQBrokerConfig(),
+					markReady(createQueue()),
+					markReady(createBinding(false)),
+				},
+				WantErr: false,
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+					Object: NewTrigger(triggerName, testNS, brokerName,
+						WithTriggerUID(triggerUID),
+						WithTriggerSubscriberURI(subscriberURI),
+						// The first reconciliation will initialize the status conditions.
+						WithInitTriggerConditions,
+						WithDependencyAnnotation(dependencyAnnotation),
+						WithTriggerBrokerReady(),
+						WithTriggerDependencyUnknown("", ""),
+					),
+				}},
+			}, {
+				Name: fmt.Sprintf("%s: Dependency generation not equal", name),
+				Key:  testKey,
+				Objects: []runtime.Object{
+					ReadyBroker(config),
+					makeGenerationNotEqualPingSource(),
+					NewTrigger(triggerName, testNS, brokerName,
+						WithTriggerUID(triggerUID),
+						WithTriggerSubscriberURI(subscriberURI),
+						WithInitTriggerConditions,
+						WithDependencyAnnotation(dependencyAnnotation),
+					),
+					createSecret(rabbitURL),
+					createRabbitMQBrokerConfig(),
+					markReady(createQueue()),
+					markReady(createBinding(false)),
+				},
+				WantErr: false,
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+					Object: NewTrigger(triggerName, testNS, brokerName,
+						WithTriggerUID(triggerUID),
+						WithTriggerSubscriberURI(subscriberURI),
+						// The first reconciliation will initialize the status conditions.
+						WithInitTriggerConditions,
+						WithDependencyAnnotation(dependencyAnnotation),
+						WithTriggerBrokerReady(),
+						WithTriggerDependencyUnknown("GenerationNotEqual", fmt.Sprintf("The dependency's metadata.generation, %q, is not equal to its status.observedGeneration, %q.", currentGeneration, outdatedGeneration))),
+				}},
+			}, {
+				Name: fmt.Sprintf("%s: Malformed dependency annotation", name),
+				Key:  testKey,
+				Objects: []runtime.Object{
+					ReadyBroker(config),
+					NewTrigger(triggerName, testNS, brokerName,
+						WithTriggerUID(triggerUID),
+						WithTriggerSubscriberURI(subscriberURI),
+						WithInitTriggerConditions,
+						WithDependencyAnnotation(malformedDependencyAnnotation),
+					),
+					createSecret(rabbitURL),
+					createRabbitMQBrokerConfig(),
+					markReady(createQueue()),
+					markReady(createBinding(false)),
+				},
+				WantErr: true,
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+					Object: NewTrigger(triggerName, testNS, brokerName,
+						WithTriggerUID(triggerUID),
+						WithTriggerSubscriberURI(subscriberURI),
+						// The first reconciliation will initialize the status conditions.
+						WithInitTriggerConditions,
+						WithDependencyAnnotation(malformedDependencyAnnotation),
+						WithTriggerBrokerReady(),
+						WithTriggerDependencyFailed("ReferenceError", "Unable to unmarshal objectReference from dependency annotation of trigger: invalid character ':' after top-level value")),
+				}},
+				WantEvents: []string{
+					Eventf(corev1.EventTypeWarning, "UpdateFailed", "Failed to update status for \"test-trigger\": The provided annotation was not a corev1.ObjectReference: \"\\\"kind\\\":\\\"PingSource\\\"\": metadata.annotations[knative.dev/dependency]\ninvalid character ':' after top-level value"),
+				},
+			}, {
+				Name: fmt.Sprintf("%s: Dependency ready", name),
+				Key:  testKey,
+				Objects: []runtime.Object{
+					ReadyBroker(config),
+					makeReadyPingSource(),
+					NewTrigger(triggerName, testNS, brokerName,
+						WithTriggerUID(triggerUID),
+						WithTriggerSubscriberURI(subscriberURI),
+						WithInitTriggerConditions,
+						WithDependencyAnnotation(dependencyAnnotation),
+					),
+					createSecret(rabbitURL),
+					createRabbitMQBrokerConfig(),
+					markReady(createQueue()),
+					markReady(createBinding(false)),
+				},
+				WantErr: false,
+				WantCreates: []runtime.Object{
+					createDispatcherDeployment(),
+				},
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+					Object: NewTrigger(triggerName, testNS, brokerName,
+						WithTriggerUID(triggerUID),
+						WithTriggerSubscriberURI(subscriberURI),
+						// The first reconciliation will initialize the status conditions.
+						WithInitTriggerConditions,
+						WithDependencyAnnotation(dependencyAnnotation),
+						WithTriggerBrokerReady(),
+						WithTriggerDeadLetterSinkNotConfigured(),
+						WithTriggerSubscribed(),
+						WithTriggerStatusSubscriberURI(subscriberURI),
+						WithTriggerSubscriberResolvedSucceeded(),
+						WithTriggerDependencyReady(),
+					),
+				}},
+			}, {
+				Name: fmt.Sprintf("%s: Deployment updated when parallelism value is removed", name),
+				Key:  testKey,
+				Objects: []runtime.Object{
+					ReadyBroker(config),
+					NewTrigger(triggerName, testNS, brokerName,
+						WithTriggerUID(triggerUID),
+						WithTriggerSubscriberURI(subscriberURI)),
+					createSecret(rabbitURL),
+					createRabbitMQBrokerConfig(),
+					markReady(createQueue()),
+					markReady(createBinding(false)),
+					createDispatcherDeploymentWithParallelism(),
+				},
+				WantUpdates: []clientgotesting.UpdateActionImpl{{
+					Object: createDispatcherDeployment(),
+				}},
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+					Object: NewTrigger(triggerName, testNS, brokerName,
+						WithTriggerUID(triggerUID),
+						WithTriggerSubscriberURI(subscriberURI),
+						WithInitTriggerConditions,
+						WithTriggerBrokerReady(),
+						WithTriggerDeadLetterSinkNotConfigured(),
+						WithTriggerSubscribed(),
+						WithTriggerDependencyReady(),
+						WithTriggerSubscriberResolvedSucceeded(),
+						WithTriggerStatusSubscriberURI(subscriberURI)),
+				}},
+			},
+		}...)
+	}
 	logger := logtesting.TestLogger(t)
 	table.Test(t, rtlisters.MakeFactory(func(ctx context.Context, listers *rtlisters.Listers, cmw configmap.Watcher) controller.Reconciler {
 		ctx = v1a1addr.WithDuck(ctx)
@@ -775,6 +795,7 @@ func TestReconcile(t *testing.T) {
 			queueLister:        listers.GetQueueLister(),
 			bindingLister:      listers.GetBindingLister(),
 			rabbit:             rabbit.New(ctx),
+			brokerConfig:       brokerconfig.New(ctx),
 		}
 		return trigger.NewReconciler(ctx, logger,
 			fakeeventingclient.Get(ctx), listers.GetTriggerLister(),
@@ -788,21 +809,21 @@ func TestReconcile(t *testing.T) {
 	))
 }
 
-func configWithSecret() *duckv1.KReference {
-	return &duckv1.KReference{
-		Name:       rabbitSecretName,
-		Namespace:  testNS,
-		Kind:       "Secret",
-		APIVersion: "v1",
-	}
-}
-
-func config() *duckv1.KReference {
+func configWithRabbitMQCluster() *duckv1.KReference {
 	return &duckv1.KReference{
 		Name:       rabbitMQBrokerName,
 		Namespace:  testNS,
 		Kind:       "RabbitmqCluster",
 		APIVersion: "rabbitmq.com/v1beta1",
+	}
+}
+
+func configWithRabbitMQBrokerConfig() *duckv1.KReference {
+	return &duckv1.KReference{
+		Name:       rabbitMQBrokerConfigName,
+		Namespace:  testNS,
+		Kind:       "RabbitmqBrokerConfig",
+		APIVersion: "eventing.knative.dev/v1alpha1",
 	}
 }
 
@@ -842,12 +863,12 @@ func makeReadyPingSource() *sourcesv1beta2.PingSource {
 }
 
 // Create Ready Broker with proper annotations.
-func ReadyBroker() *eventingv1.Broker {
+func ReadyBroker(ref *duckv1.KReference) *eventingv1.Broker {
 	return broker.NewBroker(brokerName, testNS,
 		broker.WithBrokerUID(brokerUID),
 		broker.WithBrokerClass(brokerClass),
 		broker.WithInitBrokerConditions,
-		broker.WithBrokerConfig(config()),
+		broker.WithBrokerConfig(ref),
 		broker.WithIngressAvailable(),
 		broker.WithSecretReady(),
 		broker.WithBrokerAddressURI(brokerAddress),
@@ -857,30 +878,15 @@ func ReadyBroker() *eventingv1.Broker {
 }
 
 // Create Ready Broker with delivery spec.
-func ReadyBrokerWithDeliverySpec() *eventingv1.Broker {
+func ReadyBrokerWithDeliverySpec(ref *duckv1.KReference) *eventingv1.Broker {
 	return broker.NewBroker(brokerName, testNS,
 		broker.WithBrokerUID(brokerUID),
 		broker.WithBrokerClass(brokerClass),
 		broker.WithInitBrokerConditions,
-		broker.WithBrokerConfig(config()),
+		broker.WithBrokerConfig(ref),
 		broker.WithIngressAvailable(),
 		broker.WithSecretReady(),
 		broker.WithBrokerDelivery(&eventingduckv1.DeliverySpec{}),
-		broker.WithBrokerAddressURI(brokerAddress),
-		broker.WithDLXReady(),
-		broker.WithDeadLetterSinkReady(),
-		broker.WithExchangeReady())
-}
-
-// Create Ready Broker with proper annotations using the RabbitmqCluster
-func ReadyBrokerWithSecret() *eventingv1.Broker {
-	return broker.NewBroker(brokerName, testNS,
-		broker.WithBrokerUID(brokerUID),
-		broker.WithBrokerClass(brokerClass),
-		broker.WithInitBrokerConditions,
-		broker.WithBrokerConfig(configWithSecret()),
-		broker.WithIngressAvailable(),
-		broker.WithSecretReady(),
 		broker.WithBrokerAddressURI(brokerAddress),
 		broker.WithDLXReady(),
 		broker.WithDeadLetterSinkReady(),
@@ -906,20 +912,6 @@ func triggerWithDeliverySpec() *eventingv1.Trigger {
 		Attributes: map[string]string{"type": "dev.knative.sources.ping"},
 	}
 	return t
-}
-
-func triggerWithUnsupportedBrokerConfig() *eventingv1.Trigger {
-	t := NewTrigger(triggerName, testNS, brokerName,
-		WithTriggerUID(triggerUID),
-		WithTriggerSubscriberURI(subscriberURI),
-		WithInitTriggerConditions,
-		WithTriggerBrokerReady(),
-		WithTriggerDependencyFailed("ReconcileFailure", "using secret is not supported with this controller"))
-	t.Spec.Filter = &eventingv1.TriggerFilter{
-		Attributes: map[string]string{"type": "dev.knative.sources.ping"},
-	}
-	return t
-
 }
 
 func triggerWithFilterReady() *eventingv1.Trigger {
@@ -1027,6 +1019,21 @@ func createSecret(data string) *corev1.Secret {
 		},
 		Data: map[string][]byte{
 			"brokerURL": []byte(data),
+		},
+	}
+}
+
+func createRabbitMQBrokerConfig() *v1alpha1.RabbitmqBrokerConfig {
+	return &v1alpha1.RabbitmqBrokerConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      rabbitMQBrokerConfigName,
+			Namespace: testNS,
+		},
+		Spec: v1alpha1.RabbitmqBrokerConfigSpec{
+			RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
+				Name:      rabbitMQBrokerName,
+				Namespace: testNS,
+			},
 		},
 	}
 }

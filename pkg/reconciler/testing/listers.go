@@ -31,6 +31,7 @@ import (
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	rbacv1listers "k8s.io/client-go/listers/rbac/v1"
 	"k8s.io/client-go/tools/cache"
+	rabbitmqeventingsourcev1 "knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 	eventingduck "knative.dev/eventing/pkg/apis/duck/v1"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	flowsv1 "knative.dev/eventing/pkg/apis/flows/v1"
@@ -45,6 +46,8 @@ import (
 	"knative.dev/pkg/reconciler/testing"
 
 	rabbitclusterv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
+	rabbitmqeventingv1 "knative.dev/eventing-rabbitmq/pkg/apis/eventing/v1alpha1"
+	fakermqeventingclient "knative.dev/eventing-rabbitmq/pkg/client/clientset/versioned/fake"
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	fakerabbitclientset "knative.dev/eventing-rabbitmq/third_party/pkg/client/clientset/versioned/fake"
 	rabbitlisters "knative.dev/eventing-rabbitmq/third_party/pkg/client/listers/rabbitmq.com/v1beta1"
@@ -69,6 +72,8 @@ var clientSetSchemes = []func(*runtime.Scheme) error{
 	eventingduck.AddToScheme,
 	fakerabbitclientset.AddToScheme,
 	rabbitClusterSchemeBuilder.AddToScheme,
+	rabbitmqeventingv1.AddToScheme,
+	rabbitmqeventingsourcev1.AddToScheme,
 }
 
 var rabbitClusterSchemeBuilder = runtime.SchemeBuilder{
@@ -118,6 +123,10 @@ func (l *Listers) GetEventingObjects() []runtime.Object {
 
 func (l *Listers) GetSubscriberObjects() []runtime.Object {
 	return l.sorter.ObjectsForSchemeFunc(subscriberAddToScheme)
+}
+
+func (l *Listers) GetRmqEventingObjects() []runtime.Object {
+	return l.sorter.ObjectsForSchemeFunc(fakermqeventingclient.AddToScheme)
 }
 
 func (l *Listers) GetAllObjects() []runtime.Object {

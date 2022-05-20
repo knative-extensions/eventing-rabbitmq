@@ -185,7 +185,7 @@ func TestValidate(t *testing.T) {
 				},
 			},
 		}},
-		want: apis.ErrGeneric("Configuration not supported, only [kind: RabbitmqCluster, apiVersion: rabbitmq.com/v1beta1]").ViaField("spec").ViaField("config"),
+		want: apis.ErrGeneric("Configuration not supported, only [kind: RabbitmqCluster, apiVersion: rabbitmq.com/v1beta1] or [kind: RabbitmqBrokerConfig, apiVersion: eventing.knative.dev/v1alpha1]").ViaField("spec").ViaField("config"),
 	}, {
 		name: "invalid config, no namespace",
 		b: RabbitBroker{eventingv1.Broker{
@@ -258,6 +258,21 @@ func TestValidate(t *testing.T) {
 					Name:       "name",
 					Kind:       "RabbitmqCluster",
 					APIVersion: "rabbitmq.com/v1beta1",
+				},
+			},
+		}},
+	}, {
+		name: "valid config, rabbitmqBrokerConfig",
+		b: RabbitBroker{eventingv1.Broker{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{"eventing.knative.dev/broker.class": "RabbitMQBroker"},
+			},
+			Spec: eventingv1.BrokerSpec{
+				Config: &duckv1.KReference{
+					Namespace:  "othernamespace",
+					Name:       "name",
+					Kind:       "RabbitmqBrokerConfig",
+					APIVersion: "eventing.knative.dev/v1alpha1",
 				},
 			},
 		}},
