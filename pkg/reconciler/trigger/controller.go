@@ -20,18 +20,16 @@ import (
 	"context"
 	"log"
 
+	"github.com/kelseyhightower/envconfig"
+	"go.uber.org/zap"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/tools/cache"
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	"knative.dev/eventing-rabbitmq/pkg/utils"
 	rabbitmqclient "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/client"
 	eventingclient "knative.dev/eventing/pkg/client/injection/client"
 	reconcilersource "knative.dev/eventing/pkg/reconciler/source"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
-	"knative.dev/pkg/injection/clients/dynamicclient"
-
-	"github.com/kelseyhightower/envconfig"
-	"go.uber.org/zap"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
 
 	v1 "knative.dev/eventing/pkg/apis/eventing/v1"
 
@@ -90,7 +88,6 @@ func NewController(
 
 	r := &Reconciler{
 		eventingClientSet:            eventingclient.Get(ctx),
-		dynamicClientSet:             dynamicclient.Get(ctx),
 		kubeClientSet:                kubeclient.Get(ctx),
 		deploymentLister:             deploymentInformer.Lister(),
 		brokerLister:                 brokerInformer.Lister(),

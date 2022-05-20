@@ -20,6 +20,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
+
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -30,7 +32,6 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/network"
-	"net/url"
 
 	rmqeventingclientset "knative.dev/eventing-rabbitmq/pkg/client/clientset/versioned"
 	rmqeventingclient "knative.dev/eventing-rabbitmq/pkg/client/injection/client"

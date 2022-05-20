@@ -19,7 +19,6 @@ package trigger
 import (
 	"context"
 	"fmt"
-	"knative.dev/eventing-rabbitmq/pkg/brokerconfig"
 
 	"go.uber.org/zap"
 	v1 "k8s.io/api/apps/v1"
@@ -27,9 +26,9 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
+	"knative.dev/eventing-rabbitmq/pkg/brokerconfig"
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
@@ -56,7 +55,6 @@ import (
 
 type Reconciler struct {
 	eventingClientSet clientset.Interface
-	dynamicClientSet  dynamic.Interface
 	kubeClientSet     kubernetes.Interface
 	rabbitClientSet   rabbitclientset.Interface
 

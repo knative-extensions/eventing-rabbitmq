@@ -29,7 +29,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
@@ -58,7 +57,6 @@ import (
 
 type Reconciler struct {
 	eventingClientSet clientset.Interface
-	dynamicClientSet  dynamic.Interface
 	kubeClientSet     kubernetes.Interface
 	rabbitClientSet   rabbitclientset.Interface
 

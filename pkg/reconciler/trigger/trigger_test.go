@@ -60,7 +60,6 @@ import (
 	fakekubeclient "knative.dev/pkg/client/injection/kube/client/fake"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
-	fakedynamicclient "knative.dev/pkg/injection/clients/dynamicclient/fake"
 	logtesting "knative.dev/pkg/logging/testing"
 	"knative.dev/pkg/resolver"
 
@@ -781,7 +780,6 @@ func TestReconcile(t *testing.T) {
 		ctx = rabbitduck.WithDuck(ctx)
 		r := &Reconciler{
 			eventingClientSet:  fakeeventingclient.Get(ctx),
-			dynamicClientSet:   fakedynamicclient.Get(ctx),
 			kubeClientSet:      fakekubeclient.Get(ctx),
 			brokerLister:       listers.GetBrokerLister(),
 			triggerLister:      listers.GetTriggerLister(),
