@@ -68,7 +68,7 @@ For development purposes or to use the latest from the repository, use [`ko`](ht
 ko apply -f config/broker/
 ```
 
-Follow the [Broker-Trigger](../samples/broker-trigger) to deploy a basic example of a topology.
+Follow the [Broker-Trigger](../../samples/broker-trigger) to deploy a basic example of a topology.
 
 ## Customizations
 
@@ -160,7 +160,7 @@ For reference, the ingress and dispatcher pods' code can be found [here](../../c
 Consult the [RabbitMQ Troubleshooting Guide](https://www.rabbitmq.com/troubleshooting.html) for any RabbitMQ specific issues that may arise.
 
 ## Next Steps
-- Check out the [Broker-Trigger Samples Directory](../samples/broker-trigger) in this repo and start building your topology with Eventing RabbitMQ!
+- Check out the [Broker-Trigger Samples Directory](../../samples/broker-trigger) in this repo and start building your topology with Eventing RabbitMQ!
 - Follow [CloudEvents Player Source](https://knative.dev/docs/getting-started/first-source/) to setup a Knative Service as a source.
 
 ## Additional Resources
