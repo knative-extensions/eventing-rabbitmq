@@ -2,7 +2,7 @@
 
 ## Prerequisites and installation
 
-- Follow instructions listed [here](../../docs/operator-based.md#prerequisites)
+- Follow instructions listed [here](../../../docs/operator-based.md#prerequisites)
 - Install [KO](https://github.com/google/ko). It is used to create the images that will be used in this demo
 - Set `KO_DOCKER_REPO` to an accessible container registry
 
@@ -33,7 +33,7 @@ Execute the following steps/commands from the root of this repo.
 Create a new namespace for the demo. This will make cleanup easier.
 
 ```sh
-kubectl apply -f samples/trigger-customizations/100-namespace.yaml
+kubectl apply -f samples/broker-trigger/trigger-customizations/100-namespace.yaml
 ```
 or
 ```sh
@@ -43,7 +43,7 @@ kubectl create ns trigger-demo
 #### Create a RabbitMQ Cluster
 
 ```sh
-kubectl apply -f samples/trigger-customizations/200-rabbitmq.yaml
+kubectl apply -f samples/broker-trigger/trigger-customizations/200-rabbitmq.yaml
 ```
 or
 ```
@@ -60,7 +60,7 @@ EOF
 
 #### Create a Broker
 ```sh
-kubectl apply -f samples/trigger-customizations/300-broker.yaml
+kubectl apply -f samples/broker-trigger/trigger-customizations/300-broker.yaml
 ```
 or
 ```sh
@@ -83,7 +83,7 @@ EOF
 #### Create the 2 Triggers
 
 ```sh
-kubectl apply -f samples/trigger-customizations/400-trigger.yaml
+kubectl apply -f samples/broker-trigger/trigger-customizations/400-trigger.yaml
 ```
 or
 ```sh
@@ -126,7 +126,7 @@ EOF
 #### Create the 2 Sinks
 NOTE: ko is used here to create the custom images. Ensure `KO_DOCKER_REPO` is set to an accessible repository for the images.
 ```sh
-ko apply -f samples/trigger-customizations/500-sink.yaml
+ko apply -f samples/broker-trigger/trigger-customizations/500-sink.yaml
 ```
 or
 ```sh
@@ -143,7 +143,7 @@ spec:
         autoscaling.knative.dev/min-scale: "1"
     spec:
       containers:
-      - image: ko://knative.dev/eventing-rabbitmq/samples/trigger-customizations/event-display
+      - image: ko://knative.dev/eventing-rabbitmq/samples/broker-trigger/trigger-customizations/event-display
         args:
           - --delay=20
 ---
@@ -159,7 +159,7 @@ spec:
         autoscaling.knative.dev/min-scale: "1"
     spec:
       containers:
-        - image: ko://knative.dev/eventing-rabbitmq/samples/trigger-customizations/event-display
+        - image: ko://knative.dev/eventing-rabbitmq/samples/broker-trigger/trigger-customizations/event-display
           args:
             - --delay=20
 EOF
@@ -189,7 +189,7 @@ Create the source to start sending messages.
 NOTE: ensure the `--sink` is set to the broker's ingress URL.
 
 ```sh
-ko apply -f samples/trigger-customizations/600-event-sender.yaml
+ko apply -f samples/broker-trigger/trigger-customizations/600-event-sender.yaml
 ```
 or
 ```sh
@@ -203,7 +203,7 @@ spec:
   restartPolicy: Never
   containers:
     - name: event-sender
-      image: ko://knative.dev/eventing-rabbitmq/samples/trigger-customizations/event-sender
+      image: ko://knative.dev/eventing-rabbitmq/samples/broker-trigger/trigger-customizations/event-sender
       args:
         - --sink=http://default-broker-ingress.trigger-demo.svc.cluster.local
         - --event={"specversion":"1.0","type":"SenderEvent","source":"Sender","datacontenttype":"application/json","data":{}}
@@ -250,7 +250,7 @@ processed event with ID: 5
 Delete the trigger-demo namespace to easily remove all the created resources
 
 ```sh
-kubectl delete -f samples/trigger-customizations/100-namespace.yaml
+kubectl delete -f samples/broker-trigger/trigger-customizations/100-namespace.yaml
 ```
 or
 ```sh

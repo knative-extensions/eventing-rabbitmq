@@ -4,7 +4,7 @@ metadata:
   name: rabbitmq-source
   namespace: source-demo
 spec:
-  broker: "rabbitmq:5672/"
+  broker: "$YOUR_RABBITMQ_IP/URL:5672/"
   user:
     secretKeyRef:
       name: rabbitmq-default-user
@@ -13,8 +13,8 @@ spec:
     secretKeyRef:
       name: rabbitmq-default-user
       key: password
-  connectionSecret:
-    name: rabbitmq-default-user # used when exchange and queue are not predeclared
+  predeclared: true # For this to be false, your target RabbitMQ Cluster must have the Topology Operator installed
+  # https://www.rabbitmq.com/kubernetes/operator/using-topology-operator.html
   channelConfig:
     # Value must be between 1 and 1000
     # A value of 1 RabbitMQ Source behaves as a FIFO queue
@@ -23,16 +23,8 @@ spec:
     globalQos: false
   exchangeConfig:
     name: "eventing-rabbitmq-source"
-    type: "fanout"
-    durable: false
-    autoDelete: false
   queueConfig:
     name: "eventing-rabbitmq-source"
-    routingKey: ""
-    durable: false
-    # TODO: Why is the queue not deleted 30 minutes after the source is deleted?
-    # https://github.com/knative-sandbox/eventing-rabbitmq/issues/528
-    autoDelete: true
   sink:
     ref:
       apiVersion: serving.knative.dev/v1

@@ -164,7 +164,7 @@ func TestMakeReceiveAdapter(t *testing.T) {
 									},
 									Env: []corev1.EnvVar{
 										{
-											Name:  "RABBITMQ_BROKERS",
+											Name:  "RABBITMQ_BROKER",
 											Value: "amqp://guest:guest@localhost:5672/",
 										},
 										{

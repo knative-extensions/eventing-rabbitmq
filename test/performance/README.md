@@ -211,7 +211,7 @@ gnuplot -c throughput.plg eventing-rabbitmq-broker-perf-results.csv 0.8 0 1100
 
 ![throughput](./results/release-v1.3/broker/increasing-load/prefetch-100-throughput.png)
 
-## Create Results for a Release
+## Generate Results for a Release
 
 There is a script for this in the performance tests directory:
 

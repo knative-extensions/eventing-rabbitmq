@@ -62,7 +62,7 @@ type QueueConfig struct {
 type adapterConfig struct {
 	adapter.EnvConfig
 
-	Brokers        string        `envconfig:"RABBITMQ_BROKERS" required:"true"`
+	Broker         string        `envconfig:"RABBITMQ_BROKER" required:"true"`
 	User           string        `envconfig:"RABBITMQ_USER" required:"false"`
 	Password       string        `envconfig:"RABBITMQ_PASSWORD" required:"false"`
 	Vhost          string        `envconfig:"RABBITMQ_VHOST" required:"false"`
@@ -108,26 +108,26 @@ func NewAdapter(ctx context.Context, processed adapter.EnvConfigAccessor, httpMe
 	}
 }
 
-func vhostHandler(brokers string, vhost string) string {
-	if len(vhost) > 0 && len(brokers) > 0 && !strings.HasSuffix(brokers, "/") &&
+func vhostHandler(broker string, vhost string) string {
+	if len(vhost) > 0 && len(broker) > 0 && !strings.HasSuffix(broker, "/") &&
 		!strings.HasPrefix(vhost, "/") {
-		return fmt.Sprintf("%s/%s", brokers, vhost)
+		return fmt.Sprintf("%s/%s", broker, vhost)
 	}
 
-	return fmt.Sprintf("%s%s", brokers, vhost)
+	return fmt.Sprintf("%s%s", broker, vhost)
 }
 
 func (a *Adapter) CreateConn(user string, password string, logger *zap.Logger) (wabbit.Conn, error) {
 	if user != "" && password != "" {
-		a.config.Brokers = fmt.Sprintf(
+		a.config.Broker = fmt.Sprintf(
 			"amqp://%s:%s@%s",
 			a.config.User,
 			a.config.Password,
-			vhostHandler(a.config.Brokers, a.config.Vhost),
+			vhostHandler(a.config.Broker, a.config.Vhost),
 		)
 	}
 
-	conn, err := amqp.Dial(a.config.Brokers)
+	conn, err := amqp.Dial(a.config.Broker)
 	if err != nil {
 		logger.Error(err.Error())
 	}

@@ -2,7 +2,7 @@
 
 ## Prerequisites and installation
 
-Same as listed [here](../../docs/operator-based.md#prerequisites)
+Same as listed [here](../../../docs/operator-based.md#prerequisites)
 
 ## Overview
 
@@ -12,7 +12,7 @@ Sink while successfully processed events do not.
 
 ## Components
 
-- [failer](../../cmd/failer/main.go) is a function which takes in a
+- [failer](../../../cmd/failer/main.go) is a function which takes in a
   CloudEvent and depending on what the specified HTTP response code in the
   message data is will respond with that. So, to simulate a failure, we just
   send it a CloudEvent with a payload of 500, and it's going to simulate a
@@ -25,7 +25,7 @@ Sink while successfully processed events do not.
 - [event-display](https://github.com/knative/eventing/tree/main/cmd/event_display)
   which is a tool that logs the CloudEvent that it receives formatted nicely.
 
-- [RabbitMQ Broker](../../docs/broker.md)
+- [RabbitMQ Broker](../../../docs/broker.md)
 
 ## Configuration
 
@@ -47,7 +47,7 @@ Create a new namespace for the demo. All the commands are expected to be
 executed from the root of this repo.
 
 ```sh
-kubectl apply -f samples/broker-trigger/100-namespace.yaml
+kubectl apply -f samples/broker-trigger/quick-setup/100-namespace.yaml
 ```
 or
 ```sh
@@ -59,7 +59,7 @@ kubectl create ns broker-trigger-demo
 Create a RabbitMQ Cluster:
 
 ```sh
-kubectl apply -f samples/broker-trigger/200-rabbitmq.yaml
+kubectl apply -f samples/broker-trigger/quick-setup/200-rabbitmq.yaml
 ```
 or
 ```
@@ -77,7 +77,7 @@ EOF
 ### Create the RabbitMQ Broker
 
 ```sh
-kubectl apply -f samples/broker-trigger/300-broker.yaml
+kubectl apply -f samples/broker-trigger/quick-setup/300-broker.yaml
 ```
 or
 ```sh
@@ -110,7 +110,7 @@ EOF
 Then create the Knative Serving Service which will receive any failed events.
 
 ```sh
-kubectl apply -f samples/broker-trigger/400-sink.yaml
+kubectl apply -f samples/broker-trigger/quick-setup/400-sink.yaml
 ```
 or
 ```sh
@@ -140,7 +140,7 @@ default   http://default-broker-ingress.broker-trigger-demo.svc.cluster.local   
 ### Create the Ping Sources
 
 ```sh
-kubectl apply -f samples/broker-trigger/500-ping-sources.yaml
+kubectl apply -f samples/broker-trigger/quick-setup/500-ping-sources.yaml
 ```
 or
 ```sh
@@ -184,7 +184,7 @@ EOF
 ### Create Trigger
 
 ```sh
-kubectl apply -f samples/broker-trigger/600-trigger.yaml
+kubectl apply -f samples/broker-trigger/quick-setup/600-trigger.yaml
 ```
 or
 ```sh
@@ -216,7 +216,7 @@ EOF
 ### Create Failer
 
 ```sh
-kubectl apply -f samples/broker-trigger/700-failer.yaml
+kubectl apply -f samples/broker-trigger/quick-setup/700-failer.yaml
 ```
 or
 ```sh
