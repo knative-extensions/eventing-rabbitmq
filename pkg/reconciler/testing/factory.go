@@ -39,6 +39,7 @@ import (
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/reconciler"
 
+	fakermqeventingclient "knative.dev/eventing-rabbitmq/pkg/client/injection/client/fake"
 	fakerabbitclient "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/client/fake"
 	fakeeventingclient "knative.dev/eventing/pkg/client/injection/client/fake"
 	fakekubeclient "knative.dev/pkg/client/injection/kube/client/fake"
@@ -71,6 +72,7 @@ func MakeFactory(ctor Ctor, unstructured bool, logger *zap.SugaredLogger) Factor
 		ctx, kubeClient := fakekubeclient.With(ctx, ls.GetKubeObjects()...)
 		ctx, client := fakeeventingclient.With(ctx, ls.GetEventingObjects()...)
 		ctx, rabbitclient := fakerabbitclient.With(ctx, ls.GetRabbitObjects()...)
+		ctx, rmqeventingclient := fakermqeventingclient.With(ctx, ls.GetRmqEventingObjects()...)
 		ctx, dynamicClient := fakedynamicclient.With(ctx,
 			NewScheme(), ToUnstructured(t, r.Objects)...)
 
@@ -111,6 +113,7 @@ func MakeFactory(ctor Ctor, unstructured bool, logger *zap.SugaredLogger) Factor
 			kubeClient.PrependReactor("*", "*", reactor)
 			client.PrependReactor("*", "*", reactor)
 			rabbitclient.PrependReactor("*", "*", reactor)
+			rmqeventingclient.PrependReactor("*", "*", reactor)
 			dynamicClient.PrependReactor("*", "*", reactor)
 		}
 
@@ -122,7 +125,7 @@ func MakeFactory(ctor Ctor, unstructured bool, logger *zap.SugaredLogger) Factor
 			return ValidateUpdates(ctx, action)
 		})
 
-		actionRecorderList := ActionRecorderList{dynamicClient, client, rabbitclient, kubeClient}
+		actionRecorderList := ActionRecorderList{dynamicClient, client, rabbitclient, kubeClient, rmqeventingclient}
 		eventList := EventList{Recorder: eventRecorder}
 
 		return c, actionRecorderList, eventList

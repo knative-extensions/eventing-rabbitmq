@@ -22,8 +22,6 @@ import (
 
 	"k8s.io/utils/pointer"
 
-	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
-
 	"go.uber.org/zap"
 	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,7 +29,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
@@ -40,6 +37,7 @@ import (
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/network"
 
+	"knative.dev/eventing-rabbitmq/pkg/brokerconfig"
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
@@ -59,7 +57,6 @@ import (
 
 type Reconciler struct {
 	eventingClientSet clientset.Interface
-	dynamicClientSet  dynamic.Interface
 	kubeClientSet     kubernetes.Interface
 	rabbitClientSet   rabbitclientset.Interface
 
@@ -89,7 +86,8 @@ type Reconciler struct {
 
 	rabbit rabbit.Service
 	// config accessor for observability/logging/tracing
-	configs reconcilersource.ConfigAccessor
+	configs      reconcilersource.ConfigAccessor
+	brokerConfig *brokerconfig.BrokerConfigService
 }
 
 // Check that our Reconciler implements Interface
@@ -119,31 +117,18 @@ var rabbitBrokerCondSet = apis.NewLivingConditionSet(
 	BrokerConditionAddressable,
 )
 
-// isUsingOperator checks the Spec for a Broker and determines if we should be using the
-// messaging-topology-operator or the libraries.
-func isUsingOperator(b *eventingv1.Broker) bool {
-	if b != nil && b.Spec.Config != nil {
-		return b.Spec.Config.Kind == "RabbitmqCluster"
-	}
-	return false
-}
-
 func (r *Reconciler) ReconcileKind(ctx context.Context, b *eventingv1.Broker) pkgreconciler.Event {
 	logging.FromContext(ctx).Infow("Reconciling", zap.Any("Broker", b))
 
 	// 1. RabbitMQ Exchange
 	// 2. Ingress Deployment
 	// 3. K8s Service that points to the Ingress Deployment
-	args, err := r.getExchangeArgs(ctx, b)
+	args, err := r.brokerConfig.GetExchangeArgs(ctx, b)
 	if err != nil {
 		MarkExchangeFailed(&b.Status, "ExchangeCredentialsUnavailable", "Failed to get arguments for creating exchange: %s", err)
 		return err
 	}
 
-	if !isUsingOperator(b) {
-		MarkExchangeFailed(&b.Status, "ReconcileFailure", "using secret is not supported with this controller")
-		return nil
-	}
 	return r.reconcileRabbitResources(ctx, b, args)
 }
 
@@ -308,15 +293,16 @@ func (r *Reconciler) reconcileDeadLetterResources(ctx context.Context, b *eventi
 		return nil, false
 	}
 
+	clusterRef, err := r.brokerConfig.GetRabbitMQClusterRef(ctx, b)
+	if err != nil {
+		return err, false
+	}
 	queue, err := r.rabbit.ReconcileQueue(ctx, &rabbit.QueueArgs{
-		Name:      naming.CreateBrokerDeadLetterQueueName(b),
-		Namespace: b.Namespace,
-		RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
-			Name:      b.Spec.Config.Name,
-			Namespace: b.Spec.Config.Namespace,
-		},
-		Owner:  *kmeta.NewControllerRef(b),
-		Labels: rabbit.Labels(b, nil, nil),
+		Name:                     naming.CreateBrokerDeadLetterQueueName(b),
+		Namespace:                b.Namespace,
+		RabbitmqClusterReference: clusterRef,
+		Owner:                    *kmeta.NewControllerRef(b),
+		Labels:                   rabbit.Labels(b, nil, nil),
 	})
 	if err != nil {
 		MarkDLXFailed(&b.Status, "QueueFailure", fmt.Sprintf("Failed to reconcile Dead Letter Queue %q : %s", naming.CreateBrokerDeadLetterQueueName(b), err))
@@ -331,17 +317,14 @@ func (r *Reconciler) reconcileDeadLetterResources(ctx context.Context, b *eventi
 
 	bindingName := naming.CreateBrokerDeadLetterQueueName(b)
 	binding, err := r.rabbit.ReconcileBinding(ctx, &rabbit.BindingArgs{
-		Name:      bindingName,
-		Namespace: b.Namespace,
-		RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
-			Name:      b.Spec.Config.Name,
-			Namespace: b.Spec.Config.Namespace,
-		},
-		Vhost:       "/",
-		Source:      naming.BrokerExchangeName(b, true),
-		Destination: bindingName,
-		Owner:       *kmeta.NewControllerRef(b),
-		Labels:      rabbit.Labels(b, nil, nil),
+		Name:                     bindingName,
+		Namespace:                b.Namespace,
+		RabbitmqClusterReference: clusterRef,
+		Vhost:                    "/",
+		Source:                   naming.BrokerExchangeName(b, true),
+		Destination:              bindingName,
+		Owner:                    *kmeta.NewControllerRef(b),
+		Labels:                   rabbit.Labels(b, nil, nil),
 		Filters: map[string]string{
 			rabbit.DLQBindingKey: b.Name,
 		},
@@ -359,16 +342,13 @@ func (r *Reconciler) reconcileDeadLetterResources(ctx context.Context, b *eventi
 
 	policyName := naming.CreateBrokerDeadLetterQueueName(b) // same name as the DL queue
 	policy, err := r.rabbit.ReconcileBrokerDLXPolicy(ctx, &rabbit.QueueArgs{
-		Name:      policyName,
-		Namespace: b.Namespace,
-		RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
-			Name:      b.Spec.Config.Name,
-			Namespace: b.Spec.Config.Namespace,
-		},
-		Owner:     *kmeta.NewControllerRef(b),
-		Labels:    rabbit.Labels(b, nil, nil),
-		DLXName:   pointer.String(args.Name),
-		BrokerUID: string(b.GetUID()),
+		Name:                     policyName,
+		Namespace:                b.Namespace,
+		RabbitmqClusterReference: clusterRef,
+		Owner:                    *kmeta.NewControllerRef(b),
+		Labels:                   rabbit.Labels(b, nil, nil),
+		DLXName:                  pointer.String(args.Name),
+		BrokerUID:                string(b.GetUID()),
 	})
 	if err != nil {
 		MarkDeadLetterSinkFailed(&b.Status, "PolicyFailure", fmt.Sprintf("Failed to reconcile RabbitMQ Policy %q : %s", policyName, err))

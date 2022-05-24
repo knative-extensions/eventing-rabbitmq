@@ -100,8 +100,11 @@ func (b *RabbitBroker) Validate(ctx context.Context) *apis.FieldError {
 
 		switch gvk {
 		case "RabbitmqCluster.rabbitmq.com/v1beta1":
+		case "RabbitmqBrokerConfig.eventing.knative.dev/v1alpha1":
 		default:
-			errs = errs.Also(apis.ErrGeneric("Configuration not supported, only [kind: RabbitmqCluster, apiVersion: rabbitmq.com/v1beta1]")).ViaField("spec").ViaField("config")
+			errs = errs.Also(apis.ErrGeneric("Configuration not supported, only [kind: RabbitmqCluster, apiVersion: rabbitmq.com/v1beta1] or [kind: RabbitmqBrokerConfig, apiVersion: eventing.knative.dev/v1alpha1]")).
+				ViaField("spec").
+				ViaField("config")
 		}
 	}
 	if errs.Error() == "" {
