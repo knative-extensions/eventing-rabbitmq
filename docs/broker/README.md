@@ -68,7 +68,7 @@ For development purposes or to use the latest from the repository, use [`ko`](ht
 ko apply -f config/broker/
 ```
 
-Follow the [Broker-Trigger](../../samples/broker-trigger) to deploy a basic example of a topology.
+Follow one of the [Broker-Trigger](../../samples/broker-trigger) examples to deploy a basic topology.
 
 ## Customizations
 
@@ -88,7 +88,7 @@ If this value is unset, it will default to `1`. This means the trigger will only
 will make the trigger a bottleneck. A slow processing sink will result in low overall throughput. Setting a value higher than 1 will result in `n` events being handled at
 a time by the trigger but ordering won't be guaranteed as events are sent to the sink.
 
-More details and samples can be found [here](../../samples/broker-trigger/trigger-customizations)
+More details and samples of this can be found [here](../../samples/broker-trigger/trigger-customizations)
 
 ## Delivery Failures and Delivery Spec
 A subset of HTTP status codes from a sink are considered a [retryable error](https://github.com/knative/specs/blob/main/specs/eventing/data-plane.md#event-acknowledgement-and-delivery-retry). When this occurs, delivery spec (available on Trigger and Broker) can specify how messages are retried and "dead-lettered". Reference

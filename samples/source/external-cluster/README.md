@@ -47,23 +47,7 @@ After creating the RabbitMQ cluster in previous step, add the RabbitMQ http uri 
 The RabbitMQ default user credentials are stored in a Kubernetes secret called 'NAME-default-user', where NAME is the name of the RabbitmqCluster object.
 In this example, the secret name is 'rabbitmq-default-user' in namespace 'source-demo'.
 
-To edit the RabbitMQ default user secret:
-```sh
-kubectl -n source-demo edit secret rabbitmq-default-user
-```
-
-Add uri to the Secret `stringData`
-```yaml
-kind: Secret
-metadata:
-  name: rabbitmq-default-user
-  namespace: source-demo
-type: Opaque
-data:
-  ...
-stringData:
-  uri: $YOUR_RABBITMQ_IP/URL:15672 # '$YOUR_RABBITMQ_IP/URL:http-port'
-```
+To edit the RabbitMQ default user secret as explained [here](../quick-setup/README.md#add-rabbitmq-http-uri-to-secret)
 
 ### Create the Perf Test Service
 

@@ -45,7 +45,7 @@ EOF
 
 * You will need a RabbitMQ instance running and accessible via an URL/IP
 
-* Install everything except the 
+* Install everything except the [RabbitMQ Cluster Operator](https://github.com/rabbitmq/cluster-operator)
 
 * Note: An external RabbitMQ instance can be used, but if you want to use the `Source` without predeclared resources (specifically the `Exchange` and `Queue`), the `RabbitMQ Message Topology Operator` needs to be installed in the external cluster too.
 
@@ -213,7 +213,7 @@ kubectl create secret generic rabbitmq-default-user \
   --from-file=password=/tmp/password
 ```
 
-* To edit the Source's default user secret and add the the RabbitMQ http uri, see the [Source's samples Readme](../../samples/source/quick-setup/README.md)
+* To edit the Source's default user secret and add the the RabbitMQ http uri, see the [Source's samples Readme](../../samples/source/quick-setup/README.md#add-rabbitmq-http-uri-to-secret)
 
 Note that many parameters do not need to be specified. Unspecified optional
 parameters will be defaulted to `false` or `""` (empty string).
