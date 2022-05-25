@@ -13,7 +13,7 @@ spec:
     secretKeyRef:
       name: rabbitmq-default-user
       key: password
-  predeclared: true # For this to be false, your target RabbitMQ Cluster must have the Topology Operator installed
+  predeclared: true # For this to be false, the Topology Operator must be installed in your Source's cluster
   # https://www.rabbitmq.com/kubernetes/operator/using-topology-operator.html
   channelConfig:
     # Value must be between 1 and 1000

@@ -105,7 +105,8 @@ spec:
     secretKeyRef:
       name: rabbitmq-default-user
       key: password
-  predeclared: true
+  predeclared: true # For this to be false, the Topology Operator must be installed in your Source's cluster
+  # https://www.rabbitmq.com/kubernetes/operator/using-topology-operator.html
   channelConfig:
     globalQos: false
   exchangeConfig:
@@ -118,7 +119,6 @@ spec:
       kind: Service
       name: rabbitmq-source-sink
       namespace: source-demo
-EOF
 ```
 
 ### Check the results
