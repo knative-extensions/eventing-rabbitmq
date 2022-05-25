@@ -60,8 +60,17 @@ EOF
 
 ### Add RabbitMQ http uri to secret
 
+The following command is one way to create a secret with the username
+`rabbit-user` and the password taken from the `/tmp/password` file.
+
+```sh
+kubectl create secret generic rabbitmq-default-user \
+  --from-literal=username=rabbit-user \
+  --from-file=password=/tmp/password
+```
+
 After creating the RabbitMQ cluster in previous step, add the RabbitMQ http uri to its default user secret.
-The RabbitMQ default user credentials are stored in a Kubernetes secret called 'NAME-default-user', where NAME is the name of the RabbitmqCluster object.
+The RabbitMQ default user credentials are stored in a Kubernetes secret called '$NAME-default-user', where $NAME is the name of the RabbitmqCluster object.
 In this example, the secret name is 'rabbitmq-default-user' in namespace 'source-demo'.
 
 To edit the RabbitMQ default user secret:
@@ -79,7 +88,7 @@ type: Opaque
 data:
   ...
 stringData:
-  uri: rabbitmq.source-demo:15672 # 'name-of-RabbitmqCluster.the-namespace:http-port'
+  uri: rabbitmq.source-demo:15672 # 'name-of-RabbitmqCluster.the-namespace:http-port' this is the management UI IP/URL not the amqp protocol
 ```
 
 ### Create the Perf Test Service

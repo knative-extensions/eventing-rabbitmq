@@ -41,13 +41,13 @@ spec:
 EOF
 ```
 
-### Install without the RabbitMQ Operators
+### Install without the RabbitMQ Cluster Operator
 
 * You will need a RabbitMQ instance running and accessible via an URL/IP
 
 * Install everything except the [RabbitMQ Cluster Operator](https://github.com/rabbitmq/cluster-operator)
 
-* Note: An external RabbitMQ instance can be used, but if you want to use the `Source` without predeclared resources (specifically the `Exchange` and `Queue`), the `RabbitMQ Message Topology Operator` needs to be installed in the external cluster too.
+* Note: An external RabbitMQ instance can be used, but if you want to use the `Source` without predeclared resources (specifically the `Exchange` and `Queue`), the `RabbitMQ Message Topology Operator` needs to be installed in the same Kubernetes Cluster as the `Source`.
 
 ## Installation
 
@@ -203,17 +203,9 @@ Source parameters
 
 `*` These attributes are optional.
 
-You will need a Kubernetes Secret to hold the RabbitMQ username and
-password. The following command is one way to create a secret with the username
-`rabbit-user` and the password taken from the `/tmp/password` file.
+You will need a Kubernetes Secret to hold the RabbitMQ username and password. The RabbitMQ Cluster Operator creates a default one.
 
-```sh
-kubectl create secret generic rabbitmq-default-user \
-  --from-literal=username=rabbit-user \
-  --from-file=password=/tmp/password
-```
-
-* To edit the Source's default user secret and add the the RabbitMQ http uri, see the [Source's samples Readme](../../samples/source/quick-setup/README.md#add-rabbitmq-http-uri-to-secret)
+* To create and edit the Source's default user secret and add the the RabbitMQ http uri, see the [Source's samples Readme](../../samples/source/quick-setup/README.md#add-rabbitmq-http-uri-to-secret)
 
 Note that many parameters do not need to be specified. Unspecified optional
 parameters will be defaulted to `false` or `""` (empty string).

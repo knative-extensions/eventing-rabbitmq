@@ -68,7 +68,7 @@ For development purposes or to use the latest from the repository, use [`ko`](ht
 ko apply -f config/broker/
 ```
 
-Follow one of the [Broker-Trigger](../../samples/broker-trigger) examples to deploy a basic topology.
+Follow the [Broker-Trigger quick setup](../../samples/broker-trigger/quick-setup/) example to deploy a basic topology.
 
 ## Customizations
 

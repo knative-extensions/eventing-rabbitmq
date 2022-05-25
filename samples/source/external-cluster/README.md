@@ -5,7 +5,7 @@
 - Same as listed [here](../../../docs/source.md#prerequisites)
 - A working RabbitMQ external instance exposed via an accessible IP/URL, an example on how to setup this can be found [here](./resources/rabbitmq.yml)
 
-Note: An external RabbitMQ instance can be used, but if you want to use the `Source` without predeclared resources (specifically the `Exchange` and `Queue`), the `RabbitMQ Message Topology Operator` needs to be installed in the external cluster too.
+Note: An external RabbitMQ instance can be used, but if you want to use the `Source` without predeclared resources (specifically the `Exchange` and `Queue`), the `RabbitMQ Message Topology Operator` needs to be installed in the same Kubernetes Cluster as the `Source`.
 
 ## Overview
 
@@ -43,11 +43,11 @@ kubectl create ns source-demo
 
 ### Add RabbitMQ http uri to secret
 
-After creating the RabbitMQ cluster in previous step, add the RabbitMQ http uri to its default user secret.
-The RabbitMQ default user credentials are stored in a Kubernetes secret called 'NAME-default-user', where NAME is the name of the RabbitmqCluster object.
+Add the RabbitMQ http uri to its default user secret. Important: if you have different IPs/URLs for the RabbitMQ's management UI and the RabbitMQ's connection port, use the Management UI URL here and the connection port URL in the yamls.
+The RabbitMQ default user credentials are stored in a Kubernetes secret called '$NAME-default-user', where $NAME is the name of the RabbitmqCluster object.
 In this example, the secret name is 'rabbitmq-default-user' in namespace 'source-demo'.
 
-To edit the RabbitMQ default user secret as explained [here](../quick-setup/README.md#add-rabbitmq-http-uri-to-secret)
+Create and Edit the RabbitMQ default user secret as explained [here](../quick-setup/README.md#add-rabbitmq-http-uri-to-secret)
 
 ### Create the Perf Test Service
 
