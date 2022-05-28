@@ -18,7 +18,7 @@ RabbitMQ *is a Messaging Broker* - an intermediary for messaging. It gives your 
 ## Installation
 ### Prerequisites
 
-* Install Knative Eventing as documented [here](https://knative.dev/docs/install/).
+* Install Knative Eventing as documented [here](https://knative.dev/docs/install/) or [here](../../test/performance/README.md#pre-requisites).
 
 * Install latest released version of the [RabbitMQ Cluster Operator](https://github.com/rabbitmq/cluster-operator).
 
@@ -42,7 +42,7 @@ RabbitMQ *is a Messaging Broker* - an intermediary for messaging. It gives your 
 
     If a custom installation is required, refer to the [topology operator docs](https://github.com/rabbitmq/messaging-topology-operator#quickstart).
 
-### Install eventing-rabbitmq broker
+### Install Eventing RabbitMQ Broker
 
 Install the latest version of the [Operator based Knative RabbitMQ Broker](https://github.com/knative-sandbox/eventing-rabbitmq/releases/):
 
@@ -68,7 +68,7 @@ For development purposes or to use the latest from the repository, use [`ko`](ht
 ko apply -f config/broker/
 ```
 
-Follow the [Broker-Trigger](../../samples/broker-trigger) to deploy a basic example of a topology.
+Follow the [Broker-Trigger quick setup](../../samples/broker-trigger/quick-setup/) example to deploy a basic topology.
 
 ## Customizations
 
@@ -78,7 +78,7 @@ To get autoscaling (scale to zero as well as up from 0), you can also optionally
 install
 [KEDA based autoscaler](https://github.com/knative-sandbox/eventing-autoscaler-keda).
 
-### Trigger Pre-Fetch Count
+### Trigger Parallelism Count
 Trigger has a configurable annotation `rabbitmq.eventing.knative.dev/parallelism`. The following are effects of setting this parameter to `n`:
 
 - Prefetch count is set to this value on the RabbitMQ channel and queue created for this trigger. The channel will receive a maximum of `n` number of messages at once.
@@ -88,7 +88,7 @@ If this value is unset, it will default to `1`. This means the trigger will only
 will make the trigger a bottleneck. A slow processing sink will result in low overall throughput. Setting a value higher than 1 will result in `n` events being handled at
 a time by the trigger but ordering won't be guaranteed as events are sent to the sink.
 
-More details and samples can be found [here](../../samples/trigger-customizations)
+More details and samples of this can be found [here](../../samples/broker-trigger/trigger-customizations)
 
 ## Delivery Failures and Delivery Spec
 A subset of HTTP status codes from a sink are considered a [retryable error](https://github.com/knative/specs/blob/main/specs/eventing/data-plane.md#event-acknowledgement-and-delivery-retry). When this occurs, delivery spec (available on Trigger and Broker) can specify how messages are retried and "dead-lettered". Reference

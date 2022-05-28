@@ -1,0 +1,33 @@
+apiVersion: sources.knative.dev/v1alpha1
+kind: RabbitmqSource
+metadata:
+  name: rabbitmq-source
+  namespace: source-demo
+spec:
+  broker: "$YOUR_RABBITMQ_IP/URL:5672/"
+  user:
+    secretKeyRef:
+      name: rabbitmq-default-user
+      key: username
+  password:
+    secretKeyRef:
+      name: rabbitmq-default-user
+      key: password
+  predeclared: true # For this to be false, the Topology Operator must be installed in your Source's cluster
+  # https://www.rabbitmq.com/kubernetes/operator/using-topology-operator.html
+  channelConfig:
+    # Value must be between 1 and 1000
+    # A value of 1 RabbitMQ Source behaves as a FIFO queue
+    # Values above 1 break message ordering guarantees and can be seen as more performance oriented
+    # parallelism: 10
+    globalQos: false
+  exchangeConfig:
+    name: "eventing-rabbitmq-source"
+  queueConfig:
+    name: "eventing-rabbitmq-source"
+  sink:
+    ref:
+      apiVersion: serving.knative.dev/v1
+      kind: Service
+      name: rabbitmq-source-sink
+      namespace: source-demo

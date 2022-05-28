@@ -23,7 +23,9 @@ an existing RabbitMQ exchange, or create a new exchange if required.
 
 ## Prerequisites
 
-* Follow the [Broker's Prerequisites Section](broker.md#prerequisites)
+### Install using the RabbitMQ Message Topology Operator and RabbitMQ Cluster Operator (Recommended)
+
+* Follow the [Broker's Prerequisites Section](../broker/README.md#prerequisites)
 
 * Before we can create the Knative Eventing Source, we first need to create a RabbitMQ Cluster:
 
@@ -38,6 +40,14 @@ spec:
   replicas: 1
 EOF
 ```
+
+### Install without the RabbitMQ Cluster Operator
+
+* You will need a RabbitMQ instance running and accessible via an URL/IP
+
+* Install everything except the [RabbitMQ Cluster Operator](https://github.com/rabbitmq/cluster-operator)
+
+* Note: An external RabbitMQ instance can be used, but if you want to use the `Source` without predeclared resources (specifically the `Exchange` and `Queue`), the `RabbitMQ Message Topology Operator` needs to be installed in the same Kubernetes Cluster as the `Source`.
 
 ## Installation
 
@@ -193,17 +203,9 @@ Source parameters
 
 `*` These attributes are optional.
 
-You will need a Kubernetes Secret to hold the RabbitMQ username and
-password. The following command is one way to create a secret with the username
-`rabbit-user` and the password taken from the `/tmp/password` file.
+You will need a Kubernetes Secret to hold the RabbitMQ username and password. The RabbitMQ Cluster Operator creates a default one.
 
-```sh
-kubectl create secret generic rabbitmq-secret \
-  --from-literal=user=rabbit-user \
-  --from-file=password=/tmp/password
-```
-
-* To edit the Source's default user secret and add the the RabbitMQ http uri, see the [Source's samples Readme](../../samples/source/README.md)
+* To create and edit the Source's default user secret and add the the RabbitMQ http uri, see the [Source's samples Readme](../../samples/source/quick-setup/README.md#add-rabbitmq-http-uri-to-secret)
 
 Note that many parameters do not need to be specified. Unspecified optional
 parameters will be defaulted to `false` or `""` (empty string).
@@ -218,7 +220,7 @@ spec:
   user:
     secretKeyRef:
       name: "rabbitmq-secret"
-      key: "user"
+      key: "username"
   password:
     secretKeyRef:
       name: "rabbitmq-secret"

@@ -2,20 +2,20 @@
 
 ## Prerequisites
 
-Same as listed [here](../../docs/source.md#prerequisites)
+Same as listed [here](../../../docs/source.md#prerequisites)
 
 ## Overview
 
-This demo will use a RabbitMQ Source to fetch messages from a RabbitMQ Exchange, convert them into [CloudEvents](https://cloudevents.io/) and send them to a [Sink](https://knative.dev/docs/eventing/sinks/#about-sinks). The complete list of the Source's config parameters are shown [here](../../docs/source.md)
+This demo will use a RabbitMQ Source to fetch messages from a RabbitMQ Exchange, convert them into [CloudEvents](https://cloudevents.io/) and send them to a [Sink](https://knative.dev/docs/eventing/sinks/#about-sinks). The complete list of the Source's config parameters are shown [here](../../../docs/source.md)
 
 ## Components
 
-- [perf-test](https://github.com/rabbitmq/rabbitmq-perf-test) RabbitMQ has a throughput testing tool, PerfTest, that is based on the Java client and can be configured to simulate basic to advanced workloads of messages sent to a RabbitMQ Cluster.
+- [perf-test](https://github.com/rabbitmq/rabbitmq-perf-test) RabbitMQ has a throughput testing tool, PerfTest, that is based on the Java client and can be configured to simulate basic to advanced workloads of messages sent to a RabbitMQ Cluster. More info about the perf-test testing tool can be found [here](../perf-test.help.env.text)
 
 - [event-display](https://github.com/knative/eventing/tree/main/cmd/event_display)
   which is a tool that logs the CloudEvent that it receives formatted nicely.
 
-- [RabbitMQ Source](../../docs/source.md)
+- [RabbitMQ Source](../../../docs/source.md)
 
 ## Configuration
 
@@ -31,7 +31,7 @@ Create a new namespace for the demo. All the commands are expected to be
 executed from the root of this repo.
 
 ```sh
-kubectl apply -f samples/source/100-namespace.yaml
+kubectl apply -f samples/source/quick-setup/100-namespace.yaml
 ```
 or
 ```sh
@@ -43,7 +43,7 @@ kubectl create ns source-demo
 Create a RabbitMQ Cluster:
 
 ```sh
-kubectl apply -f samples/source/200-rabbitmq.yaml
+kubectl apply -f samples/source/quick-setup/200-rabbitmq.yaml
 ```
 or
 ```
@@ -60,8 +60,17 @@ EOF
 
 ### Add RabbitMQ http uri to secret
 
+The following command is one way to create a secret with the username
+`rabbit-user` and the password taken from the `/tmp/password` file.
+
+```sh
+kubectl create secret generic rabbitmq-default-user \
+  --from-literal=username=rabbit-user \
+  --from-file=password=/tmp/password
+```
+
 After creating the RabbitMQ cluster in previous step, add the RabbitMQ http uri to its default user secret.
-The RabbitMQ default user credentials are stored in a Kubernetes secret called 'NAME-default-user', where NAME is the name of the RabbitmqCluster object.
+The RabbitMQ default user credentials are stored in a Kubernetes secret called '$NAME-default-user', where $NAME is the name of the RabbitmqCluster object.
 In this example, the secret name is 'rabbitmq-default-user' in namespace 'source-demo'.
 
 To edit the RabbitMQ default user secret:
@@ -79,7 +88,7 @@ type: Opaque
 data:
   ...
 stringData:
-  uri: rabbitmq.source-demo:15672 # 'name-of-RabbitmqCluster.the-namespace:http-port'
+  uri: rabbitmq.source-demo:15672 # 'name-of-RabbitmqCluster.the-namespace:http-port' this is the management UI IP/URL not the amqp protocol
 ```
 
 ### Create the Perf Test Service
@@ -87,7 +96,7 @@ stringData:
 This will create a Kubernetes Deployment which sends events to the RabbitMQ Cluster Exchange
 
 ```sh
-kubectl apply -f samples/source/300-perf-test.yaml
+kubectl apply -f samples/source/quick-setup/300-perf-test.yaml
 ```
 
 Messages from the `rabbitmq-perf-test` deployment won't reach the RabbitMQ Cluster until the Source is created, which results in the creation of the Exchange and Queue where the messages are going to be sent
@@ -97,7 +106,7 @@ Messages from the `rabbitmq-perf-test` deployment won't reach the RabbitMQ Clust
 Then create the Knative Serving Service which will receive translated events.
 
 ```sh
-kubectl apply -f samples/source/400-sink.yaml
+kubectl apply -f samples/source/quick-setup/400-sink.yaml
 ```
 or
 ```sh
@@ -118,7 +127,7 @@ EOF
 ### Create the RabbitMQ Source
 
 ```sh
-kubectl apply -f samples/source/500-source.yaml
+kubectl apply -f samples/source/quick-setup/500-source.yaml
 ```
 or
 ```sh
@@ -188,5 +197,6 @@ Data,
 ### Cleanup
 
 ```sh
-kubectl delete ns source-demo
+kubectl delete -f samples/source/quick-setup/500-source.yaml
+kubectl delete -f samples/source/quick-setup/
 ```

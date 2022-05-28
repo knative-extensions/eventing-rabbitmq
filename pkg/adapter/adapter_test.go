@@ -123,7 +123,7 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 
 			a := &Adapter{
 				config: &adapterConfig{
-					Brokers: "amqp://guest:guest@localhost:5672/",
+					Broker: "amqp://guest:guest@localhost:5672/",
 					ExchangeConfig: ExchangeConfig{
 						Type:       "topic",
 						Durable:    true,
@@ -209,7 +209,7 @@ func TestAdapter_CreateConn(t *testing.T) {
 
 	a := &Adapter{
 		config: &adapterConfig{
-			Brokers: "amqp://localhost:5672/%2f",
+			Broker: "amqp://localhost:5672/%2f",
 			ExchangeConfig: ExchangeConfig{
 				Type:       "direct",
 				Durable:    true,
@@ -253,7 +253,7 @@ func TestAdapter_CreateChannel(t *testing.T) {
 
 	a := &Adapter{
 		config: &adapterConfig{
-			Brokers: "amqp://localhost:5672/%2f",
+			Broker: "amqp://localhost:5672/%2f",
 			ExchangeConfig: ExchangeConfig{
 				Type:       "direct",
 				Durable:    true,
@@ -301,7 +301,7 @@ func TestAdapter_StartAmqpClient(t *testing.T) {
 
 	a := &Adapter{
 		config: &adapterConfig{
-			Brokers:     "amqp://localhost:5674/%2f",
+			Broker:      "amqp://localhost:5674/%2f",
 			Predeclared: true,
 			QueueConfig: QueueConfig{
 				Name:       testQueue,
@@ -364,57 +364,57 @@ func sinkRejected(writer http.ResponseWriter, _ *http.Request) {
 
 func TestAdapter_VhostHandler(t *testing.T) {
 	for _, tt := range []struct {
-		name    string
-		brokers string
-		vhost   string
-		want    string
+		name   string
+		broker string
+		vhost  string
+		want   string
 	}{{
-		name:    "no brokers nor vhost",
-		brokers: "",
-		vhost:   "",
-		want:    "",
+		name:   "no broker nor vhost",
+		broker: "",
+		vhost:  "",
+		want:   "",
 	}, {
-		name:    "no vhost",
-		brokers: "amqp://localhost:5672",
-		vhost:   "",
-		want:    "amqp://localhost:5672",
+		name:   "no vhost",
+		broker: "amqp://localhost:5672",
+		vhost:  "",
+		want:   "amqp://localhost:5672",
 	}, {
-		name:    "no brokers",
-		brokers: "",
-		vhost:   "test-vhost",
-		want:    "test-vhost",
+		name:   "no broker",
+		broker: "",
+		vhost:  "test-vhost",
+		want:   "test-vhost",
 	}, {
-		name:    "brokers and vhost without separating slash",
-		brokers: "amqp://localhost:5672",
-		vhost:   "test-vhost",
-		want:    "amqp://localhost:5672/test-vhost",
+		name:   "broker and vhost without separating slash",
+		broker: "amqp://localhost:5672",
+		vhost:  "test-vhost",
+		want:   "amqp://localhost:5672/test-vhost",
 	}, {
-		name:    "brokers and vhost without separating slash but vhost with ending slash",
-		brokers: "amqp://localhost:5672",
-		vhost:   "test-vhost/",
-		want:    "amqp://localhost:5672/test-vhost/",
+		name:   "broker and vhost without separating slash but vhost with ending slash",
+		broker: "amqp://localhost:5672",
+		vhost:  "test-vhost/",
+		want:   "amqp://localhost:5672/test-vhost/",
 	}, {
-		name:    "brokers with trailing slash and vhost without the slash",
-		brokers: "amqp://localhost:5672/",
-		vhost:   "test-vhost",
-		want:    "amqp://localhost:5672/test-vhost",
+		name:   "broker with trailing slash and vhost without the slash",
+		broker: "amqp://localhost:5672/",
+		vhost:  "test-vhost",
+		want:   "amqp://localhost:5672/test-vhost",
 	}, {
-		name:    "vhost starting with slash and brokers without the slash",
-		brokers: "amqp://localhost:5672",
-		vhost:   "/test-vhost",
-		want:    "amqp://localhost:5672/test-vhost",
+		name:   "vhost starting with slash and broker without the slash",
+		broker: "amqp://localhost:5672",
+		vhost:  "/test-vhost",
+		want:   "amqp://localhost:5672/test-vhost",
 	}, {
-		name:    "brokers and vhost with slash",
-		brokers: "amqp://localhost:5672/",
-		vhost:   "/test-vhost",
-		want:    "amqp://localhost:5672//test-vhost",
+		name:   "broker and vhost with slash",
+		broker: "amqp://localhost:5672/",
+		vhost:  "/test-vhost",
+		want:   "amqp://localhost:5672//test-vhost",
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
 			tt := tt
 			t.Parallel()
-			got := vhostHandler(tt.brokers, tt.vhost)
+			got := vhostHandler(tt.broker, tt.vhost)
 			if got != tt.want {
-				t.Errorf("Unexpected URI for %s/%s want:\n%+s\ngot:\n%+s", tt.brokers, tt.vhost, tt.want, got)
+				t.Errorf("Unexpected URI for %s/%s want:\n%+s\ngot:\n%+s", tt.broker, tt.vhost, tt.want, got)
 			}
 		})
 	}
@@ -441,7 +441,7 @@ func TestAdapter_PollForMessages(t *testing.T) {
 
 	a := &Adapter{
 		config: &adapterConfig{
-			Brokers: "amqp://guest:guest@localhost:5672/",
+			Broker: "amqp://guest:guest@localhost:5672/",
 			ExchangeConfig: ExchangeConfig{
 				Name:       "Test-exchange",
 				Type:       "topic",

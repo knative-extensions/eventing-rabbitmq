@@ -14,7 +14,7 @@ spec:
       name: rabbitmq-default-user
       key: password
   connectionSecret:
-    name: rabbitmq-default-user # used when exchange and queue are not predeclared
+    name: rabbitmq-default-user # used when exchange and queue are not predeclared (you need to have the topology operator installed for this)
   channelConfig:
     # Value must be between 1 and 1000
     # A value of 1 RabbitMQ Source behaves as a FIFO queue
