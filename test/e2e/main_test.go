@@ -30,11 +30,14 @@ import (
 	"knative.dev/pkg/system"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+
 	// For our e2e testing, we want this linked first so that our
 	// system namespace environment variable is defaulted prior to
 	// logstream initialization.
 	_ "knative.dev/eventing-rabbitmq/test/defaultsystem"
 	"knative.dev/reconciler-test/pkg/environment"
+	"knative.dev/reconciler-test/pkg/k8s"
+	"knative.dev/reconciler-test/pkg/knative"
 )
 
 func init() {
