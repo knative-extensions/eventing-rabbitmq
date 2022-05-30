@@ -1056,7 +1056,7 @@ k8s.io/utils/internal/third_party/forked/golang/net
 k8s.io/utils/net
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/eventing v0.31.1-0.20220523181303-c3e13967001f
+# knative.dev/eventing v0.31.1-0.20220525061503-56edb3b87dca
 ## explicit; go 1.16
 knative.dev/eventing/pkg/adapter/v2
 knative.dev/eventing/pkg/adapter/v2/util/crstatusevent
@@ -1155,10 +1155,10 @@ knative.dev/eventing/test/test_images/event-sender
 knative.dev/eventing/test/test_images/heartbeats
 knative.dev/eventing/test/test_images/performance
 knative.dev/eventing/test/test_images/print
-# knative.dev/hack v0.0.0-20220518013938-b4d4d73a2995
+# knative.dev/hack v0.0.0-20220524153203-12d3e2a7addc
 ## explicit; go 1.14
 knative.dev/hack
-# knative.dev/pkg v0.0.0-20220518013728-f907b31046d3
+# knative.dev/pkg v0.0.0-20220524202603-19adf798efb8
 ## explicit; go 1.17
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
@@ -1262,7 +1262,7 @@ knative.dev/pkg/webhook/json
 knative.dev/pkg/webhook/resourcesemantics
 knative.dev/pkg/webhook/resourcesemantics/defaulting
 knative.dev/pkg/webhook/resourcesemantics/validation
-# knative.dev/reconciler-test v0.0.0-20220518014027-106634afa68e
+# knative.dev/reconciler-test v0.0.0-20220524205904-f750f80bfc7e
 ## explicit; go 1.17
 knative.dev/reconciler-test/cmd/eventshub
 knative.dev/reconciler-test/pkg/environment
