@@ -41,12 +41,6 @@ spec:
             type: object
           spec:
             properties:
-              queueType:
-                default: quorum
-                enum:
-                - quorum
-                - classic
-                type: string
               rabbitmqClusterReference:
                 description: RabbitmqClusterReference stores a reference to RabbitmqCluster.
                   This will get used to create resources on the RabbitMQ Broker.

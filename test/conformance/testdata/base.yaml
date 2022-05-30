@@ -9,9 +9,10 @@ metadata:
   {{ end }}
 spec:
   config:
-    apiVersion: rabbitmq.com/v1beta1
-    kind: RabbitmqCluster
-    name: rabbitbroker
+    apiVersion: eventing.knative.dev/v1alpha1
+    kind: RabbitmqBrokerConfig
+    name: rabbitmq-broker-config
+    namespace: {{ .namespace }}
   {{ if .delivery }}
   delivery:
     {{ if .delivery.deadLetterSink }}

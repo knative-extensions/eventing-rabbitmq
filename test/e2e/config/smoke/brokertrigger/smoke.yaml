@@ -23,10 +23,9 @@ metadata:
     eventing.knative.dev/broker.class: RabbitMQBroker
 spec:
   config:
-    apiVersion: rabbitmq.com/v1beta1
-    kind: RabbitmqCluster
-    name: rabbitmqc
-
+    apiVersion: eventing.knative.dev/v1alpha1
+    kind: RabbitmqBrokerConfig
+    name: rabbitmq-broker-config
 ---
 
 apiVersion: eventing.knative.dev/v1
@@ -38,3 +37,15 @@ spec:
   broker: testbroker
   subscriber:
     uri: http://example.com
+
+---
+
+apiVersion: eventing.knative.dev/v1alpha1
+kind: RabbitmqBrokerConfig
+metadata:
+  name: rabbitmq-broker-config
+  namespace: {{ .namespace }}
+spec:
+  rabbitmqClusterReference:
+    name: rabbitmqc
+    namespace: {{ .namespace }}
