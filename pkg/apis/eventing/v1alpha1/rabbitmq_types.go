@@ -47,11 +47,6 @@ var _ apis.Validatable = (*RabbitmqBrokerConfig)(nil)
 type RabbitmqBrokerConfigSpec struct {
 	// RabbitmqClusterReference stores a reference to RabbitmqCluster. This will get used to create resources on the RabbitMQ Broker.
 	RabbitmqClusterReference *v1beta1.RabbitmqClusterReference `json:"rabbitmqClusterReference,omitempty"`
-
-	// +optional
-	// +kubebuilder:default:=quorum
-	// +kubebuilder:validation:Enum=quorum;classic
-	QueueType string `json:"queueType,omitempty"`
 }
 
 func (s *RabbitmqBrokerConfig) GetGroupVersionKind() schema.GroupVersionKind {

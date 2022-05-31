@@ -46,9 +46,10 @@ func SmokeTestBrokerTrigger() *feature.Feature {
 func AllGoReady(ctx context.Context, t feature.T) {
 	env := environment.FromContext(ctx)
 	for _, ref := range env.References() {
-		if !strings.Contains(ref.APIVersion, "knative.dev") {
+		if !strings.Contains(ref.APIVersion, "knative.dev") || ref.Kind == "RabbitmqBrokerConfig" {
 			// Let's not care so much about checking the status of non-Knative
 			// resources.
+			// RabbitmqBrokerConfig isn't a reconciled resources, so won't have any Status
 			continue
 		}
 		if err := k8s.WaitForReadyOrDone(ctx, t, ref, interval, timeout); err != nil {
