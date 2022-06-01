@@ -74,12 +74,61 @@ spec:
 EOF
 ```
 
+### Create the RabbitMQ Broker Config
+
+```sh
+kubectl apply -f samples/broker-trigger/quick-setup/250-broker-config.yaml
+```
+or
+```sh
+kubectl apply -f - << EOF
+apiVersion: eventing.knative.dev/v1alpha1
+kind: RabbitmqBrokerConfig
+metadata:
+  name: default-config
+  namespace: broker-trigger-demo
+spec:
+  rabbitmqClusterReference:
+    name: rabbitmq
+    namespace: broker-trigger-demo
+
+```
+
 ### Create the RabbitMQ Broker
 
 ```sh
 kubectl apply -f samples/broker-trigger/quick-setup/300-broker.yaml
 ```
 or
+```sh
+kubectl apply -f - << EOF
+apiVersion: eventing.knative.dev/v1
+kind: Broker
+metadata:
+  name: default
+  namespace: broker-trigger-demo
+  annotations:
+    eventing.knative.dev/broker.class: RabbitMQBroker
+spec:
+  config:
+    apiVersion: eventing.knative.dev/v1alpha1
+    kind: RabbitmqBrokerConfig
+    name: default-config
+  delivery:
+    deadLetterSink:
+      ref:
+        apiVersion: serving.knative.dev/v1
+        kind: Service
+        name: event-display
+        namespace: broker-trigger-demo
+    retry: 5
+EOF
+```
+
+### [DEPRECATED] Create the RabbitMQ Broker (with RabbitmqCluster as config)
+
+While using a reference to a RabbitmqCluster directly is supported, it's deprecated and will be removed in a future release
+
 ```sh
 kubectl apply -f - << EOF
 apiVersion: eventing.knative.dev/v1

@@ -58,6 +58,26 @@ spec:
 EOF
 ```
 
+### Create the RabbitMQ Broker Config
+
+```sh
+kubectl apply -f samples/broker-trigger/trigger-customizations/250-broker-config.yaml
+```
+or
+```sh
+kubectl apply -f - << EOF
+apiVersion: eventing.knative.dev/v1alpha1
+kind: RabbitmqBrokerConfig
+metadata:
+  name: default-config
+  namespace: trigger-demo
+spec:
+  rabbitmqClusterReference:
+    name: rabbitmq
+    namespace: trigger-demo
+
+```
+
 #### Create a Broker
 ```sh
 kubectl apply -f samples/broker-trigger/trigger-customizations/300-broker.yaml
@@ -74,9 +94,9 @@ metadata:
     eventing.knative.dev/broker.class: RabbitMQBroker
 spec:
   config:
-    apiVersion: rabbitmq.com/v1beta1
-    kind: RabbitmqCluster
-    name: rabbitmq
+    apiVersion: eventing.knative.dev/v1alpha1
+    kind: RabbitmqBrokerConfig
+    name: default-config
 EOF
 ```
 
