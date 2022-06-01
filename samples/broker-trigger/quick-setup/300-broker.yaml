@@ -7,9 +7,9 @@ metadata:
     eventing.knative.dev/broker.class: RabbitMQBroker
 spec:
   config:
-    apiVersion: rabbitmq.com/v1beta1
-    kind: RabbitmqCluster
-    name: rabbitmq
+    apiVersion: eventing.knative.dev/v1alpha1
+    kind: RabbitmqBrokerConfig
+    name: default-config
   delivery:
     deadLetterSink:
       ref:
