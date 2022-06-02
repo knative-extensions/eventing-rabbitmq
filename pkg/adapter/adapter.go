@@ -283,6 +283,7 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 	if backoffPolicy == "" {
 		a.logger.Sugar().Fatalf("Invalid BACKOFF_POLICY specified: must be %q or %q", eventingduckv1.BackoffPolicyExponential, eventingduckv1.BackoffPolicyLinear)
 	}
+
 	res, err := a.httpMessageSender.SendWithRetries(req, &kncloudevents.RetryConfig{
 		RetryMax: a.config.Retry,
 		CheckRetry: func(ctx context.Context, resp *nethttp.Response, err error) (bool, error) {
@@ -291,7 +292,6 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 		BackoffDelay:  &backoffDelay,
 		BackoffPolicy: &backoffPolicy,
 	})
-
 	if err != nil {
 		a.logger.Error("error while sending the message", zap.Error(err))
 		return err
