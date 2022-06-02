@@ -31,8 +31,8 @@ import (
 	"go.uber.org/zap"
 
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
+	"knative.dev/eventing-rabbitmq/pkg/utils"
 	"knative.dev/eventing/pkg/adapter/v2"
-	v1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/eventing/pkg/metrics/source"
 	"knative.dev/pkg/logging"
@@ -93,12 +93,6 @@ var _ adapter.MessageAdapterConstructor = NewAdapter
 func NewAdapter(ctx context.Context, processed adapter.EnvConfigAccessor, httpMessageSender *kncloudevents.HTTPMessageSender, reporter source.StatsReporter) adapter.MessageAdapter {
 	logger := logging.FromContext(ctx).Desugar()
 	config := processed.(*adapterConfig)
-	if config.BackoffPolicy == "" {
-		config.BackoffPolicy = "exponential"
-	} else if config.BackoffPolicy != "linear" && config.BackoffPolicy != "exponential" {
-		logger.Sugar().Fatalf("Invalid BACKOFF_POLICY specified: must be %q or %q", v1.BackoffPolicyExponential, v1.BackoffPolicyLinear)
-	}
-
 	return &Adapter{
 		config:            config,
 		httpMessageSender: httpMessageSender,
@@ -292,7 +286,7 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 	}
 
 	backoffDelay := a.config.BackoffDelay.String()
-	backoffPolicy := (v1.BackoffPolicyType)(a.config.BackoffPolicy)
+	backoffPolicy := utils.SetBackoffPolicy(a.context, a.config.BackoffPolicy)
 	res, err := a.httpMessageSender.SendWithRetries(req, &kncloudevents.RetryConfig{
 		RetryMax: a.config.Retry,
 		CheckRetry: func(ctx context.Context, resp *nethttp.Response, err error) (bool, error) {
