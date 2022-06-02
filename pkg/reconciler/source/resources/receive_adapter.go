@@ -60,14 +60,6 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 			},
 		},
 		{
-			Name:  "RABBITMQ_ROUTING_KEY",
-			Value: args.Source.Spec.QueueConfig.RoutingKey,
-		},
-		{
-			Name:  "RABBITMQ_CHANNEL_CONFIG_QOS_GLOBAL",
-			Value: strconv.FormatBool(args.Source.Spec.ChannelConfig.GlobalQos),
-		},
-		{
 			Name:  "RABBITMQ_CHANNEL_CONFIG_PARALLELISM",
 			Value: strconv.Itoa(*args.Source.Spec.ChannelConfig.Parallelism),
 		},
@@ -76,28 +68,8 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 			Value: args.Source.Spec.ExchangeConfig.Name,
 		},
 		{
-			Name:  "RABBITMQ_EXCHANGE_CONFIG_TYPE",
-			Value: args.Source.Spec.ExchangeConfig.Type,
-		},
-		{
-			Name:  "RABBITMQ_EXCHANGE_CONFIG_DURABLE",
-			Value: strconv.FormatBool(args.Source.Spec.ExchangeConfig.Durable),
-		},
-		{
-			Name:  "RABBITMQ_EXCHANGE_CONFIG_AUTO_DELETE",
-			Value: strconv.FormatBool(args.Source.Spec.ExchangeConfig.AutoDelete),
-		},
-		{
 			Name:  "RABBITMQ_QUEUE_CONFIG_NAME",
 			Value: args.Source.Spec.QueueConfig.Name,
-		},
-		{
-			Name:  "RABBITMQ_QUEUE_CONFIG_DURABLE",
-			Value: strconv.FormatBool(args.Source.Spec.QueueConfig.Durable),
-		},
-		{
-			Name:  "RABBITMQ_QUEUE_CONFIG_AUTO_DELETE",
-			Value: strconv.FormatBool(args.Source.Spec.QueueConfig.AutoDelete),
 		},
 		{
 			Name:  "RABBITMQ_PREDECLARED",

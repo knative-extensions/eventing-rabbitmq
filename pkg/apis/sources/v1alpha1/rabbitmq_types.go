@@ -61,39 +61,18 @@ type RabbitmqChannelConfigSpec struct {
 	// +kubebuilder:validation:Maximum:=1000
 	// +kubebuilder:default:=1
 	Parallelism *int `json:"parallelism,omitempty"`
-	// Channel Qos global property
-	// +optional
-	GlobalQos bool `json:"globalQos,omitempty"`
 }
 
 type RabbitmqSourceExchangeConfigSpec struct {
 	// Name of the exchange; Required when predeclared is false.
 	// +optional
 	Name string `json:"name,omitempty"`
-	// Type of exchange e.g. direct, topic, headers, fanout
-	// +required
-	Type string `json:"type,omitempty"`
-	// Exchange is Durable or not
-	// +optional
-	Durable bool `json:"durable,omitempty"`
-	// Exchange can be AutoDelete or not
-	// +optional
-	AutoDelete bool `json:"autoDelete,omitempty"`
 }
 
 type RabbitmqSourceQueueConfigSpec struct {
 	// Name of the queue to bind to; required value.
 	// +required
 	Name string `json:"name"`
-	// Routing key of the messages to be received.
-	// Multiple routing keys can be specified separated by commas. e.g. key1,key2
-	// +optional
-	RoutingKey string `json:"routingKey,omitempty"`
-	// Queue is Durable or not
-	// +optional
-	Durable bool `json:"durable,omitempty"`
-	// +optional
-	AutoDelete bool `json:"autoDelete,omitempty"`
 }
 
 type RabbitmqSourceSpec struct {

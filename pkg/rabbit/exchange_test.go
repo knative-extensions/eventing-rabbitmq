@@ -162,10 +162,7 @@ func TestNewExchange(t *testing.T) {
 				},
 				Spec: v1alpha1.RabbitmqSourceSpec{
 					ExchangeConfig: v1alpha1.RabbitmqSourceExchangeConfigSpec{
-						Name:       "some-exchange",
-						Type:       "direct",
-						Durable:    false,
-						AutoDelete: false,
+						Name: "some-exchange",
 					},
 					Vhost: "test",
 				},

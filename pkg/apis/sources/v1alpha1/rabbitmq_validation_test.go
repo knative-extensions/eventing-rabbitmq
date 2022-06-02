@@ -29,20 +29,13 @@ var (
 	fullSpec           = RabbitmqSourceSpec{
 		Broker: "amqp://guest:guest@localhost:5672/",
 		ExchangeConfig: RabbitmqSourceExchangeConfigSpec{
-			Name:       "an-exchange",
-			Type:       "topic",
-			Durable:    true,
-			AutoDelete: false,
+			Name: "an-exchange",
 		},
 		QueueConfig: RabbitmqSourceQueueConfigSpec{
-			Name:       "",
-			RoutingKey: "*.critical",
-			Durable:    false,
-			AutoDelete: false,
+			Name: "",
 		},
 		ChannelConfig: RabbitmqChannelConfigSpec{
 			Parallelism: &defaultParallelism,
-			GlobalQos:   false,
 		},
 		Sink: &duckv1.Destination{
 			Ref: &duckv1.KReference{
@@ -218,10 +211,7 @@ func TestRabbitmqSourceCheckChannelParallelismValue(t *testing.T) {
 				Broker:         fullSpec.Broker,
 				ExchangeConfig: fullSpec.ExchangeConfig,
 				QueueConfig: RabbitmqSourceQueueConfigSpec{
-					Name:       "",
-					RoutingKey: "*.critical",
-					Durable:    false,
-					AutoDelete: false,
+					Name: "",
 				},
 				ChannelConfig:      fullSpec.ChannelConfig,
 				Sink:               fullSpec.Sink,

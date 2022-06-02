@@ -74,16 +74,10 @@ func TestMakeReceiveAdapter(t *testing.T) {
 					},
 					Predeclared: true,
 					ExchangeConfig: v1alpha12.RabbitmqSourceExchangeConfigSpec{
-						Name:       "logs",
-						Type:       "topic",
-						Durable:    true,
-						AutoDelete: false,
+						Name: "logs",
 					},
 					QueueConfig: v1alpha12.RabbitmqSourceQueueConfigSpec{
-						Name:       "",
-						RoutingKey: "*.critical",
-						Durable:    false,
-						AutoDelete: false,
+						Name: "",
 					},
 					ChannelConfig: v1alpha12.RabbitmqChannelConfigSpec{
 						Parallelism: &parallelism,

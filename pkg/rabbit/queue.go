@@ -52,8 +52,6 @@ func NewQueue(args *QueueArgs) *rabbitv1beta1.Queue {
 
 	// queue configurations for source
 	if args.Source != nil {
-		durable = args.Source.Spec.QueueConfig.Durable
-		autoDelete = args.Source.Spec.QueueConfig.AutoDelete
 		queueName = args.Source.Spec.QueueConfig.Name
 		vhost = args.Source.Spec.Vhost
 	}

@@ -162,9 +162,7 @@ func TestNewQueue(t *testing.T) {
 				Source: &v1alpha1.RabbitmqSource{
 					Spec: v1alpha1.RabbitmqSourceSpec{
 						QueueConfig: v1alpha1.RabbitmqSourceQueueConfigSpec{
-							Name:       "a-test-queue",
-							Durable:    false,
-							AutoDelete: false,
+							Name: "a-test-queue",
 						},
 						Vhost: "test",
 					},
