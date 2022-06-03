@@ -184,14 +184,6 @@ func TestMakeReceiveAdapter(t *testing.T) {
 											},
 										},
 										{
-											Name:  "RABBITMQ_ROUTING_KEY",
-											Value: "*.critical",
-										},
-										{
-											Name:  "RABBITMQ_CHANNEL_CONFIG_QOS_GLOBAL",
-											Value: "false",
-										},
-										{
 											Name:  "RABBITMQ_CHANNEL_CONFIG_PARALLELISM",
 											Value: "10",
 										},
@@ -200,28 +192,8 @@ func TestMakeReceiveAdapter(t *testing.T) {
 											Value: "logs",
 										},
 										{
-											Name:  "RABBITMQ_EXCHANGE_CONFIG_TYPE",
-											Value: "topic",
-										},
-										{
-											Name:  "RABBITMQ_EXCHANGE_CONFIG_DURABLE",
-											Value: "true",
-										},
-										{
-											Name:  "RABBITMQ_EXCHANGE_CONFIG_AUTO_DELETE",
-											Value: "false",
-										},
-										{
 											Name:  "RABBITMQ_QUEUE_CONFIG_NAME",
 											Value: "",
-										},
-										{
-											Name:  "RABBITMQ_QUEUE_CONFIG_DURABLE",
-											Value: "false",
-										},
-										{
-											Name:  "RABBITMQ_QUEUE_CONFIG_AUTO_DELETE",
-											Value: "false",
 										},
 										{
 											Name:  "RABBITMQ_PREDECLARED",

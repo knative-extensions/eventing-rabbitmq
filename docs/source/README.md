@@ -113,7 +113,6 @@ spec:
     globalQos: false
   exchangeConfig:
     name: "eventing-rabbitmq-source"
-    type: "fanout"
   queueConfig:
     name: "eventing-rabbitmq-source"
   sink:

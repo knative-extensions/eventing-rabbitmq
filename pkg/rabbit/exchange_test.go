@@ -189,7 +189,7 @@ func TestNewExchange(t *testing.T) {
 			Spec: rabbitv1beta1.ExchangeSpec{
 				Name:       "some-exchange",
 				Vhost:      "test",
-				Type:       "direct",
+				Type:       "headers",
 				Durable:    false,
 				AutoDelete: false,
 				RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
