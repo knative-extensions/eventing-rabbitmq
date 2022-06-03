@@ -41,22 +41,15 @@ import (
 const resourceGroup = "rabbitmqsources.sources.knative.dev"
 
 type ExchangeConfig struct {
-	Name       string `envconfig:"RABBITMQ_EXCHANGE_CONFIG_NAME" required:"false"`
-	Type       string `envconfig:"RABBITMQ_EXCHANGE_CONFIG_TYPE" required:"true"`
-	Durable    bool   `envconfig:"RABBITMQ_EXCHANGE_CONFIG_DURABLE" required:"false"`
-	AutoDelete bool   `envconfig:"RABBITMQ_EXCHANGE_CONFIG_AUTO_DELETE" required:"false"`
+	Name string `envconfig:"RABBITMQ_EXCHANGE_CONFIG_NAME" required:"false"`
 }
 
 type ChannelConfig struct {
-	Parallelism int  `envconfig:"RABBITMQ_CHANNEL_CONFIG_PARALLELISM" default:"1" required:"false"`
-	GlobalQos   bool `envconfig:"RABBITMQ_CHANNEL_CONFIG_QOS_GLOBAL" required:"false"`
+	Parallelism int `envconfig:"RABBITMQ_CHANNEL_CONFIG_PARALLELISM" default:"1" required:"false"`
 }
 
 type QueueConfig struct {
-	Name       string `envconfig:"RABBITMQ_QUEUE_CONFIG_NAME" required:"true"`
-	RoutingKey string `envconfig:"RABBITMQ_ROUTING_KEY" required:"true"`
-	Durable    bool   `envconfig:"RABBITMQ_QUEUE_CONFIG_DURABLE" required:"false"`
-	AutoDelete bool   `envconfig:"RABBITMQ_QUEUE_CONFIG_AUTO_DELETE" required:"false"`
+	Name string `envconfig:"RABBITMQ_QUEUE_CONFIG_NAME" required:"true"`
 }
 
 type adapterConfig struct {
@@ -145,13 +138,12 @@ func (a *Adapter) CreateChannel(conn wabbit.Conn, connTest *amqptest.Conn,
 
 	logger.Info("Initializing Channel with Config: ",
 		zap.Int("Parallelism", a.config.ChannelConfig.Parallelism),
-		zap.Bool("GlobalQoS", a.config.ChannelConfig.GlobalQos),
 	)
 
 	err = ch.Qos(
 		a.config.ChannelConfig.Parallelism,
 		0,
-		a.config.ChannelConfig.GlobalQos,
+		false,
 	)
 
 	return ch, err

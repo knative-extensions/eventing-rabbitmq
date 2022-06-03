@@ -81,18 +81,9 @@ spec:
               exchangeConfig:
                 description: ExchangeConfig config for rabbitmq exchange
                 properties:
-                  autoDelete:
-                    description: Exchange can be AutoDelete or not
-                    type: boolean
-                  durable:
-                    description: Exchange is Durable or not
-                    type: boolean
                   name:
                     description: Name of the exchange; Required when predeclared is
                       false.
-                    type: string
-                  type:
-                    description: Type of exchange e.g. direct, topic, headers, fanout
                     type: string
                 type: object
               password:
@@ -126,17 +117,8 @@ spec:
               queueConfig:
                 description: QueueConfig config for rabbitmq queues
                 properties:
-                  autoDelete:
-                    type: boolean
-                  durable:
-                    description: Queue is Durable or not
-                    type: boolean
                   name:
                     description: Name of the queue to bind to; required value.
-                    type: string
-                  routingKey:
-                    description: Routing key of the messages to be received. Multiple
-                      routing keys can be specified separated by commas. e.g. key1,key2
                     type: string
                 required:
                 - name

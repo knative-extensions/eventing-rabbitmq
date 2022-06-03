@@ -114,7 +114,7 @@ type RabbitmqSourceSpec struct {
 	// +optional
 	ExchangeConfig RabbitmqSourceExchangeConfigSpec `json:"exchangeConfig,omitempty"`
 	// QueueConfig config for rabbitmq queues
-	// +required
+	// +optional
 	QueueConfig RabbitmqSourceQueueConfigSpec `json:"queueConfig,omitempty"`
 	// Sink is a reference to an object that will resolve to a domain name to use as the sink.
 	// Required property.

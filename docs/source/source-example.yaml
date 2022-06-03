@@ -21,14 +21,8 @@ spec:
     name: RABBITMQ_CONNECTION_SECRET
   exchangeConfig:
     name: RABBITMQ_EXCHANGE_CONFIG_NAME
-    type: RABBITMQ_EXCHANGE_CONFIG_TYPE
-    durable: RABBITMQ_EXCHANGE_CONFIG_DURABLE
-    autoDelete: RABBITMQ_EXCHANGE_CONFIG_AUTO_DELETE
   queueConfig:
     name: RABBITMQ_QUEUE_CONFIG_NAME
-    routingKey: RABBITMQ_ROUTING_KEY
-    durable: RABBITMQ_QUEUE_CONFIG_DURABLE
-    autoDelete: RABBITMQ_QUEUE_CONFIG_AUTO_DELETE
   sink:
     apiVersion: serving.knative.dev/v1
     kind: Service

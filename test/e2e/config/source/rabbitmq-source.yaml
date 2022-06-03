@@ -31,18 +31,8 @@ spec:
       key: "password"
   exchangeConfig:
     name: "logs"
-    type: "fanout"
-    durable: true
-    autoDelete: false
-    internal: false
-    nowait: false
   queueConfig:
     name: "test"
-    routingKey: ""
-    durable: false
-    autoDelete: false
-    exclusive: false
-    nowait: false
   channelConfig:
     parallelism: 10
   sink:

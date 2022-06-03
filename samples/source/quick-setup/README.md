@@ -153,14 +153,8 @@ spec:
     globalQos: false
   exchangeConfig:
     name: "eventing-rabbitmq-source"
-    type: "fanout"
-    durable: false
-    autoDelete: false
   queueConfig:
     name: "eventing-rabbitmq-source"
-    routingKey: ""
-    durable: false
-    autoDelete: true
   sink:
     ref:
       apiVersion: serving.knative.dev/v1
