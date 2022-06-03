@@ -19,8 +19,8 @@ package utils
 import (
 	"context"
 
-	"knative.dev/eventing-rabbitmq/vendor/knative.dev/pkg/logging"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
+	"knative.dev/pkg/logging"
 )
 
 func SetBackoffPolicy(ctx context.Context, backoffPolicy string) eventingduckv1.BackoffPolicyType {
