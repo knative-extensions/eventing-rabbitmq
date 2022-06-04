@@ -178,7 +178,7 @@ func TestNewQueue(t *testing.T) {
 				Spec: rabbitv1beta1.QueueSpec{
 					Name:       "a-test-queue",
 					Vhost:      "test",
-					Durable:    false,
+					Durable:    true,
 					AutoDelete: false,
 					RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
 						ConnectionSecret: &v1.LocalObjectReference{

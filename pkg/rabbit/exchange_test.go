@@ -190,7 +190,7 @@ func TestNewExchange(t *testing.T) {
 				Name:       "some-exchange",
 				Vhost:      "test",
 				Type:       "headers",
-				Durable:    false,
+				Durable:    true,
 				AutoDelete: false,
 				RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
 					ConnectionSecret: &corev1.LocalObjectReference{
