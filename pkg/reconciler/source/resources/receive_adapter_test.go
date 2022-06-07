@@ -195,9 +195,6 @@ func TestMakeReceiveAdapter(t *testing.T) {
 											Name: "K_METRICS_CONFIG",
 										},
 										{
-											Name: "RABBITMQ_VHOST",
-										},
-										{
 											Name:  "HTTP_SENDER_RETRY",
 											Value: "5",
 										},

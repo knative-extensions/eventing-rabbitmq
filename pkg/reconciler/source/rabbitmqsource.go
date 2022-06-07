@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	"knative.dev/eventing-rabbitmq/pkg/brokerconfig"
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
 	rabbitlisters "knative.dev/eventing-rabbitmq/third_party/pkg/client/listers/rabbitmq.com/v1beta1"
@@ -91,7 +92,8 @@ type Reconciler struct {
 
 	sinkResolver *resolver.URIResolver
 
-	rabbit rabbit.Service
+	rabbit       rabbit.Service
+	brokerConfig *brokerconfig.BrokerConfigService
 }
 
 var _ reconcilerrabbitmqsource.Interface = (*Reconciler)(nil)
