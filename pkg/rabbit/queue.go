@@ -57,7 +57,6 @@ func NewQueue(args *QueueArgs) *rabbitv1beta1.Queue {
 	// queue configurations for source
 	if args.Source != nil {
 		queueName = args.Source.Spec.QueueConfig.Name
-		vhost = args.Source.Spec.Vhost
 	}
 
 	return &rabbitv1beta1.Queue{
