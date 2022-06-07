@@ -33,6 +33,10 @@ func (current *RabbitmqSource) Validate(ctx context.Context) *apis.FieldError {
 		}
 	}
 
+	if current.Spec.RabbitmqClusterReference == nil {
+		return apis.ErrMissingField("RabbitMQClusterReference").ViaField("spec")
+	}
+
 	if apis.IsInUpdate(ctx) {
 		ignoreSpecFields := cmpopts.IgnoreFields(RabbitmqSourceSpec{}, "ChannelConfig")
 		original := apis.GetBaseline(ctx).(*RabbitmqSource)

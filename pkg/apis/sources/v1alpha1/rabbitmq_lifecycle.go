@@ -24,13 +24,11 @@ import (
 )
 
 const (
-	RabbitmqConditionReady = apis.ConditionReady
-
+	RabbitmqConditionReady                           = apis.ConditionReady
 	RabbitmqConditionSinkProvided apis.ConditionType = "SinkProvided"
-
-	RabbitmqConditionDeployed apis.ConditionType = "Deployed"
-
-	RabbitmqConditionResources apis.ConditionType = "ResourcesReady"
+	RabbitmqConditionDeployed     apis.ConditionType = "Deployed"
+	RabbitmqExchangeReady         apis.ConditionType = "ExchangeReady"
+	RabbitmqConditionResources    apis.ConditionType = "ResourcesReady"
 )
 
 var RabbitmqSourceCondSet = apis.NewLivingConditionSet(
@@ -105,4 +103,12 @@ func (s *RabbitmqSourceStatus) MarkResourcesCorrect() {
 
 func (s *RabbitmqSourceStatus) MarkResourcesIncorrect(reason, messageFormat string, messageA ...interface{}) {
 	RabbitmqSourceCondSet.Manage(s).MarkFalse(RabbitmqConditionResources, reason, messageFormat, messageA...)
+}
+
+func (s *RabbitmqSourceStatus) MarkExchangeFailed(reason, format string, args ...interface{}) {
+	RabbitmqSourceCondSet.Manage(s).MarkFalse(RabbitmqExchangeReady, reason, format, args...)
+}
+
+func (s *RabbitmqSourceStatus) MarkExchangeReady() {
+	RabbitmqSourceCondSet.Manage(s).MarkTrue(RabbitmqExchangeReady)
 }

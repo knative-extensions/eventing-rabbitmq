@@ -1271,7 +1271,7 @@ func createIngressDeployment() *appsv1.Deployment {
 		Broker:             &eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: testNS, UID: brokerUID}},
 		Image:              ingressImage,
 		RabbitMQSecretName: rabbitBrokerSecretName,
-		BrokerUrlSecretKey: resources.BrokerURLSecretKey,
+		BrokerUrlSecretKey: rabbit.BrokerURLSecretKey,
 	}
 	return resources.MakeIngressDeployment(args)
 }
@@ -1281,7 +1281,7 @@ func createDifferentIngressDeployment() *appsv1.Deployment {
 		Broker:             &eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: testNS, UID: brokerUID}},
 		Image:              "differentImage",
 		RabbitMQSecretName: rabbitBrokerSecretName,
-		BrokerUrlSecretKey: resources.BrokerURLSecretKey,
+		BrokerUrlSecretKey: rabbit.BrokerURLSecretKey,
 	}
 	return resources.MakeIngressDeployment(args)
 }

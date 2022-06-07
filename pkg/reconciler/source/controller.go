@@ -20,6 +20,7 @@ import (
 	"context"
 	"os"
 
+	"knative.dev/eventing-rabbitmq/pkg/brokerconfig"
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	bindinginformer "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/informers/rabbitmq.com/v1beta1/binding"
 	exchangeinformer "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/informers/rabbitmq.com/v1beta1/exchange"
@@ -66,6 +67,7 @@ func NewController(
 		receiveAdapterImage: raImage,
 		loggingContext:      ctx,
 		rabbit:              rabbit.New(ctx),
+		brokerConfig:        brokerconfig.New(ctx),
 	}
 
 	impl := rabbitmqsource.NewImpl(ctx, c)

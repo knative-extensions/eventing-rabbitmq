@@ -123,7 +123,6 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 
 			a := &Adapter{
 				config: &adapterConfig{
-					Broker:         "amqp://guest:guest@localhost:5672/",
 					ExchangeConfig: ExchangeConfig{},
 					QueueConfig: QueueConfig{
 						Name: "",
@@ -203,7 +202,6 @@ func TestAdapter_CreateConn(t *testing.T) {
 
 	a := &Adapter{
 		config: &adapterConfig{
-			Broker:         "amqp://localhost:5672/%2f",
 			ExchangeConfig: ExchangeConfig{},
 			QueueConfig: QueueConfig{
 				Name: "",
@@ -213,12 +211,12 @@ func TestAdapter_CreateConn(t *testing.T) {
 		reporter: statsReporter,
 	}
 
-	conn, _ := a.CreateConn("", "", logging.FromContext(context.TODO()).Desugar())
+	conn, _ := a.CreateConn(logging.FromContext(context.TODO()).Desugar())
 	if conn.(*amqp.Conn) != nil {
 		t.Errorf("Failed to connect to RabbitMQ")
 	}
 
-	conn, _ = a.CreateConn("guest", "guest", logging.FromContext(context.TODO()).Desugar())
+	conn, _ = a.CreateConn(logging.FromContext(context.TODO()).Desugar())
 	if conn.(*amqp.Conn) != nil {
 		t.Errorf("Failed to connect to RabbitMQ")
 	}
@@ -241,7 +239,6 @@ func TestAdapter_CreateChannel(t *testing.T) {
 
 	a := &Adapter{
 		config: &adapterConfig{
-			Broker:         "amqp://localhost:5672/%2f",
 			ExchangeConfig: ExchangeConfig{},
 			QueueConfig: QueueConfig{
 				Name: "",
@@ -283,7 +280,6 @@ func TestAdapter_StartAmqpClient(t *testing.T) {
 
 	a := &Adapter{
 		config: &adapterConfig{
-			Broker:      "amqp://localhost:5674/%2f",
 			Predeclared: true,
 			QueueConfig: QueueConfig{
 				Name: testQueue,
@@ -421,7 +417,6 @@ func TestAdapter_PollForMessages(t *testing.T) {
 
 	a := &Adapter{
 		config: &adapterConfig{
-			Broker: "amqp://guest:guest@localhost:5672/",
 			ExchangeConfig: ExchangeConfig{
 				Name: "Test-exchange",
 			},

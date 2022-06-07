@@ -20,11 +20,11 @@ import (
 	"fmt"
 	"regexp"
 
-	"knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+
 	eventingv1alpha1 "knative.dev/eventing-rabbitmq/pkg/apis/eventing/v1alpha1"
+	"knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 	"knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 )
@@ -57,7 +57,6 @@ func NewQueue(args *QueueArgs) *rabbitv1beta1.Queue {
 	// queue configurations for source
 	if args.Source != nil {
 		queueName = args.Source.Spec.QueueConfig.Name
-		vhost = args.Source.Spec.Vhost
 	}
 
 	return &rabbitv1beta1.Queue{

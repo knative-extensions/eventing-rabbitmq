@@ -208,8 +208,8 @@ func (r *Reconciler) reconcileIngressDeployment(ctx context.Context, b *eventing
 	expected := resources.MakeIngressDeployment(&resources.IngressArgs{
 		Broker:             b,
 		Image:              r.ingressImage,
-		RabbitMQSecretName: resources.SecretName(b.Name),
-		BrokerUrlSecretKey: resources.BrokerURLSecretKey,
+		RabbitMQSecretName: rabbit.SecretName(b.Name),
+		BrokerUrlSecretKey: rabbit.BrokerURLSecretKey,
 		Configs:            r.configs,
 	})
 	return r.reconcileDeployment(ctx, expected)
@@ -230,9 +230,9 @@ func (r *Reconciler) reconcileDLXDispatcherDeployment(ctx context.Context, b *ev
 			Image:  r.dispatcherImage,
 			//ServiceAccountName string
 			Delivery:           b.Spec.Delivery,
-			RabbitMQSecretName: resources.SecretName(b.Name),
+			RabbitMQSecretName: rabbit.SecretName(b.Name),
 			QueueName:          naming.CreateBrokerDeadLetterQueueName(b),
-			BrokerUrlSecretKey: resources.BrokerURLSecretKey,
+			BrokerUrlSecretKey: rabbit.BrokerURLSecretKey,
 			Subscriber:         sub,
 			BrokerIngressURL:   b.Status.Address.URL,
 			Configs:            r.configs,
@@ -278,7 +278,7 @@ func (r *Reconciler) reconcileRabbitResources(ctx context.Context, b *eventingv1
 		MarkDeadLetterSinkNotConfigured(&b.Status)
 	}
 
-	return r.reconcileCommonIngressResources(ctx, resources.MakeSecret(args), b)
+	return r.reconcileCommonIngressResources(ctx, rabbit.MakeSecret(args), b)
 }
 
 func (r *Reconciler) reconcileDeadLetterResources(ctx context.Context, b *eventingv1.Broker, args *rabbit.ExchangeArgs) (error, bool) {
@@ -407,7 +407,6 @@ func (r *Reconciler) reconcileCommonIngressResources(ctx context.Context, s *cor
 			b.Status.MarkDeadLetterSinkResolvedFailed("Unable to get the DeadLetterSink's URI", "%v", err)
 			return err
 		}
-
 		b.Status.MarkDeadLetterSinkResolvedSucceeded(dlsURI)
 	} else {
 		b.Status.MarkDeadLetterSinkNotConfigured()

@@ -23,6 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -76,15 +77,8 @@ type RabbitmqSourceQueueConfigSpec struct {
 }
 
 type RabbitmqSourceSpec struct {
-	// Broker are the Rabbitmq servers the consumer will connect to.
-	// +required
-	Broker string `json:"broker"`
-	// User for rabbitmq connection
-	// +optional
-	User SecretValueFromSource `json:"user,omitempty"`
-	// Password for rabbitmq connection
-	// +optional
-	Password SecretValueFromSource `json:"password,omitempty"`
+	// RabbitmqClusterReference stores a reference to RabbitmqCluster. This will get used to create resources on the RabbitMQ Broker.
+	RabbitmqClusterReference *v1beta1.RabbitmqClusterReference `json:"rabbitmqClusterReference,omitempty"`
 	// Predeclared defines if channels and queues are already predeclared and shouldn't be recreated.
 	// This should be used in case the user does not have permission to declare new queues and channels in
 	// RabbitMQ cluster
@@ -123,9 +117,6 @@ type RabbitmqSourceSpec struct {
 	// ServiceAccountName is the name of the ServiceAccount that will be used to run the Receive
 	// Adapter Deployment.
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
-	// VHost is the name of the VHost that will be used to set up our sources
-	// +optional
-	Vhost string `json:"vhost,omitempty"`
 }
 
 // SecretValueFromSource represents the source of a secret value

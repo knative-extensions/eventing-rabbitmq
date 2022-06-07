@@ -28,6 +28,11 @@ import (
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 )
 
+const (
+	secretName   = "testbroker-broker-rabbit"
+	brokerURLKey = "testbrokerurl"
+)
+
 func TestMakeReceiveAdapter(t *testing.T) {
 	var retry int32 = 5
 	parallelism := 10
@@ -55,24 +60,7 @@ func TestMakeReceiveAdapter(t *testing.T) {
 				},
 				Spec: v1alpha12.RabbitmqSourceSpec{
 					ServiceAccountName: "source-svc-acct",
-					Broker:             "amqp://guest:guest@localhost:5672/",
-					User: v1alpha12.SecretValueFromSource{
-						SecretKeyRef: &corev1.SecretKeySelector{
-							LocalObjectReference: corev1.LocalObjectReference{
-								Name: "the-user-secret",
-							},
-							Key: "user",
-						},
-					},
-					Password: v1alpha12.SecretValueFromSource{
-						SecretKeyRef: &corev1.SecretKeySelector{
-							LocalObjectReference: corev1.LocalObjectReference{
-								Name: "the-password-secret",
-							},
-							Key: "password",
-						},
-					},
-					Predeclared: true,
+					Predeclared:        true,
 					ExchangeConfig: v1alpha12.RabbitmqSourceExchangeConfigSpec{
 						Name: "logs",
 					},
@@ -95,7 +83,9 @@ func TestMakeReceiveAdapter(t *testing.T) {
 					"test-key1": "test-value1",
 					"test-key2": "test-value2",
 				},
-				SinkURI: "sink-uri",
+				SinkURI:            "sink-uri",
+				RabbitMQSecretName: secretName,
+				BrokerUrlSecretKey: brokerURLKey,
 			})
 
 			boPolicy := tt.backoffPolicy
@@ -158,28 +148,13 @@ func TestMakeReceiveAdapter(t *testing.T) {
 									},
 									Env: []corev1.EnvVar{
 										{
-											Name:  "RABBITMQ_BROKER",
-											Value: "amqp://guest:guest@localhost:5672/",
-										},
-										{
-											Name: "RABBITMQ_USER",
+											Name: "RABBIT_URL",
 											ValueFrom: &corev1.EnvVarSource{
 												SecretKeyRef: &corev1.SecretKeySelector{
 													LocalObjectReference: corev1.LocalObjectReference{
-														Name: "the-user-secret",
+														Name: secretName,
 													},
-													Key: "user",
-												},
-											},
-										},
-										{
-											Name: "RABBITMQ_PASSWORD",
-											ValueFrom: &corev1.EnvVarSource{
-												SecretKeyRef: &corev1.SecretKeySelector{
-													LocalObjectReference: corev1.LocalObjectReference{
-														Name: "the-password-secret",
-													},
-													Key: "password",
+													Key: brokerURLKey,
 												},
 											},
 										},
@@ -220,9 +195,6 @@ func TestMakeReceiveAdapter(t *testing.T) {
 										},
 										{
 											Name: "K_METRICS_CONFIG",
-										},
-										{
-											Name: "RABBITMQ_VHOST",
 										},
 										{
 											Name:  "HTTP_SENDER_RETRY",

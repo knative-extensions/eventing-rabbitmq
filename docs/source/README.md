@@ -176,8 +176,7 @@ Sources are Kubernetes objects. In addition to the standard Kubernetes
 Source parameters
 | Field  | Value  |
 |--------|--------|
-| `broker` | Host+Port of the Broker, with a trailing "/" |
-| `vhost` * | VHost where the source resources are located |
+| `rabbitmqClusterReference` | A reference to a RabbitMQ Cluster |
 | `predeclared` | Defines if the source should try to create new queue or use predeclared one (Boolean) |
 | `backoffPolicy` | The backoff policy type (linear, exponential) String |
 | `backoffDelay` | Is the delay to be used before retrying by the backoff policy (String) |

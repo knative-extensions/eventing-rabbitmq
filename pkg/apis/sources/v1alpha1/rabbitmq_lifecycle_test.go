@@ -230,6 +230,40 @@ func TestRabbitmqSourceStatusGetCondition(t *testing.T) {
 			Type:   RabbitmqConditionReady,
 			Status: corev1.ConditionTrue,
 		},
+	}, {
+		name: "mark exchange ready",
+		s: func() *RabbitmqSourceStatus {
+			s := &RabbitmqSourceStatus{}
+			s.InitializeConditions()
+			s.MarkSink(nil)
+			s.MarkDeployed(availableDeployment)
+			s.MarkSink(apis.HTTP("uri://example"))
+			s.MarkExchangeReady()
+			return s
+		}(),
+		condQuery: RabbitmqConditionReady,
+		want: &apis.Condition{
+			Type:   RabbitmqConditionReady,
+			Status: corev1.ConditionTrue,
+		},
+	}, {
+		name: "mark exchange failed",
+		s: func() *RabbitmqSourceStatus {
+			s := &RabbitmqSourceStatus{}
+			s.InitializeConditions()
+			s.MarkSink(nil)
+			s.MarkDeployed(availableDeployment)
+			s.MarkSink(apis.HTTP("uri://example"))
+			s.MarkExchangeFailed("MarkExchangeFailed", "%s", "")
+			return s
+		}(),
+		condQuery: RabbitmqConditionReady,
+		want: &apis.Condition{
+			Type:    RabbitmqConditionReady,
+			Status:  corev1.ConditionUnknown,
+			Reason:  "ExchangeCredentialsUnavailable",
+			Message: "Failed to get arguments for creating exchange",
+		},
 	}}
 
 	for _, test := range tests {

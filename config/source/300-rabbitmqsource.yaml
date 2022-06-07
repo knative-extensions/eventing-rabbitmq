@@ -50,10 +50,6 @@ spec:
               backoffPolicy:
                 description: BackoffPolicy is the retry backoff policy (linear, exponential).
                 type: string
-              broker:
-                description: Broker are the Rabbitmq servers the consumer will connect
-                  to.
-                type: string
               channelConfig:
                 description: ChannelConfig config for rabbitmq exchange
                 properties:
@@ -193,10 +189,6 @@ spec:
                     - key
                     type: object
                 type: object
-              vhost:
-                description: VHost is the name of the VHost that will be used to set
-                  up our sources
-                type: string
             required:
             - broker
             - sink

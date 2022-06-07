@@ -20,25 +20,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/url"
 
-	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
-	duckv1beta1 "knative.dev/eventing-rabbitmq/pkg/apis/duck/v1beta1"
-	"knative.dev/eventing-rabbitmq/pkg/apis/eventing/v1alpha1"
-	"knative.dev/eventing-rabbitmq/pkg/rabbit"
-	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
-	duckv1 "knative.dev/pkg/apis/duck/v1"
-	kubeclient "knative.dev/pkg/client/injection/kube/client"
-	"knative.dev/pkg/network"
 
+	"knative.dev/eventing-rabbitmq/pkg/apis/eventing/v1alpha1"
 	rmqeventingclientset "knative.dev/eventing-rabbitmq/pkg/client/clientset/versioned"
 	rmqeventingclient "knative.dev/eventing-rabbitmq/pkg/client/injection/client"
 	rabbitv1 "knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
+	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
+	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	apisduck "knative.dev/pkg/apis/duck"
+	kubeclient "knative.dev/pkg/client/injection/kube/client"
 )
 
 func New(ctx context.Context) *BrokerConfigService {
@@ -61,7 +55,7 @@ func (r *BrokerConfigService) GetExchangeArgs(ctx context.Context, b *eventingv1
 		return nil, err
 	}
 
-	rabbitmqURL, err := r.RabbitmqURL(ctx, rabbitmqClusterRef)
+	rabbitmqURL, err := rabbit.RabbitMQURL(ctx, rabbitmqClusterRef)
 	if err != nil {
 		return nil, err
 	}
@@ -102,60 +96,6 @@ func (r *BrokerConfigService) GetRabbitMQClusterRef(ctx context.Context, b *even
 	default:
 		return nil, errors.New("Broker.Spec.Config configuration not supported, only [kind: RabbitmqCluster, apiVersion: rabbitmq.com/v1beta1] and [Kind: RabbitmqBrokerConfig, apiVersion: eventing.knative.dev/v1alpha1]")
 	}
-}
-
-func (r *BrokerConfigService) RabbitmqURL(ctx context.Context, clusterRef *rabbitv1beta1.RabbitmqClusterReference) (*url.URL, error) {
-	// TODO: make this better.
-	ref := &duckv1.KReference{
-		Kind:       "RabbitmqCluster",
-		APIVersion: "rabbitmq.com/v1beta1",
-		Name:       clusterRef.Name,
-		Namespace:  clusterRef.Namespace,
-	}
-	gv, err := schema.ParseGroupVersion(ref.APIVersion)
-	if err != nil {
-		return nil, err
-	}
-	gvk := gv.WithKind(ref.Kind)
-
-	gvr, _ := meta.UnsafeGuessKindToResource(gvk)
-
-	_, lister, err := r.rabbitLister.Get(ctx, gvr)
-	if err != nil {
-		return nil, err
-	}
-
-	o, err := lister.ByNamespace(ref.Namespace).Get(ref.Name)
-	if err != nil {
-		return nil, err
-	}
-
-	rab := o.(*duckv1beta1.Rabbit)
-
-	if rab.Status.DefaultUser == nil || rab.Status.DefaultUser.SecretReference == nil || rab.Status.DefaultUser.ServiceReference == nil {
-		return nil, fmt.Errorf("rabbit \"%s/%s\" not ready", ref.Namespace, ref.Name)
-	}
-
-	_ = rab.Status.DefaultUser.SecretReference
-
-	s, err := r.kubeClientSet.CoreV1().Secrets(rab.Status.DefaultUser.SecretReference.Namespace).Get(ctx, rab.Status.DefaultUser.SecretReference.Name, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	password, ok := s.Data[rab.Status.DefaultUser.SecretReference.Keys["password"]]
-	if !ok {
-		return nil, fmt.Errorf("rabbit Secret missing key %s", rab.Status.DefaultUser.SecretReference.Keys["password"])
-	}
-
-	username, ok := s.Data[rab.Status.DefaultUser.SecretReference.Keys["username"]]
-	if !ok {
-		return nil, fmt.Errorf("rabbit Secret missing key %s", rab.Status.DefaultUser.SecretReference.Keys["username"])
-	}
-
-	host := network.GetServiceHostname(rab.Status.DefaultUser.ServiceReference.Name, rab.Status.DefaultUser.ServiceReference.Namespace)
-
-	return url.Parse(fmt.Sprintf("amqp://%s:%s@%s:%d", username, password, host, 5672))
 }
 
 func (r *BrokerConfigService) GetQueueType(ctx context.Context, b *eventingv1.Broker) (v1alpha1.QueueType, error) {

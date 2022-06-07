@@ -14,12 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resources
+package rabbit
 
 import (
 	"testing"
-
-	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
@@ -32,6 +30,9 @@ import (
 
 const (
 	testRabbitURL = "amqp://localhost.example.com"
+	brokerName    = "test-broker"
+	ns            = "testnamespace"
+	secretName    = "test-broker-broker-rabbit"
 )
 
 func TestMakeSecret(t *testing.T) {
@@ -40,7 +41,7 @@ func TestMakeSecret(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to parse the test URL: %s", err)
 	}
-	args := &rabbit.ExchangeArgs{
+	args := &ExchangeArgs{
 		Broker:      &eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: ns}},
 		RabbitMQURL: url.URL(),
 	}

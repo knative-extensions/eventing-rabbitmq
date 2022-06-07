@@ -4,19 +4,13 @@ metadata:
   name: rabbitmq-source
   namespace: rabbitsource
 spec:
-  broker: RABBITMQ_BROKER
+  rabbitmqClusterReference:
+    name: RABBITMQ_CLUSTERREF_NAME
+    namespace: RABBITMQ_CLUSTERREF_NAMESPACE
   retry: 5
   backoffPolicy: "linear"
   backoffDelay: "50ms"
   predeclared: false
-  user:
-    secretKeyRef:
-      name: RABBITMQ_USER
-      key: RABBITMQ_USER
-  password:
-    secretKeyRef:
-      name: RABBITMQ_PASSWORD
-      key: RABBITMQ_PASSWORD
   connectionSecret:
     name: RABBITMQ_CONNECTION_SECRET
   exchangeConfig:

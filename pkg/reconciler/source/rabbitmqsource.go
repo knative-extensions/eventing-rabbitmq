@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Knative Authors
+Copyright 2022 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,9 +20,9 @@ import (
 	"context"
 	"fmt"
 
+	"knative.dev/eventing-rabbitmq/pkg/brokerconfig"
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
-	"knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	rabbitlisters "knative.dev/eventing-rabbitmq/third_party/pkg/client/listers/rabbitmq.com/v1beta1"
 	"knative.dev/eventing/pkg/utils"
 	"knative.dev/pkg/controller"
@@ -90,7 +90,8 @@ type Reconciler struct {
 
 	sinkResolver *resolver.URIResolver
 
-	rabbit rabbit.Service
+	rabbit       rabbit.Service
+	brokerConfig *brokerconfig.BrokerConfigService
 }
 
 var _ reconcilerrabbitmqsource.Interface = (*Reconciler)(nil)
@@ -128,61 +129,69 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, src *v1alpha1.RabbitmqSo
 	}
 	src.Status.MarkDeployed(ra)
 	src.Status.CloudEventAttributes = r.createCloudEventAttributes(src)
-
 	return nil
 }
 
-func (r *Reconciler) reconcileRabbitObjects(ctx context.Context, source *v1alpha1.RabbitmqSource) error {
+func (r *Reconciler) reconcileRabbitObjects(ctx context.Context, src *v1alpha1.RabbitmqSource) error {
 	logger := logging.FromContext(ctx)
-	if source.Spec.Predeclared {
+	if src.Spec.RabbitmqClusterReference == nil {
+		src.Status.MarkExchangeFailed("RabbitMQCredentialsUnavailable", "Failed to get RabbitMQ Cluster reference got %s", src.Spec.RabbitmqClusterReference)
+		return fmt.Errorf("rabbitmqSource.Spec.RabbitMQClusterReference is empty")
+	}
+
+	rabbitmqURL, err := rabbit.RabbitMQURL(ctx, src.Spec.RabbitmqClusterReference)
+	if err != nil {
+		return err
+	}
+	rabbit.MakeSecret(&rabbit.ExchangeArgs{
+		Namespace:                src.Namespace,
+		Source:                   src,
+		RabbitmqClusterReference: src.Spec.RabbitmqClusterReference,
+		RabbitMQURL:              rabbitmqURL,
+	})
+
+	if src.Spec.Predeclared {
 		logger.Info("predeclared set to true; no RabbitMQ objects to reconcile",
-			"source", source.Name,
-			"predeclared queue", source.Spec.QueueConfig.Name)
+			"source", src.Name,
+			"predeclared queue", src.Spec.QueueConfig.Name)
 		return nil
 	}
 
-	_, err := r.rabbit.ReconcileExchange(ctx, &rabbit.ExchangeArgs{
-		Name:      naming.CreateSourceRabbitName(source),
-		Namespace: source.Namespace,
-		RabbitmqClusterReference: &v1beta1.RabbitmqClusterReference{
-			ConnectionSecret: source.Spec.ConnectionSecret,
-		},
-		Source: source,
+	_, err = r.rabbit.ReconcileExchange(ctx, &rabbit.ExchangeArgs{
+		Name:                     naming.CreateSourceRabbitName(src),
+		Namespace:                src.Namespace,
+		RabbitmqClusterReference: src.Spec.RabbitmqClusterReference,
+		Source:                   src,
 	})
 	if err != nil {
-		logger.Error("failed to reconcile exchange", "exchange", source.Spec.ExchangeConfig.Name)
+		logger.Error("failed to reconcile exchange", "exchange", src.Spec.ExchangeConfig.Name)
 		return err
 	}
 
 	_, err = r.rabbit.ReconcileQueue(ctx, &rabbit.QueueArgs{
-		Name:      naming.CreateSourceRabbitName(source),
-		Namespace: source.Namespace,
-		RabbitmqClusterReference: &v1beta1.RabbitmqClusterReference{
-			ConnectionSecret: source.Spec.ConnectionSecret,
-		},
-		Source: source,
-		Owner:  *kmeta.NewControllerRef(source),
-		Labels: rabbit.Labels(nil, nil, source),
+		Name:                     naming.CreateSourceRabbitName(src),
+		Namespace:                src.Namespace,
+		RabbitmqClusterReference: src.Spec.RabbitmqClusterReference,
+		Source:                   src,
+		Owner:                    *kmeta.NewControllerRef(src),
+		Labels:                   rabbit.Labels(nil, nil, src),
 	})
 	if err != nil {
-		logger.Error("failed to reconcile queue", "queue", source.Spec.QueueConfig.Name)
+		logger.Error("failed to reconcile queue", "queue", src.Spec.QueueConfig.Name)
 		return err
 	}
 
 	_, err = r.rabbit.ReconcileBinding(ctx, &rabbit.BindingArgs{
-		Name:      naming.CreateSourceRabbitName(source),
-		Namespace: source.Namespace,
-		RabbitmqClusterReference: &v1beta1.RabbitmqClusterReference{
-			ConnectionSecret: source.Spec.ConnectionSecret,
-		},
-		Vhost:       source.Spec.Vhost,
-		Source:      source.Spec.ExchangeConfig.Name,
-		Destination: source.Spec.QueueConfig.Name,
-		Owner:       *kmeta.NewControllerRef(source),
-		Labels:      rabbit.Labels(nil, nil, source),
+		Name:                     naming.CreateSourceRabbitName(src),
+		Namespace:                src.Namespace,
+		RabbitmqClusterReference: src.Spec.RabbitmqClusterReference,
+		Source:                   src.Spec.ExchangeConfig.Name,
+		Destination:              src.Spec.QueueConfig.Name,
+		Owner:                    *kmeta.NewControllerRef(src),
+		Labels:                   rabbit.Labels(nil, nil, src),
 	})
 	if err != nil {
-		logger.Error("failed to reconcile queue", "queue", source.Spec.QueueConfig.Name)
+		logger.Error("failed to reconcile queue", "queue", src.Spec.QueueConfig.Name)
 		return err
 	}
 
@@ -201,12 +210,14 @@ func (r *Reconciler) createReceiveAdapter(ctx context.Context, src *v1alpha1.Rab
 	}
 
 	raArgs := resources.ReceiveAdapterArgs{
-		Image:         r.receiveAdapterImage,
-		Source:        src,
-		Labels:        resources.GetLabels(src.Name),
-		SinkURI:       sinkURI.String(),
-		MetricsConfig: metricsConfig,
-		LoggingConfig: loggingConfig,
+		Image:              r.receiveAdapterImage,
+		Source:             src,
+		Labels:             resources.GetLabels(src.Name),
+		SinkURI:            sinkURI.String(),
+		MetricsConfig:      metricsConfig,
+		LoggingConfig:      loggingConfig,
+		RabbitMQSecretName: rabbit.SecretName(src.Name),
+		BrokerUrlSecretKey: rabbit.BrokerURLSecretKey,
 	}
 	expected := resources.MakeReceiveAdapter(&raArgs)
 
