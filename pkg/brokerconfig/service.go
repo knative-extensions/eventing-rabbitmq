@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"knative.dev/eventing-rabbitmq/pkg/apis/eventing/v1alpha1"
 	"net/url"
 
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -28,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	duckv1beta1 "knative.dev/eventing-rabbitmq/pkg/apis/duck/v1beta1"
+	"knative.dev/eventing-rabbitmq/pkg/apis/eventing/v1alpha1"
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
