@@ -135,11 +135,12 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, src *v1alpha1.RabbitmqSo
 func (r *Reconciler) reconcileRabbitObjects(ctx context.Context, src *v1alpha1.RabbitmqSource) error {
 	logger := logging.FromContext(ctx)
 	if src.Spec.RabbitmqClusterReference == nil {
-		src.Status.MarkExchangeFailed("RabbitMQCredentialsUnavailable", "Failed to get RabbitMQ Cluster reference got %s", src.Spec.RabbitmqClusterReference)
+		src.Status.MarkExchangeFailed("RabbitMQClusterReferenceNil", "Failed to get RabbitMQ Cluster reference got %s", src.Spec.RabbitmqClusterReference)
 		return fmt.Errorf("rabbitmqSource.Spec.RabbitMQClusterReference is empty")
 	}
 
-	rabbitmqURL, err := rabbit.RabbitMQURL(ctx, src.Spec.RabbitmqClusterReference)
+	rmqService := rabbit.New(ctx)
+	rabbitmqURL, err := rmqService.RabbitMQURL(ctx, src.Spec.RabbitmqClusterReference)
 	if err != nil {
 		return err
 	}
@@ -185,6 +186,7 @@ func (r *Reconciler) reconcileRabbitObjects(ctx context.Context, src *v1alpha1.R
 		Name:                     naming.CreateSourceRabbitName(src),
 		Namespace:                src.Namespace,
 		RabbitmqClusterReference: src.Spec.RabbitmqClusterReference,
+		Vhost:                    src.Spec.Vhost,
 		Source:                   src.Spec.ExchangeConfig.Name,
 		Destination:              src.Spec.QueueConfig.Name,
 		Owner:                    *kmeta.NewControllerRef(src),
@@ -195,6 +197,7 @@ func (r *Reconciler) reconcileRabbitObjects(ctx context.Context, src *v1alpha1.R
 		return err
 	}
 
+	src.Status.MarkExchangeReady()
 	return nil
 }
 

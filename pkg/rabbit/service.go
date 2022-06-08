@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/kubernetes"
 
 	duckv1beta1 "knative.dev/eventing-rabbitmq/pkg/apis/duck/v1beta1"
 	rabbitv1duck "knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
@@ -35,6 +36,7 @@ import (
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	rabbitclientset "knative.dev/eventing-rabbitmq/third_party/pkg/client/clientset/versioned"
 	rabbitmqclient "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/client"
+	apisduck "knative.dev/pkg/apis/duck"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/logging"
@@ -43,7 +45,9 @@ import (
 
 func New(ctx context.Context) *Rabbit {
 	return &Rabbit{
-		Interface: rabbitmqclient.Get(ctx),
+		Interface:     rabbitmqclient.Get(ctx),
+		rabbitLister:  rabbitv1duck.Get(ctx),
+		kubeClientSet: kubeclient.Get(ctx),
 	}
 }
 
@@ -51,6 +55,8 @@ var _ Service = (*Rabbit)(nil)
 
 type Rabbit struct {
 	rabbitclientset.Interface
+	rabbitLister  apisduck.InformerFactory
+	kubeClientSet kubernetes.Interface
 }
 
 func (r *Rabbit) ReconcileExchange(ctx context.Context, args *ExchangeArgs) (Result, error) {
@@ -194,7 +200,7 @@ func isReady(conditions []v1beta1.Condition) bool {
 	return numConditions == 0
 }
 
-func RabbitMQURL(ctx context.Context, clusterRef *rabbitv1beta1.RabbitmqClusterReference) (*url.URL, error) {
+func (r *Rabbit) RabbitMQURL(ctx context.Context, clusterRef *rabbitv1beta1.RabbitmqClusterReference) (*url.URL, error) {
 	// TODO: make this better.
 	ref := &duckv1.KReference{
 		Kind:       "RabbitmqCluster",
@@ -209,8 +215,7 @@ func RabbitMQURL(ctx context.Context, clusterRef *rabbitv1beta1.RabbitmqClusterR
 
 	gvk := gv.WithKind(ref.Kind)
 	gvr, _ := meta.UnsafeGuessKindToResource(gvk)
-	informer := rabbitv1duck.Get(ctx)
-	_, lister, err := informer.Get(ctx, gvr)
+	_, lister, err := r.rabbitLister.Get(ctx, gvr)
 	if err != nil {
 		return nil, err
 	}
@@ -227,7 +232,7 @@ func RabbitMQURL(ctx context.Context, clusterRef *rabbitv1beta1.RabbitmqClusterR
 
 	_ = rab.Status.DefaultUser.SecretReference
 
-	s, err := kubeclient.Get(ctx).CoreV1().Secrets(rab.Status.DefaultUser.SecretReference.Namespace).Get(ctx, rab.Status.DefaultUser.SecretReference.Name, metav1.GetOptions{})
+	s, err := r.kubeClientSet.CoreV1().Secrets(rab.Status.DefaultUser.SecretReference.Namespace).Get(ctx, rab.Status.DefaultUser.SecretReference.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}

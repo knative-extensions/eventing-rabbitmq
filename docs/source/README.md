@@ -177,6 +177,7 @@ Source parameters
 | Field  | Value  |
 |--------|--------|
 | `rabbitmqClusterReference` | A reference to a RabbitMQ Cluster |
+| `vhost` * | VHost where the source RabbitMQ resources are located |
 | `predeclared` | Defines if the source should try to create new queue or use predeclared one (Boolean) |
 | `backoffPolicy` | The backoff policy type (linear, exponential) String |
 | `backoffDelay` | Is the delay to be used before retrying by the backoff policy (String) |

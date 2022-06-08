@@ -20,6 +20,7 @@ import (
 	"context"
 	"testing"
 
+	"knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
@@ -27,6 +28,9 @@ import (
 var (
 	defaultParallelism = 1
 	fullSpec           = RabbitmqSourceSpec{
+		RabbitmqClusterReference: &v1beta1.RabbitmqClusterReference{
+			Name: "test-cluster",
+		},
 		ExchangeConfig: RabbitmqSourceExchangeConfigSpec{
 			Name: "an-exchange",
 		},
@@ -146,6 +150,13 @@ func TestRabbitmqSourceCheckImmutableFields(t *testing.T) {
 			updated: fullSpec,
 			allowed: true,
 		},
+		"removed cluster reference": {
+			orig: &fullSpec,
+			updated: RabbitmqSourceSpec{
+				RabbitmqClusterReference: nil,
+			},
+			allowed: false,
+		},
 	}
 
 	for n, tc := range testCases {
@@ -206,7 +217,8 @@ func TestRabbitmqSourceCheckChannelParallelismValue(t *testing.T) {
 		},
 		"valid channel parallelism value update": {
 			spec: &RabbitmqSourceSpec{
-				ExchangeConfig: fullSpec.ExchangeConfig,
+				RabbitmqClusterReference: fullSpec.RabbitmqClusterReference,
+				ExchangeConfig:           fullSpec.ExchangeConfig,
 				QueueConfig: RabbitmqSourceQueueConfigSpec{
 					Name: "",
 				},
@@ -276,8 +288,9 @@ func TestRabbitmqSourceExchangeConfig(t *testing.T) {
 		t.Run(n, func(t *testing.T) {
 			src := &RabbitmqSource{
 				Spec: RabbitmqSourceSpec{
-					ExchangeConfig: *tc.spec,
-					Predeclared:    tc.predeclared,
+					ExchangeConfig:           *tc.spec,
+					Predeclared:              tc.predeclared,
+					RabbitmqClusterReference: fullSpec.RabbitmqClusterReference,
 				},
 			}
 

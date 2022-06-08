@@ -27,11 +27,9 @@ import (
 	"knative.dev/eventing-rabbitmq/pkg/apis/eventing/v1alpha1"
 	rmqeventingclientset "knative.dev/eventing-rabbitmq/pkg/client/clientset/versioned"
 	rmqeventingclient "knative.dev/eventing-rabbitmq/pkg/client/injection/client"
-	rabbitv1 "knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
-	apisduck "knative.dev/pkg/apis/duck"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 )
 
@@ -39,14 +37,14 @@ func New(ctx context.Context) *BrokerConfigService {
 	return &BrokerConfigService{
 		rmqeventingClientSet: rmqeventingclient.Get(ctx),
 		kubeClientSet:        kubeclient.Get(ctx),
-		rabbitLister:         rabbitv1.Get(ctx),
+		rabbitService:        rabbit.New(ctx),
 	}
 }
 
 type BrokerConfigService struct {
 	rmqeventingClientSet rmqeventingclientset.Interface
 	kubeClientSet        kubernetes.Interface
-	rabbitLister         apisduck.InformerFactory
+	rabbitService        *rabbit.Rabbit
 }
 
 func (r *BrokerConfigService) GetExchangeArgs(ctx context.Context, b *eventingv1.Broker) (*rabbit.ExchangeArgs, error) {
@@ -55,7 +53,7 @@ func (r *BrokerConfigService) GetExchangeArgs(ctx context.Context, b *eventingv1
 		return nil, err
 	}
 
-	rabbitmqURL, err := rabbit.RabbitMQURL(ctx, rabbitmqClusterRef)
+	rabbitmqURL, err := r.rabbitService.RabbitMQURL(ctx, rabbitmqClusterRef)
 	if err != nil {
 		return nil, err
 	}

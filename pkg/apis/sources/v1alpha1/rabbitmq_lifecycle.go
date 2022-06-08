@@ -33,7 +33,8 @@ const (
 
 var RabbitmqSourceCondSet = apis.NewLivingConditionSet(
 	RabbitmqConditionSinkProvided,
-	RabbitmqConditionDeployed)
+	RabbitmqConditionDeployed,
+	RabbitmqExchangeReady)
 
 func (s *RabbitmqSourceStatus) GetCondition(t apis.ConditionType) *apis.Condition {
 	return RabbitmqSourceCondSet.Manage(s).GetCondition(t)

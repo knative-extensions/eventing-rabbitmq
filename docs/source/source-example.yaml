@@ -4,6 +4,7 @@ metadata:
   name: rabbitmq-source
   namespace: rabbitsource
 spec:
+  vhost: RABBITMQ_CLUSTER_VHOST
   rabbitmqClusterReference:
     name: RABBITMQ_CLUSTERREF_NAME
     namespace: RABBITMQ_CLUSTERREF_NAMESPACE

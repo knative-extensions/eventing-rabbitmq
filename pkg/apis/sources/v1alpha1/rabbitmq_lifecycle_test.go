@@ -111,6 +111,7 @@ func TestRabbitmqSourceStatusGetCondition(t *testing.T) {
 			s.InitializeConditions()
 			s.MarkSink(apis.HTTP("uri://example"))
 			s.MarkDeployed(availableDeployment)
+			s.MarkExchangeReady()
 			return s
 		}(),
 		condQuery: RabbitmqConditionReady,
@@ -176,6 +177,7 @@ func TestRabbitmqSourceStatusGetCondition(t *testing.T) {
 			s.InitializeConditions()
 			s.MarkSink(apis.HTTP("uri://example"))
 			s.MarkDeployed(availableDeployment)
+			s.MarkExchangeReady()
 			return s
 		}(),
 		condQuery: RabbitmqConditionReady,
@@ -192,6 +194,7 @@ func TestRabbitmqSourceStatusGetCondition(t *testing.T) {
 			s.MarkNotDeployed("MarkNotDeployed", "%s", "")
 			s.MarkDeploying("MarkDeploying", "%s", "")
 			s.MarkDeployed(availableDeployment)
+			s.MarkExchangeReady()
 			return s
 		}(),
 		condQuery: RabbitmqConditionReady,
@@ -223,6 +226,7 @@ func TestRabbitmqSourceStatusGetCondition(t *testing.T) {
 			s.MarkSink(nil)
 			s.MarkDeployed(availableDeployment)
 			s.MarkSink(apis.HTTP("uri://example"))
+			s.MarkExchangeReady()
 			return s
 		}(),
 		condQuery: RabbitmqConditionReady,
@@ -254,15 +258,15 @@ func TestRabbitmqSourceStatusGetCondition(t *testing.T) {
 			s.MarkSink(nil)
 			s.MarkDeployed(availableDeployment)
 			s.MarkSink(apis.HTTP("uri://example"))
-			s.MarkExchangeFailed("MarkExchangeFailed", "%s", "")
+			s.MarkExchangeFailed("RabbitMQClusterReferenceNil", "%s", "")
 			return s
 		}(),
 		condQuery: RabbitmqConditionReady,
 		want: &apis.Condition{
 			Type:    RabbitmqConditionReady,
-			Status:  corev1.ConditionUnknown,
-			Reason:  "ExchangeCredentialsUnavailable",
-			Message: "Failed to get arguments for creating exchange",
+			Status:  corev1.ConditionFalse,
+			Reason:  "RabbitMQClusterReferenceNil",
+			Message: "",
 		},
 	}}
 

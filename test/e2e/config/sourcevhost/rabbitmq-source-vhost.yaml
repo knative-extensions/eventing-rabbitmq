@@ -18,18 +18,10 @@ metadata:
   name: rabbitmq-source-vhost
   namespace: {{ .namespace }}
 spec:
-  broker: "rabbitmqc.{{ .namespace }}:5672/"
   vhost: "test-vhost"
-  connectionSecret:
-    name: "secret-basic-auth"
-  user:
-    secretKeyRef:
-      name: "secret-basic-auth"
-      key: "username"
-  password:
-    secretKeyRef:
-      name: "secret-basic-auth"
-      key: "password"
+  rabbitmqClusterReference:
+    name: rabbitmqc
+    namespace: {{ .namespace }}
   exchangeConfig:
     name: "logs"
   queueConfig:
