@@ -34,6 +34,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1alpha12 "knative.dev/eventing-rabbitmq/pkg/apis/eventing/v1alpha1"
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 )
 
@@ -85,6 +86,7 @@ func TestNewQueue(t *testing.T) {
 					RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
 						Name: rabbitmqcluster,
 					},
+					Type: string(v1alpha12.QuorumQueueType),
 				},
 			},
 		},
@@ -147,6 +149,37 @@ func TestNewQueue(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "creates a classic queue",
+			args: &rabbit.QueueArgs{
+				Name:      triggerName,
+				Namespace: namespace,
+				RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
+					Name: rabbitmqcluster,
+				},
+				Owner:     owner,
+				Labels:    map[string]string{"cool": "label"},
+				QueueType: v1alpha12.ClassicQueueType,
+			},
+			want: &rabbitv1beta1.Queue{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:            triggerName,
+					Namespace:       namespace,
+					OwnerReferences: []metav1.OwnerReference{owner},
+					Labels:          map[string]string{"cool": "label"},
+				},
+				Spec: rabbitv1beta1.QueueSpec{
+					Name:       triggerName,
+					Durable:    true,
+					AutoDelete: false,
+					RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
+						Name: rabbitmqcluster,
+					},
+					Type: string(v1alpha12.ClassicQueueType),
+				},
+			},
+		},
+
 		{
 			name: "creates a queue for source",
 			args: &rabbit.QueueArgs{
