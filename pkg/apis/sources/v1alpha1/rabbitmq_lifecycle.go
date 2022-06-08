@@ -27,14 +27,16 @@ const (
 	RabbitmqConditionReady                           = apis.ConditionReady
 	RabbitmqConditionSinkProvided apis.ConditionType = "SinkProvided"
 	RabbitmqConditionDeployed     apis.ConditionType = "Deployed"
-	RabbitmqExchangeReady         apis.ConditionType = "ExchangeReady"
+	RabbitmqConditionExchange     apis.ConditionType = "ExchangeReady"
+	RabbitmqConditionSecret       apis.ConditionType = "SecretReady"
 	RabbitmqConditionResources    apis.ConditionType = "ResourcesReady"
 )
 
 var RabbitmqSourceCondSet = apis.NewLivingConditionSet(
 	RabbitmqConditionSinkProvided,
 	RabbitmqConditionDeployed,
-	RabbitmqExchangeReady)
+	RabbitmqConditionExchange,
+	RabbitmqConditionSecret)
 
 func (s *RabbitmqSourceStatus) GetCondition(t apis.ConditionType) *apis.Condition {
 	return RabbitmqSourceCondSet.Manage(s).GetCondition(t)
@@ -107,9 +109,17 @@ func (s *RabbitmqSourceStatus) MarkResourcesIncorrect(reason, messageFormat stri
 }
 
 func (s *RabbitmqSourceStatus) MarkExchangeFailed(reason, format string, args ...interface{}) {
-	RabbitmqSourceCondSet.Manage(s).MarkFalse(RabbitmqExchangeReady, reason, format, args...)
+	RabbitmqSourceCondSet.Manage(s).MarkFalse(RabbitmqConditionExchange, reason, format, args...)
 }
 
 func (s *RabbitmqSourceStatus) MarkExchangeReady() {
-	RabbitmqSourceCondSet.Manage(s).MarkTrue(RabbitmqExchangeReady)
+	RabbitmqSourceCondSet.Manage(s).MarkTrue(RabbitmqConditionExchange)
+}
+
+func (s *RabbitmqSourceStatus) MarkSecretFailed(reason, format string, args ...interface{}) {
+	RabbitmqSourceCondSet.Manage(s).MarkFalse(RabbitmqConditionSecret, reason, format, args...)
+}
+
+func (s *RabbitmqSourceStatus) MarkSecretReady() {
+	RabbitmqSourceCondSet.Manage(s).MarkTrue(RabbitmqConditionSecret)
 }

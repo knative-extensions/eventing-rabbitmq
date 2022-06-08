@@ -22,6 +22,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 
 	"knative.dev/pkg/apis"
@@ -29,10 +30,11 @@ import (
 )
 
 const (
-	testRabbitURL = "amqp://localhost.example.com"
-	brokerName    = "test-broker"
-	ns            = "testnamespace"
-	secretName    = "test-broker-broker-rabbit"
+	testRabbitURL    = "amqp://localhost.example.com"
+	brokerName       = "test-broker"
+	ns               = "testnamespace"
+	brokerSecretName = "test-broker-broker-rabbit"
+	sourceSecretName = "test-source-source-rabbit"
 )
 
 func TestMakeSecret(t *testing.T) {
@@ -41,33 +43,69 @@ func TestMakeSecret(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to parse the test URL: %s", err)
 	}
-	args := &ExchangeArgs{
-		Broker:      &eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: ns}},
-		RabbitMQURL: url.URL(),
-	}
 
-	got := MakeSecret(args)
-	want := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: ns,
-			Name:      secretName,
-			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "eventing.knative.dev/v1",
-				Kind:               "Broker",
-				Name:               brokerName,
-				Controller:         &TrueValue,
-				BlockOwnerDeletion: &TrueValue,
-			}},
-			Labels: map[string]string{
-				"eventing.knative.dev/broker": brokerName,
+	for _, tt := range []struct {
+		name string
+		args *ExchangeArgs
+		want *corev1.Secret
+	}{
+		{
+			name: "test broker secret name",
+			args: &ExchangeArgs{
+				Broker:      &eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: ns}},
+				RabbitMQURL: url.URL(),
+			},
+			want: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: ns,
+					Name:      brokerSecretName,
+					OwnerReferences: []metav1.OwnerReference{{
+						APIVersion:         "eventing.knative.dev/v1",
+						Kind:               "Broker",
+						Name:               brokerName,
+						Controller:         &TrueValue,
+						BlockOwnerDeletion: &TrueValue,
+					}},
+					Labels: map[string]string{
+						"eventing.knative.dev/broker": brokerName,
+					},
+				},
+				StringData: map[string]string{
+					BrokerURLSecretKey: testRabbitURL,
+				},
+			},
+		}, {
+			name: "test source secret name",
+			args: &ExchangeArgs{
+				Source:      &v1alpha1.RabbitmqSource{ObjectMeta: metav1.ObjectMeta{Name: sourceName, Namespace: ns}},
+				RabbitMQURL: url.URL(),
+			},
+			want: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: ns,
+					Name:      sourceSecretName,
+					OwnerReferences: []metav1.OwnerReference{{
+						APIVersion:         "sources.knative.dev/v1alpha1",
+						Kind:               "RabbitmqSource",
+						Name:               sourceName,
+						Controller:         &TrueValue,
+						BlockOwnerDeletion: &TrueValue,
+					}},
+					Labels: map[string]string{
+						SourceLabelKey: sourceName,
+					},
+				},
+				StringData: map[string]string{
+					BrokerURLSecretKey: testRabbitURL,
+				},
 			},
 		},
-		StringData: map[string]string{
-			BrokerURLSecretKey: testRabbitURL,
-		},
-	}
-
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Error("unexpected diff (-want, +got) = ", diff)
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			got := MakeSecret(tt.args)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Error("unexpected diff (-want, +got) = ", diff)
+			}
+		})
 	}
 }

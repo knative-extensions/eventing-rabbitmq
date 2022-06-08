@@ -44,7 +44,7 @@ func New(ctx context.Context) *BrokerConfigService {
 type BrokerConfigService struct {
 	rmqeventingClientSet rmqeventingclientset.Interface
 	kubeClientSet        kubernetes.Interface
-	rabbitService        *rabbit.Rabbit
+	rabbitService        rabbit.Service
 }
 
 func (r *BrokerConfigService) GetExchangeArgs(ctx context.Context, b *eventingv1.Broker) (*rabbit.ExchangeArgs, error) {

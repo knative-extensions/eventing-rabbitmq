@@ -31,14 +31,28 @@ const (
 
 // MakeSecret creates the secret for Broker deployments for Rabbit Broker.
 func MakeSecret(args *ExchangeArgs) *corev1.Secret {
+	var name, typeString, ns string
+	var owner kmeta.OwnerRefable
+
+	if args.Broker != nil {
+		name = args.Broker.Name
+		owner = args.Broker
+		typeString = "broker"
+		ns = args.Broker.Namespace
+	} else if args.Source != nil {
+		owner = args.Source
+		name = args.Source.Name
+		typeString = "source"
+		ns = args.Source.Namespace
+	}
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: args.Broker.Namespace,
-			Name:      SecretName(args.Broker.Name),
+			Namespace: ns,
+			Name:      SecretName(name, typeString),
 			OwnerReferences: []metav1.OwnerReference{
-				*kmeta.NewControllerRef(args.Broker),
+				*kmeta.NewControllerRef(owner),
 			},
-			Labels: SecretLabels(args.Broker.Name),
+			Labels: SecretLabels(name, typeString),
 		},
 		StringData: map[string]string{
 			BrokerURLSecretKey: args.RabbitMQURL.String(),
@@ -46,14 +60,20 @@ func MakeSecret(args *ExchangeArgs) *corev1.Secret {
 	}
 }
 
-func SecretName(brokerName string) string {
-	return fmt.Sprintf("%s-broker-rabbit", brokerName)
+func SecretName(resourceName, typeString string) string {
+	return fmt.Sprintf("%s-%s-rabbit", resourceName, typeString)
 }
 
 // SecretLabels generates the labels present on all resources representing the
 // secret of the given Broker.
-func SecretLabels(brokerName string) map[string]string {
+func SecretLabels(resourceName, typeString string) map[string]string {
+	var label string
+	if typeString == "broker" {
+		label = eventing.BrokerLabelKey
+	} else if typeString == "source" {
+		label = SourceLabelKey
+	}
 	return map[string]string{
-		eventing.BrokerLabelKey: brokerName,
+		label: resourceName,
 	}
 }

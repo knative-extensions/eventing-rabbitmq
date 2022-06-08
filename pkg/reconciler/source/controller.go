@@ -25,6 +25,7 @@ import (
 	bindinginformer "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/informers/rabbitmq.com/v1beta1/binding"
 	exchangeinformer "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/informers/rabbitmq.com/v1beta1/exchange"
 	queueinformer "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/informers/rabbitmq.com/v1beta1/queue"
+	secretinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/secret"
 
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
@@ -55,9 +56,11 @@ func NewController(
 	bindingInformer := bindinginformer.Get(ctx)
 	queueInformer := queueinformer.Get(ctx)
 	exchangeInformer := exchangeinformer.Get(ctx)
+	secretInformer := secretinformer.Get(ctx)
 
 	c := &Reconciler{
 		KubeClientSet:       kubeclient.Get(ctx),
+		secretLister:        secretInformer.Lister(),
 		rabbitmqClientSet:   rabbitmqclient.Get(ctx),
 		rabbitmqLister:      rabbitmqInformer.Lister(),
 		deploymentLister:    deploymentInformer.Lister(),
@@ -86,11 +89,18 @@ func NewController(
 		FilterFunc: controller.FilterControllerGK(v1alpha1.Kind("RabbitmqSource")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
+
 	queueInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.FilterControllerGK(v1alpha1.Kind("RabbitmqSource")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
+
 	exchangeInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.FilterControllerGK(v1alpha1.Kind("RabbitmqSource")),
+		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
+	})
+
+	secretInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.FilterControllerGK(v1alpha1.Kind("RabbitmqSource")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})

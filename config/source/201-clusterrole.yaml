@@ -19,7 +19,6 @@ metadata:
   labels:
     rabbitmq.eventing.knative.dev/release: devel
 rules:
-
   - apiGroups:
       - sources.knative.dev
     resources:
@@ -33,7 +32,6 @@ rules:
       - update
       - patch
       - delete
-
   - apiGroups:
       - sources.knative.dev
     resources:
@@ -42,13 +40,11 @@ rules:
       - get
       - update
       - patch
-
   - apiGroups:
       - apps
     resources:
       - deployments
     verbs: *everything
-
   - apiGroups:
       - ""
     resources:
@@ -56,7 +52,6 @@ rules:
       - configmaps
       - secrets
     verbs: *everything
-
   # For leader election
   - apiGroups:
       - "coordination.k8s.io"
@@ -64,6 +59,14 @@ rules:
       - "leases"
     verbs: *everything
   # for RabbitMQ messaging topology objects
+  - apiGroups:
+    - rabbitmq.com
+    resources:
+    - rabbitmqclusters
+    verbs:
+    - "get"
+    - "list"
+    - "watch"
   - apiGroups:
       - rabbitmq.com
     resources:

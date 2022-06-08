@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	secretName   = "testbroker-broker-rabbit"
+	secretName   = "test-source-source-rabbit"
 	brokerURLKey = "testbrokerurl"
 )
 

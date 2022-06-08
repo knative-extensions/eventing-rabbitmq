@@ -208,7 +208,7 @@ func (r *Reconciler) reconcileIngressDeployment(ctx context.Context, b *eventing
 	expected := resources.MakeIngressDeployment(&resources.IngressArgs{
 		Broker:             b,
 		Image:              r.ingressImage,
-		RabbitMQSecretName: rabbit.SecretName(b.Name),
+		RabbitMQSecretName: rabbit.SecretName(b.Name, "broker"),
 		BrokerUrlSecretKey: rabbit.BrokerURLSecretKey,
 		Configs:            r.configs,
 	})
@@ -230,7 +230,7 @@ func (r *Reconciler) reconcileDLXDispatcherDeployment(ctx context.Context, b *ev
 			Image:  r.dispatcherImage,
 			//ServiceAccountName string
 			Delivery:           b.Spec.Delivery,
-			RabbitMQSecretName: rabbit.SecretName(b.Name),
+			RabbitMQSecretName: rabbit.SecretName(b.Name, "broker"),
 			QueueName:          naming.CreateBrokerDeadLetterQueueName(b),
 			BrokerUrlSecretKey: rabbit.BrokerURLSecretKey,
 			Subscriber:         sub,

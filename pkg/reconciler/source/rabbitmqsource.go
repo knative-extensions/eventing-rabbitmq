@@ -36,6 +36,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
+	corev1listers "k8s.io/client-go/listers/core/v1"
 	"knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 	"knative.dev/eventing-rabbitmq/pkg/client/clientset/versioned"
 	reconcilerrabbitmqsource "knative.dev/eventing-rabbitmq/pkg/client/injection/reconciler/sources/v1alpha1/rabbitmqsource"
@@ -78,6 +79,7 @@ type Reconciler struct {
 	receiveAdapterImage string
 
 	rabbitmqLister   listers.RabbitmqSourceLister
+	secretLister     corev1listers.SecretLister
 	deploymentLister appsv1listers.DeploymentLister
 	bindingListener  rabbitlisters.BindingLister
 	exchangeLister   rabbitlisters.ExchangeLister
@@ -140,17 +142,22 @@ func (r *Reconciler) reconcileRabbitObjects(ctx context.Context, src *v1alpha1.R
 		return fmt.Errorf("rabbitmqSource.Spec.RabbitMQClusterReference is empty")
 	}
 
-	rmqService := rabbit.New(ctx)
-	rabbitmqURL, err := rmqService.RabbitMQURL(ctx, src.Spec.RabbitmqClusterReference)
+	rabbitmqURL, err := r.rabbit.RabbitMQURL(ctx, src.Spec.RabbitmqClusterReference)
 	if err != nil {
 		return err
 	}
-	rabbit.MakeSecret(&rabbit.ExchangeArgs{
+	s := rabbit.MakeSecret(&rabbit.ExchangeArgs{
 		Namespace:                src.Namespace,
 		Source:                   src,
 		RabbitmqClusterReference: src.Spec.RabbitmqClusterReference,
 		RabbitMQURL:              rabbitmqURL,
 	})
+	if err := r.reconcileSecret(ctx, s); err != nil {
+		logging.FromContext(ctx).Errorw("Problem reconciling Secret", zap.Error(err))
+		src.Status.MarkSecretFailed("SecretFailure", "Failed to reconcile secret: %s", err)
+		return err
+	}
+	src.Status.MarkSecretReady()
 
 	if src.Spec.Predeclared {
 		logger.Info("predeclared set to true; no RabbitMQ objects to reconcile",
@@ -219,7 +226,7 @@ func (r *Reconciler) createReceiveAdapter(ctx context.Context, src *v1alpha1.Rab
 		SinkURI:            sinkURI.String(),
 		MetricsConfig:      metricsConfig,
 		LoggingConfig:      loggingConfig,
-		RabbitMQSecretName: rabbit.SecretName(src.Name),
+		RabbitMQSecretName: rabbit.SecretName(src.Name, "source"),
 		BrokerUrlSecretKey: rabbit.BrokerURLSecretKey,
 	}
 	expected := resources.MakeReceiveAdapter(&raArgs)
@@ -305,4 +312,26 @@ func (r *Reconciler) createCloudEventAttributes(src *v1alpha1.RabbitmqSource) []
 		Source: v1alpha1.RabbitmqEventSource(src.Namespace, src.Name, src.Spec.QueueConfig.Name),
 	}
 	return []duckv1.CloudEventAttributes{ceAttribute}
+}
+
+// reconcileSecret reconciles the K8s Secret 's'.
+func (r *Reconciler) reconcileSecret(ctx context.Context, s *corev1.Secret) error {
+	current, err := r.secretLister.Secrets(s.Namespace).Get(s.Name)
+	if apierrors.IsNotFound(err) {
+		_, err = r.KubeClientSet.CoreV1().Secrets(s.Namespace).Create(ctx, s, metav1.CreateOptions{})
+		if err != nil {
+			return err
+		}
+	} else if err != nil {
+		return err
+	} else if !equality.Semantic.DeepDerivative(s.StringData, current.StringData) {
+		// Don't modify the informers copy.
+		desired := current.DeepCopy()
+		desired.StringData = s.StringData
+		_, err = r.KubeClientSet.CoreV1().Secrets(desired.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

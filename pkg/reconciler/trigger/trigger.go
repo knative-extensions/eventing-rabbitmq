@@ -392,7 +392,7 @@ func (r *Reconciler) propagateDependencyReadiness(ctx context.Context, t *eventi
 }
 
 func (r *Reconciler) getRabbitmqSecret(ctx context.Context, t *eventingv1.Trigger) (*corev1.Secret, error) {
-	return r.kubeClientSet.CoreV1().Secrets(t.Namespace).Get(ctx, rabbit.SecretName(t.Spec.Broker), metav1.GetOptions{})
+	return r.kubeClientSet.CoreV1().Secrets(t.Namespace).Get(ctx, rabbit.SecretName(t.Spec.Broker, "broker"), metav1.GetOptions{})
 }
 
 func (r *Reconciler) reconcileBinding(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger) (rabbit.Result, error) {
