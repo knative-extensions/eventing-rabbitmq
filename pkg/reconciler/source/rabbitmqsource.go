@@ -121,6 +121,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, src *v1alpha1.RabbitmqSo
 		logging.FromContext(ctx).Error("Unable to create RabbitMQ resources", zap.Error(err))
 		return err
 	}
+	src.Status.MarkExchangeReady()
 
 	ra, err := r.createReceiveAdapter(ctx, src, sinkURI)
 	if err != nil {
@@ -197,7 +198,6 @@ func (r *Reconciler) reconcileRabbitObjects(ctx context.Context, src *v1alpha1.R
 		return err
 	}
 
-	src.Status.MarkExchangeReady()
 	return nil
 }
 
