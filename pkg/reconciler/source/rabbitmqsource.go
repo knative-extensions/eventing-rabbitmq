@@ -200,6 +200,7 @@ func (r *Reconciler) reconcileRabbitObjects(ctx context.Context, src *v1alpha1.R
 		return err
 	}
 
+	src.Status.MarkExchangeReady()
 	return nil
 }
 

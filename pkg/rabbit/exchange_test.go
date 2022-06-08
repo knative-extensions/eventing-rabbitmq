@@ -165,6 +165,7 @@ func TestNewExchange(t *testing.T) {
 						ExchangeName: "some-exchange",
 						Vhost:        "test",
 					},
+					Vhost: "test",
 				},
 			},
 		},
@@ -188,7 +189,7 @@ func TestNewExchange(t *testing.T) {
 			},
 			Spec: rabbitv1beta1.ExchangeSpec{
 				Name:       "some-exchange",
-				Vhost:      "/",
+				Vhost:      "test",
 				Type:       "headers",
 				Durable:    true,
 				AutoDelete: false,
