@@ -486,7 +486,7 @@ func TestReconcile(t *testing.T) {
 					createReadyExchange(true),
 				},
 				WantCreates: []runtime.Object{
-					createQueue(true),
+					createQueue(true, config),
 				},
 				WithReactors: []clientgotesting.ReactionFunc{
 					InduceFailure("create", "queues"),
@@ -522,7 +522,7 @@ func TestReconcile(t *testing.T) {
 					createReadyExchange(true),
 				},
 				WantCreates: []runtime.Object{
-					createQueue(true),
+					createQueue(true, config),
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: NewBroker(brokerName, testNS,
@@ -549,7 +549,7 @@ func TestReconcile(t *testing.T) {
 					createRabbitMQBrokerConfig(),
 					createReadyExchange(false),
 					createReadyExchange(true),
-					createReadyQueue(true),
+					createReadyQueue(true, config),
 				},
 				WantCreates: []runtime.Object{
 					createBinding(true),
@@ -580,7 +580,7 @@ func TestReconcile(t *testing.T) {
 					createRabbitMQBrokerConfig(),
 					createReadyExchange(false),
 					createReadyExchange(true),
-					createReadyQueue(true),
+					createReadyQueue(true, config),
 				},
 				WantCreates: []runtime.Object{
 					createBinding(true),
@@ -618,7 +618,7 @@ func TestReconcile(t *testing.T) {
 					createRabbitMQBrokerConfig(),
 					createReadyExchange(false),
 					createReadyExchange(true),
-					createReadyQueue(true),
+					createReadyQueue(true, config),
 					createReadyBinding(true),
 				},
 				WantCreates: []runtime.Object{
@@ -657,7 +657,7 @@ func TestReconcile(t *testing.T) {
 					createRabbitMQBrokerConfig(),
 					createReadyExchange(false),
 					createReadyExchange(true),
-					createReadyQueue(true),
+					createReadyQueue(true, config),
 					createReadyBinding(true),
 				},
 				WantCreates: []runtime.Object{
@@ -724,7 +724,7 @@ func TestReconcile(t *testing.T) {
 					createRabbitMQBrokerConfig(),
 					createReadyExchange(false),
 					createReadyExchange(true),
-					createReadyQueue(true),
+					createReadyQueue(true, config),
 					createReadyBinding(true),
 					rt.NewEndpoints(ingressServiceName, testNS,
 						rt.WithEndpointsLabels(IngressLabels()),
@@ -763,7 +763,7 @@ func TestReconcile(t *testing.T) {
 					createRabbitMQBrokerConfig(),
 					createReadyExchange(false),
 					createReadyExchange(true),
-					createReadyQueue(true),
+					createReadyQueue(true, config),
 					createReadyBinding(true),
 					rt.NewEndpoints(ingressServiceName, testNS,
 						rt.WithEndpointsLabels(IngressLabels()),
@@ -804,7 +804,7 @@ func TestReconcile(t *testing.T) {
 					createRabbitMQBrokerConfig(),
 					createReadyExchange(false),
 					createReadyExchange(true),
-					createReadyQueue(true),
+					createReadyQueue(true, config),
 					createReadyBinding(true),
 					createReadyPolicy(),
 					rt.NewEndpoints(ingressServiceName, testNS,
@@ -847,7 +847,7 @@ func TestReconcile(t *testing.T) {
 					createRabbitMQBrokerConfig(),
 					createReadyExchange(false),
 					createReadyExchange(true),
-					createReadyQueue(true),
+					createReadyQueue(true, config),
 					createReadyBinding(true),
 					createReadyPolicy(),
 					rt.NewEndpoints(ingressServiceName, testNS,
@@ -892,7 +892,7 @@ func TestReconcile(t *testing.T) {
 					createRabbitMQBrokerConfig(),
 					createReadyExchange(false),
 					createReadyExchange(true),
-					createReadyQueue(true),
+					createReadyQueue(true, config),
 					createReadyBinding(true),
 					createReadyPolicy(),
 					rt.NewEndpoints(ingressServiceName, testNS,
@@ -937,7 +937,7 @@ func TestReconcile(t *testing.T) {
 					createRabbitMQBrokerConfig(),
 					createReadyExchange(false),
 					createReadyExchange(true),
-					createReadyQueue(true),
+					createReadyQueue(true, config),
 					createReadyBinding(true),
 					createReadyPolicy(),
 					rt.NewEndpoints(ingressServiceName, testNS,
@@ -982,7 +982,7 @@ func TestReconcile(t *testing.T) {
 					createRabbitMQBrokerConfig(),
 					createReadyExchange(false),
 					createReadyExchange(true),
-					createReadyQueue(true),
+					createReadyQueue(true, config),
 					createReadyBinding(true),
 					createReadyPolicy(),
 					rt.NewEndpoints(ingressServiceName, testNS,
@@ -1029,7 +1029,7 @@ func TestReconcile(t *testing.T) {
 					createRabbitMQBrokerConfig(),
 					createReadyExchange(false),
 					createReadyExchange(true),
-					createReadyQueue(true),
+					createReadyQueue(true, config),
 					createReadyBinding(true),
 					createReadyPolicy(),
 					rt.NewEndpoints(ingressServiceName, testNS,
@@ -1073,7 +1073,7 @@ func TestReconcile(t *testing.T) {
 					createRabbitMQBrokerConfig(),
 					createReadyExchange(false),
 					createReadyExchange(true),
-					createReadyQueue(true),
+					createReadyQueue(true, config),
 					createReadyBinding(true),
 					createReadyPolicy(),
 					rt.NewEndpoints(ingressServiceName, testNS,
@@ -1408,7 +1408,11 @@ func createReadyExchange(dlx bool) *rabbitv1beta1.Exchange {
 	return e
 }
 
-func createQueue(dlx bool) *rabbitv1beta1.Queue {
+func createQueue(dlx bool, kref *duckv1.KReference) *rabbitv1beta1.Queue {
+	queueType := v1alpha1.ClassicQueueType
+	if kref.Kind == "RabbitmqBrokerConfig" {
+		queueType = v1alpha1.QuorumQueueType
+	}
 	broker := &eventingv1.Broker{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      brokerName,
@@ -1441,12 +1445,13 @@ func createQueue(dlx bool) *rabbitv1beta1.Queue {
 				Name:      rabbitMQBrokerName,
 				Namespace: testNS,
 			},
+			Type: string(queueType),
 		},
 	}
 }
 
-func createReadyQueue(dlx bool) *rabbitv1beta1.Queue {
-	q := createQueue(dlx)
+func createReadyQueue(dlx bool, kref *duckv1.KReference) *rabbitv1beta1.Queue {
+	q := createQueue(dlx, kref)
 	q.Status = rabbitv1beta1.QueueStatus{
 		Conditions: []rabbitv1beta1.Condition{
 			{

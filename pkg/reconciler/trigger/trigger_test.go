@@ -252,7 +252,7 @@ func TestReconcile(t *testing.T) {
 					triggerWithFilter(),
 					createSecret(rabbitURL),
 					createRabbitMQBrokerConfig(),
-					markReady(createQueue()),
+					markReady(createQueue(config)),
 					markReady(createBinding(true)),
 				},
 				WantCreates: []runtime.Object{
@@ -269,7 +269,7 @@ func TestReconcile(t *testing.T) {
 					triggerWithFilter(),
 					createSecret(rabbitURL),
 					createRabbitMQBrokerConfig(),
-					markReady(createQueue()),
+					markReady(createQueue(config)),
 					markReady(createBinding(true)),
 				},
 				WantCreates: []runtime.Object{
@@ -287,7 +287,7 @@ func TestReconcile(t *testing.T) {
 					triggerWithDeliverySpec(),
 					createSecret(rabbitURL),
 					createRabbitMQBrokerConfig(),
-					markReady(createQueue()),
+					markReady(createQueue(config)),
 					markReady(createBinding(true)),
 				},
 				WantCreates: []runtime.Object{
@@ -307,7 +307,7 @@ func TestReconcile(t *testing.T) {
 					createRabbitMQBrokerConfig(),
 				},
 				WantCreates: []runtime.Object{
-					createQueue(),
+					createQueue(config),
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: triggerWithQueueNotReady(),
@@ -329,7 +329,7 @@ func TestReconcile(t *testing.T) {
 					Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for create queues"),
 				},
 				WantCreates: []runtime.Object{
-					createQueue(),
+					createQueue(config),
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: triggerWithQueueCreateFailure(),
@@ -342,7 +342,7 @@ func TestReconcile(t *testing.T) {
 					triggerWithFilter(),
 					createSecret(rabbitURL),
 					createRabbitMQBrokerConfig(),
-					markReady(createQueue()),
+					markReady(createQueue(config)),
 				},
 				WantCreates: []runtime.Object{
 					createBinding(true),
@@ -358,7 +358,7 @@ func TestReconcile(t *testing.T) {
 					triggerWithFilter(),
 					createSecret(rabbitURL),
 					createRabbitMQBrokerConfig(),
-					markReady(createQueue()),
+					markReady(createQueue(config)),
 				},
 				WithReactors: []clientgotesting.ReactionFunc{
 					InduceFailure("create", "bindings"),
@@ -381,7 +381,7 @@ func TestReconcile(t *testing.T) {
 					triggerWithFilter(),
 					createSecret(rabbitURL),
 					createRabbitMQBrokerConfig(),
-					markReady(createQueue()),
+					markReady(createQueue(config)),
 					markReady(createBinding(true)),
 				},
 				WantCreates: []runtime.Object{
@@ -396,7 +396,7 @@ func TestReconcile(t *testing.T) {
 				Objects: []runtime.Object{
 					ReadyBroker(config),
 					makeSubscriberAddressableAsUnstructured(),
-					markReady(createQueue()),
+					markReady(createQueue(config)),
 					markReady(createBinding(false)),
 					NewTrigger(triggerName, testNS, brokerName,
 						WithTriggerUID(triggerUID),
@@ -424,7 +424,7 @@ func TestReconcile(t *testing.T) {
 				Objects: []runtime.Object{
 					ReadyBroker(config),
 					makeSubscriberNotAddressableAsUnstructured(),
-					markReady(createQueue()),
+					markReady(createQueue(config)),
 					markReady(createBinding(false)),
 					NewTrigger(triggerName, testNS, brokerName,
 						WithTriggerUID(triggerUID),
@@ -456,7 +456,7 @@ func TestReconcile(t *testing.T) {
 						WithTriggerSubscriberURI(subscriberURI)),
 					createSecret(rabbitURL),
 					createRabbitMQBrokerConfig(),
-					markReady(createQueue()),
+					markReady(createQueue(config)),
 					markReady(createBinding(false)),
 				},
 				WithReactors: []clientgotesting.ReactionFunc{
@@ -492,7 +492,7 @@ func TestReconcile(t *testing.T) {
 					createSecret(rabbitURL),
 					createRabbitMQBrokerConfig(),
 					createDifferentDispatcherDeployment(),
-					markReady(createQueue()),
+					markReady(createQueue(config)),
 					markReady(createBinding(false)),
 				},
 				WithReactors: []clientgotesting.ReactionFunc{
@@ -527,7 +527,7 @@ func TestReconcile(t *testing.T) {
 						WithTriggerSubscriberURI(subscriberURI)),
 					createSecret(rabbitURL),
 					createRabbitMQBrokerConfig(),
-					markReady(createQueue()),
+					markReady(createQueue(config)),
 					markReady(createBinding(false)),
 					createDispatcherDeployment(),
 				},
@@ -551,7 +551,7 @@ func TestReconcile(t *testing.T) {
 					triggerWithFilter(),
 					createSecret(rabbitURL),
 					createRabbitMQBrokerConfig(),
-					markReady(createQueue()),
+					markReady(createQueue(config)),
 					markReady(createBinding(true)),
 					createDispatcherDeployment(),
 				},
@@ -569,7 +569,7 @@ func TestReconcile(t *testing.T) {
 						WithInitTriggerConditions,
 						WithDependencyAnnotation(dependencyAnnotation),
 					),
-					markReady(createQueue()),
+					markReady(createQueue(config)),
 					markReady(createBinding(false)),
 				},
 				WantEvents: []string{
@@ -601,7 +601,7 @@ func TestReconcile(t *testing.T) {
 					),
 					createSecret(rabbitURL),
 					createRabbitMQBrokerConfig(),
-					markReady(createQueue()),
+					markReady(createQueue(config)),
 					markReady(createBinding(false)),
 				},
 				WantErr: false,
@@ -630,7 +630,7 @@ func TestReconcile(t *testing.T) {
 					),
 					createSecret(rabbitURL),
 					createRabbitMQBrokerConfig(),
-					markReady(createQueue()),
+					markReady(createQueue(config)),
 					markReady(createBinding(false)),
 				},
 				WantErr: false,
@@ -659,7 +659,7 @@ func TestReconcile(t *testing.T) {
 					),
 					createSecret(rabbitURL),
 					createRabbitMQBrokerConfig(),
-					markReady(createQueue()),
+					markReady(createQueue(config)),
 					markReady(createBinding(false)),
 				},
 				WantErr: false,
@@ -686,7 +686,7 @@ func TestReconcile(t *testing.T) {
 					),
 					createSecret(rabbitURL),
 					createRabbitMQBrokerConfig(),
-					markReady(createQueue()),
+					markReady(createQueue(config)),
 					markReady(createBinding(false)),
 				},
 				WantErr: true,
@@ -717,7 +717,7 @@ func TestReconcile(t *testing.T) {
 					),
 					createSecret(rabbitURL),
 					createRabbitMQBrokerConfig(),
-					markReady(createQueue()),
+					markReady(createQueue(config)),
 					markReady(createBinding(false)),
 				},
 				WantErr: false,
@@ -749,7 +749,7 @@ func TestReconcile(t *testing.T) {
 						WithTriggerSubscriberURI(subscriberURI)),
 					createSecret(rabbitURL),
 					createRabbitMQBrokerConfig(),
-					markReady(createQueue()),
+					markReady(createQueue(config)),
 					markReady(createBinding(false)),
 					createDispatcherDeploymentWithParallelism(),
 				},
@@ -1159,7 +1159,11 @@ func makeSubscriberNotAddressableAsUnstructured() *unstructured.Unstructured {
 	}
 }
 
-func createQueue() *rabbitv1beta1.Queue {
+func createQueue(kref *duckv1.KReference) *rabbitv1beta1.Queue {
+	queueType := v1alpha1.ClassicQueueType
+	if kref.Kind == "RabbitmqBrokerConfig" {
+		queueType = v1alpha1.QuorumQueueType
+	}
 	labels := map[string]string{
 		"eventing.knative.dev/broker":  brokerName,
 		"eventing.knative.dev/trigger": triggerName,
@@ -1182,6 +1186,7 @@ func createQueue() *rabbitv1beta1.Queue {
 				Name:      rabbitMQBrokerName,
 				Namespace: testNS,
 			},
+			Type: string(queueType),
 		},
 	}
 }

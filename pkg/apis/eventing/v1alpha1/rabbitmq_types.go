@@ -44,6 +44,13 @@ var _ resourcesemantics.GenericCRD = (*RabbitmqBrokerConfig)(nil)
 var _ apis.Defaultable = (*RabbitmqBrokerConfig)(nil)
 var _ apis.Validatable = (*RabbitmqBrokerConfig)(nil)
 
+type QueueType string
+
+var (
+	QuorumQueueType  = QueueType("quorum")
+	ClassicQueueType = QueueType("classic")
+)
+
 type RabbitmqBrokerConfigSpec struct {
 	// RabbitmqClusterReference stores a reference to RabbitmqCluster. This will get used to create resources on the RabbitMQ Broker.
 	RabbitmqClusterReference *v1beta1.RabbitmqClusterReference `json:"rabbitmqClusterReference,omitempty"`
@@ -51,7 +58,7 @@ type RabbitmqBrokerConfigSpec struct {
 	// +optional
 	// +kubebuilder:default:=quorum
 	// +kubebuilder:validation:Enum=quorum;classic
-	QueueType string `json:"queueType,omitempty"`
+	QueueType QueueType `json:"queueType"`
 }
 
 func (s *RabbitmqBrokerConfig) GetGroupVersionKind() schema.GroupVersionKind {

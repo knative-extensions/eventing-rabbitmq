@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"knative.dev/eventing-rabbitmq/pkg/apis/eventing/v1alpha1"
 	"net/url"
 
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -99,7 +100,7 @@ func (r *BrokerConfigService) GetRabbitMQClusterRef(ctx context.Context, b *even
 		}
 		return config.Spec.RabbitmqClusterReference, nil
 	default:
-		return nil, errors.New("Broker.Spec.Config configuration not supported, only [kind: RabbitmqCluster, apiVersion: rabbitmq.com/v1beta1]")
+		return nil, errors.New("Broker.Spec.Config configuration not supported, only [kind: RabbitmqCluster, apiVersion: rabbitmq.com/v1beta1] and [Kind: RabbitmqBrokerConfig, apiVersion: eventing.knative.dev/v1alpha1]")
 	}
 }
 
@@ -155,4 +156,29 @@ func (r *BrokerConfigService) RabbitmqURL(ctx context.Context, clusterRef *rabbi
 	host := network.GetServiceHostname(rab.Status.DefaultUser.ServiceReference.Name, rab.Status.DefaultUser.ServiceReference.Namespace)
 
 	return url.Parse(fmt.Sprintf("amqp://%s:%s@%s:%d", username, password, host, 5672))
+}
+
+func (r *BrokerConfigService) GetQueueType(ctx context.Context, b *eventingv1.Broker) (v1alpha1.QueueType, error) {
+	if b.Spec.Config == nil {
+		return "", errors.New("Broker.Spec.Config is required")
+	}
+
+	if b.Spec.Config.Namespace == "" || b.Spec.Config.Name == "" {
+		return "", errors.New("broker.spec.config.[name, namespace] are required")
+	}
+
+	gvk := fmt.Sprintf("%s.%s", b.Spec.Config.Kind, b.Spec.Config.APIVersion)
+	switch gvk {
+	case "RabbitmqCluster.rabbitmq.com/v1beta1":
+		// Deprecated: returning the classic queue type for backwards compatibility of using RabbitmqCluster as a config
+		return v1alpha1.ClassicQueueType, nil
+	case "RabbitmqBrokerConfig.eventing.knative.dev/v1alpha1":
+		config, err := r.rmqeventingClientSet.EventingV1alpha1().RabbitmqBrokerConfigs(b.Spec.Config.Namespace).Get(ctx, b.Spec.Config.Name, metav1.GetOptions{})
+		if err != nil {
+			return "", err
+		}
+		return config.Spec.QueueType, nil
+	default:
+		return "", errors.New("Broker.Spec.Config configuration not supported, only [kind: RabbitmqCluster, apiVersion: rabbitmq.com/v1beta1] and [Kind: RabbitmqBrokerConfig, apiVersion: eventing.knative.dev/v1alpha1]")
+	}
 }

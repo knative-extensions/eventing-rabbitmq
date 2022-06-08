@@ -133,6 +133,10 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 	if err != nil {
 		return err
 	}
+	queueType, err := r.brokerConfig.GetQueueType(ctx, broker)
+	if err != nil {
+		return err
+	}
 	if t.Spec.Delivery != nil && t.Spec.Delivery.DeadLetterSink != nil {
 		// If there's DeadLetterSink, we need to create a DLX that's specific for this Trigger as well
 		// as a Queue for it, and Dispatcher that pulls from that queue.
@@ -161,6 +165,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 			RabbitmqClusterReference: ref,
 			Owner:                    *kmeta.NewControllerRef(t),
 			Labels:                   rabbit.Labels(broker, t, nil),
+			QueueType:                queueType,
 		})
 		if err != nil {
 			logging.FromContext(ctx).Error("Problem reconciling Trigger Queue", zap.Error(err))
@@ -210,6 +215,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		Owner:                    *kmeta.NewControllerRef(t),
 		Labels:                   rabbit.Labels(broker, t, nil),
 		DLXName:                  dlxName,
+		QueueType:                queueType,
 	})
 	if err != nil {
 		logging.FromContext(ctx).Error("Problem reconciling Trigger Queue", zap.Error(err))
