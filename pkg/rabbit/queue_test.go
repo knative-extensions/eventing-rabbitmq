@@ -196,6 +196,7 @@ func TestNewQueue(t *testing.T) {
 						QueueConfig: v1alpha1.RabbitmqSourceQueueConfigSpec{
 							Name: "a-test-queue",
 						},
+						Vhost: "test",
 					},
 				},
 			},
@@ -208,7 +209,7 @@ func TestNewQueue(t *testing.T) {
 				},
 				Spec: rabbitv1beta1.QueueSpec{
 					Name:       "a-test-queue",
-					Vhost:      "/",
+					Vhost:      "test",
 					Durable:    true,
 					AutoDelete: false,
 					RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{

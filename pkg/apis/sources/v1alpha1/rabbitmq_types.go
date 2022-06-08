@@ -112,6 +112,9 @@ type RabbitmqSourceSpec struct {
 	// ServiceAccountName is the name of the ServiceAccount that will be used to run the Receive
 	// Adapter Deployment.
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
+	// VHost is the name of the VHost that will be used to set up our sources
+	// +optional
+	Vhost string `json:"vhost,omitempty"`
 }
 
 // SecretValueFromSource represents the source of a secret value

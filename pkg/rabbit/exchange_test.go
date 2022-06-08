@@ -164,6 +164,7 @@ func TestNewExchange(t *testing.T) {
 					ExchangeConfig: v1alpha1.RabbitmqSourceExchangeConfigSpec{
 						Name: "some-exchange",
 					},
+					Vhost: "test",
 				},
 			},
 		},
@@ -187,7 +188,7 @@ func TestNewExchange(t *testing.T) {
 			},
 			Spec: rabbitv1beta1.ExchangeSpec{
 				Name:       "some-exchange",
-				Vhost:      "/",
+				Vhost:      "test",
 				Type:       "headers",
 				Durable:    true,
 				AutoDelete: false,

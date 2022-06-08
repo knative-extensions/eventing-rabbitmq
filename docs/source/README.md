@@ -171,7 +171,7 @@ Source parameters
 | `rabbitmqClusterReference` | A reference to a RabbitMQ Cluster |
 | `rabbitmqClusterReference.name`| This is the name of the RabbitMQ Cluster CRD, if this is set then the `connectionSecret` must not be set |
 | `rabbitmqClusterReference.connectionSecret.name`| The RabbitMQ Connection Secret name, if this is set then the `clusterReference.name` must not be set |
-| `rabbitmqClusterReference.namespace`| the namespace where the RabbitMQ Cluster CRD lives |
+| `rabbitmqClusterReference.namespace`| the namespace where the RabbitMQ Cluster CRD or connection Secret lives, it will default to the parent `Source` namespace if left empty |
 | `vhost` * | VHost where the source RabbitMQ resources are located |
 | `predeclared` | Defines if the source should try to create new queue or use predeclared one (Boolean) |
 | `backoffPolicy` | The backoff policy type (linear, exponential) String |
