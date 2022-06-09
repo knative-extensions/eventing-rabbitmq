@@ -7,3 +7,4 @@ spec:
   rabbitmqClusterReference:
     name: rabbitmq
     namespace: broker-trigger-demo
+  queueType: quorum
