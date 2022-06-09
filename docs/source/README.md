@@ -98,11 +98,16 @@ kind: RabbitmqSource
 metadata:
   name: rabbitmq-source
 spec:
+<<<<<<< HEAD
   rabbitmqClusterReference:
     name: rabbitmq-default-user # set this or connectionSecret not both
     namespace: default
     connectionSecret: # set this or name not both
       name: test-secret
+=======
+  connectionSecret:
+    name: rabbitmq-default-user # used when exchange and queue are not predeclared and are in an external cluster, use rabbitmqClusterReference otherwise
+>>>>>>> aa5868af (fixed vhost example and some docs info regarding the source, the complete docs pr about the new source api will come next to this one)
   exchangeConfig:
     name: "eventing-rabbitmq-source"
   queueConfig:
