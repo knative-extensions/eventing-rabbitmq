@@ -123,16 +123,10 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 
 			a := &Adapter{
 				config: &adapterConfig{
-					Broker: "amqp://guest:guest@localhost:5672/",
-					ExchangeConfig: ExchangeConfig{
-						Type:       "topic",
-						Durable:    true,
-						AutoDelete: false,
-					},
+					Broker:         "amqp://guest:guest@localhost:5672/",
+					ExchangeConfig: ExchangeConfig{},
 					QueueConfig: QueueConfig{
-						Name:       "",
-						Durable:    false,
-						AutoDelete: false,
+						Name: "",
 					},
 				},
 				context:           context.TODO(),
@@ -209,16 +203,10 @@ func TestAdapter_CreateConn(t *testing.T) {
 
 	a := &Adapter{
 		config: &adapterConfig{
-			Broker: "amqp://localhost:5672/%2f",
-			ExchangeConfig: ExchangeConfig{
-				Type:       "direct",
-				Durable:    true,
-				AutoDelete: false,
-			},
+			Broker:         "amqp://localhost:5672/%2f",
+			ExchangeConfig: ExchangeConfig{},
 			QueueConfig: QueueConfig{
-				Name:       "",
-				Durable:    false,
-				AutoDelete: false,
+				Name: "",
 			},
 		},
 		logger:   zap.NewNop(),
@@ -253,16 +241,10 @@ func TestAdapter_CreateChannel(t *testing.T) {
 
 	a := &Adapter{
 		config: &adapterConfig{
-			Broker: "amqp://localhost:5672/%2f",
-			ExchangeConfig: ExchangeConfig{
-				Type:       "direct",
-				Durable:    true,
-				AutoDelete: false,
-			},
+			Broker:         "amqp://localhost:5672/%2f",
+			ExchangeConfig: ExchangeConfig{},
 			QueueConfig: QueueConfig{
-				Name:       "",
-				Durable:    false,
-				AutoDelete: false,
+				Name: "",
 			},
 		},
 		logger:   zap.NewNop(),
@@ -304,9 +286,7 @@ func TestAdapter_StartAmqpClient(t *testing.T) {
 			Broker:      "amqp://localhost:5674/%2f",
 			Predeclared: true,
 			QueueConfig: QueueConfig{
-				Name:       testQueue,
-				Durable:    false,
-				AutoDelete: false,
+				Name: testQueue,
 			},
 		},
 		logger:   zap.NewNop(),
@@ -443,15 +423,10 @@ func TestAdapter_PollForMessages(t *testing.T) {
 		config: &adapterConfig{
 			Broker: "amqp://guest:guest@localhost:5672/",
 			ExchangeConfig: ExchangeConfig{
-				Name:       "Test-exchange",
-				Type:       "topic",
-				Durable:    true,
-				AutoDelete: false,
+				Name: "Test-exchange",
 			},
 			QueueConfig: QueueConfig{
-				Name:       "",
-				Durable:    false,
-				AutoDelete: false,
+				Name: "",
 			},
 		},
 		context:  context.TODO(),
@@ -459,15 +434,14 @@ func TestAdapter_PollForMessages(t *testing.T) {
 		reporter: statsReporter,
 	}
 
-	err = channel.ExchangeDeclare(a.config.ExchangeConfig.Name, a.config.ExchangeConfig.Type, nil)
-
+	err = channel.ExchangeDeclare(a.config.ExchangeConfig.Name, "headers", nil)
 	if err != nil {
 		t.Errorf("Failed to declare an exchange")
 	}
 
 	queue, err := channel.QueueDeclare("", wabbit.Option{
-		"durable": a.config.QueueConfig.Durable,
-		"delete":  a.config.QueueConfig.AutoDelete,
+		"durable": true,
+		"delete":  false,
 	})
 	if err != nil {
 		t.Errorf(err.Error())

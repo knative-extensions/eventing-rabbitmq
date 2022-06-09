@@ -162,10 +162,7 @@ func TestNewExchange(t *testing.T) {
 				},
 				Spec: v1alpha1.RabbitmqSourceSpec{
 					ExchangeConfig: v1alpha1.RabbitmqSourceExchangeConfigSpec{
-						Name:       "some-exchange",
-						Type:       "direct",
-						Durable:    false,
-						AutoDelete: false,
+						Name: "some-exchange",
 					},
 					Vhost: "test",
 				},
@@ -192,8 +189,8 @@ func TestNewExchange(t *testing.T) {
 			Spec: rabbitv1beta1.ExchangeSpec{
 				Name:       "some-exchange",
 				Vhost:      "test",
-				Type:       "direct",
-				Durable:    false,
+				Type:       "headers",
+				Durable:    true,
 				AutoDelete: false,
 				RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
 					ConnectionSecret: &corev1.LocalObjectReference{

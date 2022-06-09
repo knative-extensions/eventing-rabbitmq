@@ -23,16 +23,8 @@ spec:
     globalQos: false
   exchangeConfig:
     name: "eventing-rabbitmq-source"
-    type: "fanout"
-    durable: false
-    autoDelete: false
   queueConfig:
     name: "eventing-rabbitmq-source"
-    routingKey: ""
-    durable: false
-    # TODO: Why is the queue not deleted 30 minutes after the source is deleted?
-    # https://github.com/knative-sandbox/eventing-rabbitmq/issues/528
-    autoDelete: true
   sink:
     ref:
       apiVersion: serving.knative.dev/v1

@@ -23,17 +23,17 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/NeowayLabs/wabbit"
 	"github.com/NeowayLabs/wabbit/amqp"
 	"github.com/kelseyhightower/envconfig"
 	amqperr "github.com/rabbitmq/amqp091-go"
+
+	"knative.dev/eventing-rabbitmq/pkg/dispatcher"
+	"knative.dev/eventing-rabbitmq/pkg/utils"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/signals"
-
-	"github.com/NeowayLabs/wabbit"
-	"knative.dev/eventing-rabbitmq/pkg/dispatcher"
-	"knative.dev/eventing-rabbitmq/pkg/utils"
 )
 
 type envConfig struct {
@@ -76,15 +76,10 @@ func main() {
 		logger.Errorw("Failed to create the metrics exporter", zap.Error(err))
 	}
 
-	var backoffPolicy eventingduckv1.BackoffPolicyType
-	if env.BackoffPolicy == "" || env.BackoffPolicy == "exponential" {
-		backoffPolicy = eventingduckv1.BackoffPolicyExponential
-	} else if env.BackoffPolicy == "linear" {
-		backoffPolicy = eventingduckv1.BackoffPolicyLinear
-	} else {
+	backoffPolicy := utils.SetBackoffPolicy(ctx, env.BackoffPolicy)
+	if backoffPolicy == "" {
 		logging.FromContext(ctx).Fatalf("Invalid BACKOFF_POLICY specified: must be %q or %q", eventingduckv1.BackoffPolicyExponential, eventingduckv1.BackoffPolicyLinear)
 	}
-
 	backoffDelay := env.BackoffDelay
 	logging.FromContext(ctx).Infow("Setting BackoffDelay", zap.Any("backoffDelay", backoffDelay))
 

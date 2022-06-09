@@ -31,8 +31,9 @@ import (
 	"go.uber.org/zap"
 
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
+	"knative.dev/eventing-rabbitmq/pkg/utils"
 	"knative.dev/eventing/pkg/adapter/v2"
-	v1 "knative.dev/eventing/pkg/apis/duck/v1"
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/eventing/pkg/metrics/source"
 	"knative.dev/pkg/logging"
@@ -41,22 +42,15 @@ import (
 const resourceGroup = "rabbitmqsources.sources.knative.dev"
 
 type ExchangeConfig struct {
-	Name       string `envconfig:"RABBITMQ_EXCHANGE_CONFIG_NAME" required:"false"`
-	Type       string `envconfig:"RABBITMQ_EXCHANGE_CONFIG_TYPE" required:"true"`
-	Durable    bool   `envconfig:"RABBITMQ_EXCHANGE_CONFIG_DURABLE" required:"false"`
-	AutoDelete bool   `envconfig:"RABBITMQ_EXCHANGE_CONFIG_AUTO_DELETE" required:"false"`
+	Name string `envconfig:"RABBITMQ_EXCHANGE_CONFIG_NAME" required:"false"`
 }
 
 type ChannelConfig struct {
-	Parallelism int  `envconfig:"RABBITMQ_CHANNEL_CONFIG_PARALLELISM" default:"1" required:"false"`
-	GlobalQos   bool `envconfig:"RABBITMQ_CHANNEL_CONFIG_QOS_GLOBAL" required:"false"`
+	Parallelism int `envconfig:"RABBITMQ_CHANNEL_CONFIG_PARALLELISM" default:"1" required:"false"`
 }
 
 type QueueConfig struct {
-	Name       string `envconfig:"RABBITMQ_QUEUE_CONFIG_NAME" required:"true"`
-	RoutingKey string `envconfig:"RABBITMQ_ROUTING_KEY" required:"true"`
-	Durable    bool   `envconfig:"RABBITMQ_QUEUE_CONFIG_DURABLE" required:"false"`
-	AutoDelete bool   `envconfig:"RABBITMQ_QUEUE_CONFIG_AUTO_DELETE" required:"false"`
+	Name string `envconfig:"RABBITMQ_QUEUE_CONFIG_NAME" required:"true"`
 }
 
 type adapterConfig struct {
@@ -93,12 +87,6 @@ var _ adapter.MessageAdapterConstructor = NewAdapter
 func NewAdapter(ctx context.Context, processed adapter.EnvConfigAccessor, httpMessageSender *kncloudevents.HTTPMessageSender, reporter source.StatsReporter) adapter.MessageAdapter {
 	logger := logging.FromContext(ctx).Desugar()
 	config := processed.(*adapterConfig)
-	if config.BackoffPolicy == "" {
-		config.BackoffPolicy = "exponential"
-	} else if config.BackoffPolicy != "linear" && config.BackoffPolicy != "exponential" {
-		logger.Sugar().Fatalf("Invalid BACKOFF_POLICY specified: must be %q or %q", v1.BackoffPolicyExponential, v1.BackoffPolicyLinear)
-	}
-
 	return &Adapter{
 		config:            config,
 		httpMessageSender: httpMessageSender,
@@ -151,13 +139,12 @@ func (a *Adapter) CreateChannel(conn wabbit.Conn, connTest *amqptest.Conn,
 
 	logger.Info("Initializing Channel with Config: ",
 		zap.Int("Parallelism", a.config.ChannelConfig.Parallelism),
-		zap.Bool("GlobalQoS", a.config.ChannelConfig.GlobalQos),
 	)
 
 	err = ch.Qos(
 		a.config.ChannelConfig.Parallelism,
 		0,
-		a.config.ChannelConfig.GlobalQos,
+		false,
 	)
 
 	return ch, err
@@ -292,7 +279,10 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 	}
 
 	backoffDelay := a.config.BackoffDelay.String()
-	backoffPolicy := (v1.BackoffPolicyType)(a.config.BackoffPolicy)
+	backoffPolicy := utils.SetBackoffPolicy(a.context, a.config.BackoffPolicy)
+	if backoffPolicy == "" {
+		a.logger.Sugar().Fatalf("Invalid BACKOFF_POLICY specified: must be %q or %q", eventingduckv1.BackoffPolicyExponential, eventingduckv1.BackoffPolicyLinear)
+	}
 	res, err := a.httpMessageSender.SendWithRetries(req, &kncloudevents.RetryConfig{
 		RetryMax: a.config.Retry,
 		CheckRetry: func(ctx context.Context, resp *nethttp.Response, err error) (bool, error) {

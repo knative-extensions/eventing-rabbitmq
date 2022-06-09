@@ -44,9 +44,6 @@ type ExchangeArgs struct {
 func NewExchange(args *ExchangeArgs) *rabbitv1beta1.Exchange {
 	// exchange configurations for triggers and broker
 	vhost := "/"
-	durable := true
-	autoDelete := false
-	exchangeType := "headers"
 
 	var exchangeName string
 	var ownerReference metav1.OwnerReference
@@ -58,9 +55,6 @@ func NewExchange(args *ExchangeArgs) *rabbitv1beta1.Exchange {
 		exchangeName = args.Name
 	} else if args.Source != nil {
 		ownerReference = *kmeta.NewControllerRef(args.Source)
-		durable = args.Source.Spec.ExchangeConfig.Durable
-		autoDelete = args.Source.Spec.ExchangeConfig.AutoDelete
-		exchangeType = args.Source.Spec.ExchangeConfig.Type
 		exchangeName = args.Source.Spec.ExchangeConfig.Name
 		vhost = args.Source.Spec.Vhost
 	}
@@ -75,9 +69,9 @@ func NewExchange(args *ExchangeArgs) *rabbitv1beta1.Exchange {
 		Spec: rabbitv1beta1.ExchangeSpec{
 			Name:                     exchangeName,
 			Vhost:                    vhost,
-			Type:                     exchangeType,
-			Durable:                  durable,
-			AutoDelete:               autoDelete,
+			Type:                     "headers",
+			Durable:                  true,
+			AutoDelete:               false,
 			RabbitmqClusterReference: *args.RabbitmqClusterReference,
 		},
 	}
