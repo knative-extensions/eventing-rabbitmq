@@ -17,10 +17,16 @@ limitations under the License.
 package rabbit
 
 import (
+	"context"
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+
+	corev1listers "k8s.io/client-go/listers/core/v1"
 	"knative.dev/eventing/pkg/apis/eventing"
 	"knative.dev/pkg/kmeta"
 )
@@ -76,4 +82,26 @@ func SecretLabels(resourceName, typeString string) map[string]string {
 	return map[string]string{
 		label: resourceName,
 	}
+}
+
+// reconcileSecret reconciles the K8s Secret 's'.
+func ReconcileSecret(ctx context.Context, secretLister corev1listers.SecretLister, kubeClientSet kubernetes.Interface, s *corev1.Secret) error {
+	current, err := secretLister.Secrets(s.Namespace).Get(s.Name)
+	if apierrs.IsNotFound(err) {
+		_, err = kubeClientSet.CoreV1().Secrets(s.Namespace).Create(ctx, s, metav1.CreateOptions{})
+		if err != nil {
+			return err
+		}
+	} else if err != nil {
+		return err
+	} else if !equality.Semantic.DeepDerivative(s.StringData, current.StringData) {
+		// Don't modify the informers copy.
+		desired := current.DeepCopy()
+		desired.StringData = s.StringData
+		_, err = kubeClientSet.CoreV1().Secrets(desired.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

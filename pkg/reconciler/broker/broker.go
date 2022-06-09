@@ -132,28 +132,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *eventingv1.Broker) pk
 	return r.reconcileRabbitResources(ctx, b, args)
 }
 
-// reconcileSecret reconciles the K8s Secret 's'.
-func (r *Reconciler) reconcileSecret(ctx context.Context, s *corev1.Secret) error {
-	current, err := r.secretLister.Secrets(s.Namespace).Get(s.Name)
-	if apierrs.IsNotFound(err) {
-		_, err = r.kubeClientSet.CoreV1().Secrets(s.Namespace).Create(ctx, s, metav1.CreateOptions{})
-		if err != nil {
-			return err
-		}
-	} else if err != nil {
-		return err
-	} else if !equality.Semantic.DeepDerivative(s.StringData, current.StringData) {
-		// Don't modify the informers copy.
-		desired := current.DeepCopy()
-		desired.StringData = s.StringData
-		_, err = r.kubeClientSet.CoreV1().Secrets(desired.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // reconcileDeployment reconciles the K8s Deployment 'd'.
 func (r *Reconciler) reconcileDeployment(ctx context.Context, d *v1.Deployment) error {
 	current, err := r.deploymentLister.Deployments(d.Namespace).Get(d.Name)
@@ -371,7 +349,7 @@ func (r *Reconciler) reconcileDeadLetterResources(ctx context.Context, b *eventi
 
 // reconcileCommonIngressResources that are shared between implementations using CRDs or libraries.
 func (r *Reconciler) reconcileCommonIngressResources(ctx context.Context, s *corev1.Secret, b *eventingv1.Broker) error {
-	if err := r.reconcileSecret(ctx, s); err != nil {
+	if err := rabbit.ReconcileSecret(ctx, r.secretLister, r.kubeClientSet, s); err != nil {
 		logging.FromContext(ctx).Errorw("Problem reconciling Secret", zap.Error(err))
 		MarkSecretFailed(&b.Status, "SecretFailure", "Failed to reconcile secret: %s", err)
 		return err
