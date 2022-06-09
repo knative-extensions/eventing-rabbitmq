@@ -34,7 +34,15 @@ func (current *RabbitmqSource) Validate(ctx context.Context) *apis.FieldError {
 	}
 
 	if current.Spec.RabbitmqClusterReference == nil {
-		return apis.ErrMissingField("RabbitMQClusterReference").ViaField("spec")
+		return apis.ErrMissingField("rabbitmqClusterReference").ViaField("spec")
+	} else {
+		if current.Spec.RabbitmqClusterReference.Name == "" {
+			if current.Spec.RabbitmqClusterReference.ConnectionSecret == nil {
+				return apis.ErrMissingField("name").ViaField("rabbitmqClusterReference").ViaField("spec")
+			}
+		} else if current.Spec.RabbitmqClusterReference.ConnectionSecret != nil {
+			return apis.ErrDisallowedFields("connectionSecret").ViaField("rabbitmqClusterReference").ViaField("spec")
+		}
 	}
 
 	if apis.IsInUpdate(ctx) {

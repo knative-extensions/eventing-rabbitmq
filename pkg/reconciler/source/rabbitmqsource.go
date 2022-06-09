@@ -144,13 +144,8 @@ func (r *Reconciler) reconcileRabbitObjects(ctx context.Context, src *v1alpha1.R
 	if err != nil {
 		return err
 	}
-	s := rabbit.MakeSecret(&rabbit.ExchangeArgs{
-		Namespace:                src.Namespace,
-		Source:                   src,
-		RabbitmqClusterReference: src.Spec.RabbitmqClusterReference,
-		RabbitMQURL:              rabbitmqURL,
-	})
-	if err := rabbit.ReconcileSecret(ctx, r.secretLister, r.KubeClientSet, s); err != nil {
+
+	if err := rabbit.ReconcileSecret(ctx, r.secretLister, r.KubeClientSet, rabbit.MakeSecret(src.Name, "source", src.Namespace, rabbitmqURL.String(), src)); err != nil {
 		logging.FromContext(ctx).Errorw("Problem reconciling Secret", zap.Error(err))
 		src.Status.MarkSecretFailed("SecretFailure", "Failed to reconcile secret: %s", err)
 		return err

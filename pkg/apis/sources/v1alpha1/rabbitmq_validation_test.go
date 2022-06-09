@@ -20,6 +20,7 @@ import (
 	"context"
 	"testing"
 
+	v1 "k8s.io/api/core/v1"
 	"knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -297,6 +298,60 @@ func TestRabbitmqSourceExchangeConfig(t *testing.T) {
 			err := src.Validate(context.TODO())
 			if tc.allowed != (err == nil) {
 				t.Fatalf("ExchangeConfig validation result incorrect. Expected %v. Actual %v", tc.allowed, err)
+			}
+		})
+	}
+}
+
+func TestRabbitmqSourceSpecValidation(t *testing.T) {
+	testCases := map[string]struct {
+		spec    *RabbitmqSourceSpec
+		wantErr bool
+	}{
+		"valid config": {
+			spec:    &fullSpec,
+			wantErr: false,
+		},
+		"missing rabbitmqClusterReference": {
+			spec:    &RabbitmqSourceSpec{Predeclared: true},
+			wantErr: true,
+		},
+		"missing rabbitmqClusterReference.name": {
+			spec: &RabbitmqSourceSpec{
+				Predeclared:              true,
+				RabbitmqClusterReference: &v1beta1.RabbitmqClusterReference{Namespace: "test"},
+			},
+			wantErr: true,
+		},
+		"including connectionSecret": {
+			spec: &RabbitmqSourceSpec{
+				Predeclared: true,
+				RabbitmqClusterReference: &v1beta1.RabbitmqClusterReference{
+					Namespace: "test", Name: "test", ConnectionSecret: &v1.LocalObjectReference{Name: "test"}},
+			},
+			wantErr: true,
+		},
+		"just connection secret": {
+			spec: &RabbitmqSourceSpec{
+				Predeclared: true,
+				RabbitmqClusterReference: &v1beta1.RabbitmqClusterReference{
+					Namespace: "test", ConnectionSecret: &v1.LocalObjectReference{Name: "test"}},
+			},
+			wantErr: false,
+		},
+	}
+
+	for n, tc := range testCases {
+		t.Run(n, func(t *testing.T) {
+			src := &RabbitmqSource{
+				Spec: *tc.spec,
+			}
+
+			err := src.Validate(context.TODO())
+			if err == nil && tc.wantErr {
+				t.Error("expected error but got nil")
+			} else if err != nil && !tc.wantErr {
+				t.Errorf("got error %s, when not expecting error", err.Error())
 			}
 		})
 	}

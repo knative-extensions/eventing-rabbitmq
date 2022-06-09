@@ -96,11 +96,6 @@ type RabbitmqSourceSpec struct {
 	// For exponential policy, backoff delay is backoffDelay*2^<numberOfRetries>.
 	// +optional
 	BackoffDelay *string `json:"backoffDelay,omitempty"`
-	// Secret contains the http management uri for the RabbitMQ cluster.
-	// Used when queue and exchange are not predeclared.
-	// The Secret must contain the key `uri`, `username` and `password`.
-	// +optional
-	ConnectionSecret *corev1.LocalObjectReference `json:"connectionSecret,omitempty"`
 	// ChannelConfig config for rabbitmq exchange
 	// +optional
 	ChannelConfig RabbitmqChannelConfigSpec `json:"channelConfig,omitempty"`

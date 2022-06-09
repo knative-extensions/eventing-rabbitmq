@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Knative Authors
+Copyright 2022 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -36,24 +36,10 @@ const (
 )
 
 // MakeSecret creates the secret for Broker deployments for Rabbit Broker.
-func MakeSecret(args *ExchangeArgs) *corev1.Secret {
-	var name, typeString, ns string
-	var owner kmeta.OwnerRefable
-
-	if args.Broker != nil {
-		name = args.Broker.Name
-		owner = args.Broker
-		typeString = "broker"
-		ns = args.Broker.Namespace
-	} else if args.Source != nil {
-		owner = args.Source
-		name = args.Source.Name
-		typeString = "source"
-		ns = args.Source.Namespace
-	}
+func MakeSecret(name, typeString, namespace, url string, owner kmeta.OwnerRefable) *corev1.Secret {
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: ns,
+			Namespace: namespace,
 			Name:      SecretName(name, typeString),
 			OwnerReferences: []metav1.OwnerReference{
 				*kmeta.NewControllerRef(owner),
@@ -61,7 +47,7 @@ func MakeSecret(args *ExchangeArgs) *corev1.Secret {
 			Labels: SecretLabels(name, typeString),
 		},
 		StringData: map[string]string{
-			BrokerURLSecretKey: args.RabbitMQURL.String(),
+			BrokerURLSecretKey: url,
 		},
 	}
 }

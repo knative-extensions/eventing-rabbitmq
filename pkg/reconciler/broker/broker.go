@@ -256,7 +256,7 @@ func (r *Reconciler) reconcileRabbitResources(ctx context.Context, b *eventingv1
 		MarkDeadLetterSinkNotConfigured(&b.Status)
 	}
 
-	return r.reconcileCommonIngressResources(ctx, rabbit.MakeSecret(args), b)
+	return r.reconcileCommonIngressResources(ctx, rabbit.MakeSecret(args.Broker.Name, "broker", args.Namespace, args.RabbitMQURL.String(), args.Broker), b)
 }
 
 func (r *Reconciler) reconcileDeadLetterResources(ctx context.Context, b *eventingv1.Broker, args *rabbit.ExchangeArgs) (error, bool) {

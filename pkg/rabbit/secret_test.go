@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Knative Authors
+Copyright 2022 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import (
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 
 	"knative.dev/pkg/apis"
+	"knative.dev/pkg/kmeta"
 	_ "knative.dev/pkg/system/testing"
 )
 
@@ -102,7 +103,19 @@ func TestMakeSecret(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			got := MakeSecret(tt.args)
+			var owner kmeta.OwnerRefable
+			var name, typeString string
+
+			if tt.args.Broker != nil {
+				typeString = "broker"
+				name = tt.args.Broker.Name
+				owner = tt.args.Broker
+			} else if tt.args.Source != nil {
+				typeString = "source"
+				owner = tt.args.Source
+				name = tt.args.Source.Name
+			}
+			got := MakeSecret(name, typeString, ns, tt.args.RabbitMQURL.String(), owner)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Error("unexpected diff (-want, +got) = ", diff)
 			}

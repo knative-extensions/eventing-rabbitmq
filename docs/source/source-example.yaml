@@ -12,8 +12,6 @@ spec:
   backoffPolicy: "linear"
   backoffDelay: "50ms"
   predeclared: false
-  connectionSecret:
-    name: RABBITMQ_CONNECTION_SECRET
   exchangeConfig:
     name: RABBITMQ_EXCHANGE_CONFIG_NAME
   queueConfig:
