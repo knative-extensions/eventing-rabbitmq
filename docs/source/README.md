@@ -98,19 +98,8 @@ kind: RabbitmqSource
 metadata:
   name: rabbitmq-source
 spec:
-  broker: "rabbitmq:5672/"
-  user:
-    secretKeyRef:
-      name: rabbitmq-default-user
-      key: username
-  password:
-    secretKeyRef:
-      name: rabbitmq-default-user
-      key: password
   connectionSecret:
-    name: rabbitmq-default-user # used when exchange and queue are not predeclared
-  channelConfig:
-    globalQos: false
+    name: rabbitmq-default-user # used when exchange and queue are not predeclared and are in an external cluster, use rabbitmqClusterReference otherwise
   exchangeConfig:
     name: "eventing-rabbitmq-source"
   queueConfig:
@@ -184,7 +173,7 @@ Source parameters
 | `retry` | Number of retries to be used by the backoff policy  (Int) |
 | `user.secretKeyRef` | Username for Broker authentication; field `key` in a Kubernetes Secret named `name` |
 | `password.secretKeyRef` | Password for Broker authentication; field `key` in a Kubernetes Secret named `name` |
-| `connectionSecret` | The name of the RabbitMQ secret |
+| `connectionSecret` | The name of the RabbitMQ secret,  |
 | `exchangeConfig.name` | Name of the exchange |
 | `queueConfig.name` | Name of the queue |
 | `channelConfig.parallelism` * | Int that sets the [Consumer Prefetch Value](https://www.rabbitmq.com/consumer-prefetch.html) and creates `n` parallel consumer processes. Default value is `1`. Value must be between `1` and `1000`. With a value of `1` the RabbitMQ Source process events in FIFO order, values above `1` break message ordering guarantees and can be seen as more performance oriented. |html#sharing-the-limit) is handled. |

@@ -138,15 +138,6 @@ metadata:
   name: rabbitmq-source
   namespace: source-demo
 spec:
-  broker: "rabbitmq:5672/"
-  user:
-    secretKeyRef:
-      name: rabbitmq-default-user
-      key: username
-  password:
-    secretKeyRef:
-      name: rabbitmq-default-user
-      key: password
   connectionSecret:
     name: rabbitmq-default-user
   channelConfig:

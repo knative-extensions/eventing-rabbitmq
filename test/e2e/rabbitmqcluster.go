@@ -57,7 +57,6 @@ func RabbitMQCluster() *feature.Feature {
 
 	f.Setup("install a rabbitmqcluster", rabbitmq.Install())
 	f.Requirement("RabbitMQCluster goes ready", RabbitMQClusterReady)
-	f.Requirement("Add key uri to default user secret", RabbitMQClusterConnectionSecret)
 	return f
 }
 
@@ -66,23 +65,13 @@ func RabbitMQClusterVHost() *feature.Feature {
 
 	f.Setup("install a rabbitmqcluster with a default vhost and user permissions to it", rabbitmqvhost.Install())
 	f.Requirement("RabbitMQCluster goes ready", RabbitMQClusterReady)
-	f.Requirement("Add key uri to default user secret", RabbitMQClusterConnectionSecretVhost)
+	f.Requirement("Add credentials to default user secret", RabbitMQClusterConnectionSecretVhost)
 	return f
-}
-
-func RabbitMQClusterConnectionSecret(ctx context.Context, t feature.T) {
-	namespace := environment.FromContext(ctx).Namespace()
-	secretName := "rabbitmqc-default-user" // default user secret created by rabbitmq cluster operator
-
-	if err := patchConnectionSecret(ctx, namespace, secretName); err != nil {
-		t.Fatalf("failed to patch k8s Secret '%s' from namespace '%s' : %v", secretName, namespace, err)
-	}
-	log.Printf("Successfully patched Secret '%s' from namespace '%s' with RabbitMQ uri", secretName, namespace)
 }
 
 func RabbitMQClusterConnectionSecretVhost(ctx context.Context, t feature.T) {
 	namespace := environment.FromContext(ctx).Namespace()
-	secretName := "secret-basic-auth" // 'secret-basic-auth' secret created in test/e2e/config/rabbitmqvhost/credentials.yaml
+	secretName := "rabbitmqc-default-user" // created by default by the rabbitmq cluster operator
 
 	if err := patchConnectionSecret(ctx, namespace, secretName); err != nil {
 		t.Fatalf("failed to patch k8s Secret '%s' from namespace '%s' : %v", secretName, namespace, err)
@@ -96,6 +85,8 @@ func patchConnectionSecret(ctx context.Context, namespace string, secretName str
 		return err
 	}
 	secret.Data["uri"] = []byte(fmt.Sprintf("rabbitmqc.%s:15672", namespace))
+	secret.Data["username"] = []byte("guest")
+	secret.Data["password"] = []byte("guest")
 	if _, err = kubeClient.Get(ctx).CoreV1().Secrets(namespace).Update(ctx, secret, metav1.UpdateOptions{}); err != nil {
 		return err
 	}
