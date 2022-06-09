@@ -308,25 +308,3 @@ func (r *Reconciler) createCloudEventAttributes(src *v1alpha1.RabbitmqSource) []
 	}
 	return []duckv1.CloudEventAttributes{ceAttribute}
 }
-
-// reconcileSecret reconciles the K8s Secret 's'.
-func (r *Reconciler) reconcileSecret(ctx context.Context, s *corev1.Secret) error {
-	current, err := r.secretLister.Secrets(s.Namespace).Get(s.Name)
-	if apierrors.IsNotFound(err) {
-		_, err = r.KubeClientSet.CoreV1().Secrets(s.Namespace).Create(ctx, s, metav1.CreateOptions{})
-		if err != nil {
-			return err
-		}
-	} else if err != nil {
-		return err
-	} else if !equality.Semantic.DeepDerivative(s.StringData, current.StringData) {
-		// Don't modify the informers copy.
-		desired := current.DeepCopy()
-		desired.StringData = s.StringData
-		_, err = r.KubeClientSet.CoreV1().Secrets(desired.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
