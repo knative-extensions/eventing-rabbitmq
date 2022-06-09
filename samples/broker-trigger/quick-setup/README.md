@@ -91,8 +91,17 @@ spec:
   rabbitmqClusterReference:
     name: rabbitmq
     namespace: broker-trigger-demo
+  queueType: quorum
 
 ```
+
+#### Queue Type
+
+Queue type can be configured in the `RabbitmqBrokerConfig`. The supported types are `quorum` (default) and `classic`. Quorum
+queues are recommended for fault tolerant multi-node setups. More information on quorum queues can be found [here](https://www.rabbitmq.com/quorum-queues.html). A
+minimum RabbitMQ version of (3.8.0) is required to use quorum queues.
+
+Note: Configuring queue type is only supported when using the `RabbitmqBrokerConfig`. If the DEPRECATED `RabbitmqCluster` is used as the broker config, queue type will be `classic`.
 
 ### Create the RabbitMQ Broker
 
