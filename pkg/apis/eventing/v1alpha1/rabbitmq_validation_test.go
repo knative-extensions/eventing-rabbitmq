@@ -28,6 +28,7 @@ import (
 func TestValidateRabbitmqBrokerConfig(t *testing.T) {
 	validBrokerConfig := &RabbitmqBrokerConfig{
 		Spec: RabbitmqBrokerConfigSpec{
+			QueueType: "quorum",
 			RabbitmqClusterReference: &v1beta1.RabbitmqClusterReference{
 				Namespace: "some-namespace",
 				Name:      "some-name",
@@ -59,7 +60,9 @@ func TestValidateRabbitmqBrokerConfig(t *testing.T) {
 		},
 		"missing rabbitmqClusterReference": {
 			newConfig: &RabbitmqBrokerConfig{
-				Spec: RabbitmqBrokerConfigSpec{},
+				Spec: RabbitmqBrokerConfigSpec{
+					QueueType: "classic",
+				},
 			},
 			wantErr:  true,
 			isUpdate: false,

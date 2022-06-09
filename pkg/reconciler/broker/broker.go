@@ -297,12 +297,17 @@ func (r *Reconciler) reconcileDeadLetterResources(ctx context.Context, b *eventi
 	if err != nil {
 		return err, false
 	}
+	queueType, err := r.brokerConfig.GetQueueType(ctx, b)
+	if err != nil {
+		return err, false
+	}
 	queue, err := r.rabbit.ReconcileQueue(ctx, &rabbit.QueueArgs{
 		Name:                     naming.CreateBrokerDeadLetterQueueName(b),
 		Namespace:                b.Namespace,
 		RabbitmqClusterReference: clusterRef,
 		Owner:                    *kmeta.NewControllerRef(b),
 		Labels:                   rabbit.Labels(b, nil, nil),
+		QueueType:                queueType,
 	})
 	if err != nil {
 		MarkDLXFailed(&b.Status, "QueueFailure", fmt.Sprintf("Failed to reconcile Dead Letter Queue %q : %s", naming.CreateBrokerDeadLetterQueueName(b), err))
