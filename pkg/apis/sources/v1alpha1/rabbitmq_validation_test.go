@@ -324,13 +324,6 @@ func TestRabbitmqSourceSpecValidation(t *testing.T) {
 			},
 			wantErr: true,
 		},
-		"missing rabbitmqClusterReference.namespace": {
-			spec: &RabbitmqSourceSpec{
-				Predeclared:              true,
-				RabbitmqClusterReference: &v1beta1.RabbitmqClusterReference{Name: "test"},
-			},
-			wantErr: true,
-		},
 		"including connectionSecret": {
 			spec: &RabbitmqSourceSpec{
 				Predeclared: true,
@@ -345,7 +338,7 @@ func TestRabbitmqSourceSpecValidation(t *testing.T) {
 				RabbitmqClusterReference: &v1beta1.RabbitmqClusterReference{
 					Namespace: "test", ConnectionSecret: &v1.LocalObjectReference{Name: "test"}},
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 	}
 
