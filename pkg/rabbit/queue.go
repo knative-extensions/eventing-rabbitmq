@@ -42,8 +42,6 @@ type QueueArgs struct {
 
 func NewQueue(args *QueueArgs) *rabbitv1beta1.Queue {
 	// queue configurations for broker and trigger
-	durable := true
-	autoDelete := false
 	queueName := args.Name
 	vhost := "/"
 	if args.QueueName != "" {
@@ -66,8 +64,8 @@ func NewQueue(args *QueueArgs) *rabbitv1beta1.Queue {
 		Spec: rabbitv1beta1.QueueSpec{
 			Name:                     queueName,
 			Vhost:                    vhost,
-			Durable:                  durable,
-			AutoDelete:               autoDelete,
+			Durable:                  true,
+			AutoDelete:               false,
 			RabbitmqClusterReference: *args.RabbitmqClusterReference,
 		},
 	}

@@ -20,7 +20,6 @@ import (
 	"context"
 
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
-	"knative.dev/pkg/logging"
 )
 
 func SetBackoffPolicy(ctx context.Context, backoffPolicy string) eventingduckv1.BackoffPolicyType {
@@ -29,6 +28,5 @@ func SetBackoffPolicy(ctx context.Context, backoffPolicy string) eventingduckv1.
 	} else if backoffPolicy == "linear" {
 		return eventingduckv1.BackoffPolicyLinear
 	}
-	logging.FromContext(ctx).Fatalf("Invalid BACKOFF_POLICY specified: must be %q or %q", eventingduckv1.BackoffPolicyExponential, eventingduckv1.BackoffPolicyLinear)
 	return ""
 }

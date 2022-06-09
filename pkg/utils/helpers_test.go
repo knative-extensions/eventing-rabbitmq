@@ -40,6 +40,10 @@ func TestSetBackoffPolicy(t *testing.T) {
 			policyString:   "linear",
 			expectedPolicy: eventingduckv1.BackoffPolicyLinear,
 		},
+		"should return empty policy when policy string is not linear nor exponential": {
+			policyString:   "unknownPolicy",
+			expectedPolicy: "",
+		},
 	}
 
 	for name, tc := range testCases {

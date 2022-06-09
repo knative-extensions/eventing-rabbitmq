@@ -266,9 +266,6 @@ The Source will provide output information about readiness or errors via the
     2. Note: RabbitMQ declares the default exchange types like 'amq.fanout' as
     durable, so queues that bind to these pre-declared exchanges must also be
     durable.
-
-    3. Optional amqp.Table of arguments that are specific to the server's implementation of
-    the exchange can be sent for exchange types that require extra parameters.
     ```
 
   - Configure queue config properties based on this documentation.
