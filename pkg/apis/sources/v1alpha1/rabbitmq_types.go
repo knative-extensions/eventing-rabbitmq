@@ -23,6 +23,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"knative.dev/eventing-rabbitmq/pkg/utils"
 	"knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/pkg/apis"
@@ -55,35 +57,34 @@ var _ apis.Defaultable = (*RabbitmqSource)(nil)
 var _ apis.Validatable = (*RabbitmqSource)(nil)
 var _ duckv1.KRShaped = (*RabbitmqSource)(nil)
 
-type RabbitmqChannelConfigSpec struct {
+type RabbitmqResourcesConfigSpec struct {
+	// VHost is the name of the VHost that will be used to set up our sources
+	// +optional
+	Vhost string `json:"vhost,omitempty"`
+	// Name of the queue to bind to; required value.
+	// +required
+	QueueName string `json:"queueName"`
+	// +optional
+	// +kubebuilder:default:=quorum
+	// +kubebuilder:validation:Enum=quorum;classic
+	QueueType utils.QueueType `json:"queueType"`
+	// Name of the exchange; Required when predeclared is false.
+	// +optional
+	ExchangeName string `json:"exchangeName,omitempty"`
 	// Sets the Channel's Prefetch count and number of Workers to consume simultaneously from it
 	// +optional
 	// +kubebuilder:validation:Minimum:=1
 	// +kubebuilder:validation:Maximum:=1000
 	// +kubebuilder:default:=1
 	Parallelism *int `json:"parallelism,omitempty"`
-}
-
-type RabbitmqSourceExchangeConfigSpec struct {
-	// Name of the exchange; Required when predeclared is false.
-	// +optional
-	Name string `json:"name,omitempty"`
-}
-
-type RabbitmqSourceQueueConfigSpec struct {
-	// Name of the queue to bind to; required value.
-	// +required
-	Name string `json:"name"`
-}
-
-type RabbitmqSourceSpec struct {
-	// RabbitmqClusterReference stores a reference to RabbitmqCluster. This will get used to create resources on the RabbitMQ Broker.
-	RabbitmqClusterReference *v1beta1.RabbitmqClusterReference `json:"rabbitmqClusterReference,omitempty"`
 	// Predeclared defines if channels and queues are already predeclared and shouldn't be recreated.
 	// This should be used in case the user does not have permission to declare new queues and channels in
 	// RabbitMQ cluster
 	// +optional
 	Predeclared bool `json:"predeclared,omitempty"`
+}
+
+type DeliverySpec struct {
 	// Retry is the minimum number of retries the sender should attempt when
 	// sending an event before moving it to the dead letter sink.
 	// +optional
@@ -91,20 +92,28 @@ type RabbitmqSourceSpec struct {
 	// BackoffPolicy is the retry backoff policy (linear, exponential).
 	// +optional
 	BackoffPolicy *eventingduckv1.BackoffPolicyType `json:"backoffPolicy,omitempty"`
-	// BackoffDelay is the delay before retrying in time.Duration format.
+	// BackoffDelay is the delay before retrying.
+	// More information on Duration format:
+	//  - https://www.iso.org/iso-8601-date-and-time-format.html
+	//  - https://en.wikipedia.org/wiki/ISO_8601
+	//
 	// For linear policy, backoff delay is backoffDelay*<numberOfRetries>.
 	// For exponential policy, backoff delay is backoffDelay*2^<numberOfRetries>.
 	// +optional
 	BackoffDelay *string `json:"backoffDelay,omitempty"`
-	// ChannelConfig config for rabbitmq exchange
+}
+
+type RabbitmqSourceSpec struct {
+	// RabbitmqClusterReference stores a reference to RabbitmqCluster. This will get used to create resources on the RabbitMQ Broker.
+	RabbitmqClusterReference *v1beta1.RabbitmqClusterReference `json:"rabbitmqClusterReference,omitempty"`
+	// Delivery contains the delivery spec for each trigger
+	// to this Broker. Each trigger delivery spec, if any, overrides this
+	// global delivery spec.
 	// +optional
-	ChannelConfig RabbitmqChannelConfigSpec `json:"channelConfig,omitempty"`
-	// ExchangeConfig config for rabbitmq exchange
-	// +optional
-	ExchangeConfig RabbitmqSourceExchangeConfigSpec `json:"exchangeConfig,omitempty"`
-	// QueueConfig config for rabbitmq queues
-	// +optional
-	QueueConfig RabbitmqSourceQueueConfigSpec `json:"queueConfig,omitempty"`
+	Delivery *DeliverySpec `json:"delivery,omitempty"`
+	// RabbitmqResourcesConfig config for Rabbitmq resources: Exchange, Channel and Queue
+	// +required
+	RabbitmqResourcesConfig *RabbitmqResourcesConfigSpec `json:"rabbitmqResourcesConfig"`
 	// Sink is a reference to an object that will resolve to a domain name to use as the sink.
 	// Required property.
 	// +required
@@ -112,9 +121,6 @@ type RabbitmqSourceSpec struct {
 	// ServiceAccountName is the name of the ServiceAccount that will be used to run the Receive
 	// Adapter Deployment.
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
-	// VHost is the name of the VHost that will be used to set up our sources
-	// +optional
-	Vhost string `json:"vhost,omitempty"`
 }
 
 // SecretValueFromSource represents the source of a secret value

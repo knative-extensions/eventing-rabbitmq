@@ -26,10 +26,14 @@ import (
 )
 
 func (current *RabbitmqSource) Validate(ctx context.Context) *apis.FieldError {
-	if !current.Spec.Predeclared && current.Spec.ExchangeConfig.Name == "" {
-		return &apis.FieldError{
-			Message: "Name of exchange must be provided when spec.predeclared is false",
-			Paths:   []string{"spec", "exchangeConfig", "name"},
+	if current.Spec.RabbitmqResourcesConfig == nil {
+		return apis.ErrMissingField("rabbitmqResourcesConfig").ViaField("spec")
+	} else {
+		if !current.Spec.RabbitmqResourcesConfig.Predeclared && current.Spec.RabbitmqResourcesConfig.ExchangeName == "" {
+			return &apis.FieldError{
+				Message: "Name of exchange must be provided when spec.predeclared is false",
+				Paths:   []string{"spec", "exchangeConfig", "name"},
+			}
 		}
 	}
 
@@ -46,7 +50,7 @@ func (current *RabbitmqSource) Validate(ctx context.Context) *apis.FieldError {
 	}
 
 	if apis.IsInUpdate(ctx) {
-		ignoreSpecFields := cmpopts.IgnoreFields(RabbitmqSourceSpec{}, "ChannelConfig")
+		ignoreSpecFields := cmpopts.IgnoreFields(RabbitmqSourceSpec{}, "channelConfig")
 		original := apis.GetBaseline(ctx).(*RabbitmqSource)
 
 		if diff, err := kmp.ShortDiff(original.Spec, current.Spec, ignoreSpecFields); err != nil {
@@ -64,16 +68,16 @@ func (current *RabbitmqSource) Validate(ctx context.Context) *apis.FieldError {
 		}
 	}
 
-	return current.Spec.ChannelConfig.validate().ViaField("ChannelConfig")
+	return current.Spec.RabbitmqResourcesConfig.validate().ViaField("rabbitmqResourcesConfig")
 }
 
-func (chSpec *RabbitmqChannelConfigSpec) validate() *apis.FieldError {
-	if chSpec.Parallelism == nil {
+func (rmqResSpec *RabbitmqResourcesConfigSpec) validate() *apis.FieldError {
+	if rmqResSpec.Parallelism == nil {
 		return nil
 	}
 
-	if *chSpec.Parallelism < 1 || *chSpec.Parallelism > 1000 {
-		return apis.ErrOutOfBoundsValue(*chSpec.Parallelism, 1, 1000, "Parallelism")
+	if *rmqResSpec.Parallelism < 1 || *rmqResSpec.Parallelism > 1000 {
+		return apis.ErrOutOfBoundsValue(*rmqResSpec.Parallelism, 1, 1000, "Parallelism")
 	}
 
 	return nil

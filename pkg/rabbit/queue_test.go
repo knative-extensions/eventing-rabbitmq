@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
+	"knative.dev/eventing-rabbitmq/pkg/utils"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/pointer"
@@ -34,7 +35,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1alpha12 "knative.dev/eventing-rabbitmq/pkg/apis/eventing/v1alpha1"
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 )
 
@@ -86,7 +86,7 @@ func TestNewQueue(t *testing.T) {
 					RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
 						Name: rabbitmqcluster,
 					},
-					Type: string(v1alpha12.QuorumQueueType),
+					Type: string(utils.QuorumQueueType),
 				},
 			},
 		},
@@ -159,7 +159,7 @@ func TestNewQueue(t *testing.T) {
 				},
 				Owner:     owner,
 				Labels:    map[string]string{"cool": "label"},
-				QueueType: v1alpha12.ClassicQueueType,
+				QueueType: utils.ClassicQueueType,
 			},
 			want: &rabbitv1beta1.Queue{
 				ObjectMeta: metav1.ObjectMeta{
@@ -175,7 +175,7 @@ func TestNewQueue(t *testing.T) {
 					RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
 						Name: rabbitmqcluster,
 					},
-					Type: string(v1alpha12.ClassicQueueType),
+					Type: string(utils.ClassicQueueType),
 				},
 			},
 		},
@@ -193,10 +193,10 @@ func TestNewQueue(t *testing.T) {
 				Labels: map[string]string{"a-key": "a-value"},
 				Source: &v1alpha1.RabbitmqSource{
 					Spec: v1alpha1.RabbitmqSourceSpec{
-						QueueConfig: v1alpha1.RabbitmqSourceQueueConfigSpec{
-							Name: "a-test-queue",
+						RabbitmqResourcesConfig: &v1alpha1.RabbitmqResourcesConfigSpec{
+							QueueName: "a-test-queue",
+							Vhost:     "test",
 						},
-						Vhost: "test",
 					},
 				},
 			},

@@ -58,19 +58,23 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 		},
 		{
 			Name:  "RABBITMQ_CHANNEL_CONFIG_PARALLELISM",
-			Value: strconv.Itoa(*args.Source.Spec.ChannelConfig.Parallelism),
+			Value: strconv.Itoa(*args.Source.Spec.RabbitmqResourcesConfig.Parallelism),
 		},
 		{
 			Name:  "RABBITMQ_EXCHANGE_CONFIG_NAME",
-			Value: args.Source.Spec.ExchangeConfig.Name,
+			Value: args.Source.Spec.RabbitmqResourcesConfig.ExchangeName,
 		},
 		{
 			Name:  "RABBITMQ_QUEUE_CONFIG_NAME",
-			Value: args.Source.Spec.QueueConfig.Name,
+			Value: args.Source.Spec.RabbitmqResourcesConfig.QueueName,
+		},
+		{
+			Name:  "RABBITMQ_QUEUE_CONFIG_TYPE",
+			Value: string(args.Source.Spec.RabbitmqResourcesConfig.QueueType),
 		},
 		{
 			Name:  "RABBITMQ_PREDECLARED",
-			Value: strconv.FormatBool(args.Source.Spec.Predeclared),
+			Value: strconv.FormatBool(args.Source.Spec.RabbitmqResourcesConfig.Predeclared),
 		},
 		{
 			Name:  "SINK_URI",
@@ -98,21 +102,21 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 		},
 		{
 			Name:  "RABBITMQ_VHOST",
-			Value: args.Source.Spec.Vhost,
+			Value: args.Source.Spec.RabbitmqResourcesConfig.Vhost,
 		},
 	}
 
-	if args.Source.Spec.Retry != nil {
+	if args.Source.Spec.Delivery.Retry != nil {
 		env = append(env, corev1.EnvVar{
 			Name:  "HTTP_SENDER_RETRY",
-			Value: strconv.FormatInt(int64(*args.Source.Spec.Retry), 10),
+			Value: strconv.FormatInt(int64(*args.Source.Spec.Delivery.Retry), 10),
 		})
 	}
 
-	if args.Source.Spec.BackoffPolicy != nil {
+	if args.Source.Spec.Delivery.BackoffPolicy != nil {
 		env = append(env, corev1.EnvVar{
 			Name:  "HTTP_SENDER_BACKOFF_POLICY",
-			Value: string(*args.Source.Spec.BackoffPolicy),
+			Value: string(*args.Source.Spec.Delivery.BackoffPolicy),
 		})
 	} else {
 		env = append(env, corev1.EnvVar{
@@ -121,8 +125,8 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 		})
 	}
 
-	if args.Source.Spec.BackoffDelay != nil {
-		p, _ := period.Parse(*args.Source.Spec.BackoffDelay)
+	if args.Source.Spec.Delivery.BackoffDelay != nil {
+		p, _ := period.Parse(*args.Source.Spec.Delivery.BackoffDelay)
 		env = append(env, corev1.EnvVar{
 			Name:  "HTTP_SENDER_BACKOFF_DELAY",
 			Value: p.DurationApprox().String(),

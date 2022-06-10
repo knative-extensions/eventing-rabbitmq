@@ -60,19 +60,17 @@ func TestMakeReceiveAdapter(t *testing.T) {
 				},
 				Spec: v1alpha12.RabbitmqSourceSpec{
 					ServiceAccountName: "source-svc-acct",
-					Predeclared:        true,
-					ExchangeConfig: v1alpha12.RabbitmqSourceExchangeConfigSpec{
-						Name: "logs",
+					RabbitmqResourcesConfig: &v1alpha12.RabbitmqResourcesConfigSpec{
+						Predeclared:  true,
+						ExchangeName: "logs",
+						QueueName:    "",
+						Parallelism:  &parallelism,
 					},
-					QueueConfig: v1alpha12.RabbitmqSourceQueueConfigSpec{
-						Name: "",
+					Delivery: &v1alpha12.DeliverySpec{
+						Retry:         &retry,
+						BackoffDelay:  &backoffDelay,
+						BackoffPolicy: &tt.backoffPolicy,
 					},
-					ChannelConfig: v1alpha12.RabbitmqChannelConfigSpec{
-						Parallelism: &parallelism,
-					},
-					Retry:         &retry,
-					BackoffDelay:  &backoffDelay,
-					BackoffPolicy: &tt.backoffPolicy,
 				},
 			}
 
@@ -168,6 +166,10 @@ func TestMakeReceiveAdapter(t *testing.T) {
 										},
 										{
 											Name:  "RABBITMQ_QUEUE_CONFIG_NAME",
+											Value: "",
+										},
+										{
+											Name:  "RABBITMQ_QUEUE_CONFIG_TYPE",
 											Value: "",
 										},
 										{

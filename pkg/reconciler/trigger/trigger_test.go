@@ -44,6 +44,7 @@ import (
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
+	"knative.dev/eventing-rabbitmq/pkg/utils"
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	fakerabbitclient "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/client/fake"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
@@ -1160,9 +1161,9 @@ func makeSubscriberNotAddressableAsUnstructured() *unstructured.Unstructured {
 }
 
 func createQueue(kref *duckv1.KReference) *rabbitv1beta1.Queue {
-	queueType := v1alpha1.ClassicQueueType
+	queueType := utils.ClassicQueueType
 	if kref.Kind == "RabbitmqBrokerConfig" {
-		queueType = v1alpha1.QuorumQueueType
+		queueType = utils.QuorumQueueType
 	}
 	labels := map[string]string{
 		"eventing.knative.dev/broker":  brokerName,
