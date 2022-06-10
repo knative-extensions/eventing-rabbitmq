@@ -169,6 +169,10 @@ func TestMakeReceiveAdapter(t *testing.T) {
 											Value: "",
 										},
 										{
+											Name:  "RABBITMQ_QUEUE_CONFIG_TYPE",
+											Value: "",
+										},
+										{
 											Name:  "RABBITMQ_PREDECLARED",
 											Value: "true",
 										},

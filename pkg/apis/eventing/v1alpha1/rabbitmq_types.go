@@ -20,6 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"knative.dev/eventing-rabbitmq/pkg/utils"
 	"knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/webhook/resourcesemantics"
@@ -44,13 +45,6 @@ var _ resourcesemantics.GenericCRD = (*RabbitmqBrokerConfig)(nil)
 var _ apis.Defaultable = (*RabbitmqBrokerConfig)(nil)
 var _ apis.Validatable = (*RabbitmqBrokerConfig)(nil)
 
-type QueueType string
-
-var (
-	QuorumQueueType  = QueueType("quorum")
-	ClassicQueueType = QueueType("classic")
-)
-
 type RabbitmqBrokerConfigSpec struct {
 	// RabbitmqClusterReference stores a reference to RabbitmqCluster. This will get used to create resources on the RabbitMQ Broker.
 	RabbitmqClusterReference *v1beta1.RabbitmqClusterReference `json:"rabbitmqClusterReference,omitempty"`
@@ -58,7 +52,7 @@ type RabbitmqBrokerConfigSpec struct {
 	// +optional
 	// +kubebuilder:default:=quorum
 	// +kubebuilder:validation:Enum=quorum;classic
-	QueueType QueueType `json:"queueType"`
+	QueueType utils.QueueType `json:"queueType"`
 }
 
 func (s *RabbitmqBrokerConfig) GetGroupVersionKind() schema.GroupVersionKind {

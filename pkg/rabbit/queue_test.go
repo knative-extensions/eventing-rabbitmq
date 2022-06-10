@@ -21,6 +21,7 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,20 +33,14 @@ import (
 	"knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
-
-	"github.com/google/go-cmp/cmp"
 )
 
 func TestNewQueue(t *testing.T) {
 	var (
-		namespace            = "foobar"
-		brokerName           = "testbroker"
-		brokerUID            = types.UID("broker-test-uid")
-		triggerName          = "testtrigger"
-		sourceName           = "a-source"
-		rabbitmqcluster      = "testrabbitmqcluster"
-		connectionSecretName = "a-random-secret"
-		owner                = metav1.OwnerReference{
+		namespace  = "foobar"
+		brokerName = "testbroker"
+		sourceName = "a-source"
+		owner      = metav1.OwnerReference{
 			Kind:       "Broker",
 			APIVersion: "eventing.knative.dev/v1",
 			Name:       brokerName,
@@ -195,7 +190,6 @@ func TestNewQueue(t *testing.T) {
 							QueueName: "a-test-queue",
 							Vhost:     "test",
 						},
-						Vhost: "test",
 					},
 				},
 			},

@@ -37,6 +37,7 @@ import (
 	rabbitduck "knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
+	"knative.dev/eventing-rabbitmq/pkg/utils"
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	fakerabbitclient "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/client/fake"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
@@ -1409,9 +1410,9 @@ func createReadyExchange(dlx bool) *rabbitv1beta1.Exchange {
 }
 
 func createQueue(dlx bool, kref *duckv1.KReference) *rabbitv1beta1.Queue {
-	queueType := v1alpha1.ClassicQueueType
+	queueType := utils.ClassicQueueType
 	if kref.Kind == "RabbitmqBrokerConfig" {
-		queueType = v1alpha1.QuorumQueueType
+		queueType = utils.QuorumQueueType
 	}
 	broker := &eventingv1.Broker{
 		ObjectMeta: metav1.ObjectMeta{

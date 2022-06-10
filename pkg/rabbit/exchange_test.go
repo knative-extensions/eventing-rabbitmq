@@ -165,7 +165,6 @@ func TestNewExchange(t *testing.T) {
 						ExchangeName: "some-exchange",
 						Vhost:        "test",
 					},
-					Vhost: "test",
 				},
 			},
 		},
