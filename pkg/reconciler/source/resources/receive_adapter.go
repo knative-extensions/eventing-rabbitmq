@@ -106,31 +106,33 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 		},
 	}
 
-	if args.Source.Spec.Delivery.Retry != nil {
-		env = append(env, corev1.EnvVar{
-			Name:  "HTTP_SENDER_RETRY",
-			Value: strconv.FormatInt(int64(*args.Source.Spec.Delivery.Retry), 10),
-		})
-	}
+	if args.Source.Spec.Delivery != nil {
+		if args.Source.Spec.Delivery.Retry != nil {
+			env = append(env, corev1.EnvVar{
+				Name:  "HTTP_SENDER_RETRY",
+				Value: strconv.FormatInt(int64(*args.Source.Spec.Delivery.Retry), 10),
+			})
+		}
 
-	if args.Source.Spec.Delivery.BackoffPolicy != nil {
-		env = append(env, corev1.EnvVar{
-			Name:  "HTTP_SENDER_BACKOFF_POLICY",
-			Value: string(*args.Source.Spec.Delivery.BackoffPolicy),
-		})
-	} else {
-		env = append(env, corev1.EnvVar{
-			Name:  "HTTP_SENDER_BACKOFF_POLICY",
-			Value: string(eventingduckv1.BackoffPolicyExponential),
-		})
-	}
+		if args.Source.Spec.Delivery.BackoffPolicy != nil {
+			env = append(env, corev1.EnvVar{
+				Name:  "HTTP_SENDER_BACKOFF_POLICY",
+				Value: string(*args.Source.Spec.Delivery.BackoffPolicy),
+			})
+		} else {
+			env = append(env, corev1.EnvVar{
+				Name:  "HTTP_SENDER_BACKOFF_POLICY",
+				Value: string(eventingduckv1.BackoffPolicyExponential),
+			})
+		}
 
-	if args.Source.Spec.Delivery.BackoffDelay != nil {
-		p, _ := period.Parse(*args.Source.Spec.Delivery.BackoffDelay)
-		env = append(env, corev1.EnvVar{
-			Name:  "HTTP_SENDER_BACKOFF_DELAY",
-			Value: p.DurationApprox().String(),
-		})
+		if args.Source.Spec.Delivery.BackoffDelay != nil {
+			p, _ := period.Parse(*args.Source.Spec.Delivery.BackoffDelay)
+			env = append(env, corev1.EnvVar{
+				Name:  "HTTP_SENDER_BACKOFF_DELAY",
+				Value: p.DurationApprox().String(),
+			})
+		}
 	}
 
 	return &v1.Deployment{

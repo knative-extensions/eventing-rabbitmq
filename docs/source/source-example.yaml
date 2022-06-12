@@ -8,14 +8,15 @@ spec:
   rabbitmqClusterReference:
     name: RABBITMQ_CLUSTERREF_NAME
     namespace: RABBITMQ_CLUSTERREF_NAMESPACE
-  retry: 5
-  backoffPolicy: "linear"
-  backoffDelay: "50ms"
-  predeclared: false
-  exchangeConfig:
-    name: RABBITMQ_EXCHANGE_CONFIG_NAME
-  queueConfig:
-    name: RABBITMQ_QUEUE_CONFIG_NAME
+  delivery:
+    retry: 5
+    backoffPolicy: "linear"
+    backoffDelay: "50ms"
+  rabbitmqResourcesConfig:
+    predeclared: false
+    exchangeName: RABBITMQ_EXCHANGE_CONFIG_NAME
+    queueName: RABBITMQ_QUEUE_CONFIG_NAME
+    parallelism: 100
   sink:
     apiVersion: serving.knative.dev/v1
     kind: Service

@@ -19,8 +19,6 @@ package v1alpha1
 import (
 	"context"
 
-	"github.com/google/go-cmp/cmp/cmpopts"
-
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/kmp"
 )
@@ -32,7 +30,7 @@ func (current *RabbitmqSource) Validate(ctx context.Context) *apis.FieldError {
 		if !current.Spec.RabbitmqResourcesConfig.Predeclared && current.Spec.RabbitmqResourcesConfig.ExchangeName == "" {
 			return &apis.FieldError{
 				Message: "Name of exchange must be provided when spec.predeclared is false",
-				Paths:   []string{"spec", "exchangeConfig", "name"},
+				Paths:   []string{"spec", "rabbitmqResourcesConfig", "name"},
 			}
 		}
 	}
@@ -50,10 +48,8 @@ func (current *RabbitmqSource) Validate(ctx context.Context) *apis.FieldError {
 	}
 
 	if apis.IsInUpdate(ctx) {
-		ignoreSpecFields := cmpopts.IgnoreFields(RabbitmqSourceSpec{}, "channelConfig")
 		original := apis.GetBaseline(ctx).(*RabbitmqSource)
-
-		if diff, err := kmp.ShortDiff(original.Spec, current.Spec, ignoreSpecFields); err != nil {
+		if diff, err := kmp.ShortDiff(original.Spec, current.Spec); err != nil {
 			return &apis.FieldError{
 				Message: "Failed to diff RabbitmqSource",
 				Paths:   []string{"spec"},

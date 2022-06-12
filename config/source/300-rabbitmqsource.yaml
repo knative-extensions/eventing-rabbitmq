@@ -42,6 +42,34 @@ spec:
             type: object
           spec:
             properties:
+              rabbitmqResourcesConfig:
+                description: rabbitmqResourcesConfig stores all the configuration parameters related to RabbitMQ resources created by the Source.
+                properties:
+                  vhost:
+                    description: VHost is the name of the VHost that will be used to set
+                      up our sources
+                    type: string
+                  parallelism:
+                    default: 1
+                    description: Sets the Channel's Prefetch count and number of Workers
+                      to consume simultaneously from it
+                    maximum: 1000
+                    minimum: 1
+                    type: integer
+                  exchangeName:
+                    description: Name of the exchange; Required when predeclared is
+                      false.
+                    type: string
+                  predeclared:
+                    description: Predeclared defines if channels and queues are already
+                      predeclared and shouldn't be recreated. This should be used in case
+                      the user does not have permission to declare new queues and channels
+                      in RabbitMQ cluster
+                    type: boolean
+                  queueName:
+                    description: Name of the queue to bind to; required value.
+                    type: string
+                type: object
               rabbitmqClusterReference:
                 description: RabbitmqClusterReference stores a reference to RabbitmqCluster.
                   This will get used to create resources on the RabbitMQ Broker.
@@ -66,57 +94,24 @@ spec:
                       Defaults to the namespace of the requested resource if omitted.
                     type: string
                 type: object
-              backoffDelay:
-                description: BackoffDelay is the delay before retrying in time.Duration
-                  format. For linear policy, backoff delay is backoffDelay*<numberOfRetries>.
-                  For exponential policy, backoff delay is backoffDelay*2^<numberOfRetries>.
-                type: string
-              backoffPolicy:
-                description: BackoffPolicy is the retry backoff policy (linear, exponential).
-                type: string
-              channelConfig:
-                description: ChannelConfig config for rabbitmq exchange
+              delivery:
+                description: Delivery stores the backoff strategy and retry configuration for the RabbitMQ Source.
                 properties:
-                  globalQos:
-                    description: Channel Qos global property
-                    type: boolean
-                  parallelism:
-                    default: 1
-                    description: Sets the Channel's Prefetch count and number of Workers
-                      to consume simultaneously from it
-                    maximum: 1000
-                    minimum: 1
+                  backoffDelay:
+                    description: BackoffDelay is the delay before retrying in time.Duration
+                      format. For linear policy, backoff delay is backoffDelay*<numberOfRetries>.
+                      For exponential policy, backoff delay is backoffDelay*2^<numberOfRetries>.
+                    type: string
+                  backoffPolicy:
+                    description: BackoffPolicy is the retry backoff policy (linear, exponential).
+                    type: string
+                  retry:
+                    description: Retry is the minimum number of retries the sender should
+                      attempt when sending an event before moving it to the dead letter
+                      sink.
+                    format: int32
                     type: integer
                 type: object
-              exchangeConfig:
-                description: ExchangeConfig config for rabbitmq exchange
-                properties:
-                  name:
-                    description: Name of the exchange; Required when predeclared is
-                      false.
-                    type: string
-                type: object
-              predeclared:
-                description: Predeclared defines if channels and queues are already
-                  predeclared and shouldn't be recreated. This should be used in case
-                  the user does not have permission to declare new queues and channels
-                  in RabbitMQ cluster
-                type: boolean
-              queueConfig:
-                description: QueueConfig config for rabbitmq queues
-                properties:
-                  name:
-                    description: Name of the queue to bind to; required value.
-                    type: string
-                required:
-                - name
-                type: object
-              retry:
-                description: Retry is the minimum number of retries the sender should
-                  attempt when sending an event before moving it to the dead letter
-                  sink.
-                format: int32
-                type: integer
               serviceAccountName:
                 description: ServiceAccountName is the name of the ServiceAccount
                   that will be used to run the Receive Adapter Deployment.
@@ -159,10 +154,6 @@ spec:
                       will be resolved using the base URI retrieved from Ref.
                     type: string
                 type: object
-              vhost:
-                description: VHost is the name of the VHost that will be used to set
-                  up our sources
-                type: string
             required:
             - rabbitmqClusterReference
             - sink

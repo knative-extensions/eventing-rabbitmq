@@ -138,14 +138,12 @@ metadata:
   name: rabbitmq-source
   namespace: source-demo
 spec:
-  connectionSecret:
-    name: rabbitmq-default-user
-  channelConfig:
-    globalQos: false
-  exchangeConfig:
-    name: "eventing-rabbitmq-source"
-  queueConfig:
-    name: "eventing-rabbitmq-source"
+  rabbitmqClusterReference:
+    name: rabbitmq
+    namespace: source-demo
+  rabbitmqResourcesConfig:
+    exchangeName: "eventing-rabbitmq-source"
+    queueName: "eventing-rabbitmq-source"
   sink:
     ref:
       apiVersion: serving.knative.dev/v1

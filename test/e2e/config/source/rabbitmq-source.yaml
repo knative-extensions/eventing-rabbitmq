@@ -21,11 +21,9 @@ spec:
   rabbitmqClusterReference:
     name: rabbitmqc
     namespace: {{ .namespace }}
-  exchangeConfig:
-    name: "logs"
-  queueConfig:
-    name: "test"
-  channelConfig:
+  rabbitmqResourcesConfig:
+    exchangeName: "logs"
+    queueName: "test"
     parallelism: 10
   sink:
     ref:

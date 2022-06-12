@@ -231,20 +231,19 @@ func TestRabbitmqSourceCheckChannelParallelismValue(t *testing.T) {
 			ctx := context.TODO()
 			if tc.spec != nil {
 				orig := &RabbitmqSource{
-					Spec: *tc.spec,
+					Spec: *tc.spec.DeepCopy(),
 				}
 
 				var err *apis.FieldError
 				if tc.isInUpdate {
 					updated := &RabbitmqSource{
-						Spec: *tc.spec,
+						Spec: orig.Spec,
 					}
 					updated.Spec.RabbitmqResourcesConfig.Parallelism = &tc.parallelism
 					ctx = apis.WithinUpdate(ctx, orig)
 					err = updated.Validate(ctx)
 				} else {
 					orig.Spec.RabbitmqResourcesConfig.Parallelism = &tc.parallelism
-
 					ctx = apis.WithinCreate(ctx)
 					err = orig.Validate(ctx)
 				}
@@ -284,7 +283,7 @@ func TestRabbitmqSourceExchangeConfig(t *testing.T) {
 
 			err := src.Validate(context.TODO())
 			if tc.allowed != (err == nil) {
-				t.Fatalf("ExchangeConfig validation result incorrect. Expected %v. Actual %v", tc.allowed, err)
+				t.Fatalf("rabbitmqResourcesConfig validation result incorrect. Expected %v. Actual %v", tc.allowed, err)
 			}
 		})
 	}

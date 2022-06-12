@@ -98,26 +98,17 @@ metadata:
   name: rabbitmq-source
   namespace: perf-eventing
 spec:
-  broker: "rabbitmq-test-cluster:5672/"
-  user:
-    secretKeyRef:
-      name: rabbitmq-test-cluster-default-user
-      key: username
-  password:
-    secretKeyRef:
-      name: rabbitmq-test-cluster-default-user
-      key: password
-  predeclared: true
-  channelConfig:
+  rabbitmqClusterReference:
+    name: rabbitmq-test-cluster
+    namespace: perf-eventing
+  rabbitmqResourcesConfig:
+    predeclared: true
     # Value must be between 1 and 1000
     # A value of 1 RabbitMQ Source behaves as a FIFO queue
     # Values above 1 break message ordering guarantees and can be seen as more performance oriented
     parallelism: $PARALLELISM
-    globalQos: false
-  exchangeConfig:
-    name: $EXCHANGE_NAME
-  queueConfig:
-    name: "source-queue"
+    exchangeName: $EXCHANGE_NAME
+    queueName: "source-queue"
   sink:
     ref:
       apiVersion: v1

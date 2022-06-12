@@ -97,23 +97,14 @@ metadata:
   name: rabbitmq-source
   namespace: source-demo
 spec:
-  broker: "$YOUR_RABBITMQ_IP/URL:5672/"
-  user:
-    secretKeyRef:
-      name: rabbitmq-default-user
-      key: username
-  password:
-    secretKeyRef:
-      name: rabbitmq-default-user
-      key: password
-  predeclared: true # For this to be false, the Topology Operator must be installed in your Source's cluster
-  # https://www.rabbitmq.com/kubernetes/operator/using-topology-operator.html
-  channelConfig:
-    globalQos: false
-  exchangeConfig:
-    name: "eventing-rabbitmq-source"
-  queueConfig:
-    name: "eventing-rabbitmq-source"
+  rabbitmqClusterReference:
+    namespace: source-demo
+    connectionSecret: "$RABBITMQ_SECRET_WITH_CREDENTIALS"
+  rabbitmqResourcesConfig:
+    predeclared: true # For this to be false, the Topology Operator must be installed in your Source's cluster
+    # https://www.rabbitmq.com/kubernetes/operator/using-topology-operator.html
+    exchangeName: "eventing-rabbitmq-source"
+    queueName: "eventing-rabbitmq-source"
   sink:
     ref:
       apiVersion: serving.knative.dev/v1

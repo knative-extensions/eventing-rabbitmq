@@ -122,12 +122,7 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 			statsReporter, _ := source.NewStatsReporter()
 
 			a := &Adapter{
-				config: &adapterConfig{
-					ExchangeConfig: ExchangeConfig{},
-					QueueConfig: QueueConfig{
-						Name: "",
-					},
-				},
+				config:            &adapterConfig{},
 				context:           context.TODO(),
 				httpMessageSender: s,
 				logger:            zap.NewNop(),
@@ -201,12 +196,7 @@ func TestAdapter_CreateConn(t *testing.T) {
 	statsReporter, _ := source.NewStatsReporter()
 
 	a := &Adapter{
-		config: &adapterConfig{
-			ExchangeConfig: ExchangeConfig{},
-			QueueConfig: QueueConfig{
-				Name: "",
-			},
-		},
+		config:   &adapterConfig{},
 		logger:   zap.NewNop(),
 		reporter: statsReporter,
 	}
@@ -238,12 +228,7 @@ func TestAdapter_CreateChannel(t *testing.T) {
 	statsReporter, _ := source.NewStatsReporter()
 
 	a := &Adapter{
-		config: &adapterConfig{
-			ExchangeConfig: ExchangeConfig{},
-			QueueConfig: QueueConfig{
-				Name: "",
-			},
-		},
+		config:   &adapterConfig{},
 		logger:   zap.NewNop(),
 		reporter: statsReporter,
 	}
@@ -281,9 +266,7 @@ func TestAdapter_StartAmqpClient(t *testing.T) {
 	a := &Adapter{
 		config: &adapterConfig{
 			Predeclared: true,
-			QueueConfig: QueueConfig{
-				Name: testQueue,
-			},
+			QueueName:   testQueue,
 		},
 		logger:   zap.NewNop(),
 		reporter: statsReporter,
@@ -417,19 +400,15 @@ func TestAdapter_PollForMessages(t *testing.T) {
 
 	a := &Adapter{
 		config: &adapterConfig{
-			ExchangeConfig: ExchangeConfig{
-				Name: "Test-exchange",
-			},
-			QueueConfig: QueueConfig{
-				Name: "",
-			},
+			ExchangeName: "Test-exchange",
+			QueueName:    "",
 		},
 		context:  context.TODO(),
 		logger:   zap.NewNop(),
 		reporter: statsReporter,
 	}
 
-	err = channel.ExchangeDeclare(a.config.ExchangeConfig.Name, "headers", nil)
+	err = channel.ExchangeDeclare(a.config.ExchangeName, "headers", nil)
 	if err != nil {
 		t.Errorf("Failed to declare an exchange")
 	}

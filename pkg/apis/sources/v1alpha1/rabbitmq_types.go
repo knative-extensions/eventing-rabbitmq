@@ -105,6 +105,7 @@ type DeliverySpec struct {
 
 type RabbitmqSourceSpec struct {
 	// RabbitmqClusterReference stores a reference to RabbitmqCluster. This will get used to create resources on the RabbitMQ Broker.
+	// +required
 	RabbitmqClusterReference *v1beta1.RabbitmqClusterReference `json:"rabbitmqClusterReference,omitempty"`
 	// Delivery contains the delivery spec for each trigger
 	// to this Broker. Each trigger delivery spec, if any, overrides this
@@ -112,7 +113,7 @@ type RabbitmqSourceSpec struct {
 	// +optional
 	Delivery *DeliverySpec `json:"delivery,omitempty"`
 	// RabbitmqResourcesConfig config for Rabbitmq resources: Exchange, Channel and Queue
-	// +required
+	// +optional
 	RabbitmqResourcesConfig *RabbitmqResourcesConfigSpec `json:"rabbitmqResourcesConfig"`
 	// Sink is a reference to an object that will resolve to a domain name to use as the sink.
 	// Required property.
@@ -120,6 +121,7 @@ type RabbitmqSourceSpec struct {
 	Sink *duckv1.Destination `json:"sink"`
 	// ServiceAccountName is the name of the ServiceAccount that will be used to run the Receive
 	// Adapter Deployment.
+	// +optional
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 }
 
