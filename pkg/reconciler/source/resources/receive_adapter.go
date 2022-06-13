@@ -69,10 +69,6 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 			Value: args.Source.Spec.RabbitmqResourcesConfig.QueueName,
 		},
 		{
-			Name:  "RABBITMQ_QUEUE_CONFIG_TYPE",
-			Value: string(args.Source.Spec.RabbitmqResourcesConfig.QueueType),
-		},
-		{
 			Name:  "RABBITMQ_PREDECLARED",
 			Value: strconv.FormatBool(args.Source.Spec.RabbitmqResourcesConfig.Predeclared),
 		},

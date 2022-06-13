@@ -24,10 +24,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
+	"knative.dev/eventing-rabbitmq/pkg/apis/eventing/v1alpha1"
 	rmqeventingclientset "knative.dev/eventing-rabbitmq/pkg/client/clientset/versioned"
 	rmqeventingclient "knative.dev/eventing-rabbitmq/pkg/client/injection/client"
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
-	"knative.dev/eventing-rabbitmq/pkg/utils"
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
@@ -96,7 +96,7 @@ func (r *BrokerConfigService) GetRabbitMQClusterRef(ctx context.Context, b *even
 	}
 }
 
-func (r *BrokerConfigService) GetQueueType(ctx context.Context, b *eventingv1.Broker) (utils.QueueType, error) {
+func (r *BrokerConfigService) GetQueueType(ctx context.Context, b *eventingv1.Broker) (v1alpha1.QueueType, error) {
 	if b.Spec.Config == nil {
 		return "", errors.New("Broker.Spec.Config is required")
 	}
@@ -109,7 +109,7 @@ func (r *BrokerConfigService) GetQueueType(ctx context.Context, b *eventingv1.Br
 	switch gvk {
 	case "RabbitmqCluster.rabbitmq.com/v1beta1":
 		// Deprecated: returning the classic queue type for backwards compatibility of using RabbitmqCluster as a config
-		return utils.ClassicQueueType, nil
+		return v1alpha1.ClassicQueueType, nil
 	case "RabbitmqBrokerConfig.eventing.knative.dev/v1alpha1":
 		config, err := r.rmqeventingClientSet.EventingV1alpha1().RabbitmqBrokerConfigs(b.Spec.Config.Namespace).Get(ctx, b.Spec.Config.Name, metav1.GetOptions{})
 		if err != nil {

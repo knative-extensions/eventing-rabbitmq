@@ -24,7 +24,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"knative.dev/eventing-rabbitmq/pkg/utils"
 	"knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/pkg/apis"
@@ -64,10 +63,6 @@ type RabbitmqResourcesConfigSpec struct {
 	// Name of the queue to bind to; required value.
 	// +required
 	QueueName string `json:"queueName"`
-	// +optional
-	// +kubebuilder:default:=quorum
-	// +kubebuilder:validation:Enum=quorum;classic
-	QueueType utils.QueueType `json:"queueType"`
 	// Name of the exchange; Required when predeclared is false.
 	// +optional
 	ExchangeName string `json:"exchangeName,omitempty"`

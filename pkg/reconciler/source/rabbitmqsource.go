@@ -177,7 +177,6 @@ func (r *Reconciler) reconcileRabbitObjects(ctx context.Context, src *v1alpha1.R
 		Source:                   src,
 		Owner:                    *kmeta.NewControllerRef(src),
 		Labels:                   rabbit.Labels(nil, nil, src),
-		QueueType:                src.Spec.RabbitmqResourcesConfig.QueueType,
 	})
 	if err != nil {
 		logger.Error("failed to reconcile queue", "queue", src.Spec.RabbitmqResourcesConfig.QueueName)
