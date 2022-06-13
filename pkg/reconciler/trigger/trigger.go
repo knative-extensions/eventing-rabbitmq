@@ -168,13 +168,13 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 			QueueType:                queueType,
 		})
 		if err != nil {
-			logging.FromContext(ctx).Error("Problem reconciling Trigger Queue", zap.Error(err))
-			t.Status.MarkDependencyFailed("QueueFailure", "%v", err)
+			logging.FromContext(ctx).Error("Problem reconciling Trigger DLQ", zap.Error(err))
+			t.Status.MarkDependencyFailed("DLQueueFailure", "%v", err)
 			return err
 		}
 		if !dlq.Ready {
 			logging.FromContext(ctx).Warnf("DLQ %q is not ready", dlq.Name)
-			t.Status.MarkDependencyFailed("QueueFailure", "DLQ %q is not ready", dlq.Name)
+			t.Status.MarkDependencyFailed("DLQueueFailure", "DLQ %q is not ready", dlq.Name)
 			return nil
 		}
 		dlqBinding, err := r.reconcileDLQBinding(ctx, broker, t)
@@ -183,7 +183,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 			t.Status.MarkDependencyFailed("BindingFailure", "%v", err)
 			return err
 		}
-		if !dlq.Ready {
+		if !dlqBinding.Ready {
 			logging.FromContext(ctx).Warnf("DLQ Binding %q is not ready", dlqBinding.Name)
 			t.Status.MarkDependencyFailed("BindingFailure", "DLQ Binding %q is not ready", dlqBinding.Name)
 			return nil
@@ -207,7 +207,8 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		// There's no Delivery spec, so just mark is as there's no DeadLetterSink Configured for it.
 		t.Status.MarkDeadLetterSinkNotConfigured()
 	}
-	queue, err := r.rabbit.ReconcileQueue(ctx, &rabbit.QueueArgs{
+
+	queueArgs := &rabbit.QueueArgs{
 		Name:                     triggerQueueName,
 		Namespace:                t.Namespace,
 		QueueName:                naming.CreateTriggerQueueRabbitName(t, string(broker.GetUID())),
@@ -216,7 +217,9 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		Labels:                   rabbit.Labels(broker, t, nil),
 		DLXName:                  dlxName,
 		QueueType:                queueType,
-	})
+	}
+
+	queue, err := r.rabbit.ReconcileQueue(ctx, queueArgs)
 	if err != nil {
 		logging.FromContext(ctx).Error("Problem reconciling Trigger Queue", zap.Error(err))
 		t.Status.MarkDependencyFailed("QueueFailure", "%v", err)
@@ -229,6 +232,19 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 	}
 
 	logging.FromContext(ctx).Info("Reconciled rabbitmq queue", zap.Any("queue", queue))
+
+	if dlxName != nil {
+		dlqPolicy, err := r.rabbit.ReconcileDLQPolicy(ctx, queueArgs)
+		if err != nil {
+			logging.FromContext(ctx).Error("Problem reconciling Trigger DLQ Policy", zap.Error(err))
+		}
+		if !dlqPolicy.Ready {
+			logging.FromContext(ctx).Warnf("DLQ Policy %q is not ready", dlqPolicy.Name)
+			t.Status.MarkDependencyFailed("DLQPolicyFailure", "DLQ Polcy %q is not ready", dlqPolicy.Name)
+			return nil
+		}
+
+	}
 
 	binding, err := r.reconcileBinding(ctx, broker, t)
 	if err != nil {
