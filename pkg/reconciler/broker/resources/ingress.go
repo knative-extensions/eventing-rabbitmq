@@ -125,7 +125,7 @@ func MakeIngressDeployment(args *IngressArgs) *appsv1.Deployment {
 						// more info in this issue: https://github.com/knative-sandbox/eventing-rabbitmq/issues/703
 						Resources: corev1.ResourceRequirements{
 							Requests: corev1.ResourceList{
-								corev1.ResourceCPU:    resource.MustParse("150m"),
+								corev1.ResourceCPU:    resource.MustParse("50m"),
 								corev1.ResourceMemory: resource.MustParse("32Mi")},
 							Limits: corev1.ResourceList{
 								corev1.ResourceCPU:    resource.MustParse("1000m"),
