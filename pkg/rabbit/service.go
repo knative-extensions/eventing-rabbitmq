@@ -88,6 +88,13 @@ func (r *Rabbit) ReconcileQueue(ctx context.Context, args *QueueArgs) (Result, e
 	if err != nil {
 		return Result{}, err
 	}
+	queueReady := isReady(queue.Status.Conditions)
+	if !queueReady {
+		return Result{
+			Name:  want.Name,
+			Ready: queueReady,
+		}, nil
+	}
 
 	policyReady := true
 	if args.DLXName != nil {
@@ -111,7 +118,7 @@ func (r *Rabbit) ReconcileQueue(ctx context.Context, args *QueueArgs) (Result, e
 	}
 	return Result{
 		Name:  want.Name,
-		Ready: isReady(queue.Status.Conditions) && policyReady,
+		Ready: policyReady,
 	}, nil
 }
 
