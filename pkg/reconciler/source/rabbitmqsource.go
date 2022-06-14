@@ -140,7 +140,7 @@ func (r *Reconciler) reconcileRabbitObjects(ctx context.Context, src *v1alpha1.R
 		return fmt.Errorf("rabbitmqSource.Spec.RabbitMQClusterReference is empty")
 	}
 
-	rabbitmqURL, err := r.rabbit.RabbitMQURL(ctx, src.Spec.RabbitmqClusterReference)
+	rabbitmqURL, err := r.rabbit.RabbitMQURL(ctx, src.Spec.RabbitmqClusterReference, src.Namespace)
 	if err != nil {
 		return err
 	}

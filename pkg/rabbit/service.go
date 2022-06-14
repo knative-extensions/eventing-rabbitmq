@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"strings"
 
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -203,7 +204,35 @@ func isReady(conditions []v1beta1.Condition) bool {
 	return numConditions == 0
 }
 
-func (r *Rabbit) RabbitMQURL(ctx context.Context, clusterRef *rabbitv1beta1.RabbitmqClusterReference) (*url.URL, error) {
+func (r *Rabbit) RabbitMQURL(ctx context.Context, clusterRef *rabbitv1beta1.RabbitmqClusterReference, parentNamespace string) (*url.URL, error) {
+	if clusterRef.ConnectionSecret != nil {
+		ns := "default"
+		if clusterRef.Namespace != "" {
+			ns = clusterRef.Namespace
+		} else if parentNamespace != "" {
+			ns = parentNamespace
+		}
+
+		s, err := r.kubeClientSet.CoreV1().Secrets(ns).Get(ctx, clusterRef.ConnectionSecret.Name, metav1.GetOptions{})
+		if err != nil {
+			return nil, err
+		}
+		uri, ok := s.Data["uri"]
+		if !ok {
+			return nil, fmt.Errorf("rabbit Secret missing key uri")
+		}
+		password, ok := s.Data["password"]
+		if !ok {
+			return nil, fmt.Errorf("rabbit Secret missing key password")
+		}
+		username, ok := s.Data["username"]
+		if !ok {
+			return nil, fmt.Errorf("rabbit Secret missing key username")
+		}
+		splittedUri := strings.Split(string(uri), ":")
+		return url.Parse(fmt.Sprintf("amqp://%s:%s@%s:5672", username, password, splittedUri[0]))
+	}
+
 	// TODO: make this better.
 	ref := &duckv1.KReference{
 		Kind:       "RabbitmqCluster",

@@ -29,7 +29,7 @@ type Result struct {
 }
 
 type Service interface {
-	RabbitMQURL(context.Context, *rabbitv1beta1.RabbitmqClusterReference) (*url.URL, error)
+	RabbitMQURL(context.Context, *rabbitv1beta1.RabbitmqClusterReference, string) (*url.URL, error)
 	ReconcileExchange(context.Context, *ExchangeArgs) (Result, error)
 	ReconcileQueue(context.Context, *QueueArgs) (Result, error)
 	ReconcileBinding(context.Context, *BindingArgs) (Result, error)
