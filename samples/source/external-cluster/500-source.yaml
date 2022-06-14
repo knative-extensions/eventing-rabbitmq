@@ -5,10 +5,10 @@ metadata:
   namespace: source-demo
 spec:
   rabbitmqClusterReference:
-    connectionSecret: 
+    connectionSecret:
       name: rabbitmq-secret-credentials # a secret with your external cluster credentials as shown in this sample
   rabbitmqResourcesConfig:
-    predeclared: false # For this to be false, the Topology Operator must be installed in the Source's cluster
+    predeclared: true # For this to be false, the Topology Operator must be installed in the Source's cluster
     # https://www.rabbitmq.com/kubernetes/operator/using-topology-operator.html
     # Value must be between 1 and 1000
     # A value of 1 RabbitMQ Source behaves as a FIFO queue

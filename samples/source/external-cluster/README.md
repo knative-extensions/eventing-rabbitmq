@@ -4,9 +4,9 @@
 
 - Same as listed [here](../../../docs/source.md#prerequisites)
 - A working RabbitMQ external instance exposed via an accessible IP/URL, an example on how to setup this can be found [here](./resources/rabbitmq.yml)
-- An RabbitMQ `Exchange` called `eventing-rabbitmq-source`, `Queue` called `eventing-rabbitmq-source` and `Binding` between both already declared
+- An RabbitMQ `Exchange` called `eventing-rabbitmq-source`, `Queue` called `eventing-rabbitmq-source` and `Binding` between both already declared, since the example used the `predeclared` flag
 
-Note: An external RabbitMQ instance can be used, but if you want to use the `Source` without predeclared resources (specifically the `Exchange`, `Binding` and `Queue`), the `RabbitMQ Message Topology Operator` needs to be installed in the same Kubernetes Cluster as the `Source`.
+Note: An external RabbitMQ instance can be used, but if you want to use the `Source` without predeclared resources (specifically the `Exchange`, `Binding` and `Queue`), the `RabbitMQ Message Topology Operator` must be installed in the same Kubernetes Cluster as the `Source`.
 
 ## Overview
 
@@ -42,20 +42,21 @@ or
 kubectl create ns source-demo
 ```
 
-### Add RabbitMQ http uri to secret
+### Create a Kubernetes Secret to connect to the External Cluster
 
-Add the RabbitMQ http uri to its default user secret. Important: if you have different IPs/URLs for the RabbitMQ's management UI and the RabbitMQ's connection port, use the Management UI URL here and the connection port URL in the yamls.
-The RabbitMQ default user credentials are stored in a Kubernetes secret called '$NAME-default-user', where $NAME is the name of the RabbitmqCluster object.
-In this example, the secret name is 'rabbitmq-default-user' in namespace 'source-demo'.
+This secret must contain the `username`, `password` and `uri` keys, this `uri` must be the URL to the RabbitMQ's Management UI.
+In this example, the secret name is 'rabbitmq-secret-credentials' in namespace 'source-demo'.
 
-Create and Edit the RabbitMQ default user secret as explained [here](../quick-setup/README.md#add-rabbitmq-http-uri-to-secret)
+```sh
+kubectl apply -f samples/source/external-cluster/200-secret.yaml
+```
 
 ### Create the Perf Test Service
 
 This will create a Kubernetes Deployment which sends events to the RabbitMQ Cluster Exchange
 
 ```sh
-kubectl apply -f samples/source/external-cluster/200-perf-test.yaml
+kubectl apply -f samples/source/external-cluster/300-perf-test.yaml
 ```
 
 Messages from the `rabbitmq-perf-test`
@@ -65,7 +66,7 @@ Messages from the `rabbitmq-perf-test`
 Then create the Knative Serving Service which will receive translated events.
 
 ```sh
-kubectl apply -f samples/source/external-cluster/300-sink.yaml
+kubectl apply -f samples/source/external-cluster/400-sink.yaml
 ```
 or
 ```sh
@@ -99,10 +100,9 @@ metadata:
 spec:
   rabbitmqClusterReference:
     namespace: source-demo
-    connectionSecret: "$RABBITMQ_SECRET_WITH_CREDENTIALS"
+    connectionSecret: rabbitmq-secret-credentials
   rabbitmqResourcesConfig:
-    predeclared: true # For this to be false, the Topology Operator must be installed in your Source's cluster
-    # https://www.rabbitmq.com/kubernetes/operator/using-topology-operator.html
+    predeclared: true
     exchangeName: "eventing-rabbitmq-source"
     queueName: "eventing-rabbitmq-source"
   sink:
@@ -140,6 +140,6 @@ Data,
 ### Cleanup
 
 ```sh
-kubectl delete -f samples/source/external-cluster/400-source.yaml
+kubectl delete -f samples/source/external-cluster/500-source.yaml
 kubectl delete -f samples/source/external-cluster/
 ```
