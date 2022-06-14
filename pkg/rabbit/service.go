@@ -89,29 +89,32 @@ func (r *Rabbit) ReconcileQueue(ctx context.Context, args *QueueArgs) (Result, e
 		return Result{}, err
 	}
 
-	policyReady := true
-	if args.DLXName != nil {
-		want := NewPolicy(args)
-		policy, err := r.RabbitmqV1beta1().Policies(args.Namespace).Get(ctx, queue.Name, metav1.GetOptions{})
-		if apierrs.IsNotFound(err) {
-			logging.FromContext(ctx).Debugw("Creating rabbitmq policy", zap.String("name", queue.Name))
-			policy, err = r.RabbitmqV1beta1().Policies(args.Namespace).Create(ctx, want, metav1.CreateOptions{})
-		} else if err != nil {
-			return Result{}, fmt.Errorf("error creating queue policy: %w", err)
-		} else if !equality.Semantic.DeepDerivative(want.Spec, policy.Spec) {
-			desired := policy.DeepCopy()
-			desired.Spec = want.Spec
-			logging.FromContext(ctx).Debugw("Updating rabbitmq policy", zap.String("name", queue.Name))
-			policy, err = r.RabbitmqV1beta1().Policies(args.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
-		}
-		if err != nil {
-			return Result{}, err
-		}
-		policyReady = isReady(policy.Status.Conditions)
+	return Result{
+		Name:  want.Name,
+		Ready: isReady(queue.Status.Conditions),
+	}, nil
+}
+
+func (r *Rabbit) ReconcileDLQPolicy(ctx context.Context, args *QueueArgs) (Result, error) {
+	want := NewPolicy(args)
+	policy, err := r.RabbitmqV1beta1().Policies(args.Namespace).Get(ctx, args.Name, metav1.GetOptions{})
+	if apierrs.IsNotFound(err) {
+		logging.FromContext(ctx).Debugw("Creating rabbitmq policy", zap.String("name", args.Name))
+		policy, err = r.RabbitmqV1beta1().Policies(args.Namespace).Create(ctx, want, metav1.CreateOptions{})
+	} else if err != nil {
+		return Result{}, fmt.Errorf("error creating queue policy: %w", err)
+	} else if !equality.Semantic.DeepDerivative(want.Spec, policy.Spec) {
+		desired := policy.DeepCopy()
+		desired.Spec = want.Spec
+		logging.FromContext(ctx).Debugw("Updating rabbitmq policy", zap.String("name", args.Name))
+		policy, err = r.RabbitmqV1beta1().Policies(args.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
+	}
+	if err != nil {
+		return Result{}, err
 	}
 	return Result{
 		Name:  want.Name,
-		Ready: isReady(queue.Status.Conditions) && policyReady,
+		Ready: isReady(policy.Status.Conditions),
 	}, nil
 }
 
