@@ -25,38 +25,35 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
 )
 
 type ReceiveAdapterArgs struct {
-	Image         string
-	Source        *v1alpha1.RabbitmqSource
-	Labels        map[string]string
-	SinkURI       string
-	MetricsConfig string
-	LoggingConfig string
+	Image              string
+	Source             *v1alpha1.RabbitmqSource
+	Labels             map[string]string
+	SinkURI            string
+	MetricsConfig      string
+	LoggingConfig      string
+	RabbitMQSecretName string
+	BrokerUrlSecretKey string
 }
 
 func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 	replicas := int32(1)
-
 	env := []corev1.EnvVar{
 		{
-			Name:  "RABBITMQ_BROKER",
-			Value: args.Source.Spec.Broker,
-		},
-		{
-			Name: "RABBITMQ_USER",
+			Name: "RABBIT_URL",
 			ValueFrom: &corev1.EnvVarSource{
-				SecretKeyRef: args.Source.Spec.User.SecretKeyRef,
-			},
-		},
-		{
-			Name: "RABBITMQ_PASSWORD",
-			ValueFrom: &corev1.EnvVarSource{
-				SecretKeyRef: args.Source.Spec.Password.SecretKeyRef,
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: args.RabbitMQSecretName,
+					},
+					Key: args.BrokerUrlSecretKey,
+				},
 			},
 		},
 		{

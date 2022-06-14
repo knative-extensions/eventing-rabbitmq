@@ -18,17 +18,9 @@ metadata:
   name: rabbitmq-source
   namespace: {{ .namespace }}
 spec:
-  broker: "rabbitmqc.{{ .namespace }}:5672/"
-  connectionSecret:
-    name: "rabbitmqc-default-user"
-  user:
-    secretKeyRef:
-      name: "rabbitmqc-default-user"
-      key: "username"
-  password:
-    secretKeyRef:
-      name: "rabbitmqc-default-user"
-      key: "password"
+  rabbitmqClusterReference:
+    name: rabbitmqc
+    namespace: {{ .namespace }}
   exchangeConfig:
     name: "logs"
   queueConfig:

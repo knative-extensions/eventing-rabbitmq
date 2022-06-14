@@ -28,12 +28,12 @@ spec:
         - name: USER
           valueFrom:
             secretKeyRef:
-              name: secret-basic-auth
+              name: rabbitmqc-default-user
               key: username
         - name: PASSWORD
           valueFrom:
             secretKeyRef:
-              name: secret-basic-auth
+              name: rabbitmqc-default-user
               key: password
         - name: RABBITBROKER
           value: rabbitmqc.{{ .namespace }}.svc.cluster.local:5672/test-vhost

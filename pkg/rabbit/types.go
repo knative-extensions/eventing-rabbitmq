@@ -18,6 +18,9 @@ package rabbit
 
 import (
 	"context"
+	"net/url"
+
+	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 )
 
 type Result struct {
@@ -26,6 +29,7 @@ type Result struct {
 }
 
 type Service interface {
+	RabbitMQURL(context.Context, *rabbitv1beta1.RabbitmqClusterReference) (*url.URL, error)
 	ReconcileExchange(context.Context, *ExchangeArgs) (Result, error)
 	ReconcileQueue(context.Context, *QueueArgs) (Result, error)
 	ReconcileBinding(context.Context, *BindingArgs) (Result, error)

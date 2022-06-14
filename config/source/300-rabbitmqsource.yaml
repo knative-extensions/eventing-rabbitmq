@@ -42,6 +42,30 @@ spec:
             type: object
           spec:
             properties:
+              rabbitmqClusterReference:
+                description: RabbitmqClusterReference stores a reference to RabbitmqCluster.
+                  This will get used to create resources on the RabbitMQ Broker.
+                properties:
+                  connectionSecret:
+                    description: Secret contains the http management uri for the RabbitMQ
+                      cluster. The Secret must contain the key `uri`, `username` and
+                      `password` or operator will error. Have to set either name or
+                      connectionSecret, but not both.
+                    properties:
+                      name:
+                        description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                          TODO: Add other useful fields. apiVersion, kind, uid?'
+                        type: string
+                    type: object
+                  name:
+                    description: The name of the RabbitMQ cluster to reference. Have
+                      to set either name or connectionSecret, but not both.
+                    type: string
+                  namespace:
+                    description: The namespace of the RabbitMQ cluster to reference.
+                      Defaults to the namespace of the requested resource if omitted.
+                    type: string
+                type: object
               backoffDelay:
                 description: BackoffDelay is the delay before retrying in time.Duration
                   format. For linear policy, backoff delay is backoffDelay*<numberOfRetries>.
@@ -49,10 +73,6 @@ spec:
                 type: string
               backoffPolicy:
                 description: BackoffPolicy is the retry backoff policy (linear, exponential).
-                type: string
-              broker:
-                description: Broker are the Rabbitmq servers the consumer will connect
-                  to.
                 type: string
               channelConfig:
                 description: ChannelConfig config for rabbitmq exchange
@@ -68,16 +88,6 @@ spec:
                     minimum: 1
                     type: integer
                 type: object
-              connectionSecret:
-                description: Secret contains the http management uri for the RabbitMQ
-                  cluster. Used when queue and exchange are not predeclared. The Secret
-                  must contain the key `uri`, `username` and `password`.
-                properties:
-                  name:
-                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                      TODO: Add other useful fields. apiVersion, kind, uid?'
-                    type: string
-                type: object
               exchangeConfig:
                 description: ExchangeConfig config for rabbitmq exchange
                 properties:
@@ -85,28 +95,6 @@ spec:
                     description: Name of the exchange; Required when predeclared is
                       false.
                     type: string
-                type: object
-              password:
-                description: Password for rabbitmq connection
-                properties:
-                  secretKeyRef:
-                    description: The Secret key to select from.
-                    properties:
-                      key:
-                        description: The key of the secret to select from.  Must be
-                          a valid secret key.
-                        type: string
-                      name:
-                        description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                          TODO: Add other useful fields. apiVersion, kind, uid?'
-                        type: string
-                      optional:
-                        description: Specify whether the Secret or its key must be
-                          defined
-                        type: boolean
-                    required:
-                    - key
-                    type: object
                 type: object
               predeclared:
                 description: Predeclared defines if channels and queues are already
@@ -171,34 +159,12 @@ spec:
                       will be resolved using the base URI retrieved from Ref.
                     type: string
                 type: object
-              user:
-                description: User for rabbitmq connection
-                properties:
-                  secretKeyRef:
-                    description: The Secret key to select from.
-                    properties:
-                      key:
-                        description: The key of the secret to select from.  Must be
-                          a valid secret key.
-                        type: string
-                      name:
-                        description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                          TODO: Add other useful fields. apiVersion, kind, uid?'
-                        type: string
-                      optional:
-                        description: Specify whether the Secret or its key must be
-                          defined
-                        type: boolean
-                    required:
-                    - key
-                    type: object
-                type: object
               vhost:
                 description: VHost is the name of the VHost that will be used to set
                   up our sources
                 type: string
             required:
-            - broker
+            - rabbitmqClusterReference
             - sink
             type: object
           status:

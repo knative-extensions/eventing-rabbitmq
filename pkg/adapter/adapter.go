@@ -56,9 +56,7 @@ type QueueConfig struct {
 type adapterConfig struct {
 	adapter.EnvConfig
 
-	Broker         string        `envconfig:"RABBITMQ_BROKER" required:"true"`
-	User           string        `envconfig:"RABBITMQ_USER" required:"false"`
-	Password       string        `envconfig:"RABBITMQ_PASSWORD" required:"false"`
+	RabbitURL      string        `envconfig:"RABBIT_URL" required:"true"`
 	Vhost          string        `envconfig:"RABBITMQ_VHOST" required:"false"`
 	Predeclared    bool          `envconfig:"RABBITMQ_PREDECLARED" required:"false"`
 	Retry          int           `envconfig:"HTTP_SENDER_RETRY" required:"false"`
@@ -105,17 +103,8 @@ func vhostHandler(broker string, vhost string) string {
 	return fmt.Sprintf("%s%s", broker, vhost)
 }
 
-func (a *Adapter) CreateConn(user string, password string, logger *zap.Logger) (wabbit.Conn, error) {
-	if user != "" && password != "" {
-		a.config.Broker = fmt.Sprintf(
-			"amqp://%s:%s@%s",
-			a.config.User,
-			a.config.Password,
-			vhostHandler(a.config.Broker, a.config.Vhost),
-		)
-	}
-
-	conn, err := amqp.Dial(a.config.Broker)
+func (a *Adapter) CreateConn(logger *zap.Logger) (wabbit.Conn, error) {
+	conn, err := amqp.Dial(vhostHandler(a.config.RabbitURL, a.config.Vhost))
 	if err != nil {
 		logger.Error(err.Error())
 	}
@@ -156,14 +145,13 @@ func (a *Adapter) Start(ctx context.Context) error {
 
 func (a *Adapter) start(stopCh <-chan struct{}) error {
 	logger := a.logger
-
 	logger.Info("Starting with config: ",
 		zap.String("Name", a.config.Name),
 		zap.String("Namespace", a.config.Namespace),
 		zap.String("QueueName", a.config.QueueConfig.Name),
 		zap.String("SinkURI", a.config.Sink))
 
-	conn, err := a.CreateConn(a.config.User, a.config.Password, logger)
+	conn, err := a.CreateConn(logger)
 	if err == nil {
 		defer conn.Close()
 	}
@@ -283,6 +271,7 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 	if backoffPolicy == "" {
 		a.logger.Sugar().Fatalf("Invalid BACKOFF_POLICY specified: must be %q or %q", eventingduckv1.BackoffPolicyExponential, eventingduckv1.BackoffPolicyLinear)
 	}
+
 	res, err := a.httpMessageSender.SendWithRetries(req, &kncloudevents.RetryConfig{
 		RetryMax: a.config.Retry,
 		CheckRetry: func(ctx context.Context, resp *nethttp.Response, err error) (bool, error) {
@@ -291,7 +280,6 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 		BackoffDelay:  &backoffDelay,
 		BackoffPolicy: &backoffPolicy,
 	})
-
 	if err != nil {
 		a.logger.Error("error while sending the message", zap.Error(err))
 		return err

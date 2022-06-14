@@ -23,6 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -76,15 +77,8 @@ type RabbitmqSourceQueueConfigSpec struct {
 }
 
 type RabbitmqSourceSpec struct {
-	// Broker are the Rabbitmq servers the consumer will connect to.
-	// +required
-	Broker string `json:"broker"`
-	// User for rabbitmq connection
-	// +optional
-	User SecretValueFromSource `json:"user,omitempty"`
-	// Password for rabbitmq connection
-	// +optional
-	Password SecretValueFromSource `json:"password,omitempty"`
+	// RabbitmqClusterReference stores a reference to RabbitmqCluster. This will get used to create resources on the RabbitMQ Broker.
+	RabbitmqClusterReference *v1beta1.RabbitmqClusterReference `json:"rabbitmqClusterReference,omitempty"`
 	// Predeclared defines if channels and queues are already predeclared and shouldn't be recreated.
 	// This should be used in case the user does not have permission to declare new queues and channels in
 	// RabbitMQ cluster
@@ -102,11 +96,6 @@ type RabbitmqSourceSpec struct {
 	// For exponential policy, backoff delay is backoffDelay*2^<numberOfRetries>.
 	// +optional
 	BackoffDelay *string `json:"backoffDelay,omitempty"`
-	// Secret contains the http management uri for the RabbitMQ cluster.
-	// Used when queue and exchange are not predeclared.
-	// The Secret must contain the key `uri`, `username` and `password`.
-	// +optional
-	ConnectionSecret *corev1.LocalObjectReference `json:"connectionSecret,omitempty"`
 	// ChannelConfig config for rabbitmq exchange
 	// +optional
 	ChannelConfig RabbitmqChannelConfigSpec `json:"channelConfig,omitempty"`

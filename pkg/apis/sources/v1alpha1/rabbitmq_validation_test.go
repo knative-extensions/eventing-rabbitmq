@@ -20,6 +20,8 @@ import (
 	"context"
 	"testing"
 
+	v1 "k8s.io/api/core/v1"
+	"knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
@@ -27,7 +29,10 @@ import (
 var (
 	defaultParallelism = 1
 	fullSpec           = RabbitmqSourceSpec{
-		Broker: "amqp://guest:guest@localhost:5672/",
+		RabbitmqClusterReference: &v1beta1.RabbitmqClusterReference{
+			Name:      "test-cluster",
+			Namespace: "test",
+		},
 		ExchangeConfig: RabbitmqSourceExchangeConfigSpec{
 			Name: "an-exchange",
 		},
@@ -62,7 +67,6 @@ func TestRabbitmqSourceCheckImmutableFields(t *testing.T) {
 		"Broker changed": {
 			orig: &fullSpec,
 			updated: RabbitmqSourceSpec{
-				Broker:             "broker1",
 				Sink:               fullSpec.Sink,
 				ServiceAccountName: fullSpec.ServiceAccountName,
 			},
@@ -148,6 +152,13 @@ func TestRabbitmqSourceCheckImmutableFields(t *testing.T) {
 			updated: fullSpec,
 			allowed: true,
 		},
+		"removed cluster reference": {
+			orig: &fullSpec,
+			updated: RabbitmqSourceSpec{
+				RabbitmqClusterReference: nil,
+			},
+			allowed: false,
+		},
 	}
 
 	for n, tc := range testCases {
@@ -208,8 +219,8 @@ func TestRabbitmqSourceCheckChannelParallelismValue(t *testing.T) {
 		},
 		"valid channel parallelism value update": {
 			spec: &RabbitmqSourceSpec{
-				Broker:         fullSpec.Broker,
-				ExchangeConfig: fullSpec.ExchangeConfig,
+				RabbitmqClusterReference: fullSpec.RabbitmqClusterReference,
+				ExchangeConfig:           fullSpec.ExchangeConfig,
 				QueueConfig: RabbitmqSourceQueueConfigSpec{
 					Name: "",
 				},
@@ -279,14 +290,76 @@ func TestRabbitmqSourceExchangeConfig(t *testing.T) {
 		t.Run(n, func(t *testing.T) {
 			src := &RabbitmqSource{
 				Spec: RabbitmqSourceSpec{
-					ExchangeConfig: *tc.spec,
-					Predeclared:    tc.predeclared,
+					ExchangeConfig:           *tc.spec,
+					Predeclared:              tc.predeclared,
+					RabbitmqClusterReference: fullSpec.RabbitmqClusterReference,
 				},
 			}
 
 			err := src.Validate(context.TODO())
 			if tc.allowed != (err == nil) {
 				t.Fatalf("ExchangeConfig validation result incorrect. Expected %v. Actual %v", tc.allowed, err)
+			}
+		})
+	}
+}
+
+func TestRabbitmqSourceSpecValidation(t *testing.T) {
+	testCases := map[string]struct {
+		spec    *RabbitmqSourceSpec
+		wantErr bool
+	}{
+		"valid config": {
+			spec:    &fullSpec,
+			wantErr: false,
+		},
+		"missing rabbitmqClusterReference": {
+			spec:    &RabbitmqSourceSpec{Predeclared: true},
+			wantErr: true,
+		},
+		"missing rabbitmqClusterReference.name": {
+			spec: &RabbitmqSourceSpec{
+				Predeclared:              true,
+				RabbitmqClusterReference: &v1beta1.RabbitmqClusterReference{Namespace: "test"},
+			},
+			wantErr: true,
+		},
+		"missing rabbitmqClusterReference.namespace": {
+			spec: &RabbitmqSourceSpec{
+				Predeclared:              true,
+				RabbitmqClusterReference: &v1beta1.RabbitmqClusterReference{Name: "test"},
+			},
+			wantErr: true,
+		},
+		"including connectionSecret": {
+			spec: &RabbitmqSourceSpec{
+				Predeclared: true,
+				RabbitmqClusterReference: &v1beta1.RabbitmqClusterReference{
+					Namespace: "test", Name: "test", ConnectionSecret: &v1.LocalObjectReference{Name: "test"}},
+			},
+			wantErr: true,
+		},
+		"just connection secret": {
+			spec: &RabbitmqSourceSpec{
+				Predeclared: true,
+				RabbitmqClusterReference: &v1beta1.RabbitmqClusterReference{
+					Namespace: "test", ConnectionSecret: &v1.LocalObjectReference{Name: "test"}},
+			},
+			wantErr: true,
+		},
+	}
+
+	for n, tc := range testCases {
+		t.Run(n, func(t *testing.T) {
+			src := &RabbitmqSource{
+				Spec: *tc.spec,
+			}
+
+			err := src.Validate(context.TODO())
+			if err == nil && tc.wantErr {
+				t.Error("expected error but got nil")
+			} else if err != nil && !tc.wantErr {
+				t.Errorf("got error %s, when not expecting error", err.Error())
 			}
 		})
 	}

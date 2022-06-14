@@ -132,28 +132,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *eventingv1.Broker) pk
 	return r.reconcileRabbitResources(ctx, b, args)
 }
 
-// reconcileSecret reconciles the K8s Secret 's'.
-func (r *Reconciler) reconcileSecret(ctx context.Context, s *corev1.Secret) error {
-	current, err := r.secretLister.Secrets(s.Namespace).Get(s.Name)
-	if apierrs.IsNotFound(err) {
-		_, err = r.kubeClientSet.CoreV1().Secrets(s.Namespace).Create(ctx, s, metav1.CreateOptions{})
-		if err != nil {
-			return err
-		}
-	} else if err != nil {
-		return err
-	} else if !equality.Semantic.DeepDerivative(s.StringData, current.StringData) {
-		// Don't modify the informers copy.
-		desired := current.DeepCopy()
-		desired.StringData = s.StringData
-		_, err = r.kubeClientSet.CoreV1().Secrets(desired.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // reconcileDeployment reconciles the K8s Deployment 'd'.
 func (r *Reconciler) reconcileDeployment(ctx context.Context, d *v1.Deployment) error {
 	current, err := r.deploymentLister.Deployments(d.Namespace).Get(d.Name)
@@ -208,8 +186,8 @@ func (r *Reconciler) reconcileIngressDeployment(ctx context.Context, b *eventing
 	expected := resources.MakeIngressDeployment(&resources.IngressArgs{
 		Broker:             b,
 		Image:              r.ingressImage,
-		RabbitMQSecretName: resources.SecretName(b.Name),
-		BrokerUrlSecretKey: resources.BrokerURLSecretKey,
+		RabbitMQSecretName: rabbit.SecretName(b.Name, "broker"),
+		BrokerUrlSecretKey: rabbit.BrokerURLSecretKey,
 		Configs:            r.configs,
 	})
 	return r.reconcileDeployment(ctx, expected)
@@ -230,9 +208,9 @@ func (r *Reconciler) reconcileDLXDispatcherDeployment(ctx context.Context, b *ev
 			Image:  r.dispatcherImage,
 			//ServiceAccountName string
 			Delivery:           b.Spec.Delivery,
-			RabbitMQSecretName: resources.SecretName(b.Name),
+			RabbitMQSecretName: rabbit.SecretName(b.Name, "broker"),
 			QueueName:          naming.CreateBrokerDeadLetterQueueName(b),
-			BrokerUrlSecretKey: resources.BrokerURLSecretKey,
+			BrokerUrlSecretKey: rabbit.BrokerURLSecretKey,
 			Subscriber:         sub,
 			BrokerIngressURL:   b.Status.Address.URL,
 			Configs:            r.configs,
@@ -278,7 +256,7 @@ func (r *Reconciler) reconcileRabbitResources(ctx context.Context, b *eventingv1
 		MarkDeadLetterSinkNotConfigured(&b.Status)
 	}
 
-	return r.reconcileCommonIngressResources(ctx, resources.MakeSecret(args), b)
+	return r.reconcileCommonIngressResources(ctx, rabbit.MakeSecret(args.Broker.Name, "broker", args.Namespace, args.RabbitMQURL.String(), args.Broker), b)
 }
 
 func (r *Reconciler) reconcileDeadLetterResources(ctx context.Context, b *eventingv1.Broker, args *rabbit.ExchangeArgs) (error, bool) {
@@ -371,7 +349,7 @@ func (r *Reconciler) reconcileDeadLetterResources(ctx context.Context, b *eventi
 
 // reconcileCommonIngressResources that are shared between implementations using CRDs or libraries.
 func (r *Reconciler) reconcileCommonIngressResources(ctx context.Context, s *corev1.Secret, b *eventingv1.Broker) error {
-	if err := r.reconcileSecret(ctx, s); err != nil {
+	if err := rabbit.ReconcileSecret(ctx, r.secretLister, r.kubeClientSet, s); err != nil {
 		logging.FromContext(ctx).Errorw("Problem reconciling Secret", zap.Error(err))
 		MarkSecretFailed(&b.Status, "SecretFailure", "Failed to reconcile secret: %s", err)
 		return err
@@ -407,7 +385,6 @@ func (r *Reconciler) reconcileCommonIngressResources(ctx context.Context, s *cor
 			b.Status.MarkDeadLetterSinkResolvedFailed("Unable to get the DeadLetterSink's URI", "%v", err)
 			return err
 		}
-
 		b.Status.MarkDeadLetterSinkResolvedSucceeded(dlsURI)
 	} else {
 		b.Status.MarkDeadLetterSinkNotConfigured()

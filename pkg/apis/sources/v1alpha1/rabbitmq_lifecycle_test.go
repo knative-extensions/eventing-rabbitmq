@@ -111,6 +111,8 @@ func TestRabbitmqSourceStatusGetCondition(t *testing.T) {
 			s.InitializeConditions()
 			s.MarkSink(apis.HTTP("uri://example"))
 			s.MarkDeployed(availableDeployment)
+			s.MarkExchangeReady()
+			s.MarkSecretReady()
 			return s
 		}(),
 		condQuery: RabbitmqConditionReady,
@@ -176,6 +178,8 @@ func TestRabbitmqSourceStatusGetCondition(t *testing.T) {
 			s.InitializeConditions()
 			s.MarkSink(apis.HTTP("uri://example"))
 			s.MarkDeployed(availableDeployment)
+			s.MarkExchangeReady()
+			s.MarkSecretReady()
 			return s
 		}(),
 		condQuery: RabbitmqConditionReady,
@@ -192,6 +196,8 @@ func TestRabbitmqSourceStatusGetCondition(t *testing.T) {
 			s.MarkNotDeployed("MarkNotDeployed", "%s", "")
 			s.MarkDeploying("MarkDeploying", "%s", "")
 			s.MarkDeployed(availableDeployment)
+			s.MarkExchangeReady()
+			s.MarkSecretReady()
 			return s
 		}(),
 		condQuery: RabbitmqConditionReady,
@@ -223,12 +229,85 @@ func TestRabbitmqSourceStatusGetCondition(t *testing.T) {
 			s.MarkSink(nil)
 			s.MarkDeployed(availableDeployment)
 			s.MarkSink(apis.HTTP("uri://example"))
+			s.MarkExchangeReady()
+			s.MarkSecretReady()
 			return s
 		}(),
 		condQuery: RabbitmqConditionReady,
 		want: &apis.Condition{
 			Type:   RabbitmqConditionReady,
 			Status: corev1.ConditionTrue,
+		},
+	}, {
+		name: "mark exchange ready",
+		s: func() *RabbitmqSourceStatus {
+			s := &RabbitmqSourceStatus{}
+			s.InitializeConditions()
+			s.MarkSink(nil)
+			s.MarkDeployed(availableDeployment)
+			s.MarkSink(apis.HTTP("uri://example"))
+			s.MarkExchangeReady()
+			s.MarkSecretReady()
+			return s
+		}(),
+		condQuery: RabbitmqConditionReady,
+		want: &apis.Condition{
+			Type:   RabbitmqConditionReady,
+			Status: corev1.ConditionTrue,
+		},
+	}, {
+		name: "mark exchange failed",
+		s: func() *RabbitmqSourceStatus {
+			s := &RabbitmqSourceStatus{}
+			s.InitializeConditions()
+			s.MarkSink(nil)
+			s.MarkDeployed(availableDeployment)
+			s.MarkSink(apis.HTTP("uri://example"))
+			s.MarkExchangeFailed("RabbitMQClusterReferenceNil", "%s", "")
+			return s
+		}(),
+		condQuery: RabbitmqConditionReady,
+		want: &apis.Condition{
+			Type:    RabbitmqConditionReady,
+			Status:  corev1.ConditionFalse,
+			Reason:  "RabbitMQClusterReferenceNil",
+			Message: "",
+		},
+	}, {
+		name: "mark secret ready",
+		s: func() *RabbitmqSourceStatus {
+			s := &RabbitmqSourceStatus{}
+			s.InitializeConditions()
+			s.MarkSink(nil)
+			s.MarkDeployed(availableDeployment)
+			s.MarkSink(apis.HTTP("uri://example"))
+			s.MarkExchangeReady()
+			s.MarkSecretReady()
+			return s
+		}(),
+		condQuery: RabbitmqConditionReady,
+		want: &apis.Condition{
+			Type:   RabbitmqConditionReady,
+			Status: corev1.ConditionTrue,
+		},
+	}, {
+		name: "mark secret failed",
+		s: func() *RabbitmqSourceStatus {
+			s := &RabbitmqSourceStatus{}
+			s.InitializeConditions()
+			s.MarkSink(nil)
+			s.MarkDeployed(availableDeployment)
+			s.MarkSink(apis.HTTP("uri://example"))
+			s.MarkExchangeReady()
+			s.MarkSecretFailed("SecretReconcileFailed", "%s", "")
+			return s
+		}(),
+		condQuery: RabbitmqConditionReady,
+		want: &apis.Condition{
+			Type:    RabbitmqConditionReady,
+			Status:  corev1.ConditionFalse,
+			Reason:  "SecretReconcileFailed",
+			Message: "",
 		},
 	}}
 

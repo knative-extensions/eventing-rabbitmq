@@ -47,7 +47,6 @@ import (
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/ptr"
 
-	brokerresources "knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
 	"knative.dev/eventing/pkg/duck"
 	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/resolver"
@@ -347,7 +346,7 @@ func (r *Reconciler) reconcileDispatcherDeployment(ctx context.Context, t *event
 		Image:              r.dispatcherImage,
 		RabbitMQSecretName: rabbitmqSecret.Name,
 		QueueName:          queueName,
-		BrokerUrlSecretKey: brokerresources.BrokerURLSecretKey,
+		BrokerUrlSecretKey: rabbit.BrokerURLSecretKey,
 		BrokerIngressURL:   b.Status.Address.URL,
 		Subscriber:         sub,
 		DLX:                dlq,
@@ -409,7 +408,7 @@ func (r *Reconciler) propagateDependencyReadiness(ctx context.Context, t *eventi
 }
 
 func (r *Reconciler) getRabbitmqSecret(ctx context.Context, t *eventingv1.Trigger) (*corev1.Secret, error) {
-	return r.kubeClientSet.CoreV1().Secrets(t.Namespace).Get(ctx, brokerresources.SecretName(t.Spec.Broker), metav1.GetOptions{})
+	return r.kubeClientSet.CoreV1().Secrets(t.Namespace).Get(ctx, rabbit.SecretName(t.Spec.Broker, "broker"), metav1.GetOptions{})
 }
 
 func (r *Reconciler) reconcileBinding(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger) (rabbit.Result, error) {

@@ -61,6 +61,7 @@ import (
 	"knative.dev/pkg/tracker"
 
 	rtlisters "knative.dev/eventing-rabbitmq/pkg/reconciler/testing"
+
 	_ "knative.dev/eventing/pkg/client/injection/informers/eventing/v1/trigger/fake"
 	rt "knative.dev/eventing/pkg/reconciler/testing/v1"
 	_ "knative.dev/pkg/client/injection/ducks/duck/v1/addressable/fake"
@@ -1144,7 +1145,6 @@ func TestReconcile(t *testing.T) {
 			controller.GetEventRecorder(ctx),
 			r, "RabbitMQBroker",
 		)
-
 	},
 		false,
 		logger,
@@ -1271,7 +1271,7 @@ func createIngressDeployment() *appsv1.Deployment {
 		Broker:             &eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: testNS, UID: brokerUID}},
 		Image:              ingressImage,
 		RabbitMQSecretName: rabbitBrokerSecretName,
-		BrokerUrlSecretKey: resources.BrokerURLSecretKey,
+		BrokerUrlSecretKey: rabbit.BrokerURLSecretKey,
 	}
 	return resources.MakeIngressDeployment(args)
 }
@@ -1281,7 +1281,7 @@ func createDifferentIngressDeployment() *appsv1.Deployment {
 		Broker:             &eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: testNS, UID: brokerUID}},
 		Image:              "differentImage",
 		RabbitMQSecretName: rabbitBrokerSecretName,
-		BrokerUrlSecretKey: resources.BrokerURLSecretKey,
+		BrokerUrlSecretKey: rabbit.BrokerURLSecretKey,
 	}
 	return resources.MakeIngressDeployment(args)
 }

@@ -26,6 +26,7 @@ import (
 	rabbitduck "knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
 	"knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	fakerabbitclient "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/client/fake"
+	fakekubeclient "knative.dev/pkg/client/injection/kube/client/fake"
 	"knative.dev/pkg/injection"
 	fakedynamicclient "knative.dev/pkg/injection/clients/dynamicclient/fake"
 )
@@ -35,9 +36,10 @@ func Test_NewService(t *testing.T) {
 	ctx, _ = injection.Fake.SetupInformers(ctx, &rest.Config{})
 	ctx, _ = fakedynamicclient.With(ctx, runtime.NewScheme())
 	ctx = rabbitduck.WithDuck(ctx)
+	ctx, fakekubeClientSet := fakekubeclient.With(ctx)
 
 	i := fakerabbitclient.Get(ctx)
-	want := &Rabbit{Interface: i}
+	want := &Rabbit{Interface: i, rabbitLister: rabbitduck.Get(ctx), kubeClientSet: fakekubeClientSet}
 	got := New(ctx)
 	if want.Interface != got.Interface {
 		t.Errorf("New function did not return a valid Rabbit interface %s %s", want, got)

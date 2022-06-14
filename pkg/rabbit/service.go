@@ -19,21 +19,35 @@ package rabbit
 import (
 	"context"
 	"fmt"
+	"net/url"
 
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/kubernetes"
+
+	duckv1beta1 "knative.dev/eventing-rabbitmq/pkg/apis/duck/v1beta1"
+	rabbitv1duck "knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
 	"knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
+	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	rabbitclientset "knative.dev/eventing-rabbitmq/third_party/pkg/client/clientset/versioned"
 	rabbitmqclient "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/client"
+	apisduck "knative.dev/pkg/apis/duck"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
+	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/logging"
+	"knative.dev/pkg/network"
 )
 
 func New(ctx context.Context) *Rabbit {
 	return &Rabbit{
-		Interface: rabbitmqclient.Get(ctx),
+		Interface:     rabbitmqclient.Get(ctx),
+		rabbitLister:  rabbitv1duck.Get(ctx),
+		kubeClientSet: kubeclient.Get(ctx),
 	}
 }
 
@@ -41,6 +55,8 @@ var _ Service = (*Rabbit)(nil)
 
 type Rabbit struct {
 	rabbitclientset.Interface
+	rabbitLister  apisduck.InformerFactory
+	kubeClientSet kubernetes.Interface
 }
 
 func (r *Rabbit) ReconcileExchange(ctx context.Context, args *ExchangeArgs) (Result, error) {
@@ -185,4 +201,54 @@ func isReady(conditions []v1beta1.Condition) bool {
 		}
 	}
 	return numConditions == 0
+}
+
+func (r *Rabbit) RabbitMQURL(ctx context.Context, clusterRef *rabbitv1beta1.RabbitmqClusterReference) (*url.URL, error) {
+	// TODO: make this better.
+	ref := &duckv1.KReference{
+		Kind:       "RabbitmqCluster",
+		APIVersion: "rabbitmq.com/v1beta1",
+		Name:       clusterRef.Name,
+		Namespace:  clusterRef.Namespace,
+	}
+	gv, err := schema.ParseGroupVersion(ref.APIVersion)
+	if err != nil {
+		return nil, err
+	}
+
+	gvk := gv.WithKind(ref.Kind)
+	gvr, _ := meta.UnsafeGuessKindToResource(gvk)
+	_, lister, err := r.rabbitLister.Get(ctx, gvr)
+	if err != nil {
+		return nil, err
+	}
+
+	o, err := lister.ByNamespace(ref.Namespace).Get(ref.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	rab := o.(*duckv1beta1.Rabbit)
+	if rab.Status.DefaultUser == nil || rab.Status.DefaultUser.SecretReference == nil || rab.Status.DefaultUser.ServiceReference == nil {
+		return nil, fmt.Errorf("rabbit \"%s/%s\" not ready", ref.Namespace, ref.Name)
+	}
+
+	_ = rab.Status.DefaultUser.SecretReference
+
+	s, err := r.kubeClientSet.CoreV1().Secrets(rab.Status.DefaultUser.SecretReference.Namespace).Get(ctx, rab.Status.DefaultUser.SecretReference.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	password, ok := s.Data[rab.Status.DefaultUser.SecretReference.Keys["password"]]
+	if !ok {
+		return nil, fmt.Errorf("rabbit Secret missing key %s", rab.Status.DefaultUser.SecretReference.Keys["password"])
+	}
+	username, ok := s.Data[rab.Status.DefaultUser.SecretReference.Keys["username"]]
+	if !ok {
+		return nil, fmt.Errorf("rabbit Secret missing key %s", rab.Status.DefaultUser.SecretReference.Keys["username"])
+	}
+	host := network.GetServiceHostname(rab.Status.DefaultUser.ServiceReference.Name, rab.Status.DefaultUser.ServiceReference.Namespace)
+
+	return url.Parse(fmt.Sprintf("amqp://%s:%s@%s:%d", username, password, host, 5672))
 }
