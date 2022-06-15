@@ -20,6 +20,7 @@ import (
 	"context"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"knative.dev/eventing-rabbitmq/pkg/utils"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/apis/duck"
 	"knative.dev/pkg/kmp"
@@ -46,22 +47,11 @@ func (r *RabbitmqBrokerConfig) Validate(ctx context.Context) *apis.FieldError {
 		}
 	}
 
-	var errs *apis.FieldError
-	if r.Spec.RabbitmqClusterReference == nil {
-		return apis.ErrMissingField("rabbitmqClusterReference").ViaField("spec")
-	} else {
-		if r.Spec.RabbitmqClusterReference.Name == "" {
-			errs = errs.Also(apis.ErrMissingField("name").ViaField("rabbitmqClusterReference").ViaField("spec"))
-		}
-		if r.Spec.RabbitmqClusterReference.Namespace == "" {
-			errs = errs.Also(apis.ErrMissingField("namespace").ViaField("rabbitmqClusterReference").ViaField("spec"))
-		}
-		if r.Spec.RabbitmqClusterReference.ConnectionSecret != nil {
-			return apis.ErrDisallowedFields("connectionSecret").ViaField("rabbitmqClusterReference").ViaField("spec")
-		}
+	if apiErr := utils.ValidateRabbitMQClusterReference(r.Spec.RabbitmqClusterReference); apiErr != nil {
+		return apiErr
 	}
 
-	return errs
+	return nil
 }
 
 func ValidateRabbitmqBrokerConfig(ctx context.Context, unstructured *unstructured.Unstructured) error {

@@ -78,15 +78,15 @@ func TestValidateRabbitmqBrokerConfig(t *testing.T) {
 			wantErr:  true,
 			isUpdate: false,
 		},
-		"missing rabbitmqClusterReference.namespace": {
+		"with rabbitmqClusterReference.namespace": {
 			newConfig: &RabbitmqBrokerConfig{
 				Spec: RabbitmqBrokerConfigSpec{
 					RabbitmqClusterReference: &v1beta1.RabbitmqClusterReference{
-						Name: "some-name",
+						Name: "some-name", Namespace: "test",
 					},
 				},
 			},
-			wantErr:  true,
+			wantErr:  false,
 			isUpdate: false,
 		},
 		"including connectionSecret": {
@@ -102,6 +102,20 @@ func TestValidateRabbitmqBrokerConfig(t *testing.T) {
 				},
 			},
 			wantErr:  true,
+			isUpdate: false,
+		},
+		"just connectionSecret": {
+			newConfig: &RabbitmqBrokerConfig{
+				Spec: RabbitmqBrokerConfigSpec{
+					RabbitmqClusterReference: &v1beta1.RabbitmqClusterReference{
+						Namespace: "some-namespace",
+						ConnectionSecret: &v1.LocalObjectReference{
+							Name: "some-secret",
+						},
+					},
+				},
+			},
+			wantErr:  false,
 			isUpdate: false,
 		},
 	}
