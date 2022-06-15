@@ -57,15 +57,15 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 			},
 		},
 		{
-			Name:  "RABBITMQ_CHANNEL_CONFIG_PARALLELISM",
+			Name:  "RABBITMQ_CHANNEL_PARALLELISM",
 			Value: strconv.Itoa(*args.Source.Spec.RabbitmqResourcesConfig.Parallelism),
 		},
 		{
-			Name:  "RABBITMQ_EXCHANGE_CONFIG_NAME",
+			Name:  "RABBITMQ_EXCHANGE_NAME",
 			Value: args.Source.Spec.RabbitmqResourcesConfig.ExchangeName,
 		},
 		{
-			Name:  "RABBITMQ_QUEUE_CONFIG_NAME",
+			Name:  "RABBITMQ_QUEUE_NAME",
 			Value: args.Source.Spec.RabbitmqResourcesConfig.QueueName,
 		},
 		{
