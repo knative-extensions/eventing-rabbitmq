@@ -157,15 +157,15 @@ func TestMakeReceiveAdapter(t *testing.T) {
 											},
 										},
 										{
-											Name:  "RABBITMQ_CHANNEL_CONFIG_PARALLELISM",
+											Name:  "RABBITMQ_CHANNEL_PARALLELISM",
 											Value: "10",
 										},
 										{
-											Name:  "RABBITMQ_EXCHANGE_CONFIG_NAME",
+											Name:  "RABBITMQ_EXCHANGE_NAME",
 											Value: "logs",
 										},
 										{
-											Name:  "RABBITMQ_QUEUE_CONFIG_NAME",
+											Name:  "RABBITMQ_QUEUE_NAME",
 											Value: "",
 										},
 										{

@@ -50,9 +50,9 @@ type adapterConfig struct {
 	Retry         int           `envconfig:"HTTP_SENDER_RETRY" required:"false"`
 	BackoffPolicy string        `envconfig:"HTTP_SENDER_BACKOFF_POLICY" required:"false"`
 	BackoffDelay  time.Duration `envconfig:"HTTP_SENDER_BACKOFF_DELAY" default:"50ms" required:"false"`
-	Parallelism   int           `envconfig:"RABBITMQ_CHANNEL_CONFIG_PARALLELISM" default:"1" required:"false"`
-	ExchangeName  string        `envconfig:"RABBITMQ_EXCHANGE_CONFIG_NAME" required:"false"`
-	QueueName     string        `envconfig:"RABBITMQ_QUEUE_CONFIG_NAME" required:"true"`
+	Parallelism   int           `envconfig:"RABBITMQ_CHANNEL_PARALLELISM" default:"1" required:"false"`
+	ExchangeName  string        `envconfig:"RABBITMQ_EXCHANGE_NAME" required:"false"`
+	QueueName     string        `envconfig:"RABBITMQ_QUEUE_NAME" required:"true"`
 }
 
 func NewEnvConfig() adapter.EnvConfigAccessor {

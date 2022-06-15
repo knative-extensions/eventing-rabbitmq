@@ -14,8 +14,8 @@ spec:
     backoffDelay: "50ms"
   rabbitmqResourcesConfig:
     predeclared: false
-    exchangeName: RABBITMQ_EXCHANGE_CONFIG_NAME
-    queueName: RABBITMQ_QUEUE_CONFIG_NAME
+    exchangeName: RABBITMQ_EXCHANGE_NAME
+    queueName: RABBITMQ_QUEUE_NAME
     parallelism: 100
   sink:
     apiVersion: serving.knative.dev/v1
