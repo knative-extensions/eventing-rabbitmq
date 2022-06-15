@@ -204,16 +204,9 @@ func isReady(conditions []v1beta1.Condition) bool {
 	return numConditions == 0
 }
 
-func (r *Rabbit) RabbitMQURL(ctx context.Context, clusterRef *rabbitv1beta1.RabbitmqClusterReference, parentNamespace string) (*url.URL, error) {
+func (r *Rabbit) RabbitMQURL(ctx context.Context, clusterRef *rabbitv1beta1.RabbitmqClusterReference) (*url.URL, error) {
 	if clusterRef.ConnectionSecret != nil {
-		ns := "default"
-		if clusterRef.Namespace != "" {
-			ns = clusterRef.Namespace
-		} else if parentNamespace != "" {
-			ns = parentNamespace
-		}
-
-		s, err := r.kubeClientSet.CoreV1().Secrets(ns).Get(ctx, clusterRef.ConnectionSecret.Name, metav1.GetOptions{})
+		s, err := r.kubeClientSet.CoreV1().Secrets(clusterRef.Namespace).Get(ctx, clusterRef.ConnectionSecret.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, err
 		}
