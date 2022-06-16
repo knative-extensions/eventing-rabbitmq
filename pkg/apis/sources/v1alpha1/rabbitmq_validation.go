@@ -24,6 +24,23 @@ import (
 )
 
 func (current *RabbitmqSource) Validate(ctx context.Context) *apis.FieldError {
+	if apis.IsInUpdate(ctx) {
+		original := apis.GetBaseline(ctx).(*RabbitmqSource)
+		if diff, err := kmp.ShortDiff(original.Spec, current.Spec); err != nil {
+			return &apis.FieldError{
+				Message: "Failed to diff RabbitmqSource",
+				Paths:   []string{"spec"},
+				Details: err.Error(),
+			}
+		} else if diff != "" {
+			return &apis.FieldError{
+				Message: "Immutable fields changed (-old +new)",
+				Paths:   []string{"spec"},
+				Details: diff,
+			}
+		}
+	}
+
 	if current.Spec.RabbitmqResourcesConfig == nil {
 		return apis.ErrMissingField("rabbitmqResourcesConfig").ViaField("spec")
 	} else {
@@ -44,23 +61,6 @@ func (current *RabbitmqSource) Validate(ctx context.Context) *apis.FieldError {
 			}
 		} else if current.Spec.RabbitmqClusterReference.ConnectionSecret != nil {
 			return apis.ErrDisallowedFields("connectionSecret").ViaField("rabbitmqClusterReference").ViaField("spec")
-		}
-	}
-
-	if apis.IsInUpdate(ctx) {
-		original := apis.GetBaseline(ctx).(*RabbitmqSource)
-		if diff, err := kmp.ShortDiff(original.Spec, current.Spec); err != nil {
-			return &apis.FieldError{
-				Message: "Failed to diff RabbitmqSource",
-				Paths:   []string{"spec"},
-				Details: err.Error(),
-			}
-		} else if diff != "" {
-			return &apis.FieldError{
-				Message: "Immutable fields changed (-old +new)",
-				Paths:   []string{"spec"},
-				Details: diff,
-			}
 		}
 	}
 
