@@ -19,11 +19,7 @@ package v1alpha1
 import "context"
 
 func (r *RabbitmqSource) SetDefaults(ctx context.Context) {
-	if r.Namespace == "" {
-		r.Namespace = "default"
-	}
-
 	if r.Spec.RabbitmqClusterReference != nil && r.Spec.RabbitmqClusterReference.Namespace == "" {
-		r.Spec.RabbitmqClusterReference.Namespace = r.Namespace
+		r.Spec.RabbitmqClusterReference.Namespace = "default"
 	}
 }

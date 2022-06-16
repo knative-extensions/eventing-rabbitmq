@@ -35,6 +35,18 @@ func (current *RabbitmqSource) Validate(ctx context.Context) *apis.FieldError {
 		}
 	}
 
+	if current.Spec.RabbitmqClusterReference == nil {
+		return apis.ErrMissingField("rabbitmqClusterReference").ViaField("spec")
+	} else {
+		if current.Spec.RabbitmqClusterReference.Name == "" {
+			if current.Spec.RabbitmqClusterReference.ConnectionSecret == nil {
+				return apis.ErrMissingField("name").ViaField("rabbitmqClusterReference").ViaField("spec")
+			}
+		} else if current.Spec.RabbitmqClusterReference.ConnectionSecret != nil {
+			return apis.ErrDisallowedFields("connectionSecret").ViaField("rabbitmqClusterReference").ViaField("spec")
+		}
+	}
+
 	if apis.IsInUpdate(ctx) {
 		original := apis.GetBaseline(ctx).(*RabbitmqSource)
 		if diff, err := kmp.ShortDiff(original.Spec, current.Spec); err != nil {
@@ -49,18 +61,6 @@ func (current *RabbitmqSource) Validate(ctx context.Context) *apis.FieldError {
 				Paths:   []string{"spec"},
 				Details: diff,
 			}
-		}
-	}
-
-	if current.Spec.RabbitmqClusterReference == nil {
-		return apis.ErrMissingField("rabbitmqClusterReference").ViaField("spec")
-	} else {
-		if current.Spec.RabbitmqClusterReference.Name == "" {
-			if current.Spec.RabbitmqClusterReference.ConnectionSecret == nil {
-				return apis.ErrMissingField("name").ViaField("rabbitmqClusterReference").ViaField("spec")
-			}
-		} else if current.Spec.RabbitmqClusterReference.ConnectionSecret != nil {
-			return apis.ErrDisallowedFields("connectionSecret").ViaField("rabbitmqClusterReference").ViaField("spec")
 		}
 	}
 
