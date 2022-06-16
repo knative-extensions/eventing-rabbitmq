@@ -53,7 +53,7 @@ func (r *BrokerConfigService) GetExchangeArgs(ctx context.Context, b *eventingv1
 		return nil, err
 	}
 
-	rabbitmqURL, err := r.rabbitService.RabbitMQURL(ctx, rabbitmqClusterRef, b.Namespace)
+	rabbitmqURL, err := r.rabbitService.RabbitMQURL(ctx, rabbitmqClusterRef)
 	if err != nil {
 		return nil, err
 	}

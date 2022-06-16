@@ -4,9 +4,6 @@
 
 - Same as listed [here](../../../docs/operator-based.md#prerequisites)
 - A working RabbitMQ external instance exposed via an accessible IP/URL, an example on how to setup this can be found [here](./resources/rabbitmq-sample-deployment.yaml)
-- An RabbitMQ `Exchange` called `eventing-rabbitmq-source`, `Queue` called `eventing-rabbitmq-source` and `Binding` between both already declared, since the example used the `predeclared` flag
-
-Note: An external RabbitMQ instance can be used, but if you want to use the `Source` without predeclared resources (specifically the `Exchange`, `Binding` and `Queue`), the `RabbitMQ Message Topology Operator` must be installed in the same Kubernetes Cluster as the `Source`.
 
 ## Overview
 

@@ -1,0 +1,17 @@
+{{- range $index, $kref := .triggers -}}
+---
+apiVersion: eventing.knative.dev/v1
+kind: Trigger
+metadata:
+  name: {{ printf "%s-%d" $kref.Name $index }}
+  namespace: {{ $.namespace }}
+  annotations:
+     rabbitmq.eventing.knative.dev/parallelism: '{{ $.Parallelism }}'
+spec:
+  broker: testbroker
+  subscriber:
+    ref:
+      apiVersion: v1
+      kind: {{ $kref.Kind }}
+      name: {{ $kref.Name }}
+{{- end -}}

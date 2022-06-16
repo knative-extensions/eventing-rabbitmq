@@ -2,10 +2,10 @@ apiVersion: eventing.knative.dev/v1alpha1
 kind: RabbitmqBrokerConfig
 metadata:
   name: default-config
-  namespace: broker-trigger-demo
+  namespace: {{ .namespace }}
 spec:
   rabbitmqClusterReference:
-    namespace: broker-trigger-demo
+    namespace: {{ .namespace }}
     connectionSecret:
-      name: rabbitmq-secret-credentials # a secret with your external cluster credentials
+      name: rabbitmqc-default-user
   queueType: quorum
