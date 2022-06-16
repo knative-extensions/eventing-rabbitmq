@@ -1,0 +1,15 @@
+---
+# Single RabbitMQ cluster that will be shared by all namespaces.
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata:
+  name: rabbitmq
+  # We install it in the knative-eventing namespace, as a core component.
+  namespace: knative-eventing
+  annotations:
+    # We allow any Knative Broker of class RabbitMQBroker,
+    # in any namespace,
+    # to declare objects against this RabbitMQ cluster
+    rabbitmq.com/topology-allowed-namespaces: "*"
+spec:
+  replicas: 1
