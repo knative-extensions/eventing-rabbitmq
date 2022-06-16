@@ -6,5 +6,6 @@ metadata:
 spec:
   rabbitmqClusterReference:
     namespace: broker-trigger-demo
-    name: rabbitmq-secret-credentials # a secret with your external cluster credentials
+    connectionSecret: 
+      name: rabbitmq-secret-credentials # a secret with your external cluster credentials
   queueType: quorum
