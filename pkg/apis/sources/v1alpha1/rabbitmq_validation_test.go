@@ -33,14 +33,10 @@ var (
 			Name:      "test-cluster",
 			Namespace: "test",
 		},
-		ExchangeConfig: RabbitmqSourceExchangeConfigSpec{
-			Name: "an-exchange",
-		},
-		QueueConfig: RabbitmqSourceQueueConfigSpec{
-			Name: "",
-		},
-		ChannelConfig: RabbitmqChannelConfigSpec{
-			Parallelism: &defaultParallelism,
+		RabbitmqResourcesConfig: &RabbitmqResourcesConfigSpec{
+			ExchangeName: "an-exchange",
+			QueueName:    "",
+			Parallelism:  &defaultParallelism,
 		},
 		Sink: &duckv1.Destination{
 			Ref: &duckv1.KReference{
@@ -220,13 +216,9 @@ func TestRabbitmqSourceCheckChannelParallelismValue(t *testing.T) {
 		"valid channel parallelism value update": {
 			spec: &RabbitmqSourceSpec{
 				RabbitmqClusterReference: fullSpec.RabbitmqClusterReference,
-				ExchangeConfig:           fullSpec.ExchangeConfig,
-				QueueConfig: RabbitmqSourceQueueConfigSpec{
-					Name: "",
-				},
-				ChannelConfig:      fullSpec.ChannelConfig,
-				Sink:               fullSpec.Sink,
-				ServiceAccountName: fullSpec.ServiceAccountName,
+				RabbitmqResourcesConfig:  fullSpec.RabbitmqResourcesConfig,
+				Sink:                     fullSpec.Sink,
+				ServiceAccountName:       fullSpec.ServiceAccountName,
 			},
 			parallelism: 102,
 			allowed:     true,
@@ -239,24 +231,19 @@ func TestRabbitmqSourceCheckChannelParallelismValue(t *testing.T) {
 			ctx := context.TODO()
 			if tc.spec != nil {
 				orig := &RabbitmqSource{
-					Spec: *tc.spec,
+					Spec: *tc.spec.DeepCopy(),
 				}
 
 				var err *apis.FieldError
 				if tc.isInUpdate {
 					updated := &RabbitmqSource{
-						Spec: *tc.spec,
+						Spec: orig.Spec,
 					}
-					updated.Spec.ChannelConfig = RabbitmqChannelConfigSpec{
-						Parallelism: &tc.parallelism,
-					}
+					updated.Spec.RabbitmqResourcesConfig.Parallelism = &tc.parallelism
 					ctx = apis.WithinUpdate(ctx, orig)
 					err = updated.Validate(ctx)
 				} else {
-					orig.Spec.ChannelConfig = RabbitmqChannelConfigSpec{
-						Parallelism: &tc.parallelism,
-					}
-
+					orig.Spec.RabbitmqResourcesConfig.Parallelism = &tc.parallelism
 					ctx = apis.WithinCreate(ctx)
 					err = orig.Validate(ctx)
 				}
@@ -271,16 +258,13 @@ func TestRabbitmqSourceCheckChannelParallelismValue(t *testing.T) {
 
 func TestRabbitmqSourceExchangeConfig(t *testing.T) {
 	testCases := map[string]struct {
-		spec                 *RabbitmqSourceExchangeConfigSpec
 		predeclared, allowed bool
 	}{
 		"not allowed when predeclared set to false and no exchange name set": {
-			spec:        &RabbitmqSourceExchangeConfigSpec{},
 			predeclared: false,
 			allowed:     false,
 		},
 		"allowed when predeclared set to true and no exchange name set": {
-			spec:        &RabbitmqSourceExchangeConfigSpec{},
 			predeclared: true,
 			allowed:     true,
 		},
@@ -290,15 +274,16 @@ func TestRabbitmqSourceExchangeConfig(t *testing.T) {
 		t.Run(n, func(t *testing.T) {
 			src := &RabbitmqSource{
 				Spec: RabbitmqSourceSpec{
-					ExchangeConfig:           *tc.spec,
-					Predeclared:              tc.predeclared,
+					RabbitmqResourcesConfig: &RabbitmqResourcesConfigSpec{
+						Predeclared: tc.predeclared,
+					},
 					RabbitmqClusterReference: fullSpec.RabbitmqClusterReference,
 				},
 			}
 
 			err := src.Validate(context.TODO())
 			if tc.allowed != (err == nil) {
-				t.Fatalf("ExchangeConfig validation result incorrect. Expected %v. Actual %v", tc.allowed, err)
+				t.Fatalf("rabbitmqResourcesConfig validation result incorrect. Expected %v. Actual %v", tc.allowed, err)
 			}
 		})
 	}
@@ -314,26 +299,27 @@ func TestRabbitmqSourceSpecValidation(t *testing.T) {
 			wantErr: false,
 		},
 		"missing rabbitmqClusterReference": {
-			spec:    &RabbitmqSourceSpec{Predeclared: true},
+			spec: &RabbitmqSourceSpec{
+				RabbitmqResourcesConfig: &RabbitmqResourcesConfigSpec{Predeclared: true},
+			},
 			wantErr: true,
 		},
-		"missing rabbitmqClusterReference.name": {
+		"missing rabbitmqResourcesConfig": {
 			spec: &RabbitmqSourceSpec{
-				Predeclared:              true,
 				RabbitmqClusterReference: &v1beta1.RabbitmqClusterReference{Namespace: "test"},
 			},
 			wantErr: true,
 		},
-		"missing rabbitmqClusterReference.namespace": {
+		"missing rabbitmqClusterReference.name": {
 			spec: &RabbitmqSourceSpec{
-				Predeclared:              true,
-				RabbitmqClusterReference: &v1beta1.RabbitmqClusterReference{Name: "test"},
+				RabbitmqResourcesConfig:  &RabbitmqResourcesConfigSpec{Predeclared: true},
+				RabbitmqClusterReference: &v1beta1.RabbitmqClusterReference{Namespace: "test"},
 			},
 			wantErr: true,
 		},
 		"including connectionSecret": {
 			spec: &RabbitmqSourceSpec{
-				Predeclared: true,
+				RabbitmqResourcesConfig: &RabbitmqResourcesConfigSpec{Predeclared: true},
 				RabbitmqClusterReference: &v1beta1.RabbitmqClusterReference{
 					Namespace: "test", Name: "test", ConnectionSecret: &v1.LocalObjectReference{Name: "test"}},
 			},
@@ -341,11 +327,11 @@ func TestRabbitmqSourceSpecValidation(t *testing.T) {
 		},
 		"just connection secret": {
 			spec: &RabbitmqSourceSpec{
-				Predeclared: true,
+				RabbitmqResourcesConfig: &RabbitmqResourcesConfigSpec{Predeclared: true},
 				RabbitmqClusterReference: &v1beta1.RabbitmqClusterReference{
 					Namespace: "test", ConnectionSecret: &v1.LocalObjectReference{Name: "test"}},
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 	}
 

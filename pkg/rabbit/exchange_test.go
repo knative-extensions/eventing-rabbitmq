@@ -161,10 +161,10 @@ func TestNewExchange(t *testing.T) {
 					UID:       sourceUID,
 				},
 				Spec: v1alpha1.RabbitmqSourceSpec{
-					ExchangeConfig: v1alpha1.RabbitmqSourceExchangeConfigSpec{
-						Name: "some-exchange",
+					RabbitmqResourcesConfig: &v1alpha1.RabbitmqResourcesConfigSpec{
+						ExchangeName: "some-exchange",
+						Vhost:        "test",
 					},
-					Vhost: "test",
 				},
 			},
 		},

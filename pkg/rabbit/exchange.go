@@ -55,8 +55,8 @@ func NewExchange(args *ExchangeArgs) *rabbitv1beta1.Exchange {
 		exchangeName = args.Name
 	} else if args.Source != nil {
 		ownerReference = *kmeta.NewControllerRef(args.Source)
-		exchangeName = args.Source.Spec.ExchangeConfig.Name
-		vhost = args.Source.Spec.Vhost
+		exchangeName = args.Source.Spec.RabbitmqResourcesConfig.ExchangeName
+		vhost = args.Source.Spec.RabbitmqResourcesConfig.Vhost
 	}
 
 	return &rabbitv1beta1.Exchange{

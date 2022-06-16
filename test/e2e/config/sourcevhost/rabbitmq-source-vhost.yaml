@@ -18,14 +18,13 @@ metadata:
   name: rabbitmq-source-vhost
   namespace: {{ .namespace }}
 spec:
-  vhost: "test-vhost"
   rabbitmqClusterReference:
     name: rabbitmqc
     namespace: {{ .namespace }}
-  exchangeConfig:
-    name: "logs"
-  queueConfig:
-    name: "test"
+  rabbitmqResourcesConfig:
+    exchangeName: "logs"
+    queueName: "test"
+    vhost: "test-vhost"
   sink:
     ref:
       apiVersion: v1

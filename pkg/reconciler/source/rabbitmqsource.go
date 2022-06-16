@@ -152,10 +152,10 @@ func (r *Reconciler) reconcileRabbitObjects(ctx context.Context, src *v1alpha1.R
 	}
 	src.Status.MarkSecretReady()
 
-	if src.Spec.Predeclared {
+	if src.Spec.RabbitmqResourcesConfig.Predeclared {
 		logger.Info("predeclared set to true; no RabbitMQ objects to reconcile",
 			"source", src.Name,
-			"predeclared queue", src.Spec.QueueConfig.Name)
+			"predeclared queue", src.Spec.RabbitmqResourcesConfig.QueueName)
 		return nil
 	}
 
@@ -166,7 +166,7 @@ func (r *Reconciler) reconcileRabbitObjects(ctx context.Context, src *v1alpha1.R
 		Source:                   src,
 	})
 	if err != nil {
-		logger.Error("failed to reconcile exchange", "exchange", src.Spec.ExchangeConfig.Name)
+		logger.Error("failed to reconcile exchange", "exchange", src.Spec.RabbitmqResourcesConfig.ExchangeName)
 		return err
 	}
 
@@ -179,7 +179,7 @@ func (r *Reconciler) reconcileRabbitObjects(ctx context.Context, src *v1alpha1.R
 		Labels:                   rabbit.Labels(nil, nil, src),
 	})
 	if err != nil {
-		logger.Error("failed to reconcile queue", "queue", src.Spec.QueueConfig.Name)
+		logger.Error("failed to reconcile queue", "queue", src.Spec.RabbitmqResourcesConfig.QueueName)
 		return err
 	}
 
@@ -187,14 +187,14 @@ func (r *Reconciler) reconcileRabbitObjects(ctx context.Context, src *v1alpha1.R
 		Name:                     naming.CreateSourceRabbitName(src),
 		Namespace:                src.Namespace,
 		RabbitmqClusterReference: src.Spec.RabbitmqClusterReference,
-		Vhost:                    src.Spec.Vhost,
-		Source:                   src.Spec.ExchangeConfig.Name,
-		Destination:              src.Spec.QueueConfig.Name,
+		Vhost:                    src.Spec.RabbitmqResourcesConfig.Vhost,
+		Source:                   src.Spec.RabbitmqResourcesConfig.ExchangeName,
+		Destination:              src.Spec.RabbitmqResourcesConfig.QueueName,
 		Owner:                    *kmeta.NewControllerRef(src),
 		Labels:                   rabbit.Labels(nil, nil, src),
 	})
 	if err != nil {
-		logger.Error("failed to reconcile queue", "queue", src.Spec.QueueConfig.Name)
+		logger.Error("failed to reconcile queue", "queue", src.Spec.RabbitmqResourcesConfig.QueueName)
 		return err
 	}
 
@@ -302,7 +302,7 @@ func (r *Reconciler) UpdateFromMetricsConfigMap(cfg *corev1.ConfigMap) {
 func (r *Reconciler) createCloudEventAttributes(src *v1alpha1.RabbitmqSource) []duckv1.CloudEventAttributes {
 	ceAttribute := duckv1.CloudEventAttributes{
 		Type:   v1alpha1.RabbitmqEventType,
-		Source: v1alpha1.RabbitmqEventSource(src.Namespace, src.Name, src.Spec.QueueConfig.Name),
+		Source: v1alpha1.RabbitmqEventSource(src.Namespace, src.Name, src.Spec.RabbitmqResourcesConfig.QueueName),
 	}
 	return []duckv1.CloudEventAttributes{ceAttribute}
 }

@@ -19,40 +19,14 @@ package v1alpha1
 import (
 	"context"
 
-	"github.com/google/go-cmp/cmp/cmpopts"
-
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/kmp"
 )
 
 func (current *RabbitmqSource) Validate(ctx context.Context) *apis.FieldError {
-	if !current.Spec.Predeclared && current.Spec.ExchangeConfig.Name == "" {
-		return &apis.FieldError{
-			Message: "Name of exchange must be provided when spec.predeclared is false",
-			Paths:   []string{"spec", "exchangeConfig", "name"},
-		}
-	}
-
-	var errs *apis.FieldError
-	if current.Spec.RabbitmqClusterReference == nil {
-		return apis.ErrMissingField("rabbitmqClusterReference").ViaField("spec")
-	} else {
-		if current.Spec.RabbitmqClusterReference.Name == "" {
-			return errs.Also(apis.ErrMissingField("name").ViaField("rabbitmqClusterReference").ViaField("spec"))
-		}
-		if current.Spec.RabbitmqClusterReference.Namespace == "" {
-			return errs.Also(apis.ErrMissingField("namespace").ViaField("rabbitmqClusterReference").ViaField("spec"))
-		}
-		if current.Spec.RabbitmqClusterReference.ConnectionSecret != nil {
-			return apis.ErrDisallowedFields("connectionSecret").ViaField("rabbitmqClusterReference").ViaField("spec")
-		}
-	}
-
 	if apis.IsInUpdate(ctx) {
-		ignoreSpecFields := cmpopts.IgnoreFields(RabbitmqSourceSpec{}, "ChannelConfig")
 		original := apis.GetBaseline(ctx).(*RabbitmqSource)
-
-		if diff, err := kmp.ShortDiff(original.Spec, current.Spec, ignoreSpecFields); err != nil {
+		if diff, err := kmp.ShortDiff(original.Spec, current.Spec); err != nil {
 			return &apis.FieldError{
 				Message: "Failed to diff RabbitmqSource",
 				Paths:   []string{"spec"},
@@ -67,16 +41,39 @@ func (current *RabbitmqSource) Validate(ctx context.Context) *apis.FieldError {
 		}
 	}
 
-	return current.Spec.ChannelConfig.validate().ViaField("ChannelConfig")
+	if current.Spec.RabbitmqResourcesConfig == nil {
+		return apis.ErrMissingField("rabbitmqResourcesConfig").ViaField("spec")
+	} else {
+		if !current.Spec.RabbitmqResourcesConfig.Predeclared && current.Spec.RabbitmqResourcesConfig.ExchangeName == "" {
+			return &apis.FieldError{
+				Message: "Name of exchange must be provided when spec.predeclared is false",
+				Paths:   []string{"spec", "rabbitmqResourcesConfig", "name"},
+			}
+		}
+	}
+
+	if current.Spec.RabbitmqClusterReference == nil {
+		return apis.ErrMissingField("rabbitmqClusterReference").ViaField("spec")
+	} else {
+		if current.Spec.RabbitmqClusterReference.Name == "" {
+			if current.Spec.RabbitmqClusterReference.ConnectionSecret == nil {
+				return apis.ErrMissingField("name").ViaField("rabbitmqClusterReference").ViaField("spec")
+			}
+		} else if current.Spec.RabbitmqClusterReference.ConnectionSecret != nil {
+			return apis.ErrDisallowedFields("connectionSecret").ViaField("rabbitmqClusterReference").ViaField("spec")
+		}
+	}
+
+	return current.Spec.RabbitmqResourcesConfig.validate().ViaField("rabbitmqResourcesConfig")
 }
 
-func (chSpec *RabbitmqChannelConfigSpec) validate() *apis.FieldError {
-	if chSpec.Parallelism == nil {
+func (rmqResSpec *RabbitmqResourcesConfigSpec) validate() *apis.FieldError {
+	if rmqResSpec.Parallelism == nil {
 		return nil
 	}
 
-	if *chSpec.Parallelism < 1 || *chSpec.Parallelism > 1000 {
-		return apis.ErrOutOfBoundsValue(*chSpec.Parallelism, 1, 1000, "Parallelism")
+	if *rmqResSpec.Parallelism < 1 || *rmqResSpec.Parallelism > 1000 {
+		return apis.ErrOutOfBoundsValue(*rmqResSpec.Parallelism, 1, 1000, "Parallelism")
 	}
 
 	return nil

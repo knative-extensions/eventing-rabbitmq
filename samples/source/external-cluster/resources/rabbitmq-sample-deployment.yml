@@ -1,18 +1,6 @@
 # This is an example on how to build a standalone rabbitmq cluster on gke
 # Do NOT use this in your production environment!!
-apiVersion: v1
-kind: Service
-metadata:
-  name: rabbitmq-management-ui
-spec:
-  type: LoadBalancer
-  ports:
-  - port: 15672
-    protocol: TCP
-    targetPort: 15672
-  selector:
-    run: rabbitmq
----
+
 apiVersion: v1
 kind: Service
 metadata:
@@ -20,9 +8,14 @@ metadata:
 spec:
   type: LoadBalancer
   ports:
-  - port: 5672
+  - name: rabbitmq-protocol
+    port: 5672
     protocol: TCP
     targetPort: 5672
+  - name: rabbitmq-management-ui
+    port: 15672
+    protocol: TCP
+    targetPort: 15672
   selector:
     run: rabbitmq
 ---

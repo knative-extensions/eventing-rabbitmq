@@ -21,21 +21,19 @@ import (
 	"regexp"
 	"testing"
 
-	"k8s.io/apimachinery/pkg/types"
-
-	"knative.dev/eventing-rabbitmq/pkg/rabbit"
-
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/pointer"
-
 	v1 "k8s.io/api/core/v1"
-	"knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
-
-	"github.com/google/go-cmp/cmp"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1alpha12 "knative.dev/eventing-rabbitmq/pkg/apis/eventing/v1alpha1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/pointer"
+
+	eventingv1alpha1 "knative.dev/eventing-rabbitmq/pkg/apis/eventing/v1alpha1"
+	"knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
+	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestNewQueue(t *testing.T) {
@@ -86,7 +84,7 @@ func TestNewQueue(t *testing.T) {
 					RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
 						Name: rabbitmqcluster,
 					},
-					Type: string(v1alpha12.QuorumQueueType),
+					Type: string(eventingv1alpha1.QuorumQueueType),
 				},
 			},
 		},
@@ -159,7 +157,7 @@ func TestNewQueue(t *testing.T) {
 				},
 				Owner:     owner,
 				Labels:    map[string]string{"cool": "label"},
-				QueueType: v1alpha12.ClassicQueueType,
+				QueueType: eventingv1alpha1.ClassicQueueType,
 			},
 			want: &rabbitv1beta1.Queue{
 				ObjectMeta: metav1.ObjectMeta{
@@ -175,7 +173,7 @@ func TestNewQueue(t *testing.T) {
 					RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
 						Name: rabbitmqcluster,
 					},
-					Type: string(v1alpha12.ClassicQueueType),
+					Type: string(eventingv1alpha1.ClassicQueueType),
 				},
 			},
 		},
@@ -193,10 +191,10 @@ func TestNewQueue(t *testing.T) {
 				Labels: map[string]string{"a-key": "a-value"},
 				Source: &v1alpha1.RabbitmqSource{
 					Spec: v1alpha1.RabbitmqSourceSpec{
-						QueueConfig: v1alpha1.RabbitmqSourceQueueConfigSpec{
-							Name: "a-test-queue",
+						RabbitmqResourcesConfig: &v1alpha1.RabbitmqResourcesConfigSpec{
+							QueueName: "a-test-queue",
+							Vhost:     "test",
 						},
-						Vhost: "test",
 					},
 				},
 			},

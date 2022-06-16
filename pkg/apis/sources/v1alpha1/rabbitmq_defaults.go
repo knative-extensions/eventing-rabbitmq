@@ -18,4 +18,8 @@ package v1alpha1
 
 import "context"
 
-func (r *RabbitmqSource) SetDefaults(ctx context.Context) {}
+func (r *RabbitmqSource) SetDefaults(ctx context.Context) {
+	if r.Spec.RabbitmqClusterReference != nil && r.Spec.RabbitmqClusterReference.Namespace == "" {
+		r.Spec.RabbitmqClusterReference.Namespace = "default"
+	}
+}

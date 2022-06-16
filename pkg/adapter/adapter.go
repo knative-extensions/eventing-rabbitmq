@@ -41,30 +41,18 @@ import (
 
 const resourceGroup = "rabbitmqsources.sources.knative.dev"
 
-type ExchangeConfig struct {
-	Name string `envconfig:"RABBITMQ_EXCHANGE_CONFIG_NAME" required:"false"`
-}
-
-type ChannelConfig struct {
-	Parallelism int `envconfig:"RABBITMQ_CHANNEL_CONFIG_PARALLELISM" default:"1" required:"false"`
-}
-
-type QueueConfig struct {
-	Name string `envconfig:"RABBITMQ_QUEUE_CONFIG_NAME" required:"true"`
-}
-
 type adapterConfig struct {
 	adapter.EnvConfig
 
-	RabbitURL      string        `envconfig:"RABBIT_URL" required:"true"`
-	Vhost          string        `envconfig:"RABBITMQ_VHOST" required:"false"`
-	Predeclared    bool          `envconfig:"RABBITMQ_PREDECLARED" required:"false"`
-	Retry          int           `envconfig:"HTTP_SENDER_RETRY" required:"false"`
-	BackoffPolicy  string        `envconfig:"HTTP_SENDER_BACKOFF_POLICY" required:"false"`
-	BackoffDelay   time.Duration `envconfig:"HTTP_SENDER_BACKOFF_DELAY" default:"50ms" required:"false"`
-	ChannelConfig  ChannelConfig
-	ExchangeConfig ExchangeConfig
-	QueueConfig    QueueConfig
+	RabbitURL     string        `envconfig:"RABBIT_URL" required:"true"`
+	Vhost         string        `envconfig:"RABBITMQ_VHOST" required:"false"`
+	Predeclared   bool          `envconfig:"RABBITMQ_PREDECLARED" required:"false"`
+	Retry         int           `envconfig:"HTTP_SENDER_RETRY" required:"false"`
+	BackoffPolicy string        `envconfig:"HTTP_SENDER_BACKOFF_POLICY" required:"false"`
+	BackoffDelay  time.Duration `envconfig:"HTTP_SENDER_BACKOFF_DELAY" default:"50ms" required:"false"`
+	Parallelism   int           `envconfig:"RABBITMQ_CHANNEL_PARALLELISM" default:"1" required:"false"`
+	ExchangeName  string        `envconfig:"RABBITMQ_EXCHANGE_NAME" required:"false"`
+	QueueName     string        `envconfig:"RABBITMQ_QUEUE_NAME" required:"true"`
 }
 
 func NewEnvConfig() adapter.EnvConfigAccessor {
@@ -127,11 +115,11 @@ func (a *Adapter) CreateChannel(conn wabbit.Conn, connTest *amqptest.Conn,
 	}
 
 	logger.Info("Initializing Channel with Config: ",
-		zap.Int("Parallelism", a.config.ChannelConfig.Parallelism),
+		zap.Int("Parallelism", a.config.Parallelism),
 	)
 
 	err = ch.Qos(
-		a.config.ChannelConfig.Parallelism,
+		a.config.Parallelism,
 		0,
 		false,
 	)
@@ -148,7 +136,7 @@ func (a *Adapter) start(stopCh <-chan struct{}) error {
 	logger.Info("Starting with config: ",
 		zap.String("Name", a.config.Name),
 		zap.String("Namespace", a.config.Namespace),
-		zap.String("QueueName", a.config.QueueConfig.Name),
+		zap.String("QueueName", a.config.QueueName),
 		zap.String("SinkURI", a.config.Sink))
 
 	conn, err := a.CreateConn(logger)
@@ -170,7 +158,7 @@ func (a *Adapter) start(stopCh <-chan struct{}) error {
 }
 
 func (a *Adapter) StartAmqpClient(ch *wabbit.Channel) (*wabbit.Queue, error) {
-	queue, err := (*ch).QueueInspect(a.config.QueueConfig.Name)
+	queue, err := (*ch).QueueInspect(a.config.QueueName)
 	return &queue, err
 }
 
@@ -199,7 +187,7 @@ func (a *Adapter) PollForMessages(channel *wabbit.Channel,
 	msgs, _ := a.ConsumeMessages(channel, queue, logger)
 
 	wg := &sync.WaitGroup{}
-	workerCount := a.config.ChannelConfig.Parallelism
+	workerCount := a.config.Parallelism
 	wg.Add(workerCount)
 	workerQueue := make(chan wabbit.Delivery, workerCount)
 	logger.Info("Starting GoRoutines Workers: ", zap.Int("WorkerCount", workerCount))
@@ -257,7 +245,7 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 		a.context,
 		a.config.Name,
 		a.config.Namespace,
-		a.config.QueueConfig.Name,
+		a.config.QueueName,
 		msg,
 		req,
 		a.logger)
