@@ -2,11 +2,15 @@
 
 ## Prerequisites and installation
 
-Same as listed [here](../../../docs/operator-based.md#prerequisites)
+- Same as listed [here](../../../docs/operator-based.md#prerequisites)
+- A working RabbitMQ external instance exposed via an accessible IP/URL, an example on how to setup this can be found [here](./resources/rabbitmq-sample-deployment.yaml)
+- An RabbitMQ `Exchange` called `eventing-rabbitmq-source`, `Queue` called `eventing-rabbitmq-source` and `Binding` between both already declared, since the example used the `predeclared` flag
+
+Note: An external RabbitMQ instance can be used, but if you want to use the `Source` without predeclared resources (specifically the `Exchange`, `Binding` and `Queue`), the `RabbitMQ Message Topology Operator` must be installed in the same Kubernetes Cluster as the `Source`.
 
 ## Overview
 
-What this demo shows is how the Dead Letter Queue works with the RabbitMQ using
+What this demo shows is how to connect to a RabbitMQ instance outside your Cluster by using
 a very simple example. It demonstrates how failed events get sent to Dead Letter
 Sink while successfully processed events do not.
 
@@ -34,7 +38,7 @@ them sends an event that has responsecode set to 200 (event processed
 successfully) and one that has responsecode set to 500 (event processing
 failed).
 
-Demo creates a `Broker` with the delivery configuration that specifies that
+Demo creates a `Broker`, using an external RabbitMQ instance, with the delivery configuration that specifies that
 failed events will be delivered to `event-display`.
 
 Demo creates a `Trigger` that wires `PingSource` events to go to the `failer`.
@@ -47,37 +51,40 @@ Create a new namespace for the demo. All the commands are expected to be
 executed from the root of this repo.
 
 ```sh
-kubectl apply -f samples/broker-trigger/quick-setup/100-namespace.yaml
+kubectl apply -f samples/broker-trigger/external-cluster/100-namespace.yaml
 ```
 or
 ```sh
 kubectl create ns broker-trigger-demo
 ```
 
-### Create a RabbitMQ Cluster
+### Create the RabbitMQ credentials Secret
 
-Create a RabbitMQ Cluster:
+This are the credentials from your external RabbitMQ instance
 
 ```sh
-kubectl apply -f samples/broker-trigger/quick-setup/200-rabbitmq.yaml
+kubectl apply -f samples/broker-trigger/external-cluster/200-secret.yaml
 ```
 or
-```
+```sh
 kubectl apply -f - << EOF
-apiVersion: rabbitmq.com/v1beta1
-kind: RabbitmqCluster
+apiVersion: v1
+kind: Secret
 metadata:
-  name: rabbitmq
+  name: rabbitmq-secret-credentials
   namespace: broker-trigger-demo
-spec:
-  replicas: 1
+# This is just a sample, don't use it this way in production
+stringData:
+  username: $EXTERNAL_RABBITMQ_USERNAME
+  password: $EXTERNAL_RABBITMQ_PASSWORD
+  uri: $EXTERNAL_RABBITMQ_MANAGEMENT_UI_URI:$PORT
 EOF
 ```
 
 ### Create the RabbitMQ Broker Config
 
 ```sh
-kubectl apply -f samples/broker-trigger/quick-setup/250-broker-config.yaml
+kubectl apply -f samples/broker-trigger/external-cluster/250-broker-config.yaml
 ```
 or
 ```sh
@@ -89,24 +96,16 @@ metadata:
   namespace: broker-trigger-demo
 spec:
   rabbitmqClusterReference:
-    name: rabbitmq
     namespace: broker-trigger-demo
+    name: rabbitmq-secret-credentials
   queueType: quorum
 EOF
 ```
 
-#### Queue Type
-
-Queue type can be configured in the `RabbitmqBrokerConfig`. The supported types are `quorum` (default) and `classic`. Quorum
-queues are recommended for fault tolerant multi-node setups. More information on quorum queues can be found [here](https://www.rabbitmq.com/quorum-queues.html). A
-minimum RabbitMQ version of (3.8.0) is required to use quorum queues.
-
-Note: Configuring queue type is only supported when using the `RabbitmqBrokerConfig`. If the DEPRECATED `RabbitmqCluster` is used as the broker config, queue type will be `classic`.
-
 ### Create the RabbitMQ Broker
 
 ```sh
-kubectl apply -f samples/broker-trigger/quick-setup/300-broker.yaml
+kubectl apply -f samples/broker-trigger/external-cluster/300-broker.yaml
 ```
 or
 ```sh
@@ -134,41 +133,12 @@ spec:
 EOF
 ```
 
-### [DEPRECATED] Create the RabbitMQ Broker (with RabbitmqCluster as config)
-
-While using a reference to a RabbitmqCluster directly is supported, it's deprecated and will be removed in a future release
-
-```sh
-kubectl apply -f - << EOF
-apiVersion: eventing.knative.dev/v1
-kind: Broker
-metadata:
-  name: default
-  namespace: broker-trigger-demo
-  annotations:
-    eventing.knative.dev/broker.class: RabbitMQBroker
-spec:
-  config:
-    apiVersion: rabbitmq.com/v1beta1
-    kind: RabbitmqCluster
-    name: rabbitmq
-  delivery:
-    deadLetterSink:
-      ref:
-        apiVersion: serving.knative.dev/v1
-        kind: Service
-        name: event-display
-        namespace: broker-trigger-demo
-    retry: 5
-EOF
-```
-
 ### Create the Dead Letter Sink
 
 Then create the Knative Serving Service which will receive any failed events.
 
 ```sh
-kubectl apply -f samples/broker-trigger/quick-setup/400-sink.yaml
+kubectl apply -f samples/broker-trigger/external-cluster/400-sink.yaml
 ```
 or
 ```sh
@@ -198,7 +168,7 @@ default   http://default-broker-ingress.broker-trigger-demo.svc.cluster.local   
 ### Create the Ping Sources
 
 ```sh
-kubectl apply -f samples/broker-trigger/quick-setup/500-ping-sources.yaml
+kubectl apply -f samples/broker-trigger/external-cluster/500-ping-sources.yaml
 ```
 or
 ```sh
@@ -242,7 +212,7 @@ EOF
 ### Create Trigger
 
 ```sh
-kubectl apply -f samples/broker-trigger/quick-setup/600-trigger.yaml
+kubectl apply -f samples/broker-trigger/external-cluster/600-trigger.yaml
 ```
 or
 ```sh
@@ -274,7 +244,7 @@ EOF
 ### Create Failer
 
 ```sh
-kubectl apply -f samples/broker-trigger/quick-setup/700-failer.yaml
+kubectl apply -f samples/broker-trigger/external-cluster/700-failer.yaml
 ```
 or
 ```sh
