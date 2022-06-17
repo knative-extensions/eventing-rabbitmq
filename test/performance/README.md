@@ -5,21 +5,21 @@
 - GKE 1.21 with autoscaling
 - kubectl 1.21
 - [ko v0.11.2](https://github.com/google/ko/releases/tag/v0.11.2) + [`KO_DOCKER_REPO`](https://github.com/knative/eventing/blob/main/DEVELOPMENT.md#setup-your-environment)
-- A git clone of [knative-sandbox/eventing-rabbitmq](https://github.com/knative-sandbox/eventing-rabbitmq) at tag `knative-v1.3.1`
+- A git clone of [knative-sandbox/eventing-rabbitmq](https://github.com/knative-sandbox/eventing-rabbitmq)
 
 
 ## Install Knative Serving
 
-We install a specific version of Knative - [v1.3.1](https://github.com/knative/eventing/releases/tag/knative-v1.3.1) - as this is a point-in-time guide.
+We install a specific version of Knative - [v1.5.0](https://github.com/knative/eventing/releases/tag/knative-v1.5.0) - as this is a point-in-time guide.
 While we expect subsequent versions to continue working the same way, in the absence of automated tests that ensure this, we stick to exact versions that we have tested manually.
 
 ```sh
 # Installing Knative Serving ... https://github.com/knative/serving/releases
-kubectl apply --filename https://github.com/knative/serving/releases/download/knative-v1.3.1/serving-crds.yaml
-kubectl apply --filename https://github.com/knative/serving/releases/download/knative-v1.3.1/serving-core.yaml
+kubectl apply --filename https://github.com/knative/serving/releases/download/knative-v1.5.0/serving-crds.yaml
+kubectl apply --filename https://github.com/knative/serving/releases/download/knative-v1.5.0/serving-core.yaml
 
 # Installing Knative Serving Kourier networking layer ... https://github.com/knative/net-kourier/releases
-kubectl apply --filename https://github.com/knative/net-kourier/releases/download/knative-v1.3.1/kourier.yaml
+kubectl apply --filename https://github.com/knative/net-kourier/releases/download/knative-v1.5.0/kourier.yaml
 
 # Patching Knative Serving to use Kourier for the networking layer ...
 kubectl patch configmap/config-network \
@@ -33,10 +33,8 @@ kubectl patch configmap/config-network \
 
 ```sh
 # Installing Knative Eventing ... https://github.com/knative/eventing/releases
-kubectl apply --filename https://github.com/knative/eventing/releases/download/knative-v1.3.1/eventing-crds.yaml
-kubectl apply --filename https://github.com/knative/eventing/releases/download/knative-v1.3.1/eventing-core.yaml
-kubectl apply --filename https://github.com/knative/eventing/releases/download/knative-v1.3.1/in-memory-channel.yaml
-kubectl apply --filename https://github.com/knative/eventing/releases/download/knative-v1.3.1/mt-channel-broker.yaml
+kubectl apply --filename https://github.com/knative/eventing/releases/download/knative-v1.5.0/eventing-crds.yaml
+kubectl apply --filename https://github.com/knative/eventing/releases/download/knative-v1.5.0/eventing-core.yaml
 
 # Installing RabbitMQ Operator ... https://github.com/rabbitmq/cluster-operator/releases
 kubectl apply --filename https://github.com/rabbitmq/cluster-operator/releases/download/v1.13.0/cluster-operator.yml
@@ -51,10 +49,10 @@ kubectl apply --filename https://github.com/rabbitmq/messaging-topology-operator
 
 
 # Installing Knative Eventing RabbitMQ Broker ... https://github.com/knative-sandbox/eventing-rabbitmq/releases
-kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/download/knative-v1.3.1/rabbitmq-broker.yaml
+kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/download/knative-v1.5.0/rabbitmq-broker.yaml
 
 # Installing Knative Eventing RabbitMQ Source ... https://github.com/knative-sandbox/eventing-rabbitmq/releases
-kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/download/knative-v1.3.1/rabbitmq-source.yaml
+kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/download/knative-v1.5.0/rabbitmq-source.yaml
 ```
 
 ## Broker Benchmarks
@@ -98,7 +96,7 @@ To run the multi consumer load test:
 envsubst < test/performance/broker-setup/400-broker-multi-consumer-setup.yaml | ko apply --filename -
 ```
 
-[Click here to learn how to visualize the results](#download-&-visualize-knative-eventing-rabbitmq-benchmark-results)
+[Click here to learn how to visualize the results](#download--visualize-knative-eventing-rabbitmq-benchmark-results)
 
 ### Cleanup
 
@@ -152,7 +150,7 @@ To run the constant load test:
 ko apply --filename test/performance/source-setup/400-source-constant-load-setup.yaml
 ```
 
-[Click here to learn how to visualize the results](#download-&-visualize-knative-eventing-rabbitmq-benchmark-results)
+[Click here to learn how to visualize the results](#download--visualize-knative-eventing-rabbitmq-benchmark-results)
 
 ### Cleanup
 
@@ -192,7 +190,7 @@ Try using higher boundaries values for the multi-consumer test setup
 > * `0.8` is the time in seconds, and it is the max allowed size for the y1 axis
 > * `0` and `1100` are the message throughput, and it they represent the min and max boundaries of the y2 axis
 
-![latency-throughput](./results/release-v1.3/broker/increasing-load/prefetch-1-latency-throughput.png)
+![latency-throughput](./results/release-v1.5/broker/increasing-load/parallel-1-latency-throughput.png)
 
 To visualize just the end-to-end event latency, run:
 
@@ -200,7 +198,7 @@ To visualize just the end-to-end event latency, run:
 gnuplot -c latency.plg eventing-rabbitmq-broker/source-perf-results.csv 0.8 0 1500
 ```
 
-![latency](./results/release-v1.3/broker/increasing-load/prefetch-100-latency.png)
+![latency](./results/release-v1.5/broker/increasing-load/parallel-100-latency.png)
 
 To visualize just the end-to-end event throughput, run:
 
@@ -209,7 +207,7 @@ gnuplot -c throughput.plg eventing-rabbitmq-broker-perf-results.csv 0.8 0 1100
 # this can take up to 5 minutes to render ¯\_(ツ)_/¯
 ```
 
-![throughput](./results/release-v1.3/broker/increasing-load/prefetch-100-throughput.png)
+![throughput](./results/release-v1.5/broker/increasing-load/parallel-100-throughput.png)
 
 ## Generate Results for a Release
 
