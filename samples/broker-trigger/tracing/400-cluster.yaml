@@ -5,3 +5,13 @@ metadata:
   namespace: rmqbroker
 spec:
   replicas: 1
+  override:
+    statefulSet:
+      spec:
+        template:
+          spec:
+            containers:
+            - name: rabbitmq
+              env:
+              - name: ERL_MAX_PORTS
+                value: "4096"
