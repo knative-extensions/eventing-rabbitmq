@@ -22,7 +22,6 @@ import (
 	nethttp "net/http"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/NeowayLabs/wabbit"
 	"github.com/NeowayLabs/wabbit/amqp"
@@ -33,7 +32,7 @@ import (
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	"knative.dev/eventing-rabbitmq/pkg/utils"
 	"knative.dev/eventing/pkg/adapter/v2"
-	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
+	v1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/eventing/pkg/metrics/source"
 	"knative.dev/pkg/logging"
@@ -44,15 +43,15 @@ const resourceGroup = "rabbitmqsources.sources.knative.dev"
 type adapterConfig struct {
 	adapter.EnvConfig
 
-	RabbitURL     string        `envconfig:"RABBIT_URL" required:"true"`
-	Vhost         string        `envconfig:"RABBITMQ_VHOST" required:"false"`
-	Predeclared   bool          `envconfig:"RABBITMQ_PREDECLARED" required:"false"`
-	Retry         int           `envconfig:"HTTP_SENDER_RETRY" required:"false"`
-	BackoffPolicy string        `envconfig:"HTTP_SENDER_BACKOFF_POLICY" required:"false"`
-	BackoffDelay  time.Duration `envconfig:"HTTP_SENDER_BACKOFF_DELAY" default:"50ms" required:"false"`
-	Parallelism   int           `envconfig:"RABBITMQ_CHANNEL_PARALLELISM" default:"1" required:"false"`
-	ExchangeName  string        `envconfig:"RABBITMQ_EXCHANGE_NAME" required:"false"`
-	QueueName     string        `envconfig:"RABBITMQ_QUEUE_NAME" required:"true"`
+	RabbitURL     string `envconfig:"RABBIT_URL" required:"true"`
+	Vhost         string `envconfig:"RABBITMQ_VHOST" required:"false"`
+	Predeclared   bool   `envconfig:"RABBITMQ_PREDECLARED" required:"false"`
+	Retry         int    `envconfig:"HTTP_SENDER_RETRY" required:"false"`
+	BackoffPolicy string `envconfig:"HTTP_SENDER_BACKOFF_POLICY" required:"false"`
+	BackoffDelay  string `envconfig:"HTTP_SENDER_BACKOFF_DELAY" default:"50ms" required:"false"`
+	Parallelism   int    `envconfig:"RABBITMQ_CHANNEL_PARALLELISM" default:"1" required:"false"`
+	ExchangeName  string `envconfig:"RABBITMQ_EXCHANGE_NAME" required:"false"`
+	QueueName     string `envconfig:"RABBITMQ_QUEUE_NAME" required:"true"`
 }
 
 func NewEnvConfig() adapter.EnvConfigAccessor {
@@ -69,6 +68,10 @@ type Adapter struct {
 
 var _ adapter.MessageAdapter = (*Adapter)(nil)
 var _ adapter.MessageAdapterConstructor = NewAdapter
+var (
+	retryConfig  kncloudevents.RetryConfig = kncloudevents.NoRetries()
+	retriesInt32 int32                     = 0
+)
 
 func NewAdapter(ctx context.Context, processed adapter.EnvConfigAccessor, httpMessageSender *kncloudevents.HTTPMessageSender, reporter source.StatsReporter) adapter.MessageAdapter {
 	logger := logging.FromContext(ctx).Desugar()
@@ -183,9 +186,21 @@ func (a *Adapter) ConsumeMessages(channel *wabbit.Channel,
 func (a *Adapter) PollForMessages(channel *wabbit.Channel,
 	queue *wabbit.Queue, stopCh <-chan struct{}) error {
 	logger := a.logger
+	var err error
+	if a.config.BackoffDelay != "" {
+		retriesInt32 = int32(a.config.Retry)
+		backoffPolicy := utils.SetBackoffPolicy(a.context, a.config.BackoffPolicy)
+		retryConfig, err = kncloudevents.RetryConfigFromDeliverySpec(v1.DeliverySpec{
+			BackoffPolicy: &backoffPolicy,
+			BackoffDelay:  &a.config.BackoffDelay,
+			Retry:         &retriesInt32,
+		})
+		if err != nil {
+			a.logger.Error("error retrieving retryConfig from deliverySpec", zap.Error(err))
+		}
+	}
 
 	msgs, _ := a.ConsumeMessages(channel, queue, logger)
-
 	wg := &sync.WaitGroup{}
 	workerCount := a.config.Parallelism
 	wg.Add(workerCount)
@@ -254,20 +269,7 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 		return err
 	}
 
-	backoffDelay := a.config.BackoffDelay.String()
-	backoffPolicy := utils.SetBackoffPolicy(a.context, a.config.BackoffPolicy)
-	if backoffPolicy == "" {
-		a.logger.Sugar().Fatalf("Invalid BACKOFF_POLICY specified: must be %q or %q", eventingduckv1.BackoffPolicyExponential, eventingduckv1.BackoffPolicyLinear)
-	}
-
-	res, err := a.httpMessageSender.SendWithRetries(req, &kncloudevents.RetryConfig{
-		RetryMax: a.config.Retry,
-		CheckRetry: func(ctx context.Context, resp *nethttp.Response, err error) (bool, error) {
-			return kncloudevents.SelectiveRetry(ctx, resp, nil)
-		},
-		BackoffDelay:  &backoffDelay,
-		BackoffPolicy: &backoffPolicy,
-	})
+	res, err := a.httpMessageSender.SendWithRetries(req, &retryConfig)
 	if err != nil {
 		a.logger.Error("error while sending the message", zap.Error(err))
 		return err
