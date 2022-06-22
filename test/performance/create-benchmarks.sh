@@ -107,7 +107,7 @@ do
   kubectl wait --for=condition=AllReplicasReady=true rmq/rabbitmq-test-cluster --timeout=10m --namespace perf-eventing
   kubectl wait --for=condition=IngressReady=true brokers/rabbitmq-test-broker --timeout=10m --namespace perf-eventing
   sleep 10 # for some reason without this sleep the next steps fail most of the time, suspecting about RMQ reconciling delays
-  export EXCHANGE_NAME=$(kubectl get exchanges -n perf-eventing -o jsonpath={.items[0].metadata.name})
+  export EXCHANGE_NAME=$(kubectl get exchanges -n perf-eventing -o jsonpath='{.items[0].metadata.name}')
   echo "Binding Ingress Exchange $EXCHANGE_NAME to RabbitMQ's Source\n"
   envsubst < $script_path/source-setup/200-source-perf-setup.yaml | kubectl apply -f -
 
