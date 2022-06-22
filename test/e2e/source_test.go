@@ -24,6 +24,7 @@ import (
 
 	"knative.dev/eventing-rabbitmq/test/e2e/config/source"
 	"knative.dev/eventing-rabbitmq/test/e2e/config/sourceproducer"
+	"knative.dev/eventing-rabbitmq/test/e2e/config/sourcesecret"
 
 	"knative.dev/reconciler-test/pkg/eventshub"
 	"knative.dev/reconciler-test/pkg/feature"
@@ -43,6 +44,30 @@ func DirectSourceTest() *feature.Feature {
 	f := new(feature.Feature)
 
 	f.Setup("install RabbitMQ source", source.Install())
+	f.Alpha("RabbitMQ source").Must("goes ready", AllGoReady)
+	// Note this is a different producer than events hub because it publishes
+	// directly to RabbitMQ
+	f.Setup("install producer", sourceproducer.Install(eventsNumber))
+	f.Alpha("RabbitMQ source").
+		Must("the recorder received all sent events within the time",
+			func(ctx context.Context, t feature.T) {
+				// TODO: Use constraint matching instead of just counting number of events.
+				eventshub.StoreFromContext(ctx, "recorder").AssertAtLeast(t, eventsNumber)
+			})
+	f.Teardown("Delete feature resources", f.DeleteResources)
+	return f
+}
+
+//
+// producer ---> rabbitmq --[source]--> recorder
+//
+
+// DirectSourceConnectionSecretTest makes sure an RabbitMQ Source with a connection secret delivers events to a sink.
+func DirectSourceConnectionSecretTest() *feature.Feature {
+	eventsNumber := 10
+	f := new(feature.Feature)
+
+	f.Setup("install RabbitMQ source", sourcesecret.Install())
 	f.Alpha("RabbitMQ source").Must("goes ready", AllGoReady)
 	// Note this is a different producer than events hub because it publishes
 	// directly to RabbitMQ

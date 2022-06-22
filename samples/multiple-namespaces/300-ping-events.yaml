@@ -2,8 +2,8 @@
 apiVersion: eventing.knative.dev/v1
 kind: Broker
 metadata:
-  name: pong-broker-rabbitmq
-  namespace: pong
+  name: ping-broker-rabbitmq
+  namespace: ping
   annotations:
     eventing.knative.dev/broker.class: RabbitMQBroker
 spec:
@@ -13,11 +13,26 @@ spec:
     name: rabbitmq
     namespace: knative-eventing
 ---
+apiVersion: sources.knative.dev/v1
+kind: PingSource
+metadata:
+  name: ping-source
+  namespace: ping
+spec:
+  schedule: "*/1 * * * *"
+  data: '{"responsecode": 200}'
+  sink:
+    ref:
+      apiVersion: eventing.knative.dev/v1
+      kind: Broker
+      name: ping-broker-rabbitmq
+      namespace: ping
+---
 apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
-  name: pong-cloudevents-player-rabbitmq
-  namespace: pong
+  name: ping-cloudevents-player-rabbitmq
+  namespace: ping
 spec:
   template:
     metadata:
@@ -28,18 +43,18 @@ spec:
         - image: ruromero/cloudevents-player:latest
           env:
             - name: BROKER_URL
-              value: http://pong-broker-rabbitmq-broker-ingress.pong.svc.cluster.local
+              value: http://ping-broker-rabbitmq-broker-ingress.ping.svc.cluster.local
 ---
 apiVersion: eventing.knative.dev/v1
 kind: Trigger
 metadata:
-  name: pong-cloudevents-player-trigger-rabbitmq
-  namespace: pong
+  name: ping-cloudevents-player-trigger-rabbitmq
+  namespace: ping
 spec:
-  broker: pong-broker-rabbitmq
+  broker: ping-broker-rabbitmq
   subscriber:
     ref:
       apiVersion: serving.knative.dev/v1
       kind: Service
-      name: pong-cloudevents-player-rabbitmq
-      namespace: pong
+      name: ping-cloudevents-player-rabbitmq
+      namespace: ping

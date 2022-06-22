@@ -1,0 +1,29 @@
+apiVersion: sources.knative.dev/v1
+kind: PingSource
+metadata:
+  name: ping-source
+  namespace: broker-trigger-demo
+spec:
+  schedule: "*/1 * * * *"
+  data: '{"responsecode": 200}'
+  sink:
+    ref:
+      apiVersion: eventing.knative.dev/v1
+      kind: Broker
+      name: default
+      namespace: broker-trigger-demo
+---
+apiVersion: sources.knative.dev/v1
+kind: PingSource
+metadata:
+  name: ping-source-2
+  namespace: broker-trigger-demo
+spec:
+  schedule: "*/1 * * * *"
+  data: '{"responsecode": 500}'
+  sink:
+    ref:
+      apiVersion: eventing.knative.dev/v1
+      kind: Broker
+      name: default
+      namespace: broker-trigger-demo

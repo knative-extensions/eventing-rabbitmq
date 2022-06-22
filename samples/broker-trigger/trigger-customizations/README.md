@@ -46,7 +46,7 @@ kubectl create ns trigger-demo
 kubectl apply -f samples/broker-trigger/trigger-customizations/200-rabbitmq.yaml
 ```
 or
-```
+```sh
 kubectl apply -f - << EOF
 apiVersion: rabbitmq.com/v1beta1
 kind: RabbitmqCluster
@@ -75,7 +75,7 @@ spec:
   rabbitmqClusterReference:
     name: rabbitmq
     namespace: trigger-demo
-
+EOF
 ```
 
 #### Create a Broker

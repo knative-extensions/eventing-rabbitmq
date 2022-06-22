@@ -1,0 +1,20 @@
+apiVersion: eventing.knative.dev/v1
+kind: Broker
+metadata:
+  name: default
+  namespace: broker-trigger-demo
+  annotations:
+    eventing.knative.dev/broker.class: RabbitMQBroker
+spec:
+  config:
+    apiVersion: eventing.knative.dev/v1alpha1
+    kind: RabbitmqBrokerConfig
+    name: default-config
+  delivery:
+    deadLetterSink:
+      ref:
+        apiVersion: serving.knative.dev/v1
+        kind: Service
+        name: event-display
+        namespace: broker-trigger-demo
+    retry: 5

@@ -19,6 +19,7 @@ package v1alpha1
 import (
 	"context"
 
+	"knative.dev/eventing-rabbitmq/pkg/utils"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/kmp"
 )
@@ -50,17 +51,8 @@ func (current *RabbitmqSource) Validate(ctx context.Context) *apis.FieldError {
 				Paths:   []string{"spec", "rabbitmqResourcesConfig", "name"},
 			}
 		}
-	}
-
-	if current.Spec.RabbitmqClusterReference == nil {
-		return apis.ErrMissingField("rabbitmqClusterReference").ViaField("spec")
-	} else {
-		if current.Spec.RabbitmqClusterReference.Name == "" {
-			if current.Spec.RabbitmqClusterReference.ConnectionSecret == nil {
-				return apis.ErrMissingField("name").ViaField("rabbitmqClusterReference").ViaField("spec")
-			}
-		} else if current.Spec.RabbitmqClusterReference.ConnectionSecret != nil {
-			return apis.ErrDisallowedFields("connectionSecret").ViaField("rabbitmqClusterReference").ViaField("spec")
+		if apiErr := utils.ValidateRabbitMQClusterReference(current.Spec.RabbitmqClusterReference); apiErr != nil {
+			return apiErr
 		}
 	}
 

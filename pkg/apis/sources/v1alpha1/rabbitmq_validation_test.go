@@ -333,6 +333,14 @@ func TestRabbitmqSourceSpecValidation(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		"name and namespace": {
+			spec: &RabbitmqSourceSpec{
+				RabbitmqResourcesConfig: &RabbitmqResourcesConfigSpec{Predeclared: true},
+				RabbitmqClusterReference: &v1beta1.RabbitmqClusterReference{
+					Namespace: "test", Name: "test"},
+			},
+			wantErr: false,
+		},
 	}
 
 	for n, tc := range testCases {
