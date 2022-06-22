@@ -89,6 +89,10 @@ type Adapter struct {
 
 var _ adapter.MessageAdapter = (*Adapter)(nil)
 var _ adapter.MessageAdapterConstructor = NewAdapter
+var (
+	retryConfig  kncloudevents.RetryConfig = kncloudevents.NoRetries()
+	retriesInt32 int32                     = 0
+)
 
 func NewAdapter(ctx context.Context, processed adapter.EnvConfigAccessor, httpMessageSender *kncloudevents.HTTPMessageSender, reporter source.StatsReporter) adapter.MessageAdapter {
 	logger := logging.FromContext(ctx).Desugar()
@@ -220,9 +224,20 @@ func (a *Adapter) ConsumeMessages(channel *wabbit.Channel,
 func (a *Adapter) PollForMessages(channel *wabbit.Channel,
 	queue *wabbit.Queue, stopCh <-chan struct{}) error {
 	logger := a.logger
+	var err error
+	retriesInt32 = int32(a.config.Retry)
+	backoffPolicy := (v1.BackoffPolicyType)(a.config.BackoffPolicy)
+	backoffDelay := a.config.BackoffDelay.String()
+	retryConfig, err = kncloudevents.RetryConfigFromDeliverySpec(v1.DeliverySpec{
+		BackoffPolicy: &backoffPolicy,
+		BackoffDelay:  &backoffDelay,
+		Retry:         &retriesInt32,
+	})
+	if err != nil {
+		a.logger.Error("error retrieving retryConfig from deliverySpec", zap.Error(err))
+	}
 
 	msgs, _ := a.ConsumeMessages(channel, queue, logger)
-
 	wg := &sync.WaitGroup{}
 	workerCount := a.config.ChannelConfig.Parallelism
 	wg.Add(workerCount)
@@ -291,17 +306,7 @@ func (a *Adapter) postMessage(msg wabbit.Delivery) error {
 		return err
 	}
 
-	backoffDelay := a.config.BackoffDelay.String()
-	backoffPolicy := (v1.BackoffPolicyType)(a.config.BackoffPolicy)
-	res, err := a.httpMessageSender.SendWithRetries(req, &kncloudevents.RetryConfig{
-		RetryMax: a.config.Retry,
-		CheckRetry: func(ctx context.Context, resp *nethttp.Response, err error) (bool, error) {
-			return kncloudevents.SelectiveRetry(ctx, resp, nil)
-		},
-		BackoffDelay:  &backoffDelay,
-		BackoffPolicy: &backoffPolicy,
-	})
-
+	res, err := a.httpMessageSender.SendWithRetries(req, &retryConfig)
 	if err != nil {
 		a.logger.Error("error while sending the message", zap.Error(err))
 		return err
