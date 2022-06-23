@@ -190,6 +190,9 @@ func (a *Adapter) PollForMessages(channel *wabbit.Channel,
 	if a.config.BackoffDelay != "" {
 		retriesInt32 = int32(a.config.Retry)
 		backoffPolicy := utils.SetBackoffPolicy(a.context, a.config.BackoffPolicy)
+		if backoffPolicy == "" {
+			a.logger.Sugar().Fatalf("Invalid BACKOFF_POLICY specified: must be %q or %q", v1.BackoffPolicyExponential, v1.BackoffPolicyLinear)
+		}
 		retryConfig, err = kncloudevents.RetryConfigFromDeliverySpec(v1.DeliverySpec{
 			BackoffPolicy: &backoffPolicy,
 			BackoffDelay:  &a.config.BackoffDelay,

@@ -25,6 +25,7 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -36,34 +37,38 @@ import (
 	"go.uber.org/zap"
 
 	"knative.dev/eventing/pkg/adapter/v2"
+	v1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/eventing/pkg/metrics/source"
 	"knative.dev/pkg/logging"
 )
 
+type handlerFunc func(http.ResponseWriter, *http.Request)
+
 func TestPostMessage_ServeHTTP(t *testing.T) {
 	testCases := map[string]struct {
-		sink                       func(http.ResponseWriter, *http.Request)
+		handlers                   []handlerFunc
 		reqBody, expectedEventType string
 		reqHeaders                 http.Header
 		data                       map[string]interface{}
 		headers                    wabbit.Option
 		attributes                 map[string]string
 		withMsgId, isCe, error     bool
+		retry                      int
 	}{
 		"accepted": {
-			sink:    sinkAccepted,
-			reqBody: `{"key":"value"}`,
-			data:    map[string]interface{}{"key": "value"},
+			handlers: []handlerFunc{sinkAccepted},
+			reqBody:  `{"key":"value"}`,
+			data:     map[string]interface{}{"key": "value"},
 		},
 		"accepted with msg id": {
-			sink:      sinkAccepted,
+			handlers:  []handlerFunc{sinkAccepted},
 			reqBody:   `{"key":"value"}`,
 			withMsgId: true,
 			data:      map[string]interface{}{"key": "value"},
 		},
 		"accepted with binary cloudevent": {
-			sink:      sinkAccepted,
+			handlers:  []handlerFunc{sinkAccepted},
 			reqBody:   `{"test":"test"}`,
 			withMsgId: true,
 			reqHeaders: http.Header{
@@ -82,7 +87,7 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 			isCe: true,
 		},
 		"accepted with structured cloudevent": {
-			sink: sinkAccepted,
+			handlers: []handlerFunc{sinkAccepted},
 			reqBody: `{"specversion":"1.0","id":1234,` +
 				`"type":"dev.knative.rabbitmq.event","source":"example/source.uri",` +
 				`"content-type":"text/plain","data":"test"}`,
@@ -99,17 +104,24 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 			isCe: true,
 		},
 		"rejected": {
-			sink:    sinkRejected,
-			reqBody: `{"key":"value"}`,
-			error:   true,
-			data:    map[string]interface{}{"key": "value"},
+			handlers: []handlerFunc{sinkRejected},
+			reqBody:  `{"key":"value"}`,
+			error:    true,
+			data:     map[string]interface{}{"key": "value"},
+		},
+		"retried 3 times succesfull on the 4th ": {
+			retry:    5,
+			handlers: []handlerFunc{sinkRejected, sinkRejected, sinkRejected, sinkAccepted},
+			reqBody:  `{"key":"value"}`,
+			error:    false,
+			data:     map[string]interface{}{"key": "value"},
 		},
 	}
 
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
 			h := &fakeHandler{
-				handler: tc.sink,
+				handlers: tc.handlers,
 			}
 			sinkServer := httptest.NewServer(h)
 			defer sinkServer.Close()
@@ -120,9 +132,12 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 			}
 
 			statsReporter, _ := source.NewStatsReporter()
-
+			config := adapterConfig{}
+			if tc.retry > 0 {
+				config = adapterConfig{Retry: tc.retry, BackoffPolicy: string(v1.BackoffPolicyLinear), BackoffDelay: "PT0.1S"}
+			}
 			a := &Adapter{
-				config:            &adapterConfig{},
+				config:            &config,
 				context:           context.TODO(),
 				httpMessageSender: s,
 				logger:            zap.NewNop(),
@@ -296,11 +311,15 @@ func TestAdapter_StartAmqpClient(t *testing.T) {
 type fakeHandler struct {
 	body   []byte
 	header http.Header
+	mu     sync.Mutex
 
-	handler func(http.ResponseWriter, *http.Request)
+	receiveCount int
+	handlers     []handlerFunc
 }
 
 func (h *fakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
 	h.header = r.Header
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -310,7 +329,8 @@ func (h *fakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.body = body
 
 	defer r.Body.Close()
-	h.handler(w, r)
+	h.receiveCount++
+	h.handlers[h.receiveCount](w, r)
 }
 
 func sinkAccepted(writer http.ResponseWriter, req *http.Request) {
@@ -450,7 +470,7 @@ func TestAdapter_NewAdapter(t *testing.T) {
 	ctx := context.TODO()
 	env := NewEnvConfig()
 	h := &fakeHandler{
-		handler: sinkAccepted,
+		handlers: []handlerFunc{sinkAccepted},
 	}
 
 	sinkServer := httptest.NewServer(h)
