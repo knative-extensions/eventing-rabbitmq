@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
@@ -72,7 +73,9 @@ func (e *EnvConfig) SetupMetrics(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
 	if metricsConfig != nil {
+		metricsConfig.Component = strings.ReplaceAll(e.component, "-", "_")
 		if err := metrics.UpdateExporter(ctx, *metricsConfig, logger); err != nil {
 			return err
 		}
