@@ -29,6 +29,9 @@ spec:
   containers:
   - image: rabbitmq:3-management
     name: rabbitmq
+    env:
+    - name: ERL_MAX_PORTS
+      value: "4096"
     ports:
     - containerPort: 15672
     - containerPort: 5672

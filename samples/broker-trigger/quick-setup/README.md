@@ -71,8 +71,20 @@ metadata:
   namespace: broker-trigger-demo
 spec:
   replicas: 1
+  override:
+    statefulSet:
+      spec:
+        template:
+          spec:
+            containers:
+            - name: rabbitmq
+              env:
+              - name: ERL_MAX_PORTS
+                value: "4096"
 EOF
 ```
+
+_NOTE_: here we set ERL_MAX_PORTS to prevent unnecessary memory allocation by RabbitMQ and potential memory limit problems. [Read more here](https://github.com/rabbitmq/cluster-operator/issues/959)
 
 ### Create the RabbitMQ Broker Config
 
