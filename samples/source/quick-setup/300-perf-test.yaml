@@ -55,11 +55,12 @@ spec:
               value: "true"
             - name: SIZE
               value: "1000"
-
+            - name: PREDECLARED
+              value: "true"
             - name: EXCHANGE
               value: "eventing-rabbitmq-source"
             - name: TYPE
-              value: "fanout"
+              value: "headers"
             # This version of PerfTest cannot declare a durable exchange: https://github.com/rabbitmq/rabbitmq-perf-test/issues/281
             # This version of PerfTest will create an exchange if it does not exist if if PREDECLARED is set to true: https://github.com/rabbitmq/rabbitmq-perf-test/issues/282
             # This means that we cannot use the messaging topology operator to manage our exchange as it can create race conditions with PerfTest: https://github.com/rabbitmq/messaging-topology-operator

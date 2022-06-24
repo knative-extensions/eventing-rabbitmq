@@ -14,6 +14,10 @@ spec:
     # parallelism: 10
     exchangeName: "eventing-rabbitmq-source"
     queueName: "eventing-rabbitmq-source"
+  delivery:
+    retry: 5
+    backoffPolicy: "linear"
+    backoffDelay: "PT1S"
   sink:
     ref:
       apiVersion: serving.knative.dev/v1
