@@ -33,6 +33,7 @@ import (
 	"go.opencensus.io/plugin/ochttp/propagation/tracecontext"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
+	"knative.dev/eventing-rabbitmq/pkg/broker/dispatcher"
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	"knative.dev/eventing-rabbitmq/pkg/utils"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
@@ -52,6 +53,7 @@ type Dispatcher struct {
 	Timeout          time.Duration
 	BackoffPolicy    eventingduckv1.BackoffPolicyType
 	WorkerCount      int
+	Reporter         dispatcher.StatsReporter
 }
 
 // ConsumeFromQueue consumes messages from the given message channel and queue.
@@ -138,6 +140,7 @@ func isSuccess(ctx context.Context, result protocol.Result) bool {
 }
 
 func (d *Dispatcher) dispatch(ctx context.Context, msg wabbit.Delivery, ceClient cloudevents.Client) {
+	start := time.Now()
 	msgBinding := rabbit.NewMessageFromDelivery(ComponentName, "", "", msg)
 	event, err := binding.ToEvent(cloudevents.WithEncodingBinary(ctx), msgBinding)
 	if err != nil {
@@ -163,6 +166,20 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg wabbit.Delivery, ceClient
 	}
 
 	response, result := ceClient.Request(ctx, *event)
+	var retriesResult *cehttp.RetriesResult
+	var httpResult *cehttp.Result
+	if cloudevents.ResultAs(result, &retriesResult) {
+		if !cloudevents.ResultAs(retriesResult.Result, &httpResult) {
+			logging.FromContext(ctx).Warnf("Invalid result type, not HTTP Result: %v", result)
+		}
+	} else {
+		logging.FromContext(ctx).Warnf("Invalid result type, not RetriesResult")
+	}
+	args := &dispatcher.ReportArgs{EventType: event.Type()}
+	if err := d.Reporter.ReportEventCount(args, httpResult.StatusCode); err != nil {
+		logging.FromContext(ctx).Errorf("Something happened: %v", err)
+	}
+
 	if !isSuccess(ctx, result) {
 		logging.FromContext(ctx).Warnf("Failed to deliver to %q", d.SubscriberURL)
 		if err := msg.Nack(false, false); err != nil {
@@ -187,6 +204,8 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg wabbit.Delivery, ceClient
 	if err != nil {
 		logging.FromContext(ctx).Warn("failed to ACK event: ", err)
 	}
+	dispatchTime := time.Since(start)
+	_ = d.Reporter.ReportEventDispatchTime(args, httpResult.StatusCode, dispatchTime)
 }
 
 func readSpan(ctx context.Context, msg wabbit.Delivery) (context.Context, *trace.Span) {

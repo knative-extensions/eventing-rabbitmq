@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package ingress
+package dispatcher
 
 import (
 	"context"
@@ -22,30 +22,27 @@ import (
 	"strconv"
 	"time"
 
-	"go.opencensus.io/resource"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"knative.dev/eventing-rabbitmq/pkg/broker"
 	eventingmetrics "knative.dev/eventing/pkg/metrics"
 	"knative.dev/pkg/metrics"
-	"knative.dev/pkg/metrics/metricskey"
 )
 
 var (
-	// eventCountM is a counter which records the number of events received
-	// by the Broker.
+	// eventCountM is a counter which records the number of events sent by a dispatcher
 	eventCountM = stats.Int64(
 		"event_count",
-		"Number of events received by a Broker",
+		"Number of events sent by a Dispatcher",
 		stats.UnitDimensionless,
 	)
 
 	// dispatchTimeInMsecM records the time spent dispatching an event to
-	// a Channel, in milliseconds.
+	// a Sink, in milliseconds.
 	dispatchTimeInMsecM = stats.Float64(
 		"event_dispatch_latencies",
-		"The time spent dispatching an event to a Channel",
+		"The time spent dispatching an event to a Sink",
 		stats.UnitMilliseconds,
 	)
 
@@ -54,15 +51,14 @@ var (
 	// go.opencensus.io/tag/validate.go. Currently those restrictions are:
 	// - length between 1 and 255 inclusive
 	// - characters are printable US-ASCII
+	namespaceKey         = tag.MustNewKey(eventingmetrics.LabelNamespaceName)
 	eventTypeKey         = tag.MustNewKey(eventingmetrics.LabelEventType)
 	responseCodeKey      = tag.MustNewKey(eventingmetrics.LabelResponseCode)
 	responseCodeClassKey = tag.MustNewKey(eventingmetrics.LabelResponseCodeClass)
 )
 
 type ReportArgs struct {
-	Namespace  string
-	BrokerName string
-	EventType  string
+	EventType string
 }
 
 func init() {
@@ -82,13 +78,15 @@ var emptyContext = context.Background()
 type reporter struct {
 	container  string
 	uniqueName string
+	namespace  string
 }
 
 // NewStatsReporter creates a reporter that collects and reports ingress metrics.
-func NewStatsReporter(container, uniqueName string) StatsReporter {
+func NewStatsReporter(container, uniqueName, namespace string) StatsReporter {
 	return &reporter{
 		container:  container,
 		uniqueName: uniqueName,
+		namespace:  namespace,
 	}
 }
 
@@ -142,15 +140,9 @@ func (r *reporter) ReportEventDispatchTime(args *ReportArgs, responseCode int, d
 }
 
 func (r *reporter) generateTag(args *ReportArgs, responseCode int) (context.Context, error) {
-	ctx := metricskey.WithResource(emptyContext, resource.Resource{
-		Type: eventingmetrics.ResourceTypeKnativeBroker,
-		Labels: map[string]string{
-			eventingmetrics.LabelNamespaceName: args.Namespace,
-			eventingmetrics.LabelBrokerName:    args.BrokerName,
-		},
-	})
 	return tag.New(
-		ctx,
+		emptyContext,
+		tag.Insert(namespaceKey, r.namespace),
 		tag.Insert(broker.ContainerTagKey, r.container),
 		tag.Insert(broker.UniqueTagKey, r.uniqueName),
 		tag.Insert(eventTypeKey, args.EventType),

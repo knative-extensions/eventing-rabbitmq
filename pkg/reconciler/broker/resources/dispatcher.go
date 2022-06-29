@@ -88,6 +88,15 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 	}, {
 		Name:  "BROKER_INGRESS_URL",
 		Value: args.BrokerIngressURL.String(),
+	}, {
+		Name:  "NAMESPACE",
+		Value: args.Broker.Namespace,
+	}, {
+		Name:  "CONTAINER_NAME",
+		Value: dispatcherContainerName,
+	}, {
+		Name:  "POD_NAME",
+		Value: DispatcherName(args.Broker.Name),
 	}}
 	if args.Configs != nil {
 		envs = append(envs, args.Configs.ToEnvVars()...)
@@ -157,6 +166,10 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 								corev1.ResourceCPU:    resource.MustParse("4000m"),
 								corev1.ResourceMemory: resource.MustParse("600Mi")},
 						},
+						Ports: []corev1.ContainerPort{{
+							Name:          "http-metrics",
+							ContainerPort: 9090,
+						}},
 					}},
 				},
 			},

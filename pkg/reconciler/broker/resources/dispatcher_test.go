@@ -140,6 +140,15 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 							Name:  "BROKER_INGRESS_URL",
 							Value: brokerIngressURL,
 						}, {
+							Name:  "NAMESPACE",
+							Value: args.Broker.Namespace,
+						}, {
+							Name:  "CONTAINER_NAME",
+							Value: dispatcherContainerName,
+						}, {
+							Name:  "POD_NAME",
+							Value: DispatcherName(args.Broker.Name),
+						}, {
 							Name:  "RETRY",
 							Value: "10",
 						}, {
@@ -148,6 +157,10 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 						}, {
 							Name:  "BACKOFF_DELAY",
 							Value: "20s",
+						}},
+						Ports: []corev1.ContainerPort{{
+							Name:          "http-metrics",
+							ContainerPort: 9090,
 						}},
 					}},
 				},

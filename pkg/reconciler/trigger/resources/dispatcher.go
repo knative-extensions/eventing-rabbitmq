@@ -91,6 +91,15 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 		}, {
 			Name:  "BROKER_INGRESS_URL",
 			Value: args.BrokerIngressURL.String(),
+		}, {
+			Name:  "NAMESPACE",
+			Value: args.Trigger.Namespace,
+		}, {
+			Name:  "CONTAINER_NAME",
+			Value: dispatcherContainerName,
+		}, {
+			Name:  "POD_NAME",
+			Value: name,
 		}},
 		// This resource requests and limits comes from performance testing 1500msgs/s with a parallelism of 1000
 		// more info in this issue: https://github.com/knative-sandbox/eventing-rabbitmq/issues/703
@@ -102,6 +111,10 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 				corev1.ResourceCPU:    resource.MustParse("4000m"),
 				corev1.ResourceMemory: resource.MustParse("600Mi")},
 		},
+		Ports: []corev1.ContainerPort{{
+			Name:          "http-metrics",
+			ContainerPort: 9090,
+		}},
 	}
 	if args.Configs != nil {
 		dispatcher.Env = append(dispatcher.Env, args.Configs.ToEnvVars()...)
