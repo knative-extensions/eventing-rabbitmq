@@ -58,7 +58,6 @@ type envConfig struct {
 	PodName       string `envconfig:"POD_NAME"`
 	Namespace     string `envconfig:"NAMESPACE"`
 
-	reporter   dispatcherstats.StatsReporter
 	connection *amqp.Conn
 	channel    wabbit.Channel
 }
