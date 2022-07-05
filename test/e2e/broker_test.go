@@ -45,7 +45,8 @@ import (
 //
 // producer ---> broker --[trigger]--> recorder
 //
-// DirectTestBroker makes sure an RabbitMQ Broker delivers events to a single consumer.
+
+// DirectTestBrokerImpl makes sure an RabbitMQ Broker delivers events to a single consumer.
 func DirectTestBroker() *feature.Feature {
 	f := new(feature.Feature)
 
