@@ -327,7 +327,7 @@ install-rabbitmq-topology-operator: | install-cert-manager $(KUBECTL) ## Install
 	$(KUBECTL) $(K_CMD) --filename \
 		https://github.com/rabbitmq/messaging-topology-operator/releases/download/v$(RABBITMQ_TOPOLOGY_OPERATOR_VERSION)/messaging-topology-operator-with-certmanager.yaml
 
-KNATIVE_VERSION ?= 1.4.0
+KNATIVE_VERSION ?= 1.5.0
 
 # https://github.com/knative/serving/releases
 .PHONY: install-knative-serving
@@ -374,7 +374,8 @@ test-e2e-source: | $(KUBECONFIG) ## Run Source end-to-end tests - assumes a K8S 
 	go test -v -race -count=1 -timeout=15m -tags=e2e ./test/e2e/... -run 'Test.*Source.*'
 
 .PHONY: test-e2e
-test-e2e: install test-e2e-publish test-e2e-broker test-e2e-source ## Run all end-to-end tests - manages all dependencies, including K8S components
+test-e2e: install ## Run all end-to-end tests - manages all dependencies, including K8S components
+	go test -v -race -count=1 -timeout=50m -tags=e2e ./test/e2e/...
 
 .PHONY: _test-conformance
 _test-conformance:

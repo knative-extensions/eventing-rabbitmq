@@ -24,12 +24,13 @@ import (
 
 var serviceGVR = schema.GroupVersionResource{Group: "", Version: "v1", Resource: "services"}
 
-func RecorderFeature() *feature.Feature {
+func RecorderFeature(options ...eventshub.EventsHubOption) *feature.Feature {
 	to := "recorder"
 
 	f := new(feature.Feature)
 
-	f.Setup("install recorder", eventshub.Install(to, eventshub.StartReceiver))
+	a := append([]eventshub.EventsHubOption{eventshub.StartReceiver}, options...)
+	f.Setup("install recorder", eventshub.Install(to, a...))
 
 	f.Requirement("recorder is addressable", k8s.IsAddressable(serviceGVR, to, time.Second, 30*time.Second))
 
