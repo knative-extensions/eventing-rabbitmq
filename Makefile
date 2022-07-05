@@ -304,7 +304,7 @@ $(KUBECONFIG): | $(KUBECONFIG_DIR)
 kubeconfig: $(KUBECONFIG)
 
 # https://github.com/rabbitmq/cluster-operator/releases
-RABBITMQ_CLUSTER_OPERATOR_VERSION ?= 1.13.0
+RABBITMQ_CLUSTER_OPERATOR_VERSION ?= 1.13.1
 .PHONY: install-rabbitmq-cluster-operator
 install-rabbitmq-cluster-operator: | $(KUBECONFIG) $(KUBECTL) ## Install RabbitMQ Cluster Operator
 	$(KUBECTL) $(K_CMD) --filename \
