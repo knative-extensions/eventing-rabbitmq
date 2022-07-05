@@ -43,7 +43,6 @@ func DirectTestBroker() *feature.Feature {
 	f := new(feature.Feature)
 
 	f.Setup("install test resources", brokertrigger.Install(brokertrigger.Topology{
-		MessageCount: 5,
 		Triggers: []duckv1.KReference{
 			{
 				Kind: "Service",
@@ -74,7 +73,6 @@ func DirectTestBrokerConnectionSecret() *feature.Feature {
 	f := new(feature.Feature)
 
 	f.Setup("install test resources", brokersecret.Install(brokersecret.Topology{
-		MessageCount: 5,
 		Triggers: []duckv1.KReference{
 			{
 				Kind: "Service",

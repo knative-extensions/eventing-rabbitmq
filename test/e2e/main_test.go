@@ -25,6 +25,7 @@ import (
 	"os"
 	"testing"
 	"text/template"
+	"time"
 
 	"knative.dev/pkg/injection"
 	"knative.dev/pkg/system"
@@ -36,6 +37,7 @@ import (
 	// logstream initialization.
 	_ "knative.dev/eventing-rabbitmq/test/defaultsystem"
 	"knative.dev/reconciler-test/pkg/environment"
+	"knative.dev/reconciler-test/pkg/eventshub"
 	"knative.dev/reconciler-test/pkg/k8s"
 	"knative.dev/reconciler-test/pkg/knative"
 )
@@ -187,7 +189,7 @@ func TestSourceAdapterConcurrency(t *testing.T) {
 	env.Finish()
 }
 
-func TestDispatcherConcurrency(t *testing.T) {
+func TestBrokerDispatcherConcurrency(t *testing.T) {
 	t.Parallel()
 
 	ctx, env := global.Environment(
@@ -197,6 +199,7 @@ func TestDispatcherConcurrency(t *testing.T) {
 		k8s.WithEventListener,
 	)
 	env.Test(ctx, t, RabbitMQCluster())
+	env.Test(ctx, t, RecorderFeature(eventshub.ResponseWaitTime(3*time.Second)))
 	env.Test(ctx, t, ConcurrentDispatchTest())
 	env.Finish()
 }

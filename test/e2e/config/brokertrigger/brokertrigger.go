@@ -30,8 +30,8 @@ func init() {
 }
 
 type Topology struct {
-	MessageCount, Parallelism int
-	Triggers                  []duckv1.KReference
+	Parallelism int
+	Triggers    []duckv1.KReference
 }
 
 func Install(topology Topology) feature.StepFn {
@@ -40,9 +40,8 @@ func Install(topology Topology) feature.StepFn {
 	}
 
 	args := map[string]interface{}{
-		"messageCount": topology.MessageCount,
-		"triggers":     topology.Triggers,
-		"Parallelism":  topology.Parallelism,
+		"triggers":    topology.Triggers,
+		"Parallelism": topology.Parallelism,
 	}
 	return func(ctx context.Context, t feature.T) {
 		if _, err := manifest.InstallLocalYaml(ctx, args); err != nil {
