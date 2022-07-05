@@ -185,7 +185,7 @@ func TestSourceAdapterConcurrency(t *testing.T) {
 		k8s.WithEventListener,
 	)
 	env.Test(ctx, t, RabbitMQCluster())
-	env.Test(ctx, t, ConcurrentAdapterProcessingTest())
+	env.Test(ctx, t, SourceConcurrentreceiveAdapterProcessingTest())
 	env.Finish()
 }
 
@@ -200,6 +200,6 @@ func TestBrokerDispatcherConcurrency(t *testing.T) {
 	)
 	env.Test(ctx, t, RabbitMQCluster())
 	env.Test(ctx, t, RecorderFeature(eventshub.ResponseWaitTime(3*time.Second)))
-	env.Test(ctx, t, ConcurrentDispatchTest())
+	env.Test(ctx, t, BrokerConcurrentDispatcherTest())
 	env.Finish()
 }
