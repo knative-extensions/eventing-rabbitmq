@@ -2,7 +2,7 @@ apiVersion: sources.knative.dev/v1
 kind: PingSource
 metadata:
   name: ping-source
-  namespace: broker-trigger-demo
+  namespace: external-cluster-sample
 spec:
   schedule: "*/1 * * * *"
   data: '{"responsecode": 200}'
@@ -11,13 +11,13 @@ spec:
       apiVersion: eventing.knative.dev/v1
       kind: Broker
       name: default
-      namespace: broker-trigger-demo
+      namespace: external-cluster-sample
 ---
 apiVersion: sources.knative.dev/v1
 kind: PingSource
 metadata:
   name: ping-source-2
-  namespace: broker-trigger-demo
+  namespace: external-cluster-sample
 spec:
   schedule: "*/1 * * * *"
   data: '{"responsecode": 500}'
@@ -26,4 +26,4 @@ spec:
       apiVersion: eventing.knative.dev/v1
       kind: Broker
       name: default
-      namespace: broker-trigger-demo
+      namespace: external-cluster-sample

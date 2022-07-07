@@ -2,7 +2,7 @@ apiVersion: eventing.knative.dev/v1
 kind: Trigger
 metadata:
   name: failer-trigger
-  namespace: broker-trigger-demo
+  namespace: quick-setup-sample
   annotations:
     # Value must be between 1 and 1000
     # A value of 1 RabbitMQ Trigger behaves as a FIFO queue
@@ -18,4 +18,4 @@ spec:
       apiVersion: serving.knative.dev/v1
       kind: Service
       name: failer
-      namespace: broker-trigger-demo
+      namespace: quick-setup-sample

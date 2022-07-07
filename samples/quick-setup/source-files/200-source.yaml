@@ -2,11 +2,11 @@ apiVersion: sources.knative.dev/v1alpha1
 kind: RabbitmqSource
 metadata:
   name: rabbitmq-source
-  namespace: source-demo
+  namespace: quick-setup-sample
 spec:
   rabbitmqClusterReference:
     name: rabbitmq
-    namespace: source-demo
+    namespace: quick-setup-sample
   rabbitmqResourcesConfig:
     # Value must be between 1 and 1000
     # A value of 1 RabbitMQ Source behaves as a FIFO queue
@@ -23,4 +23,4 @@ spec:
       apiVersion: serving.knative.dev/v1
       kind: Service
       name: rabbitmq-source-sink
-      namespace: source-demo
+      namespace: quick-setup-sample

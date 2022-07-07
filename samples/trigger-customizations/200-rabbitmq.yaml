@@ -3,7 +3,7 @@ apiVersion: rabbitmq.com/v1beta1
 kind: RabbitmqCluster
 metadata:
   name: rabbitmq
-  namespace: trigger-demo
+  namespace: trigger-customizations-sample
 spec:
   replicas: 1
   override:

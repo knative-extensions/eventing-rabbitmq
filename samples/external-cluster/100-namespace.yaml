@@ -1,4 +1,4 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: broker-trigger-demo
+  name: external-cluster-sample

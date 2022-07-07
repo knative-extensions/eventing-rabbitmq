@@ -2,7 +2,7 @@ apiVersion: eventing.knative.dev/v1
 kind: Trigger
 metadata:
   name: default
-  namespace: rmqbroker
+  namespace: tracing-sample
 spec:
   broker: default
   subscriber:
@@ -10,5 +10,5 @@ spec:
       apiVersion: serving.knative.dev/v1
       kind: Service
       name: subscriber
-      namespace: rmqbroker
+      namespace: tracing-sample
 

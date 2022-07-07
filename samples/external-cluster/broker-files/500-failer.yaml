@@ -2,7 +2,7 @@ apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
   name: failer
-  namespace: broker-trigger-demo
+  namespace: external-cluster-sample
   labels:
     rabbitmq.eventing.knative.dev/release: "v20211216-d49cd0f2"
 spec:

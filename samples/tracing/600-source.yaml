@@ -2,7 +2,7 @@ apiVersion: sources.knative.dev/v1
 kind: ContainerSource
 metadata:
   name: heartbeats
-  namespace: rmqbroker
+  namespace: tracing-sample
 spec:
   template:
     spec:
@@ -15,7 +15,7 @@ spec:
             - name: POD_NAME
               value: "heartbeats"
             - name: POD_NAMESPACE
-              value: "rmqbroker"
+              value: "tracing-sample"
             - name: K_CONFIG_TRACING
               value: '{"backend":"zipkin","debug":"true","zipkin-endpoint":"http://otel-collector.observability:9411/api/v2/spans"}'
   sink:
@@ -23,4 +23,4 @@ spec:
       apiVersion: eventing.knative.dev/v1
       kind: Broker
       name: default
-      namespace: rmqbroker
+      namespace: tracing-sample

@@ -2,7 +2,7 @@ apiVersion: sources.knative.dev/v1alpha1
 kind: RabbitmqSource
 metadata:
   name: rabbitmq-source
-  namespace: source-demo
+  namespace: external-cluster-sample
 spec:
   rabbitmqClusterReference:
     connectionSecret:
@@ -21,4 +21,4 @@ spec:
       apiVersion: serving.knative.dev/v1
       kind: Service
       name: rabbitmq-source-sink
-      namespace: source-demo
+      namespace: external-cluster-sample

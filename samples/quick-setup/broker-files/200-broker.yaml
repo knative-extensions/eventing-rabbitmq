@@ -2,7 +2,7 @@ apiVersion: eventing.knative.dev/v1
 kind: Broker
 metadata:
   name: default
-  namespace: broker-trigger-demo
+  namespace: quick-setup-sample
   annotations:
     eventing.knative.dev/broker.class: RabbitMQBroker
 spec:
@@ -16,5 +16,5 @@ spec:
         apiVersion: serving.knative.dev/v1
         kind: Service
         name: event-display
-        namespace: broker-trigger-demo
+        namespace: quick-setup-sample
     retry: 5

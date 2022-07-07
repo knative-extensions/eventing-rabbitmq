@@ -2,7 +2,7 @@ apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
   name: fifo-event-display
-  namespace: trigger-demo
+  namespace: trigger-customizations-sample
 spec:
   template:
     metadata:
@@ -18,7 +18,7 @@ apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
   name: high-throughput-event-display
-  namespace: trigger-demo
+  namespace: trigger-customizations-sample
 spec:
   template:
     metadata:

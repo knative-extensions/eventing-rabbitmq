@@ -2,7 +2,7 @@ apiVersion: eventing.knative.dev/v1
 kind: Trigger
 metadata:
   name: fifo-trigger
-  namespace: trigger-demo
+  namespace: trigger-customizations-sample
 spec:
   broker: default
   subscriber:
@@ -10,13 +10,13 @@ spec:
       apiVersion: serving.knative.dev/v1
       kind: Service
       name: fifo-event-display
-      namespace: trigger-demo
+      namespace: trigger-customizations-sample
 ---
 apiVersion: eventing.knative.dev/v1
 kind: Trigger
 metadata:
   name: high-throughput-trigger
-  namespace: trigger-demo
+  namespace: trigger-customizations-sample
   annotations:
     # Value must be between 1 and 1000
     # A value of 1 RabbitMQ Trigger behaves as a FIFO queue
@@ -29,4 +29,4 @@ spec:
       apiVersion: serving.knative.dev/v1
       kind: Service
       name: high-throughput-event-display
-      namespace: trigger-demo
+      namespace: trigger-customizations-sample

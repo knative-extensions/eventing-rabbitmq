@@ -2,7 +2,7 @@ apiVersion: eventing.knative.dev/v1
 kind: Broker
 metadata:
   name: default
-  namespace: rmqbroker
+  namespace: tracing-sample
   annotations:
     eventing.knative.dev/broker.class: RabbitMQBroker
 spec:
