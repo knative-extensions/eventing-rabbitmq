@@ -1,0 +1,10 @@
+apiVersion: eventing.knative.dev/v1alpha1
+kind: RabbitmqBrokerConfig
+metadata:
+  name: default-config
+  namespace: quick-setup-sample
+spec:
+  rabbitmqClusterReference:
+    name: rabbitmq
+    namespace: quick-setup-sample
+  queueType: quorum

@@ -1,0 +1,32 @@
+apiVersion: eventing.knative.dev/v1
+kind: Trigger
+metadata:
+  name: fifo-trigger
+  namespace: trigger-customizations-sample
+spec:
+  broker: default
+  subscriber:
+    ref:
+      apiVersion: serving.knative.dev/v1
+      kind: Service
+      name: fifo-event-display
+      namespace: trigger-customizations-sample
+---
+apiVersion: eventing.knative.dev/v1
+kind: Trigger
+metadata:
+  name: high-throughput-trigger
+  namespace: trigger-customizations-sample
+  annotations:
+    # Value must be between 1 and 1000
+    # A value of 1 RabbitMQ Trigger behaves as a FIFO queue
+    # Values above 1 break message ordering guarantees but can be seen as more performance oriented.
+    rabbitmq.eventing.knative.dev/parallelism: "10"
+spec:
+  broker: default
+  subscriber:
+    ref:
+      apiVersion: serving.knative.dev/v1
+      kind: Service
+      name: high-throughput-event-display
+      namespace: trigger-customizations-sample

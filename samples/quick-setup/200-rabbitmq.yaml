@@ -1,0 +1,18 @@
+# RabbitMQ cluster used by the Broker
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata:
+  name: rabbitmq
+  namespace: quick-setup-sample
+spec:
+  replicas: 1
+  override:
+    statefulSet:
+      spec:
+        template:
+          spec:
+            containers:
+            - name: rabbitmq
+              env:
+              - name: ERL_MAX_PORTS
+                value: "4096"

@@ -46,7 +46,7 @@ Validation: valid
 Context Attributes,
   specversion: 1.0
   type: dev.knative.sources.ping
-  source: /apis/v1/namespaces/broker-trigger-demo/pingsources/ping-source-2
+  source: /apis/v1/namespaces/ping/ping-source
   id: 166e89ff-19c7-4e9a-a593-9ed30dca0d7d
   time: 2020-10-06T10:35:00.307531386Z
   datacontenttype: application/json
@@ -62,7 +62,7 @@ Validation: valid
 Context Attributes,
   specversion: 1.0
   type: dev.knative.sources.ping
-  source: /apis/v1/namespaces/broker-trigger-demo/pingsources/ping-source-2
+  source: /apis/v1/namespaces/pong/pong-source
   id: 166e89ff-19c7-4e9a-a593-9ed30dca0d7d
   time: 2020-10-06T10:35:00.307531386Z
   datacontenttype: application/json

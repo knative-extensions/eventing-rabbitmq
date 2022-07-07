@@ -19,6 +19,7 @@ package e2e
 import (
 	"context"
 	"fmt"
+	"time"
 
 	kubeClient "knative.dev/pkg/client/injection/kube/client"
 
@@ -47,6 +48,8 @@ const (
 	rabbitMQClusterName = "rabbitmqc"
 	rabbitMQAPIVersion  = "rabbitmq.com/v1beta1"
 	rabbitMQClusterKind = "RabbitmqCluster"
+	interval            = 1 * time.Second
+	timeout             = 5 * time.Minute
 )
 
 // RabbitMQCluster creates a rabbitmq.com/rabbitmqclusters cluster that the

@@ -1,0 +1,9 @@
+apiVersion: eventing.knative.dev/v1alpha1
+kind: RabbitmqBrokerConfig
+metadata:
+  name: default-config
+  namespace: trigger-customizations-sample
+spec:
+  rabbitmqClusterReference:
+    name: rabbitmq
+    namespace: trigger-customizations-sample
