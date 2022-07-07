@@ -7,7 +7,7 @@ spec:
   restartPolicy: Never
   containers:
     - name: event-sender
-      image: ko://knative.dev/eventing-rabbitmq/samples/broker-trigger/trigger-customizations/event-sender
+      image: ko://knative.dev/eventing-rabbitmq/samples/trigger-customizations/event-sender
       args:
         - --sink=http://default-broker-ingress.trigger-customizations-sample.svc.cluster.local
         - --event={"specversion":"1.0","type":"SenderEvent","source":"Sender","datacontenttype":"application/json","data":{}}

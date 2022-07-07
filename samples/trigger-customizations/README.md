@@ -33,17 +33,17 @@ Execute the following steps/commands from the root of this repo.
 Create a new namespace for the demo. This will make cleanup easier.
 
 ```sh
-kubectl apply -f samples/broker-trigger/trigger-customizations/100-namespace.yaml
+kubectl apply -f samples/trigger-customizations/100-namespace.yaml
 ```
 or
 ```sh
-kubectl create ns trigger-demo
+kubectl create ns trigger-customizations-sample
 ```
 
 #### Create a RabbitMQ Cluster
 
 ```sh
-kubectl apply -f samples/broker-trigger/trigger-customizations/200-rabbitmq.yaml
+kubectl apply -f samples/trigger-customizations/200-rabbitmq.yaml
 ```
 or
 ```sh
@@ -52,7 +52,7 @@ apiVersion: rabbitmq.com/v1beta1
 kind: RabbitmqCluster
 metadata:
   name: rabbitmq
-  namespace: trigger-demo
+  namespace: trigger-customizations-sample
 spec:
   replicas: 1
   override:
@@ -74,7 +74,7 @@ _NOTE_: here we set ERL_MAX_PORTS to prevent unnecessary memory allocation by Ra
 ### Create the RabbitMQ Broker Config
 
 ```sh
-kubectl apply -f samples/broker-trigger/trigger-customizations/250-broker-config.yaml
+kubectl apply -f samples/trigger-customizations/250-broker-config.yaml
 ```
 or
 ```sh
@@ -83,17 +83,17 @@ apiVersion: eventing.knative.dev/v1alpha1
 kind: RabbitmqBrokerConfig
 metadata:
   name: default-config
-  namespace: trigger-demo
+  namespace: trigger-customizations-sample
 spec:
   rabbitmqClusterReference:
     name: rabbitmq
-    namespace: trigger-demo
+    namespace: trigger-customizations-sample
 EOF
 ```
 
 #### Create a Broker
 ```sh
-kubectl apply -f samples/broker-trigger/trigger-customizations/300-broker.yaml
+kubectl apply -f samples/trigger-customizations/300-broker.yaml
 ```
 or
 ```sh
@@ -102,7 +102,7 @@ apiVersion: eventing.knative.dev/v1
 kind: Broker
 metadata:
   name: default
-  namespace: trigger-demo
+  namespace: trigger-customizations-sample
   annotations:
     eventing.knative.dev/broker.class: RabbitMQBroker
 spec:
@@ -116,7 +116,7 @@ EOF
 #### Create the 2 Triggers
 
 ```sh
-kubectl apply -f samples/broker-trigger/trigger-customizations/400-trigger.yaml
+kubectl apply -f samples/trigger-customizations/400-trigger.yaml
 ```
 or
 ```sh
@@ -125,7 +125,7 @@ apiVersion: eventing.knative.dev/v1
 kind: Trigger
 metadata:
   name: fifo-trigger
-  namespace: trigger-demo
+  namespace: trigger-customizations-sample
 spec:
   broker: default
   subscriber:
@@ -133,13 +133,13 @@ spec:
       apiVersion: serving.knative.dev/v1
       kind: Service
       name: fifo-event-display
-      namespace: trigger-demo
+      namespace: trigger-customizations-sample
 ---
 apiVersion: eventing.knative.dev/v1
 kind: Trigger
 metadata:
   name: high-throughput-trigger
-  namespace: trigger-demo
+  namespace: trigger-customizations-sample
   annotations:
     # Value must be between 1 and 1000
     # A value of 1 RabbitMQ Trigger behaves as a FIFO queue
@@ -152,14 +152,14 @@ spec:
       apiVersion: serving.knative.dev/v1
       kind: Service
       name: high-throughput-event-display
-      namespace: trigger-demo
+      namespace: trigger-customizations-sample
 EOF
 ```
 
 #### Create the 2 Sinks
 NOTE: ko is used here to create the custom images. Ensure `KO_DOCKER_REPO` is set to an accessible repository for the images.
 ```sh
-ko apply -f samples/broker-trigger/trigger-customizations/500-sink.yaml
+ko apply -f samples/trigger-customizations/500-sink.yaml
 ```
 or
 ```sh
@@ -168,7 +168,7 @@ apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
   name: fifo-event-display
-  namespace: trigger-demo
+  namespace: trigger-customizations-sample
 spec:
   template:
     metadata:
@@ -176,7 +176,7 @@ spec:
         autoscaling.knative.dev/min-scale: "1"
     spec:
       containers:
-      - image: ko://knative.dev/eventing-rabbitmq/samples/broker-trigger/trigger-customizations/event-display
+      - image: ko://knative.dev/eventing-rabbitmq/samples/trigger-customizations/event-display
         args:
           - --delay=20
 ---
@@ -184,7 +184,7 @@ apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
   name: high-throughput-event-display
-  namespace: trigger-demo
+  namespace: trigger-customizations-sample
 spec:
   template:
     metadata:
@@ -192,7 +192,7 @@ spec:
         autoscaling.knative.dev/min-scale: "1"
     spec:
       containers:
-        - image: ko://knative.dev/eventing-rabbitmq/samples/broker-trigger/trigger-customizations/event-display
+        - image: ko://knative.dev/eventing-rabbitmq/samples/trigger-customizations/event-display
           args:
             - --delay=20
 EOF
@@ -201,19 +201,19 @@ EOF
 #### Wait for resources to become ready
 Before sending messages, wait for all relevant resources to become Ready
 ```sh
-kubectl get broker -n trigger-demo
+kubectl get broker -n trigger-customizations-sample
 NAME      URL                                                            AGE   READY   REASON
-default   http://default-broker-ingress.trigger-demo.svc.cluster.local   95s   True
+default   http://default-broker-ingress.trigger-customizations-sample.svc.cluster.local   95s   True
 
-kubectl get trigger -n trigger-demo
+kubectl get trigger -n trigger-customizations-sample
 NAME                      BROKER    SUBSCRIBER_URI                                                        AGE    READY   REASON
-fifo-trigger              default   http://fifo-event-display.trigger-demo.svc.cluster.local              5m1s   True
-high-throughput-trigger   default   http://high-throughput-event-display.trigger-demo.svc.cluster.local   5m1s   True
+fifo-trigger              default   http://fifo-event-display.trigger-customizations-sample.svc.cluster.local              5m1s   True
+high-throughput-trigger   default   http://high-throughput-event-display.trigger-customizations-sample.svc.cluster.local   5m1s   True
 
-kubectl get services.serving.knative.dev -n trigger-demo
+kubectl get services.serving.knative.dev -n trigger-customizations-sample
 NAME                            URL                                                             LATESTCREATED                         LATESTREADY                           READY   REASON
-fifo-event-display              http://fifo-event-display.trigger-demo.example.com              fifo-event-display-00001              fifo-event-display-00001              True
-high-throughput-event-display   http://high-throughput-event-display.trigger-demo.example.com   high-throughput-event-display-00001   high-throughput-event-display-00001   True
+fifo-event-display              http://fifo-event-display.trigger-customizations-sample.example.com              fifo-event-display-00001              fifo-event-display-00001              True
+high-throughput-event-display   http://high-throughput-event-display.trigger-customizations-sample.example.com   high-throughput-event-display-00001   high-throughput-event-display-00001   True
 ```
 
 #### Create the Source
@@ -222,7 +222,7 @@ Create the source to start sending messages.
 NOTE: ensure the `--sink` is set to the broker's ingress URL.
 
 ```sh
-ko apply -f samples/broker-trigger/trigger-customizations/600-event-sender.yaml
+ko apply -f samples/trigger-customizations/600-event-sender.yaml
 ```
 or
 ```sh
@@ -231,14 +231,14 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: event-sender
-  namespace: trigger-demo
+  namespace: trigger-customizations-sample
 spec:
   restartPolicy: Never
   containers:
     - name: event-sender
-      image: ko://knative.dev/eventing-rabbitmq/samples/broker-trigger/trigger-customizations/event-sender
+      image: ko://knative.dev/eventing-rabbitmq/samples/trigger-customizations/event-sender
       args:
-        - --sink=http://default-broker-ingress.trigger-demo.svc.cluster.local
+        - --sink=http://default-broker-ingress.trigger-customizations-sample.svc.cluster.local
         - --event={"specversion":"1.0","type":"SenderEvent","source":"Sender","datacontenttype":"application/json","data":{}}
         - --num-messages=10
 EOF
@@ -249,7 +249,7 @@ Once the event-display pods are up and running, watch for logs in the FIFO event
 events being consumed in order. But this sink will take longer to process all the incoming events.
 
 ```sh
-kubectl -n trigger-demo -l='serving.knative.dev/service=fifo-event-display' logs -c user-container -f
+kubectl -n trigger-customizations-sample -l='serving.knative.dev/service=fifo-event-display' logs -c user-container -f
 processed event with ID: 1
 processed event with ID: 2
 processed event with ID: 3
@@ -266,7 +266,7 @@ And in a different shell, watch for logs from the high-throughput sink. Once the
 see all the events getting consumed fairly quickly. But they will likely be out of order.
 
 ```sh
-kubectl -n trigger-demo -l='serving.knative.dev/service=high-throughput-event-display' logs -c user-container -f
+kubectl -n trigger-customizations-sample -l='serving.knative.dev/service=high-throughput-event-display' logs -c user-container -f
 processed event with ID: 1
 processed event with ID: 9
 processed event with ID: 6
@@ -280,12 +280,12 @@ processed event with ID: 5
 ```
 
 #### Cleanup
-Delete the trigger-demo namespace to easily remove all the created resources
+Delete the trigger-customizations-sample namespace to easily remove all the created resources
 
 ```sh
-kubectl delete -f samples/broker-trigger/trigger-customizations/100-namespace.yaml
+kubectl delete -f samples/trigger-customizations/100-namespace.yaml
 ```
 or
 ```sh
-kubectl delete ns trigger-demo
+kubectl delete ns trigger-customizations-sample
 ```
