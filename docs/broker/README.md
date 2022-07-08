@@ -79,13 +79,9 @@ install
 [KEDA based autoscaler](https://github.com/knative-sandbox/eventing-autoscaler-keda).
 
 ### Trigger Parallelism Count
-Trigger has a configurable annotation `rabbitmq.eventing.knative.dev/parallelism`. The following are effects of setting this parameter to `n`:
-
-- Prefetch count is set to this value on the RabbitMQ channel and queue created for this trigger. The channel will receive a maximum of `n` number of messages at once.
-- The trigger will create `n` workers to consume messages off the queue and dispatch to the sink.
-
-If this value is unset, it will default to `1`. This means the trigger will only handle one event at a time. This will preserve the order of the messages in a queue but
-will make the trigger a bottleneck. A slow processing sink will result in low overall throughput. Setting a value higher than 1 will result in `n` events being handled at
+Trigger has a configurable annotation `rabbitmq.eventing.knative.dev/parallelism`. If set to `n`, the trigger will create `n` workers to consume messages off the queue and dispatch to the sink.
+If this value is unset, it will default to `1`. This means that the trigger will only have a single worker consuming messages. This will preserve the order of the messages in a queue but
+can make the trigger a bottleneck. A slow processing sink will result in low overall throughput. Setting a value higher than 1 will result in `n` events being handled at
 a time by the trigger but ordering won't be guaranteed as events are sent to the sink.
 
 More details and samples of this can be found [here](../../samples/broker-trigger/trigger-customizations)

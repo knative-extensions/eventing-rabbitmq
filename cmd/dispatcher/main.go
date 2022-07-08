@@ -150,9 +150,9 @@ func (env *envConfig) setupRabbitMQ(ctx context.Context) {
 	}
 
 	err = env.channel.Qos(
-		env.Parallelism, // prefetch count
-		0,               // prefetch size
-		false,           // global
+		100,   // prefetch count
+		0,     // prefetch size
+		false, // global
 	)
 	if err != nil {
 		logging.FromContext(ctx).Fatal("Failed to create QoS: ", err)
