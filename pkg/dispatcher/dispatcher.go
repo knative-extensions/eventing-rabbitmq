@@ -33,6 +33,7 @@ import (
 	"go.opencensus.io/plugin/ochttp/propagation/tracecontext"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
+	"knative.dev/eventing-rabbitmq/pkg/broker/dispatcher"
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	"knative.dev/eventing-rabbitmq/pkg/utils"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
@@ -52,6 +53,7 @@ type Dispatcher struct {
 	Timeout          time.Duration
 	BackoffPolicy    eventingduckv1.BackoffPolicyType
 	WorkerCount      int
+	Reporter         dispatcher.StatsReporter
 }
 
 // ConsumeFromQueue consumes messages from the given message channel and queue.
@@ -121,23 +123,24 @@ func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel wabbit.Channe
 	}
 }
 
-func isSuccess(ctx context.Context, result protocol.Result) bool {
+func getStatus(ctx context.Context, result protocol.Result) (int, bool) {
 	var retriesResult *cehttp.RetriesResult
 	if cloudevents.ResultAs(result, &retriesResult) {
 		var httpResult *cehttp.Result
 		if cloudevents.ResultAs(retriesResult.Result, &httpResult) {
 			retry, _ := kncloudevents.SelectiveRetry(ctx, &http.Response{StatusCode: httpResult.StatusCode}, nil)
-			return !retry
+			return httpResult.StatusCode, !retry
 		}
 		logging.FromContext(ctx).Warnf("Invalid result type, not HTTP Result: %v", retriesResult.Result)
-		return false
+		return -1, false
 	}
 
 	logging.FromContext(ctx).Warnf("Invalid result type, not RetriesResult")
-	return false
+	return -1, false
 }
 
 func (d *Dispatcher) dispatch(ctx context.Context, msg wabbit.Delivery, ceClient cloudevents.Client) {
+	start := time.Now()
 	msgBinding := rabbit.NewMessageFromDelivery(ComponentName, "", "", msg)
 	event, err := binding.ToEvent(cloudevents.WithEncodingBinary(ctx), msgBinding)
 	if err != nil {
@@ -163,7 +166,16 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg wabbit.Delivery, ceClient
 	}
 
 	response, result := ceClient.Request(ctx, *event)
-	if !isSuccess(ctx, result) {
+
+	statusCode, isSuccess := getStatus(ctx, result)
+	if statusCode != -1 {
+		args := &dispatcher.ReportArgs{EventType: event.Type()}
+		if err := d.Reporter.ReportEventCount(args, statusCode); err != nil {
+			logging.FromContext(ctx).Errorf("Something happened: %v", err)
+		}
+	}
+
+	if !isSuccess {
 		logging.FromContext(ctx).Warnf("Failed to deliver to %q", d.SubscriberURL)
 		if err := msg.Nack(false, false); err != nil {
 			logging.FromContext(ctx).Warn("failed to NACK event: ", err)
@@ -173,7 +185,8 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg wabbit.Delivery, ceClient
 		logging.FromContext(ctx).Infof("Sending an event: %+v", response)
 		ctx = cloudevents.ContextWithTarget(ctx, d.BrokerIngressURL)
 		result := ceClient.Send(ctx, *response)
-		if !isSuccess(ctx, result) {
+		_, isSuccess := getStatus(ctx, result)
+		if !isSuccess {
 			logging.FromContext(ctx).Warnf("Failed to deliver to %q", d.BrokerIngressURL)
 			err = msg.Nack(false, false) // not multiple
 			if err != nil {
@@ -186,6 +199,11 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg wabbit.Delivery, ceClient
 	err = msg.Ack(false)
 	if err != nil {
 		logging.FromContext(ctx).Warn("failed to ACK event: ", err)
+	}
+	if statusCode != -1 {
+		args := &dispatcher.ReportArgs{EventType: event.Type()}
+		dispatchTime := time.Since(start)
+		_ = d.Reporter.ReportEventDispatchTime(args, statusCode, dispatchTime)
 	}
 }
 

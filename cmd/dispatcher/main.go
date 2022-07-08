@@ -25,9 +25,12 @@ import (
 
 	"github.com/NeowayLabs/wabbit"
 	"github.com/NeowayLabs/wabbit/amqp"
+	"github.com/google/uuid"
 	"github.com/kelseyhightower/envconfig"
 	amqperr "github.com/rabbitmq/amqp091-go"
+	"knative.dev/pkg/kmeta"
 
+	dispatcherstats "knative.dev/eventing-rabbitmq/pkg/broker/dispatcher"
 	"knative.dev/eventing-rabbitmq/pkg/dispatcher"
 	"knative.dev/eventing-rabbitmq/pkg/utils"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
@@ -50,6 +53,10 @@ type envConfig struct {
 	BackoffPolicy string        `envconfig:"BACKOFF_POLICY" required:"false"`
 	BackoffDelay  time.Duration `envconfig:"BACKOFF_DELAY" default:"50ms" required:"false"`
 	Timeout       time.Duration `envconfig:"TIMEOUT" default:"0s" required:"false"`
+
+	ContainerName string `envconfig:"CONTAINER_NAME"`
+	PodName       string `envconfig:"POD_NAME"`
+	Namespace     string `envconfig:"NAMESPACE"`
 
 	connection *amqp.Conn
 	channel    wabbit.Channel
@@ -97,6 +104,7 @@ func main() {
 		}
 	}()
 
+	reporter := dispatcherstats.NewStatsReporter(env.ContainerName, kmeta.ChildName(env.PodName, uuid.New().String()), env.Namespace)
 	d := &dispatcher.Dispatcher{
 		BrokerIngressURL: env.BrokerIngressURL,
 		SubscriberURL:    env.SubscriberURL,
@@ -105,6 +113,7 @@ func main() {
 		Timeout:          env.Timeout,
 		BackoffPolicy:    backoffPolicy,
 		WorkerCount:      env.Parallelism,
+		Reporter:         reporter,
 	}
 
 	for {

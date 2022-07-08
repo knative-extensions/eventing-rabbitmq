@@ -81,6 +81,7 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 			want: deployment(
 				deploymentNamed("testtrigger-dlx-dispatcher"),
 				withEnv(corev1.EnvVar{Name: "PARALLELISM", Value: "1"}),
+				withEnv(corev1.EnvVar{Name: "POD_NAME", Value: "testtrigger-dlx-dispatcher"}),
 			),
 		},
 		{
@@ -167,6 +168,19 @@ func deployment(opts ...func(*appsv1.Deployment)) *appsv1.Deployment {
 						}, {
 							Name:  "BROKER_INGRESS_URL",
 							Value: brokerIngressURL,
+						}, {
+							Name:  "NAMESPACE",
+							Value: ns,
+						}, {
+							Name:  "CONTAINER_NAME",
+							Value: dispatcherContainerName,
+						}, {
+							Name:  "POD_NAME",
+							Value: "testtrigger-dispatcher",
+						}},
+						Ports: []corev1.ContainerPort{{
+							Name:          "http-metrics",
+							ContainerPort: 9090,
 						}},
 					}},
 				},
@@ -181,7 +195,17 @@ func deployment(opts ...func(*appsv1.Deployment)) *appsv1.Deployment {
 
 func withEnv(env corev1.EnvVar) func(*appsv1.Deployment) {
 	return func(d *appsv1.Deployment) {
-		d.Spec.Template.Spec.Containers[0].Env = append(d.Spec.Template.Spec.Containers[0].Env, env)
+		found := false
+		for i, e := range d.Spec.Template.Spec.Containers[0].Env {
+			if e.Name == env.Name {
+				d.Spec.Template.Spec.Containers[0].Env[i].Value = env.Value
+				found = true
+			}
+		}
+
+		if !found {
+			d.Spec.Template.Spec.Containers[0].Env = append(d.Spec.Template.Spec.Containers[0].Env, env)
+		}
 	}
 }
 
