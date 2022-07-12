@@ -145,7 +145,7 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 
 			m := &amqp.Delivery{
 				Body:    data,
-				Headers: amqp.Table(tc.headers),
+				Headers: tc.headers,
 			}
 
 			if tc.withMsgId {
