@@ -94,24 +94,20 @@ func main() {
 
 	rmqHelper := rabbit.NewRabbitMQHelper(1, make(chan bool))
 	// Wait for RabbitMQ retry messages
+	defer rmqHelper.CleanupRabbitMQ(env.connection, logger)
 	go func() {
 		for {
+			env.connection, env.channel, err = env.CreateRabbitMQConnections(rmqHelper, logger)
+			if err != nil {
+				logger.Errorf("error creating RabbitMQ connections: %s, waiting for a retry", err)
+			}
 			if retry := rmqHelper.WaitForRetrySignal(); !retry {
 				logger.Warn("stopped listenning for RabbitMQ resources retries")
 				break
 			}
 			logger.Warn("recreating RabbitMQ resources")
-			env.connection, env.channel, err = env.CreateRabbitMQConnections(rmqHelper, logger)
-			if err != nil {
-				logger.Errorf("error recreating RabbitMQ connections: %s, waiting for a retry", err)
-			}
 		}
 	}()
-	env.connection, env.channel, err = env.CreateRabbitMQConnections(rmqHelper, logger)
-	if err != nil {
-		logger.Errorf("error creating RabbitMQ connections: %s, waiting for a retry", err)
-	}
-	defer rmqHelper.CleanupRabbitMQ(env.connection, logger)
 
 	env.reporter = ingress.NewStatsReporter(env.ContainerName, kmeta.ChildName(env.PodName, uuid.New().String()))
 	connectionArgs := kncloudevents.ConnectionArgs{
