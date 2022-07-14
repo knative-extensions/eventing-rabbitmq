@@ -62,7 +62,7 @@ type Adapter struct {
 	reporter          source.StatsReporter
 	logger            *zap.Logger
 	context           context.Context
-	rmqHelper         *rabbit.RabbitMQHelper
+	rmqHelper         rabbit.RabbitMQHelperInterface
 	connection        *amqp.Connection
 	channel           *amqp.Channel
 }
@@ -110,9 +110,9 @@ func (a *Adapter) start(stopCh <-chan struct{}) error {
 }
 
 func (a *Adapter) CreateRabbitMQConnections(
-	rmqHelper *rabbit.RabbitMQHelper,
+	rmqHelper rabbit.RabbitMQHelperInterface,
 	logger *zap.SugaredLogger) (connection *amqp.Connection, channel *amqp.Channel, err error) {
-	connection, channel, err = rmqHelper.SetupRabbitMQ(vhostHandler(a.config.RabbitURL, a.config.Vhost), logger)
+	connection, channel, err = rmqHelper.SetupRabbitMQ(vhostHandler(a.config.RabbitURL, a.config.Vhost), rabbit.ChannelQoS, logger)
 	if err == nil {
 		err = channel.Qos(
 			100,

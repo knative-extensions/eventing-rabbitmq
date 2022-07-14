@@ -23,7 +23,7 @@ import (
 )
 
 func Test_SetupRabbitMQReconnections(t *testing.T) {
-	rabbitMQHelper := NewRabbitMQHelper(2, make(chan bool))
+	rabbitMQHelper := NewRabbitMQHelper(2, make(chan bool)).(*RabbitMQHelper)
 	logger := zap.NewNop().Sugar()
 	testChannel := make(chan bool)
 	// Drain messages in the retryChannel
@@ -40,7 +40,7 @@ func Test_SetupRabbitMQReconnections(t *testing.T) {
 	}()
 	<-testChannel
 	// Testing a failing setup
-	conn, _, err := rabbitMQHelper.SetupRabbitMQ("amqp://localhost:5672/%2f", logger)
+	conn, _, err := rabbitMQHelper.SetupRabbitMQ("amqp://localhost:5672/%2f", nil, logger)
 	<-testChannel
 	if err == nil {
 		t.Error("SetupRabbitMQ should fail with the default DialFunc in testing environments")

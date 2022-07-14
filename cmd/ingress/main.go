@@ -97,7 +97,7 @@ func main() {
 	defer rmqHelper.CleanupRabbitMQ(env.connection, logger)
 	go func() {
 		for {
-			env.connection, env.channel, err = env.CreateRabbitMQConnections(rmqHelper, logger)
+			env.connection, env.channel, err = rmqHelper.SetupRabbitMQ(env.BrokerURL, rabbit.ChannelConfirm, logger)
 			if err != nil {
 				logger.Errorf("error creating RabbitMQ connections: %s, waiting for a retry", err)
 			}
@@ -219,20 +219,4 @@ func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, tim
 		return http.StatusInternalServerError, noDuration, errors.New("failed to publish message: nacked")
 	}
 	return http.StatusAccepted, dispatchTime, nil
-}
-
-func (env *envConfig) CreateRabbitMQConnections(
-	rmqHelper *rabbit.RabbitMQHelper,
-	logger *zap.SugaredLogger) (conn *amqp.Connection, channel *amqp.Channel, err error) {
-	conn, channel, err = rmqHelper.SetupRabbitMQ(env.BrokerURL, logger)
-	if err == nil {
-		err = channel.Confirm(false)
-	}
-	if err != nil {
-		rmqHelper.CloseRabbitMQConnections(conn, logger)
-		logger.Warn("Retrying RabbitMQ connections setup")
-		go rmqHelper.SignalRetry(true)
-		return nil, nil, err
-	}
-	return conn, channel, nil
 }

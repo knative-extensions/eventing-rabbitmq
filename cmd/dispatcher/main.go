@@ -104,7 +104,7 @@ func main() {
 	rmqHelper := rabbit.NewRabbitMQHelper(1, make(chan bool))
 	defer rmqHelper.CleanupRabbitMQ(env.connection, logger)
 	for {
-		env.connection, env.channel, err = env.CreateRabbitMQConnections(rmqHelper, logger)
+		env.connection, env.channel, err = rmqHelper.SetupRabbitMQ(env.RabbitURL, rabbit.ChannelQoS, logger)
 		if err != nil {
 			logger.Errorf("error creating RabbitMQ connections: %s, waiting for a retry", err)
 		}
@@ -119,24 +119,4 @@ func main() {
 			logger.Warn("recreating RabbitMQ resources")
 		}
 	}
-}
-
-func (env *envConfig) CreateRabbitMQConnections(
-	rmqHelper *rabbit.RabbitMQHelper,
-	logger *zap.SugaredLogger) (connection *amqp.Connection, channel *amqp.Channel, err error) {
-	connection, channel, err = rmqHelper.SetupRabbitMQ(env.RabbitURL, logger)
-	if err == nil {
-		err = channel.Qos(
-			100,
-			0,
-			false,
-		)
-	}
-	if err != nil {
-		rmqHelper.CloseRabbitMQConnections(connection, logger)
-		logger.Warn("Retrying RabbitMQ connections setup")
-		go rmqHelper.SignalRetry(true)
-		return nil, nil, err
-	}
-	return connection, channel, nil
 }

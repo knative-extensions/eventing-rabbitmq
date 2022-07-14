@@ -23,6 +23,15 @@ import (
 	"go.uber.org/zap"
 )
 
+type RabbitMQHelperInterface interface {
+	SetupRabbitMQ(string, func(*amqp.Connection, *amqp.Channel) error, *zap.SugaredLogger) (*amqp.Connection, *amqp.Channel, error)
+	WatchRabbitMQConnections(*amqp.Connection, *amqp.Channel, string, *zap.SugaredLogger)
+	SignalRetry(bool)
+	WaitForRetrySignal() bool
+	CloseRabbitMQConnections(*amqp.Connection, *zap.SugaredLogger)
+	CleanupRabbitMQ(connection *amqp.Connection, logger *zap.SugaredLogger)
+}
+
 type RabbitMQHelper struct {
 	retryCounter  int
 	cycleDuration time.Duration
@@ -30,7 +39,7 @@ type RabbitMQHelper struct {
 	retryChannel  chan bool
 }
 
-func NewRabbitMQHelper(cycleDuration time.Duration, retryChannel chan bool) *RabbitMQHelper {
+func NewRabbitMQHelper(cycleDuration time.Duration, retryChannel chan bool) RabbitMQHelperInterface {
 	return &RabbitMQHelper{
 		cycleDuration: cycleDuration,
 		retryChannel:  retryChannel,
@@ -39,6 +48,7 @@ func NewRabbitMQHelper(cycleDuration time.Duration, retryChannel chan bool) *Rab
 
 func (r *RabbitMQHelper) SetupRabbitMQ(
 	RabbitMQURL string,
+	configFunction func(*amqp.Connection, *amqp.Channel) error,
 	logger *zap.SugaredLogger) (*amqp.Connection, *amqp.Channel, error) {
 	r.retryCounter += 1
 	var err error
@@ -48,6 +58,8 @@ func (r *RabbitMQHelper) SetupRabbitMQ(
 		logger.Errorw("failed to connect to RabbitMQ", zap.Error(err))
 	} else if channel, err = conn.Channel(); err != nil {
 		logger.Errorw("failed to open a channel", zap.Error(err))
+	} else if configFunction != nil {
+		err = configFunction(conn, channel)
 	}
 
 	// If there is an error trying to setup rabbit send a retry msg
@@ -104,4 +116,16 @@ func (r *RabbitMQHelper) CleanupRabbitMQ(connection *amqp.Connection, logger *za
 	r.SignalRetry(false)
 	r.CloseRabbitMQConnections(connection, logger)
 	close(r.retryChannel)
+}
+
+func ChannelQoS(connection *amqp.Connection, channel *amqp.Channel) error {
+	return channel.Qos(
+		100,
+		0,
+		false,
+	)
+}
+
+func ChannelConfirm(connection *amqp.Connection, channel *amqp.Channel) error {
+	return channel.Confirm(false)
 }
