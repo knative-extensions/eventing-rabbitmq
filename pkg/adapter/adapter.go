@@ -63,8 +63,8 @@ type Adapter struct {
 	logger            *zap.Logger
 	context           context.Context
 	rmqHelper         rabbit.RabbitMQHelperInterface
-	connection        *amqp.Connection
-	channel           *amqp.Channel
+	connection        rabbit.RabbitMQConnectionInterface
+	channel           rabbit.RabbitMQChannelInterface
 }
 
 var _ adapter.MessageAdapter = (*Adapter)(nil)
@@ -106,20 +106,15 @@ func (a *Adapter) start(stopCh <-chan struct{}) error {
 		zap.String("Namespace", a.config.Namespace),
 		zap.String("QueueName", a.config.QueueName),
 		zap.String("SinkURI", a.config.Sink))
+
+	a.rmqHelper = rabbit.NewRabbitMQHelper(1, make(chan bool), amqp.Dial)
 	return a.PollForMessages(stopCh)
 }
 
 func (a *Adapter) CreateRabbitMQConnections(
 	rmqHelper rabbit.RabbitMQHelperInterface,
-	logger *zap.SugaredLogger) (connection *amqp.Connection, channel *amqp.Channel, err error) {
+	logger *zap.SugaredLogger) (connection rabbit.RabbitMQConnectionInterface, channel rabbit.RabbitMQChannelInterface, err error) {
 	connection, channel, err = rmqHelper.SetupRabbitMQ(vhostHandler(a.config.RabbitURL, a.config.Vhost), rabbit.ChannelQoS, logger)
-	if err == nil {
-		err = channel.Qos(
-			100,
-			0,
-			false,
-		)
-	}
 	if err != nil {
 		rmqHelper.CloseRabbitMQConnections(connection, logger)
 		logger.Warn("Retrying RabbitMQ connections setup")
@@ -166,7 +161,6 @@ func (a *Adapter) PollForMessages(stopCh <-chan struct{}) error {
 		}
 	}
 
-	a.rmqHelper = rabbit.NewRabbitMQHelper(1, make(chan bool))
 	wg := &sync.WaitGroup{}
 	workerCount := a.config.Parallelism
 	wg.Add(workerCount)
@@ -187,13 +181,12 @@ func (a *Adapter) PollForMessages(stopCh <-chan struct{}) error {
 		if err != nil {
 			logger.Error(err.Error())
 		}
-		if err == nil {
-			msgs, _ = a.ConsumeMessages(&queue, logger)
-			go PollCycle(stopCh, workerQueue, wg, msgs, logger)
-		} else {
+		if err != nil {
 			continue
 		}
 
+		msgs, _ = a.ConsumeMessages(&queue, logger)
+		go PollCycle(stopCh, workerQueue, wg, msgs, logger)
 		if retry := a.rmqHelper.WaitForRetrySignal(); !retry {
 			logger.Warn("stopped listenning for RabbitMQ resources retries")
 			return nil

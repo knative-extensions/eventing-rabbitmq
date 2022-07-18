@@ -57,8 +57,8 @@ type envConfig struct {
 	BrokerURL    string `envconfig:"BROKER_URL" required:"true"`
 	ExchangeName string `envconfig:"EXCHANGE_NAME" required:"true"`
 
-	connection *amqp.Connection
-	channel    *amqp.Channel
+	connection rabbit.RabbitMQConnectionInterface
+	channel    rabbit.RabbitMQChannelInterface
 
 	ContainerName   string `envconfig:"CONTAINER_NAME" default:"ingress"`
 	PodName         string `envconfig:"POD_NAME" default:"rabbitmq-broker-ingress"`
@@ -92,7 +92,7 @@ func main() {
 		logger.Errorw("failed to create the metrics exporter", zap.Error(err))
 	}
 
-	rmqHelper := rabbit.NewRabbitMQHelper(1, make(chan bool))
+	rmqHelper := rabbit.NewRabbitMQHelper(1, make(chan bool), amqp.Dial)
 	// Wait for RabbitMQ retry messages
 	defer rmqHelper.CleanupRabbitMQ(env.connection, logger)
 	go func() {

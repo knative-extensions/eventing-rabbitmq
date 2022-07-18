@@ -58,7 +58,7 @@ type Dispatcher struct {
 
 // ConsumeFromQueue consumes messages from the given message channel and queue.
 // When the context is cancelled a context.Canceled error is returned.
-func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel *amqp.Channel, queueName string) error {
+func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel rabbit.RabbitMQChannelInterface, queueName string) error {
 	msgs, err := channel.Consume(
 		queueName, // queue
 		"",        // consumer

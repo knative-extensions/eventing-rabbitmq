@@ -24,12 +24,28 @@ import (
 )
 
 type RabbitMQHelperInterface interface {
-	SetupRabbitMQ(string, func(*amqp.Connection, *amqp.Channel) error, *zap.SugaredLogger) (*amqp.Connection, *amqp.Channel, error)
-	WatchRabbitMQConnections(*amqp.Connection, *amqp.Channel, string, *zap.SugaredLogger)
+	SetupRabbitMQ(string, func(RabbitMQConnectionInterface, RabbitMQChannelInterface) error, *zap.SugaredLogger) (RabbitMQConnectionInterface, RabbitMQChannelInterface, error)
+	WatchRabbitMQConnections(RabbitMQConnectionInterface, RabbitMQChannelInterface, string, *zap.SugaredLogger)
 	SignalRetry(bool)
 	WaitForRetrySignal() bool
-	CloseRabbitMQConnections(*amqp.Connection, *zap.SugaredLogger)
-	CleanupRabbitMQ(connection *amqp.Connection, logger *zap.SugaredLogger)
+	CloseRabbitMQConnections(RabbitMQConnectionInterface, *zap.SugaredLogger)
+	CleanupRabbitMQ(connection RabbitMQConnectionInterface, logger *zap.SugaredLogger)
+}
+
+type RabbitMQConnectionInterface interface {
+	Channel() (*amqp.Channel, error)
+	NotifyClose(chan *amqp.Error) chan *amqp.Error
+	Close() error
+	IsClosed() bool
+}
+
+type RabbitMQChannelInterface interface {
+	NotifyClose(chan *amqp.Error) chan *amqp.Error
+	Qos(int, int, bool) error
+	Confirm(bool) error
+	Consume(string, string, bool, bool, bool, bool, amqp.Table) (<-chan amqp.Delivery, error)
+	PublishWithDeferredConfirm(string, string, bool, bool, amqp.Publishing) (*amqp.DeferredConfirmation, error)
+	QueueInspect(string) (amqp.Queue, error)
 }
 
 type RabbitMQHelper struct {
@@ -37,29 +53,38 @@ type RabbitMQHelper struct {
 	cycleDuration time.Duration
 	cleaningUp    bool
 	retryChannel  chan bool
+	dialFunc      func(string) (*amqp.Connection, error)
 }
 
-func NewRabbitMQHelper(cycleDuration time.Duration, retryChannel chan bool) RabbitMQHelperInterface {
+func NewRabbitMQHelper(cycleDuration time.Duration, retryChannel chan bool, dialFunc func(string) (*amqp.Connection, error)) RabbitMQHelperInterface {
 	return &RabbitMQHelper{
 		cycleDuration: cycleDuration,
 		retryChannel:  retryChannel,
+		dialFunc:      dialFunc,
 	}
 }
 
 func (r *RabbitMQHelper) SetupRabbitMQ(
 	RabbitMQURL string,
-	configFunction func(*amqp.Connection, *amqp.Channel) error,
-	logger *zap.SugaredLogger) (*amqp.Connection, *amqp.Channel, error) {
+	configFunction func(RabbitMQConnectionInterface, RabbitMQChannelInterface) error,
+	logger *zap.SugaredLogger) (RabbitMQConnectionInterface, RabbitMQChannelInterface, error) {
 	r.retryCounter += 1
 	var err error
-	var conn *amqp.Connection
 	var channel *amqp.Channel
-	if conn, err = amqp.Dial(RabbitMQURL); err != nil {
+	var connInterface RabbitMQConnectionInterface
+	var channelInterface RabbitMQChannelInterface
+	if conn, err := r.dialFunc(RabbitMQURL); err != nil {
 		logger.Errorw("failed to connect to RabbitMQ", zap.Error(err))
-	} else if channel, err = conn.Channel(); err != nil {
-		logger.Errorw("failed to open a channel", zap.Error(err))
-	} else if configFunction != nil {
-		err = configFunction(conn, channel)
+	} else {
+		connInterface = conn
+		if channel, err = connInterface.Channel(); err != nil {
+			logger.Errorw("failed to open a RabbitMQ channel", zap.Error(err))
+		}
+		channelInterface = channel
+	}
+
+	if configFunction != nil && err == nil {
+		err = configFunction(connInterface, channelInterface)
 	}
 
 	// If there is an error trying to setup rabbit send a retry msg
@@ -73,13 +98,13 @@ func (r *RabbitMQHelper) SetupRabbitMQ(
 	// if there is no error reset the retryCounter and cycle values
 	r.retryCounter = 0
 	// Wait for a channel or connection close message to rerun the RabbitMQ setup
-	go r.WatchRabbitMQConnections(conn, channel, RabbitMQURL, logger)
-	return conn, channel, nil
+	go r.WatchRabbitMQConnections(connInterface, channelInterface, RabbitMQURL, logger)
+	return connInterface, channelInterface, nil
 }
 
 func (r *RabbitMQHelper) WatchRabbitMQConnections(
-	connection *amqp.Connection,
-	channel *amqp.Channel,
+	connection RabbitMQConnectionInterface,
+	channel RabbitMQChannelInterface,
 	RabbitMQURL string,
 	logger *zap.SugaredLogger) {
 	var err error
@@ -102,7 +127,7 @@ func (r *RabbitMQHelper) WaitForRetrySignal() bool {
 	return <-r.retryChannel
 }
 
-func (r *RabbitMQHelper) CloseRabbitMQConnections(connection *amqp.Connection, logger *zap.SugaredLogger) {
+func (r *RabbitMQHelper) CloseRabbitMQConnections(connection RabbitMQConnectionInterface, logger *zap.SugaredLogger) {
 	r.cleaningUp = true
 	if connection != nil && !connection.IsClosed() {
 		if err := connection.Close(); err != nil {
@@ -112,13 +137,13 @@ func (r *RabbitMQHelper) CloseRabbitMQConnections(connection *amqp.Connection, l
 	r.cleaningUp = false
 }
 
-func (r *RabbitMQHelper) CleanupRabbitMQ(connection *amqp.Connection, logger *zap.SugaredLogger) {
+func (r *RabbitMQHelper) CleanupRabbitMQ(connection RabbitMQConnectionInterface, logger *zap.SugaredLogger) {
 	r.SignalRetry(false)
 	r.CloseRabbitMQConnections(connection, logger)
 	close(r.retryChannel)
 }
 
-func ChannelQoS(connection *amqp.Connection, channel *amqp.Channel) error {
+func ChannelQoS(connection RabbitMQConnectionInterface, channel RabbitMQChannelInterface) error {
 	return channel.Qos(
 		100,
 		0,
@@ -126,6 +151,6 @@ func ChannelQoS(connection *amqp.Connection, channel *amqp.Channel) error {
 	)
 }
 
-func ChannelConfirm(connection *amqp.Connection, channel *amqp.Channel) error {
+func ChannelConfirm(connection RabbitMQConnectionInterface, channel RabbitMQChannelInterface) error {
 	return channel.Confirm(false)
 }

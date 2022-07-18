@@ -25,8 +25,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/kelseyhightower/envconfig"
-	amqp "github.com/rabbitmq/amqp091-go"
 
+	"github.com/rabbitmq/amqp091-go"
 	dispatcherstats "knative.dev/eventing-rabbitmq/pkg/broker/dispatcher"
 	"knative.dev/eventing-rabbitmq/pkg/dispatcher"
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
@@ -57,8 +57,8 @@ type envConfig struct {
 	PodName       string `envconfig:"POD_NAME"`
 	Namespace     string `envconfig:"NAMESPACE"`
 
-	connection *amqp.Connection
-	channel    *amqp.Channel
+	connection rabbit.RabbitMQConnectionInterface
+	channel    rabbit.RabbitMQChannelInterface
 }
 
 func main() {
@@ -101,7 +101,7 @@ func main() {
 		Reporter:         reporter,
 	}
 
-	rmqHelper := rabbit.NewRabbitMQHelper(1, make(chan bool))
+	rmqHelper := rabbit.NewRabbitMQHelper(1, make(chan bool), amqp091.Dial)
 	defer rmqHelper.CleanupRabbitMQ(env.connection, logger)
 	for {
 		env.connection, env.channel, err = rmqHelper.SetupRabbitMQ(env.RabbitURL, rabbit.ChannelQoS, logger)
