@@ -107,7 +107,7 @@ func (a *Adapter) start(stopCh <-chan struct{}) error {
 		zap.String("QueueName", a.config.QueueName),
 		zap.String("SinkURI", a.config.Sink))
 
-	a.rmqHelper = rabbit.NewRabbitMQHelper(1, make(chan bool), amqp.Dial)
+	a.rmqHelper = rabbit.NewRabbitMQHelper(1, make(chan bool), rabbit.DialWrapper)
 	return a.PollForMessages(stopCh)
 }
 

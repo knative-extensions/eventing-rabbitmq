@@ -92,7 +92,7 @@ func main() {
 		logger.Errorw("failed to create the metrics exporter", zap.Error(err))
 	}
 
-	rmqHelper := rabbit.NewRabbitMQHelper(1, make(chan bool), amqp.Dial)
+	rmqHelper := rabbit.NewRabbitMQHelper(1, make(chan bool), rabbit.DialWrapper)
 	// Wait for RabbitMQ retry messages
 	defer rmqHelper.CleanupRabbitMQ(env.connection, logger)
 	go func() {

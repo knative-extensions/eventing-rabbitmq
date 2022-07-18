@@ -26,7 +26,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/kelseyhightower/envconfig"
 
-	"github.com/rabbitmq/amqp091-go"
 	dispatcherstats "knative.dev/eventing-rabbitmq/pkg/broker/dispatcher"
 	"knative.dev/eventing-rabbitmq/pkg/dispatcher"
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
@@ -101,7 +100,7 @@ func main() {
 		Reporter:         reporter,
 	}
 
-	rmqHelper := rabbit.NewRabbitMQHelper(1, make(chan bool), amqp091.Dial)
+	rmqHelper := rabbit.NewRabbitMQHelper(1, make(chan bool), rabbit.DialWrapper)
 	defer rmqHelper.CleanupRabbitMQ(env.connection, logger)
 	for {
 		env.connection, env.channel, err = rmqHelper.SetupRabbitMQ(env.RabbitURL, rabbit.ChannelQoS, logger)

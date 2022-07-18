@@ -53,10 +53,10 @@ type RabbitMQHelper struct {
 	cycleDuration time.Duration
 	cleaningUp    bool
 	retryChannel  chan bool
-	dialFunc      func(string) (*amqp.Connection, error)
+	dialFunc      func(string) (RabbitMQConnectionInterface, error)
 }
 
-func NewRabbitMQHelper(cycleDuration time.Duration, retryChannel chan bool, dialFunc func(string) (*amqp.Connection, error)) RabbitMQHelperInterface {
+func NewRabbitMQHelper(cycleDuration time.Duration, retryChannel chan bool, dialFunc func(string) (RabbitMQConnectionInterface, error)) RabbitMQHelperInterface {
 	return &RabbitMQHelper{
 		cycleDuration: cycleDuration,
 		retryChannel:  retryChannel,
@@ -70,17 +70,12 @@ func (r *RabbitMQHelper) SetupRabbitMQ(
 	logger *zap.SugaredLogger) (RabbitMQConnectionInterface, RabbitMQChannelInterface, error) {
 	r.retryCounter += 1
 	var err error
-	var channel *amqp.Channel
 	var connInterface RabbitMQConnectionInterface
 	var channelInterface RabbitMQChannelInterface
-	if conn, err := r.dialFunc(RabbitMQURL); err != nil {
+	if connInterface, err = r.dialFunc(RabbitMQURL); err != nil {
 		logger.Errorw("failed to connect to RabbitMQ", zap.Error(err))
-	} else {
-		connInterface = conn
-		if channel, err = connInterface.Channel(); err != nil {
-			logger.Errorw("failed to open a RabbitMQ channel", zap.Error(err))
-		}
-		channelInterface = channel
+	} else if channelInterface, err = connInterface.Channel(); err != nil {
+		logger.Errorw("failed to open a RabbitMQ channel", zap.Error(err))
 	}
 
 	if configFunction != nil && err == nil {
@@ -153,4 +148,8 @@ func ChannelQoS(connection RabbitMQConnectionInterface, channel RabbitMQChannelI
 
 func ChannelConfirm(connection RabbitMQConnectionInterface, channel RabbitMQChannelInterface) error {
 	return channel.Confirm(false)
+}
+
+func DialWrapper(url string) (RabbitMQConnectionInterface, error) {
+	return amqp.Dial(url)
 }

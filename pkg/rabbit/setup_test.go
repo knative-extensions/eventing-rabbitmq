@@ -19,12 +19,11 @@ package rabbit
 import (
 	"testing"
 
-	amqp "github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"
 )
 
 func Test_SetupRabbitMQReconnections(t *testing.T) {
-	rabbitMQHelper := NewRabbitMQHelper(2, make(chan bool), amqp.Dial).(*RabbitMQHelper)
+	rabbitMQHelper := NewRabbitMQHelper(2, make(chan bool), DialWrapper).(*RabbitMQHelper)
 	logger := zap.NewNop().Sugar()
 	testChannel := make(chan bool)
 	// Drain messages in the retryChannel
