@@ -106,16 +106,15 @@ func main() {
 		env.connection, env.channel, err = rmqHelper.SetupRabbitMQ(env.RabbitURL, rabbit.ChannelQoS, logger)
 		if err != nil {
 			logger.Errorf("error creating RabbitMQ connections: %s, waiting for a retry", err)
-		}
-		if err := d.ConsumeFromQueue(ctx, env.channel, env.QueueName); err != nil {
+		} else if err := d.ConsumeFromQueue(ctx, env.channel, env.QueueName); err != nil {
 			if errors.Is(err, context.Canceled) {
 				return
 			}
-			if retry := rmqHelper.WaitForRetrySignal(); !retry {
-				logger.Warn("stopped listenning for RabbitMQ resources retries")
-				break
-			}
-			logger.Warn("recreating RabbitMQ resources")
+		}
+		logger.Warn("recreating RabbitMQ resources")
+		if retry := rmqHelper.WaitForRetrySignal(); !retry {
+			logger.Warn("stopped listenning for RabbitMQ resources retries")
+			break
 		}
 	}
 }

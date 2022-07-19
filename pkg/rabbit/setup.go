@@ -176,7 +176,7 @@ func (r *RabbitMQHelper) CloseRabbitMQConnections(connection RabbitMQConnectionI
 }
 
 func (r *RabbitMQHelper) CleanupRabbitMQ(connection RabbitMQConnectionInterface, logger *zap.SugaredLogger) {
-	//r.SignalRetry(false)
+	r.SignalRetry(false)
 	r.CloseRabbitMQConnections(connection, logger)
 	close(r.retryChannel)
 }
@@ -196,8 +196,8 @@ func ChannelConfirm(connection RabbitMQConnectionInterface, channel RabbitMQChan
 func DialWrapper(url string) (RabbitMQConnectionInterface, error) {
 	var rmqConn *RabbitMQConnection
 	conn, err := amqp.Dial(url)
-	if err != nil {
-		rmqConn = &RabbitMQConnection{connection: conn}
+	if err == nil {
+		rmqConn = NewConnection(conn)
 	}
 	return rmqConn, err
 }

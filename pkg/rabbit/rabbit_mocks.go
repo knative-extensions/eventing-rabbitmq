@@ -25,7 +25,7 @@ import (
 type RabbitMQConnectionMock struct{}
 
 func (rm *RabbitMQConnectionMock) ChannelWrapper() (RabbitMQChannelInterface, error) {
-	return &RabbitMQChannelMock{}, nil
+	return &RabbitMQChannelMock{NotifyCloseChannel: make(chan *amqp.Error)}, nil
 }
 
 func (rm *RabbitMQConnectionMock) IsClosed() bool {
@@ -64,8 +64,7 @@ type RabbitMQChannelMock struct {
 }
 
 func (rm *RabbitMQChannelMock) NotifyClose(c chan *amqp.Error) chan *amqp.Error {
-	rm.NotifyCloseChannel = c
-	return c
+	return rm.NotifyCloseChannel
 }
 
 func (rm *RabbitMQChannelMock) Qos(a int, b int, c bool) error {

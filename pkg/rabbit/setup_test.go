@@ -66,9 +66,6 @@ func Test_ValidSetupRabbitMQ(t *testing.T) {
 	if err != nil {
 		t.Errorf("Setup should'nt fail when using ValidDial func %s", err)
 	}
-
-	for channel.(*RabbitMQChannelMock).NotifyCloseChannel == nil {
-	}
 	channel.(*RabbitMQChannelMock).NotifyCloseChannel <- amqp.ErrClosed
 	conn.Close()
 }

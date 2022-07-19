@@ -32,6 +32,6 @@ const (
 	expectedResponseData = `"{\"testresponse\":\"testresponsedata\"}"`
 )
 
-func TestFailToConsume(t *testing.T) {
+func TestReadSpan(t *testing.T) {
 
 }

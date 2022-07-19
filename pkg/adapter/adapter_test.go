@@ -302,8 +302,11 @@ func TestAdapter_PollForMessages(t *testing.T) {
 	}
 
 	go func() {
-		time.Sleep(1)
+		time.Sleep(500)
+		// Signal to the adapter to finish and do not retry
 		a.rmqHelper.SignalRetry(false)
+		// Wait for the adapter signal to finish any external retry cycle
+		a.rmqHelper.WaitForRetrySignal()
 	}()
 	a.Start(a.context)
 }
