@@ -17,6 +17,7 @@ limitations under the License.
 package rabbit
 
 import (
+	"errors"
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -33,10 +34,14 @@ type RabbitMQHelperInterface interface {
 }
 
 type RabbitMQConnectionInterface interface {
-	Channel() (*amqp.Channel, error)
+	ChannelWrapper() (RabbitMQChannelInterface, error)
 	NotifyClose(chan *amqp.Error) chan *amqp.Error
 	Close() error
 	IsClosed() bool
+}
+
+type RabbitMQConnection struct {
+	connection interface{}
 }
 
 type RabbitMQChannelInterface interface {
@@ -53,14 +58,48 @@ type RabbitMQHelper struct {
 	cycleDuration time.Duration
 	cleaningUp    bool
 	retryChannel  chan bool
-	dialFunc      func(string) (RabbitMQConnectionInterface, error)
+	DialFunc      func(string) (RabbitMQConnectionInterface, error)
 }
 
-func NewRabbitMQHelper(cycleDuration time.Duration, retryChannel chan bool, dialFunc func(string) (RabbitMQConnectionInterface, error)) RabbitMQHelperInterface {
+func (r *RabbitMQConnection) ChannelWrapper() (RabbitMQChannelInterface, error) {
+	if c, ok := r.connection.(*amqp.Connection); ok {
+		return c.Channel()
+	} else if ci, ok := r.connection.(RabbitMQConnectionInterface); ok {
+		return ci.ChannelWrapper()
+	}
+	return nil, errors.New("Wrong typed Connection arg")
+}
+
+func (r *RabbitMQConnection) NotifyClose(c chan *amqp.Error) chan *amqp.Error {
+	if ci, ok := r.connection.(RabbitMQConnectionInterface); ok {
+		return ci.NotifyClose(c)
+	}
+	close(c)
+	return nil
+}
+
+func (r *RabbitMQConnection) Close() error {
+	if ci, ok := r.connection.(RabbitMQConnectionInterface); ok {
+		return ci.Close()
+	}
+	return errors.New("Wrong typed Connection arg")
+}
+
+func (r *RabbitMQConnection) IsClosed() bool {
+	if ci, ok := r.connection.(RabbitMQConnectionInterface); ok {
+		return ci.IsClosed()
+	}
+	return true
+}
+
+func NewRabbitMQHelper(
+	cycleDuration time.Duration,
+	retryChannel chan bool,
+	dialFunc func(string) (RabbitMQConnectionInterface, error)) RabbitMQHelperInterface {
 	return &RabbitMQHelper{
 		cycleDuration: cycleDuration,
 		retryChannel:  retryChannel,
-		dialFunc:      dialFunc,
+		DialFunc:      dialFunc,
 	}
 }
 
@@ -72,9 +111,9 @@ func (r *RabbitMQHelper) SetupRabbitMQ(
 	var err error
 	var connInterface RabbitMQConnectionInterface
 	var channelInterface RabbitMQChannelInterface
-	if connInterface, err = r.dialFunc(RabbitMQURL); err != nil {
+	if connInterface, err = r.DialFunc(RabbitMQURL); err != nil {
 		logger.Errorw("failed to connect to RabbitMQ", zap.Error(err))
-	} else if channelInterface, err = connInterface.Channel(); err != nil {
+	} else if channelInterface, err = connInterface.ChannelWrapper(); err != nil {
 		logger.Errorw("failed to open a RabbitMQ channel", zap.Error(err))
 	}
 
@@ -151,5 +190,10 @@ func ChannelConfirm(connection RabbitMQConnectionInterface, channel RabbitMQChan
 }
 
 func DialWrapper(url string) (RabbitMQConnectionInterface, error) {
-	return amqp.Dial(url)
+	var rmqConn *RabbitMQConnection
+	conn, err := amqp.Dial(url)
+	if err != nil {
+		rmqConn = &RabbitMQConnection{connection: conn}
+	}
+	return rmqConn, err
 }
