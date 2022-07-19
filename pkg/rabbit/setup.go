@@ -40,10 +40,6 @@ type RabbitMQConnectionInterface interface {
 	IsClosed() bool
 }
 
-type RabbitMQConnection struct {
-	connection interface{}
-}
-
 type RabbitMQChannelInterface interface {
 	NotifyClose(chan *amqp.Error) chan *amqp.Error
 	Qos(int, int, bool) error
@@ -59,6 +55,14 @@ type RabbitMQHelper struct {
 	cleaningUp    bool
 	retryChannel  chan bool
 	DialFunc      func(string) (RabbitMQConnectionInterface, error)
+}
+
+type RabbitMQConnection struct {
+	connection interface{}
+}
+
+func NewConnection(conn interface{}) *RabbitMQConnection {
+	return &RabbitMQConnection{connection: conn}
 }
 
 func (r *RabbitMQConnection) ChannelWrapper() (RabbitMQChannelInterface, error) {
@@ -172,7 +176,7 @@ func (r *RabbitMQHelper) CloseRabbitMQConnections(connection RabbitMQConnectionI
 }
 
 func (r *RabbitMQHelper) CleanupRabbitMQ(connection RabbitMQConnectionInterface, logger *zap.SugaredLogger) {
-	r.SignalRetry(false)
+	//r.SignalRetry(false)
 	r.CloseRabbitMQConnections(connection, logger)
 	close(r.retryChannel)
 }

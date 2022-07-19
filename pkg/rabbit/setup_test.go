@@ -17,77 +17,11 @@ limitations under the License.
 package rabbit
 
 import (
-	"errors"
 	"testing"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"
 )
-
-type RabbitMQConnectionMock struct{}
-
-func (rm *RabbitMQConnectionMock) ChannelWrapper() (RabbitMQChannelInterface, error) {
-	return &RabbitMQChannelMock{}, nil
-}
-
-func (rm *RabbitMQConnectionMock) IsClosed() bool {
-	return true
-}
-
-func (rm *RabbitMQConnectionMock) Close() error {
-	return nil
-}
-
-func (rm *RabbitMQConnectionMock) NotifyClose(c chan *amqp.Error) chan *amqp.Error {
-	return c
-}
-
-type RabbitMQBadConnectionMock struct{}
-
-func (rm *RabbitMQBadConnectionMock) ChannelWrapper() (RabbitMQChannelInterface, error) {
-	return nil, errors.New("channel error test")
-}
-
-func (rm *RabbitMQBadConnectionMock) IsClosed() bool {
-	return false
-}
-
-func (rm *RabbitMQBadConnectionMock) Close() error {
-	return nil
-}
-
-func (rm *RabbitMQBadConnectionMock) NotifyClose(c chan *amqp.Error) chan *amqp.Error {
-	return c
-}
-
-type RabbitMQChannelMock struct {
-	NotifyCloseChannel chan *amqp.Error
-}
-
-func (rm *RabbitMQChannelMock) NotifyClose(c chan *amqp.Error) chan *amqp.Error {
-	rm.NotifyCloseChannel = c
-	return c
-}
-
-func (rm *RabbitMQChannelMock) Qos(a int, b int, c bool) error {
-	return nil
-}
-
-func (rm *RabbitMQChannelMock) Consume(a string, b string, c bool, d bool, e bool, f bool, t amqp.Table) (<-chan amqp.Delivery, error) {
-	return make(<-chan amqp.Delivery), nil
-}
-
-func (rm *RabbitMQChannelMock) PublishWithDeferredConfirm(a string, b string, c bool, d bool, p amqp.Publishing) (*amqp.DeferredConfirmation, error) {
-	return &amqp.DeferredConfirmation{}, nil
-}
-
-func (rm *RabbitMQChannelMock) Confirm(a bool) error {
-	return nil
-}
-
-func (rm *RabbitMQChannelMock) QueueInspect(string) (amqp.Queue, error) {
-	return amqp.Queue{}, nil
-}
 
 func Test_SetupRabbitMQConnectionsError(t *testing.T) {
 	rabbitMQHelper := NewRabbitMQHelper(2, make(chan bool), DialWrapper).(*RabbitMQHelper)
@@ -137,26 +71,6 @@ func Test_ValidSetupRabbitMQ(t *testing.T) {
 	}
 	channel.(*RabbitMQChannelMock).NotifyCloseChannel <- amqp.ErrClosed
 	conn.Close()
-}
-
-func ValidConnectionDial(url string) (RabbitMQConnectionInterface, error) {
-	return &RabbitMQConnection{connection: &RabbitMQBadConnectionMock{}}, nil
-}
-
-func ValidDial(url string) (RabbitMQConnectionInterface, error) {
-	return &RabbitMQConnection{connection: &RabbitMQConnectionMock{}}, nil
-}
-
-func Watcher(testChannel chan bool, rabbitmqHelper RabbitMQHelper) {
-	testChannel <- true
-	for {
-		retry := rabbitmqHelper.WaitForRetrySignal()
-		if !retry {
-			close(testChannel)
-			break
-		}
-		testChannel <- retry
-	}
 }
 
 func ConfigTest(conn RabbitMQConnectionInterface, channel RabbitMQChannelInterface) error {

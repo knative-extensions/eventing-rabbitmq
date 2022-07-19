@@ -107,7 +107,9 @@ func (a *Adapter) start(stopCh <-chan struct{}) error {
 		zap.String("QueueName", a.config.QueueName),
 		zap.String("SinkURI", a.config.Sink))
 
-	a.rmqHelper = rabbit.NewRabbitMQHelper(1, make(chan bool), rabbit.DialWrapper)
+	if a.rmqHelper == nil {
+		a.rmqHelper = rabbit.NewRabbitMQHelper(1, make(chan bool), rabbit.DialWrapper)
+	}
 	return a.PollForMessages(stopCh)
 }
 
@@ -186,7 +188,7 @@ func (a *Adapter) PollForMessages(stopCh <-chan struct{}) error {
 		}
 
 		msgs, _ = a.ConsumeMessages(&queue, logger)
-		go PollCycle(stopCh, workerQueue, wg, msgs, logger)
+		go PollCycle(stopCh, workerQueue, wg, msgs, a.rmqHelper, logger)
 		if retry := a.rmqHelper.WaitForRetrySignal(); !retry {
 			logger.Warn("stopped listenning for RabbitMQ resources retries")
 			return nil
@@ -195,23 +197,33 @@ func (a *Adapter) PollForMessages(stopCh <-chan struct{}) error {
 	}
 }
 
-func PollCycle(stopCh <-chan struct{}, workerQueue chan amqp.Delivery, wg *sync.WaitGroup, msgs <-chan amqp.Delivery, logger *zap.SugaredLogger) {
+func PollCycle(
+	stopCh <-chan struct{},
+	workerQueue chan amqp.Delivery,
+	wg *sync.WaitGroup,
+	msgs <-chan amqp.Delivery,
+	rmqHelper rabbit.RabbitMQHelperInterface,
+	logger *zap.SugaredLogger) {
 	for {
 		select {
 		case <-stopCh:
-			close(workerQueue)
-			wg.Wait()
-			logger.Info("Shutting down...")
+			shutDown(workerQueue, wg, rmqHelper, logger)
 			return
 		case msg, ok := <-msgs:
 			if !ok {
-				close(workerQueue)
-				wg.Wait()
+				shutDown(workerQueue, wg, rmqHelper, logger)
 				return
 			}
 			workerQueue <- msg
 		}
 	}
+}
+
+func shutDown(workerQueue chan amqp.Delivery, wg *sync.WaitGroup, rmqHelper rabbit.RabbitMQHelperInterface, logger *zap.SugaredLogger) {
+	close(workerQueue)
+	wg.Wait()
+	logger.Info("Shutting down...")
+	rmqHelper.SignalRetry(false)
 }
 
 func (a *Adapter) processMessages(wg *sync.WaitGroup, queue <-chan amqp.Delivery) {
