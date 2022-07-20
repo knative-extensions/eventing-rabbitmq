@@ -20,14 +20,10 @@ limitations under the License.
 package e2e
 
 import (
-	"flag"
-	"fmt"
 	"os"
 	"testing"
-	"text/template"
 	"time"
 
-	"knative.dev/pkg/injection"
 	"knative.dev/pkg/system"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -42,48 +38,10 @@ import (
 	"knative.dev/reconciler-test/pkg/knative"
 )
 
-func init() {
-	environment.InitFlags(flag.CommandLine)
-}
-
 var global environment.GlobalEnvironment
 
-// This test is more for debugging the ko publish process.
-func TestKoPublish(t *testing.T) {
-	ic, err := environment.ProduceImages()
-	if err != nil {
-		panic(fmt.Errorf("failed to produce images, %s", err))
-	}
-
-	templateString := `
-// The following could be used to bypass the image generation process.
-import "knative.dev/reconciler-test/pkg/environment"
-func init() {
-	environment.WithImages(map[string]string{
-		{{ range $key, $value := . }}"{{ $key }}": "{{ $value }}",
-		{{ end }}
-	})
-}
-`
-
-	tp := template.New("t")
-	temp, err := tp.Parse(templateString)
-	if err != nil {
-		panic(err)
-	}
-
-	err = temp.Execute(os.Stdout, ic)
-	if err != nil {
-		panic(err)
-	}
-	_, _ = fmt.Fprint(os.Stdout, "\n\n")
-}
-
 func TestMain(m *testing.M) {
-	flag.Parse()
-	ctx, startInformers := injection.EnableInjectionOrDie(nil, nil) //nolint
-	startInformers()
-	global = environment.NewGlobalEnvironment(ctx)
+	global = environment.NewStandardGlobalEnvironment()
 	os.Exit(m.Run())
 }
 

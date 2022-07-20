@@ -18,16 +18,15 @@ package brokertrigger
 
 import (
 	"context"
+	"embed"
 
 	duckv1 "knative.dev/pkg/apis/duck/v1"
-	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/manifest"
 )
 
-func init() {
-	environment.RegisterPackage(manifest.ImagesLocalYaml()...)
-}
+//go:embed "*.yaml"
+var yamls embed.FS
 
 type Topology struct {
 	Parallelism int
@@ -44,7 +43,7 @@ func Install(topology Topology) feature.StepFn {
 		"Parallelism": topology.Parallelism,
 	}
 	return func(ctx context.Context, t feature.T) {
-		if _, err := manifest.InstallLocalYaml(ctx, args); err != nil {
+		if _, err := manifest.InstallYamlFS(ctx, yamls, args); err != nil {
 			t.Fatal(err)
 		}
 	}

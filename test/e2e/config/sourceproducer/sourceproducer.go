@@ -18,19 +18,28 @@ package sourceproducer
 
 import (
 	"context"
+	"embed"
 
-	"knative.dev/reconciler-test/pkg/environment"
+	"knative.dev/eventing-rabbitmq/test/e2e/images"
+	"knative.dev/eventing-rabbitmq/test/e2e/step"
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/manifest"
 )
 
-func init() {
-	environment.RegisterPackage(manifest.ImagesLocalYaml()...)
-}
+//go:embed "*.yaml"
+var yamls embed.FS
 
 func Install(producerCount int) feature.StepFn {
+	return step.Union(
+		images.Register(yamls),
+		install(producerCount),
+	)
+}
+
+func install(producerCount int) feature.StepFn {
 	return func(ctx context.Context, t feature.T) {
-		if _, err := manifest.InstallLocalYaml(ctx, map[string]interface{}{"producerCount": producerCount}); err != nil {
+		args := map[string]interface{}{"producerCount": producerCount}
+		if _, err := manifest.InstallYamlFS(ctx, yamls, args); err != nil {
 			t.Fatal(err)
 		}
 	}
