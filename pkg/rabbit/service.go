@@ -18,6 +18,7 @@ package rabbit
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -187,6 +188,54 @@ func (r *Rabbit) ReconcileBrokerDLXPolicy(ctx context.Context, args *QueueArgs) 
 		Name:  want.Name,
 		Ready: isReady(policy.Status.Conditions),
 	}, nil
+}
+
+type DeleteResourceArgs struct {
+	Kind      interface{}
+	Name      string
+	Namespace string
+	Owner     metav1.Object
+}
+
+func (r *Rabbit) DeleteResource(ctx context.Context, args *DeleteResourceArgs) error {
+	var o metav1.Object
+	var err error
+
+	switch args.Kind.(type) {
+	case rabbitv1beta1.Queue:
+		o, err = r.RabbitmqV1beta1().Queues(args.Namespace).Get(ctx, args.Name, metav1.GetOptions{})
+	case rabbitv1beta1.Exchange:
+		o, err = r.RabbitmqV1beta1().Exchanges(args.Namespace).Get(ctx, args.Name, metav1.GetOptions{})
+	case rabbitv1beta1.Binding:
+		o, err = r.RabbitmqV1beta1().Bindings(args.Namespace).Get(ctx, args.Name, metav1.GetOptions{})
+	case rabbitv1beta1.Policy:
+		o, err = r.RabbitmqV1beta1().Policies(args.Namespace).Get(ctx, args.Name, metav1.GetOptions{})
+	default:
+		return errors.New("unsupported type")
+	}
+
+	if apierrs.IsNotFound(err) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	if !metav1.IsControlledBy(o, args.Owner) {
+		return fmt.Errorf("%s not owned by object: %v", o.GetResourceVersion(), args.Owner)
+	}
+
+	switch args.Kind.(type) {
+	case rabbitv1beta1.Queue:
+		return r.RabbitmqV1beta1().Queues(args.Namespace).Delete(ctx, args.Name, metav1.DeleteOptions{})
+	case rabbitv1beta1.Exchange:
+		return r.RabbitmqV1beta1().Exchanges(args.Namespace).Delete(ctx, args.Name, metav1.DeleteOptions{})
+	case rabbitv1beta1.Binding:
+		return r.RabbitmqV1beta1().Bindings(args.Namespace).Delete(ctx, args.Name, metav1.DeleteOptions{})
+	case rabbitv1beta1.Policy:
+		return r.RabbitmqV1beta1().Policies(args.Namespace).Delete(ctx, args.Name, metav1.DeleteOptions{})
+	}
+
+	return nil
 }
 
 func isReady(conditions []v1beta1.Condition) bool {

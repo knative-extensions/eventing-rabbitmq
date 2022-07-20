@@ -60,12 +60,8 @@ type DispatcherArgs struct {
 // MakeDispatcherDeployment creates the in-memory representation of the Broker's Dispatcher Deployment.
 func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 	one := int32(1)
-	var name string
-	if args.DLX {
-		name = fmt.Sprintf("%s-dlx-dispatcher", args.Trigger.Name)
-	} else {
-		name = fmt.Sprintf("%s-dispatcher", args.Trigger.Name)
-	}
+	name := DispatcherName(args.Trigger.Name, args.DLX)
+
 	dispatcher := corev1.Container{
 		Name:  dispatcherContainerName,
 		Image: args.Image,
@@ -204,5 +200,13 @@ func DispatcherLabels(brokerName string) map[string]string {
 	return map[string]string{
 		eventing.BrokerLabelKey:           brokerName,
 		"eventing.knative.dev/brokerRole": "dispatcher",
+	}
+}
+
+func DispatcherName(triggerName string, dlq bool) string {
+	if dlq {
+		return fmt.Sprintf("%s-dlx-dispatcher", triggerName)
+	} else {
+		return fmt.Sprintf("%s-dispatcher", triggerName)
 	}
 }

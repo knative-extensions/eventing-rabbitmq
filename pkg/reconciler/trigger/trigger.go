@@ -32,6 +32,7 @@ import (
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
+	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	rabbitclientset "knative.dev/eventing-rabbitmq/third_party/pkg/client/clientset/versioned"
 	rabbitlisters "knative.dev/eventing-rabbitmq/third_party/pkg/client/listers/rabbitmq.com/v1beta1"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
@@ -203,6 +204,8 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 			return err
 		}
 	} else {
+		// Clean up any leftover resources from a previously configured DeadLetterSink
+		r.deleteDLQResources(ctx, t)
 		// There's no Delivery spec, so just mark is as there's no DeadLetterSink Configured for it.
 		t.Status.MarkDeadLetterSinkNotConfigured()
 	}
@@ -242,7 +245,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 			t.Status.MarkDependencyFailed("DLQPolicyFailure", "DLQ Polcy %q is not ready", dlqPolicy.Name)
 			return nil
 		}
-
 	}
 
 	binding, err := r.reconcileBinding(ctx, broker, t)
@@ -322,6 +324,52 @@ func (r *Reconciler) reconcileDeployment(ctx context.Context, d *v1.Deployment) 
 		return desired, nil
 	}
 	return current, nil
+}
+
+func (r *Reconciler) deleteDLQResources(ctx context.Context, t *eventingv1.Trigger) {
+	_ = r.rabbit.DeleteResource(ctx, &rabbit.DeleteResourceArgs{
+		Kind:      rabbitv1beta1.Queue{},
+		Name:      naming.CreateTriggerDeadLetterQueueName(t),
+		Namespace: t.Namespace,
+		Owner:     t,
+	})
+
+	_ = r.rabbit.DeleteResource(ctx, &rabbit.DeleteResourceArgs{
+		Kind:      rabbitv1beta1.Exchange{},
+		Name:      naming.TriggerDLXExchangeName(t),
+		Namespace: t.Namespace,
+		Owner:     t,
+	})
+
+	_ = r.rabbit.DeleteResource(ctx, &rabbit.DeleteResourceArgs{
+		Kind:      rabbitv1beta1.Binding{},
+		Name:      naming.CreateTriggerDeadLetterQueueName(t),
+		Namespace: t.Namespace,
+		Owner:     t,
+	})
+
+	_ = r.rabbit.DeleteResource(ctx, &rabbit.DeleteResourceArgs{
+		Kind:      rabbitv1beta1.Policy{},
+		Name:      naming.CreateTriggerQueueName(t),
+		Namespace: t.Namespace,
+		Owner:     t,
+	})
+
+	_ = r.deleteDeployment(ctx, t.Namespace, resources.DispatcherName(t.Name, true), t)
+}
+
+func (r *Reconciler) deleteDeployment(ctx context.Context, namespace, name string, t *eventingv1.Trigger) error {
+	d, err := r.deploymentLister.Deployments(namespace).Get(name)
+	if apierrs.IsNotFound(err) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+	if !metav1.IsControlledBy(d, t) {
+		return fmt.Errorf("deployment not owned by object: %v", t)
+	}
+
+	return r.kubeClientSet.AppsV1().Deployments(namespace).Delete(ctx, name, metav1.DeleteOptions{})
 }
 
 // reconcileDispatcherDeployment reconciles Trigger's dispatcher deployment.
