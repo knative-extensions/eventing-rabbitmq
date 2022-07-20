@@ -291,9 +291,12 @@ func TestAdapter_PollForMessages(t *testing.T) {
 	statsReporter, _ := source.NewStatsReporter()
 	a := &Adapter{
 		config: &adapterConfig{
-			ExchangeName: "Test-exchange",
-			QueueName:    "",
-			Parallelism:  10,
+			ExchangeName:  "Test-exchange",
+			QueueName:     "",
+			Parallelism:   10,
+			BackoffPolicy: string(v1.BackoffPolicyLinear),
+			BackoffDelay:  "50ms",
+			Retry:         1,
 		},
 		context:   context.TODO(),
 		logger:    zap.NewNop(),

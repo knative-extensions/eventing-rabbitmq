@@ -119,8 +119,6 @@ func (a *Adapter) CreateRabbitMQConnections(
 	connection, channel, err = rmqHelper.SetupRabbitMQ(vhostHandler(a.config.RabbitURL, a.config.Vhost), rabbit.ChannelQoS, logger)
 	if err != nil {
 		rmqHelper.CloseRabbitMQConnections(connection, logger)
-		logger.Warn("Retrying RabbitMQ connections setup")
-		go rmqHelper.SignalRetry(true)
 		return nil, nil, err
 	}
 	return connection, channel, nil
