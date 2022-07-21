@@ -35,4 +35,5 @@ type Service interface {
 	ReconcileBinding(context.Context, *BindingArgs) (Result, error)
 	ReconcileBrokerDLXPolicy(context.Context, *QueueArgs) (Result, error)
 	ReconcileDLQPolicy(context.Context, *QueueArgs) (Result, error)
+	DeleteResource(ctx context.Context, args *DeleteResourceArgs) error
 }
