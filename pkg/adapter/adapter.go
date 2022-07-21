@@ -113,17 +113,6 @@ func (a *Adapter) start(stopCh <-chan struct{}) error {
 	return a.PollForMessages(stopCh)
 }
 
-func (a *Adapter) CreateRabbitMQConnections(
-	rmqHelper rabbit.RabbitMQHelperInterface,
-	logger *zap.SugaredLogger) (connection rabbit.RabbitMQConnectionInterface, channel rabbit.RabbitMQChannelInterface, err error) {
-	connection, channel, err = rmqHelper.SetupRabbitMQ(vhostHandler(a.config.RabbitURL, a.config.Vhost), rabbit.ChannelQoS, logger)
-	if err != nil {
-		rmqHelper.CloseRabbitMQConnections(connection, logger)
-		return nil, nil, err
-	}
-	return connection, channel, nil
-}
-
 func (a *Adapter) ConsumeMessages(queue *amqp.Queue, logger *zap.SugaredLogger) (<-chan amqp.Delivery, error) {
 	msgs, err := a.channel.Consume(
 		queue.Name,
@@ -171,31 +160,34 @@ func (a *Adapter) PollForMessages(stopCh <-chan struct{}) error {
 		go a.processMessages(wg, workerQueue)
 	}
 
+	retryChan := make(chan bool)
 	defer a.rmqHelper.CleanupRabbitMQ(a.connection, logger)
 	for {
-		a.connection, a.channel, err = a.CreateRabbitMQConnections(a.rmqHelper, logger)
+		a.connection, a.channel, err = a.rmqHelper.SetupRabbitMQ(vhostHandler(a.config.RabbitURL, a.config.Vhost), rabbit.ChannelQoS, logger)
 		if err != nil {
 			logger.Errorf("error creating RabbitMQ connections: %s, waiting for a retry", err)
+		} else {
+			queue, err = a.channel.QueueInspect(a.config.QueueName)
+			if err != nil {
+				logger.Error(err.Error())
+				continue
+			}
+			msgs, _ = a.ConsumeMessages(&queue, logger)
+			go PollCycle(retryChan, stopCh, workerQueue, wg, msgs, a.rmqHelper, logger)
 		}
-		queue, err = a.channel.QueueInspect(a.config.QueueName)
-		if err != nil {
-			logger.Error(err.Error())
-		}
-		if err != nil {
-			continue
-		}
-
-		msgs, _ = a.ConsumeMessages(&queue, logger)
-		go PollCycle(stopCh, workerQueue, wg, msgs, a.rmqHelper, logger)
 		if retry := a.rmqHelper.WaitForRetrySignal(); !retry {
 			logger.Warn("stopped listenning for RabbitMQ resources retries")
 			return nil
+		}
+		if err != nil {
+			retryChan <- true
 		}
 		logger.Warn("recreating RabbitMQ resources")
 	}
 }
 
 func PollCycle(
+	retryChan chan bool,
 	stopCh <-chan struct{},
 	workerQueue chan amqp.Delivery,
 	wg *sync.WaitGroup,
@@ -205,23 +197,20 @@ func PollCycle(
 	for {
 		select {
 		case <-stopCh:
-			shutDown(workerQueue, wg, rmqHelper, logger)
+			close(workerQueue)
+			wg.Wait()
+			logger.Info("Shutting down...")
+			rmqHelper.SignalRetry(false)
 			return
 		case msg, ok := <-msgs:
 			if !ok {
-				shutDown(workerQueue, wg, rmqHelper, logger)
 				return
 			}
 			workerQueue <- msg
+		case <-retryChan:
+			return
 		}
 	}
-}
-
-func shutDown(workerQueue chan amqp.Delivery, wg *sync.WaitGroup, rmqHelper rabbit.RabbitMQHelperInterface, logger *zap.SugaredLogger) {
-	close(workerQueue)
-	wg.Wait()
-	logger.Info("Shutting down...")
-	rmqHelper.SignalRetry(false)
 }
 
 func (a *Adapter) processMessages(wg *sync.WaitGroup, queue <-chan amqp.Delivery) {

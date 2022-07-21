@@ -118,6 +118,7 @@ func (r *RabbitMQHelper) SetupRabbitMQ(
 	if connInterface, err = r.DialFunc(RabbitMQURL); err != nil {
 		logger.Errorw("failed to connect to RabbitMQ", zap.Error(err))
 	} else if channelInterface, err = connInterface.ChannelWrapper(); err != nil {
+		connInterface.Close()
 		logger.Errorw("failed to open a RabbitMQ channel", zap.Error(err))
 	}
 
