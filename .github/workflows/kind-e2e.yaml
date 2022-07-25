@@ -29,8 +29,6 @@ jobs:
           kind-image-sha: sha256:100b3558428386d1372591f8d62add85b900538d94db8e455b66ebaf05a3ca3a
         - k8s-version: v1.23.3
           kind-image-sha: sha256:0e34f0d0fd448aa2f2819cfd74e99fe5793a6e4938b328f657c8e3f81ee0dfb9
-    env:
-      GOPATH: ${{ github.workspace }}
 
     steps:
     - name: Defaults
@@ -44,14 +42,12 @@ jobs:
       with:
         go-version: 1.17.x
 
-    - name: Check out code onto GOPATH
+    - name: Check out code
       uses: actions/checkout@v2
       with:
-        path: ./src/knative.dev/${{ github.event.repository.name }}
         fetch-depth: 0
 
     - name: Merge upstream
-      working-directory: ./src/knative.dev/${{ github.event.repository.name }}
       if: github.event_name == 'pull_request'
       run: |
         if ! git config user.name > /dev/null; then
@@ -66,7 +62,6 @@ jobs:
       shell: bash
 
     - name: Setup a local KIND Cluster with everything that is needed to run tests
-      working-directory: ./src/knative.dev/${{ github.event.repository.name }}
       run: |
         make install \
           KIND_K8S_VERSION=${{ matrix.k8s-version }} \
@@ -74,19 +69,16 @@ jobs:
           KNATIVE_VERSION=${{ matrix.knative-version }}
 
     - name: Run ko publish e2e Tests
-      working-directory: ./src/knative.dev/${{ github.event.repository.name }}
       run: |
         make test-e2e-publish
 
     # Run only Broker specific tests due to large resource requirements of rabbitmqcluster
     - name: Run Broker e2e Tests
-      working-directory: ./src/knative.dev/${{ github.event.repository.name }}
       run: |
         make test-e2e-broker
 
     # Run source test
     - name: Run source e2e Tests
-      working-directory: ./src/knative.dev/${{ github.event.repository.name }}
       run: |
         make test-e2e-source
 

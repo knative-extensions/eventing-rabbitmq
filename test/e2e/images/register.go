@@ -14,23 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package sourcesecret
+package images
 
 import (
-	"context"
-	"embed"
+	context "context"
+	"io/fs"
 
+	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/manifest"
 )
 
-//go:embed "*.yaml"
-var yamls embed.FS
-
-func Install() feature.StepFn {
+// Register will register images from fs.FS.
+// TODO: consider moving to reconciler-test.
+func Register(fs fs.FS) feature.StepFn {
 	return func(ctx context.Context, t feature.T) {
-		args := map[string]interface{}{"producerCount": 5}
-		if _, err := manifest.InstallYamlFS(ctx, yamls, args); err != nil {
+		opt := environment.RegisterPackage(manifest.ImagesFromFS(ctx, fs)...)
+		if _, err := opt(ctx, nil); err != nil {
 			t.Fatal(err)
 		}
 	}

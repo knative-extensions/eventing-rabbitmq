@@ -18,19 +18,18 @@ package rabbitmq
 
 import (
 	"context"
+	"embed"
 
-	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/manifest"
 )
 
-func init() {
-	environment.RegisterPackage(manifest.ImagesLocalYaml()...)
-}
+//go:embed "*.yaml"
+var yamls embed.FS
 
 func Install() feature.StepFn {
 	return func(ctx context.Context, t feature.T) {
-		if _, err := manifest.InstallLocalYaml(ctx, nil); err != nil {
+		if _, err := manifest.InstallYamlFS(ctx, yamls, nil); err != nil {
 			t.Fatal(err)
 		}
 	}

@@ -20,8 +20,6 @@ limitations under the License.
 package rekt
 
 import (
-	"flag"
-	"log"
 	"os"
 	"testing"
 	"time"
@@ -31,9 +29,9 @@ import (
 
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"knative.dev/pkg/logging"
 
 	_ "knative.dev/eventing/test/test_images"
-	"knative.dev/pkg/injection"
 	_ "knative.dev/pkg/system/testing"
 
 	"knative.dev/reconciler-test/pkg/environment"
@@ -50,36 +48,21 @@ type EventingGlobal struct {
 	BrokerTemplatesDir string `envconfig:"BROKER_TEMPLATES"`
 }
 
-func init() {
-	// environment.InitFlags registers state and level filter flags.
-	environment.InitFlags(flag.CommandLine)
-
-	// Process EventingGlobal.
-	if err := envconfig.Process("", &eventingGlobal); err != nil {
-		log.Fatal("Failed to process env var", zap.Error(err))
-	}
-}
-
 // TestMain is the first entry point for `go test`.
 func TestMain(m *testing.M) {
-	// We get a chance to parse flags to include the framework flags for the
-	// framework as well as any additional flags included in the integration.
-	flag.Parse()
 
-	// EnableInjectionOrDie will enable client injection, this is used by the
-	// testing framework for namespace management, and could be leveraged by
-	// features to pull Kubernetes clients or the test environment out of the
-	// context passed in the features.
-	ctx, startInformers := injection.EnableInjectionOrDie(nil, nil) //nolint
-	startInformers()
+	global = environment.NewStandardGlobalEnvironment(func(cfg environment.Configuration) environment.Configuration {
+		// Increase the timeout for polling, rabbit brokers take a while to go
+		// ready sometimes (due to PVC).
+		cfg.Context = environment.ContextWithPollTimings(cfg.Context, time.Second*5, time.Minute*5)
 
-	// Increase the timeout for polling, rabbit brokers take a while to go
-	// ready sometimes (due to PVC).
-	ctx = environment.ContextWithPollTimings(ctx, time.Second*5, time.Minute*5)
-
-	// global is used to make instances of Environments, NewGlobalEnvironment
-	// is passing and saving the client injection enabled context for use later.
-	global = environment.NewGlobalEnvironment(ctx)
+		log := logging.FromContext(cfg.Context)
+		// Process EventingGlobal.
+		if err := envconfig.Process("", &eventingGlobal); err != nil {
+			log.Fatal("Failed to process env var", zap.Error(err))
+		}
+		return cfg
+	})
 
 	// Run the tests.
 	os.Exit(m.Run())

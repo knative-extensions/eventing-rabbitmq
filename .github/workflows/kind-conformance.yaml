@@ -30,8 +30,6 @@ jobs:
           kind-image-sha: sha256:100b3558428386d1372591f8d62add85b900538d94db8e455b66ebaf05a3ca3a
         - k8s-version: v1.23.3
           kind-image-sha: sha256:0e34f0d0fd448aa2f2819cfd74e99fe5793a6e4938b328f657c8e3f81ee0dfb9
-    env:
-      GOPATH: ${{ github.workspace }}
 
     steps:
     - name: Defaults
@@ -48,14 +46,12 @@ jobs:
       with:
         go-version: 1.17.x
 
-    - name: Check out code onto GOPATH
+    - name: Check out code
       uses: actions/checkout@v2
       with:
-        path: ./src/knative.dev/${{ github.event.repository.name }}
         fetch-depth: 0
 
     - name: Merge upstream
-      working-directory: ./src/knative.dev/${{ github.event.repository.name }}
       if: github.event_name == 'pull_request'
       run: |
         if ! git config user.name > /dev/null; then
@@ -70,7 +66,6 @@ jobs:
       shell: bash
 
     - name: Run conformance tests & install all required deps
-      working-directory: ./src/knative.dev/${{ github.event.repository.name }}
       run: |
         make kubeconfig \
           install \
@@ -80,7 +75,6 @@ jobs:
 
     - name: Gather Failure Data
       if: ${{ failure() }}
-      working-directory: ./src/knative.dev/${{ github.event.repository.name }}
       run: |
         set -x
         make .envrc

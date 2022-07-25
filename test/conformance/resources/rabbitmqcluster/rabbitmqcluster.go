@@ -18,6 +18,7 @@ package rabbitmqcluster
 
 import (
 	"context"
+	"embed"
 	"time"
 
 	"knative.dev/reconciler-test/pkg/feature"
@@ -26,6 +27,9 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
+
+//go:embed "*.yaml"
+var yamls embed.FS
 
 func GVR() schema.GroupVersionResource {
 	return schema.GroupVersionResource{Group: "rabbitmq.com", Version: "v1beta1", Resource: "rabbitmqclusters"}
@@ -41,7 +45,7 @@ func Install(name string, opts ...manifest.CfgFn) feature.StepFn {
 	}
 
 	return func(ctx context.Context, t feature.T) {
-		if _, err := manifest.InstallLocalYaml(ctx, cfg); err != nil {
+		if _, err := manifest.InstallYamlFS(ctx, yamls, cfg); err != nil {
 			t.Fatal(err)
 		}
 	}

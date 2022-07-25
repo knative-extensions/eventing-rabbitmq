@@ -18,21 +18,23 @@ package broker
 
 import (
 	"context"
+	"embed"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
-	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/manifest"
 )
 
-func init() {
-	environment.RegisterPackage(manifest.ImagesLocalYaml()...)
-}
+//go:embed "*.yaml"
+var yamls embed.FS
 
 func Install(brokerNamespace string) feature.StepFn {
 	return func(ctx context.Context, t feature.T) {
-		if _, err := manifest.InstallLocalYaml(ctx, map[string]interface{}{"broker_namespace": brokerNamespace}); err != nil {
+		args := map[string]interface{}{
+			"broker_namespace": brokerNamespace,
+		}
+		if _, err := manifest.InstallYamlFS(ctx, yamls, args); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -40,7 +42,10 @@ func Install(brokerNamespace string) feature.StepFn {
 
 func Uninstall(brokerNamespace string) feature.StepFn {
 	return func(ctx context.Context, t feature.T) {
-		if _, err := manifest.InstallLocalYaml(ctx, map[string]interface{}{"broker_namespace": brokerNamespace}); err != nil {
+		args := map[string]interface{}{
+			"broker_namespace": brokerNamespace,
+		}
+		if _, err := manifest.InstallYamlFS(ctx, yamls, args); err != nil {
 			t.Fatal(err)
 		}
 
