@@ -25,10 +25,10 @@ require (
 	k8s.io/client-go v0.23.8
 	k8s.io/code-generator v0.23.8
 	k8s.io/kube-openapi v0.0.0-20211115234752-e816edb12b65
-	knative.dev/eventing v0.33.0
-	knative.dev/hack v0.0.0-20220701014203-65c463ac8c98
-	knative.dev/pkg v0.0.0-20220705130606-e60d250dc637
-	knative.dev/reconciler-test v0.0.0-20220705155206-f05db88effbe
+	knative.dev/eventing v0.33.1-0.20220722122720-c8435ed74ba8
+	knative.dev/hack v0.0.0-20220725145124-782bbaabb8a1
+	knative.dev/pkg v0.0.0-20220722175921-6c9c1c6098d5
+	knative.dev/reconciler-test v0.0.0-20220725125124-c8b6d66439f6
 	sigs.k8s.io/controller-runtime v0.11.2
 )
 
@@ -134,7 +134,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/component-base v0.23.8 // indirect
 	k8s.io/gengo v0.0.0-20220307231824-4627b89bbf1b // indirect
-	k8s.io/klog v1.0.0 // indirect
 	k8s.io/klog/v2 v2.60.1 // indirect
 	sigs.k8s.io/json v0.0.0-20211020170558-c049b76a60c6 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
