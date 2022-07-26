@@ -437,6 +437,12 @@ golang.org/x/sys/windows
 golang.org/x/term
 # golang.org/x/text v0.3.7
 ## explicit; go 1.17
+golang.org/x/text/cases
+golang.org/x/text/internal
+golang.org/x/text/internal/language
+golang.org/x/text/internal/language/compact
+golang.org/x/text/internal/tag
+golang.org/x/text/language
 golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
@@ -1156,11 +1162,11 @@ knative.dev/eventing/test/test_images/event-sender
 knative.dev/eventing/test/test_images/heartbeats
 knative.dev/eventing/test/test_images/performance
 knative.dev/eventing/test/test_images/print
-# knative.dev/hack v0.0.0-20220701014203-65c463ac8c98
-## explicit; go 1.14
-knative.dev/hack
-# knative.dev/pkg v0.0.0-20220705130606-e60d250dc637
+# knative.dev/hack v0.0.0-20220725145124-782bbaabb8a1
 ## explicit; go 1.17
+knative.dev/hack
+# knative.dev/pkg v0.0.0-20220725182823-ed7ab1d18a8b
+## explicit; go 1.18
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
 knative.dev/pkg/apis/duck/ducktypes
@@ -1263,7 +1269,7 @@ knative.dev/pkg/webhook/json
 knative.dev/pkg/webhook/resourcesemantics
 knative.dev/pkg/webhook/resourcesemantics/defaulting
 knative.dev/pkg/webhook/resourcesemantics/validation
-# knative.dev/reconciler-test v0.0.0-20220722111920-0cfde63b455a
+# knative.dev/reconciler-test v0.0.0-20220725125124-c8b6d66439f6
 ## explicit; go 1.17
 knative.dev/reconciler-test/cmd/eventshub
 knative.dev/reconciler-test/pkg/environment
