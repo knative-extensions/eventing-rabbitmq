@@ -196,27 +196,31 @@ func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, tim
 		headers[key] = val
 	}
 
-	start := time.Now()
-	dc, err := env.channel.PublishWithDeferredConfirm(
-		env.ExchangeName,
-		"",    // routing key
-		false, // mandatory
-		false, // immediate
-		amqp.Publishing{
-			Headers:      headers,
-			MessageId:    event.ID(),
-			ContentType:  event.DataContentType(),
-			Body:         event.Data(),
-			DeliveryMode: amqp.Persistent,
-		})
-	if err != nil {
-		return http.StatusInternalServerError, noDuration, fmt.Errorf("failed to publish message: %w", err)
+	if env.channel != nil {
+		start := time.Now()
+		dc, err := env.channel.PublishWithDeferredConfirm(
+			env.ExchangeName,
+			"",    // routing key
+			false, // mandatory
+			false, // immediate
+			amqp.Publishing{
+				Headers:      headers,
+				MessageId:    event.ID(),
+				ContentType:  event.DataContentType(),
+				Body:         event.Data(),
+				DeliveryMode: amqp.Persistent,
+			})
+		if err != nil {
+			return http.StatusInternalServerError, noDuration, fmt.Errorf("failed to publish message: %w", err)
+		}
+
+		ack := dc.Wait()
+		dispatchTime := time.Since(start)
+		if !ack {
+			return http.StatusInternalServerError, noDuration, errors.New("failed to publish message: nacked")
+		}
+		return http.StatusAccepted, dispatchTime, nil
 	}
 
-	ack := dc.Wait()
-	dispatchTime := time.Since(start)
-	if !ack {
-		return http.StatusInternalServerError, noDuration, errors.New("failed to publish message: nacked")
-	}
-	return http.StatusAccepted, dispatchTime, nil
+	return http.StatusInternalServerError, noDuration, errors.New("failed to publish message: RabbitMQ channel is nil")
 }

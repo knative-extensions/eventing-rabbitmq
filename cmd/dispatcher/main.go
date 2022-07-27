@@ -62,10 +62,9 @@ type envConfig struct {
 
 func main() {
 	ctx := signals.NewContext()
-
 	// Report stats on Go memory usage every 30 seconds.
 	metrics.MemStatsOrDie(ctx)
-	var err error
+
 	var env envConfig
 	if err := envconfig.Process("", &env); err != nil {
 		logging.FromContext(ctx).Fatal("Failed to process env var: ", err)
@@ -100,6 +99,7 @@ func main() {
 		Reporter:         reporter,
 	}
 
+	var err error
 	rmqHelper := rabbit.NewRabbitMQHelper(1, make(chan bool), rabbit.DialWrapper)
 	defer rmqHelper.CleanupRabbitMQ(env.connection, logger)
 	for {
