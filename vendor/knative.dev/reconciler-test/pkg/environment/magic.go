@@ -194,16 +194,6 @@ func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context,
 	return ctx, env
 }
 
-func (mr *MagicEnvironment) Images() map[string]string {
-	ctx := mr.c
-	if refs, err := ProduceImages(ctx); err != nil {
-		logging.FromContext(ctx).Fatal(err)
-		return nil
-	} else {
-		return refs
-	}
-}
-
 func (mr *MagicEnvironment) TemplateConfig(base map[string]interface{}) map[string]interface{} {
 	cfg := make(map[string]interface{})
 	for k, v := range base {
