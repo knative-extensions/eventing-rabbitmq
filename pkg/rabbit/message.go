@@ -26,12 +26,12 @@ import (
 	"go.uber.org/zap"
 	sourcesv1alpha1 "knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 
-	"github.com/NeowayLabs/wabbit"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
 	"github.com/cloudevents/sdk-go/v2/binding/format"
 	"github.com/cloudevents/sdk-go/v2/binding/spec"
 	"github.com/cloudevents/sdk-go/v2/protocol/http"
+	amqp "github.com/rabbitmq/amqp091-go"
 
 	"k8s.io/apimachinery/pkg/util/uuid"
 )
@@ -63,7 +63,7 @@ var _ binding.MessageMetadataReader = (*Message)(nil)
 func ConvertMessageToHTTPRequest(
 	ctx context.Context,
 	sourceName, namespace, queueName string,
-	msg wabbit.Delivery,
+	msg *amqp.Delivery,
 	req *nethttp.Request,
 	logger *zap.Logger) error {
 	msgBinding := NewMessageFromDelivery(sourceName, namespace, queueName, msg)
@@ -89,9 +89,9 @@ func ConvertMessageToHTTPRequest(
 
 // NewMessageFromDelivery returns a binding.Message that holds the provided RabbitMQ Message.
 // The returned binding.Message *can* be read several times safely
-func NewMessageFromDelivery(sourceName, namespace, queueName string, msg wabbit.Delivery) *Message {
-	headers := make(map[string][]byte, len(msg.Headers()))
-	for key, val := range msg.Headers() {
+func NewMessageFromDelivery(sourceName, namespace, queueName string, msg *amqp.Delivery) *Message {
+	headers := make(map[string][]byte, len(msg.Headers))
+	for key, val := range msg.Headers {
 		if key == traceparent || key == tracestate {
 			continue
 		}
@@ -101,7 +101,7 @@ func NewMessageFromDelivery(sourceName, namespace, queueName string, msg wabbit.
 	if _, ok := headers["source"]; !ok {
 		headers["source"] = []byte(sourcesv1alpha1.RabbitmqEventSource(namespace, sourceName, queueName))
 	}
-	return NewMessage(msg.Body(), msg.ContentType(), headers)
+	return NewMessage(msg.Body, msg.ContentType, headers)
 }
 
 // NewMessage returns a binding.Message that holds the provided rabbitmq message components.
@@ -200,9 +200,9 @@ func (m *Message) Finish(error) error {
 	return nil
 }
 
-func ConvertToCloudEvent(event *cloudevents.Event, msg wabbit.Delivery, namespace, sourceName, queueName string) error {
-	if msg.MessageId() != "" {
-		event.SetID(msg.MessageId())
+func ConvertToCloudEvent(event *cloudevents.Event, msg *amqp.Delivery, namespace, sourceName, queueName string) error {
+	if msg.MessageId != "" {
+		event.SetID(msg.MessageId)
 	} else {
 		event.SetID(string(uuid.NewUUID()))
 	}
@@ -214,8 +214,8 @@ func ConvertToCloudEvent(event *cloudevents.Event, msg wabbit.Delivery, namespac
 	}
 
 	event.SetSubject(event.ID())
-	event.SetTime(msg.Timestamp())
-	err := event.SetData(msg.ContentType(), msg.Body())
+	event.SetTime(msg.Timestamp)
+	err := event.SetData(msg.ContentType, msg.Body)
 	if err != nil {
 		return err
 	}

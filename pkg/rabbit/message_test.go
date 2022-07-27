@@ -24,15 +24,12 @@ import (
 
 	sourcesv1alpha1 "knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 
-	"github.com/NeowayLabs/wabbit/amqp"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
 	"github.com/cloudevents/sdk-go/v2/binding/format"
 	"github.com/cloudevents/sdk-go/v2/binding/spec"
 	bindingtest "github.com/cloudevents/sdk-go/v2/binding/test"
-
-	"github.com/rabbitmq/amqp091-go"
-	origamqp "github.com/rabbitmq/amqp091-go"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 const (
@@ -309,16 +306,16 @@ func TestProtocol_Finish(t *testing.T) {
 func TestProtocol_ConvertToCloudEvent(t *testing.T) {
 	for _, tt := range []struct {
 		name     string
-		delivery *origamqp.Delivery
+		delivery *amqp.Delivery
 		err      error
 	}{{
 		name: "convert basic msg without id",
-		delivery: &origamqp.Delivery{
+		delivery: &amqp.Delivery{
 			Timestamp: msgTime,
 		},
 	}, {
 		name: "convert basic msg with id",
-		delivery: &origamqp.Delivery{
+		delivery: &amqp.Delivery{
 			MessageId: msgId,
 			Timestamp: msgTime,
 		},
@@ -328,10 +325,7 @@ func TestProtocol_ConvertToCloudEvent(t *testing.T) {
 			t.Parallel()
 
 			event := cloudevents.NewEvent()
-			m := &amqp.Delivery{
-				Delivery: tt.delivery,
-			}
-			got := ConvertToCloudEvent(&event, m, namespace, sourceName, queueName)
+			got := ConvertToCloudEvent(&event, tt.delivery, namespace, sourceName, queueName)
 			event.SetTime(msgTime)
 			if got != tt.err {
 				t.Errorf("Unexpected error converting msg want:\n%v\ngot:\n%v", tt.err, got)
@@ -361,12 +355,12 @@ func TestProtocol_NewMessageFromDelivery(t *testing.T) {
 	for _, tt := range []struct {
 		name     string
 		headers  map[string][]byte
-		delivery *origamqp.Delivery
+		delivery *amqp.Delivery
 		want     *Message
 	}{{
 		name:    "set empty message",
 		headers: map[string][]byte{},
-		delivery: &origamqp.Delivery{
+		delivery: &amqp.Delivery{
 			MessageId: msgId,
 			Timestamp: msgTime,
 		},
@@ -374,11 +368,11 @@ func TestProtocol_NewMessageFromDelivery(t *testing.T) {
 	}, {
 		name:    "set content type header",
 		headers: map[string][]byte{"content-type": []byte(testContentType)},
-		delivery: &origamqp.Delivery{
+		delivery: &amqp.Delivery{
 			MessageId:   msgId,
 			Timestamp:   msgTime,
 			ContentType: testContentType,
-			Headers:     amqp091.Table{},
+			Headers:     amqp.Table{},
 		},
 		want: &Message{Headers: make(map[string][]byte), ContentType: testContentType},
 	}} {
@@ -386,10 +380,7 @@ func TestProtocol_NewMessageFromDelivery(t *testing.T) {
 			tt := tt
 			t.Parallel()
 
-			m := &amqp.Delivery{
-				Delivery: tt.delivery,
-			}
-			got := NewMessageFromDelivery(sourceName, namespace, queueName, m)
+			got := NewMessageFromDelivery(sourceName, namespace, queueName, tt.delivery)
 			if _, ok := tt.want.Headers["source"]; !ok {
 				tt.want.Headers["source"] = []byte(source)
 			}

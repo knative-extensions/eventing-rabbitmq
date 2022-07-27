@@ -1,7 +1,6 @@
 ignore:
   - "**/zz_generated*.go" # Ignore generated files.
   - "pkg/client"
-  - "pkg/dispatcher" #temporary until wabbit is gone
   - "third_party"
   - "vendor"
   - "test"

@@ -23,11 +23,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/NeowayLabs/wabbit"
-	"github.com/NeowayLabs/wabbit/amqp"
-	"github.com/NeowayLabs/wabbit/amqptest"
-
 	"go.uber.org/zap"
+
+	amqp "github.com/rabbitmq/amqp091-go"
 
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	"knative.dev/eventing-rabbitmq/pkg/utils"
@@ -94,7 +92,7 @@ func vhostHandler(broker string, vhost string) string {
 	return fmt.Sprintf("%s%s", broker, vhost)
 }
 
-func (a *Adapter) CreateConn(logger *zap.Logger) (wabbit.Conn, error) {
+func (a *Adapter) CreateConn(logger *zap.Logger) (*amqp.Connection, error) {
 	conn, err := amqp.Dial(vhostHandler(a.config.RabbitURL, a.config.Vhost))
 	if err != nil {
 		logger.Error(err.Error())
@@ -102,15 +100,12 @@ func (a *Adapter) CreateConn(logger *zap.Logger) (wabbit.Conn, error) {
 	return conn, err
 }
 
-func (a *Adapter) CreateChannel(conn wabbit.Conn, connTest *amqptest.Conn,
-	logger *zap.Logger) (wabbit.Channel, error) {
-	var ch wabbit.Channel
+func (a *Adapter) CreateChannel(conn *amqp.Connection, logger *zap.Logger) (*amqp.Channel, error) {
+	var ch *amqp.Channel
 	var err error
 
 	if conn != nil {
 		ch, err = conn.Channel()
-	} else {
-		ch, err = connTest.Channel()
 	}
 	if err != nil {
 		logger.Error(err.Error())
@@ -147,35 +142,34 @@ func (a *Adapter) start(stopCh <-chan struct{}) error {
 		defer conn.Close()
 	}
 
-	ch, err := a.CreateChannel(conn, nil, logger)
+	ch, err := a.CreateChannel(conn, logger)
 	if err == nil {
 		defer ch.Close()
 	}
 
-	queue, err := a.StartAmqpClient(&ch)
+	queue, err := a.StartAmqpClient(ch)
 	if err != nil {
 		logger.Error(err.Error())
 	}
 
-	return a.PollForMessages(&ch, queue, stopCh)
+	return a.PollForMessages(ch, queue, stopCh)
 }
 
-func (a *Adapter) StartAmqpClient(ch *wabbit.Channel) (*wabbit.Queue, error) {
+func (a *Adapter) StartAmqpClient(ch *amqp.Channel) (*amqp.Queue, error) {
 	queue, err := (*ch).QueueInspect(a.config.QueueName)
 	return &queue, err
 }
 
-func (a *Adapter) ConsumeMessages(channel *wabbit.Channel,
-	queue *wabbit.Queue, logger *zap.Logger) (<-chan wabbit.Delivery, error) {
-	msgs, err := (*channel).Consume(
-		(*queue).Name(),
+func (a *Adapter) ConsumeMessages(channel *amqp.Channel,
+	queue *amqp.Queue, logger *zap.Logger) (<-chan amqp.Delivery, error) {
+	msgs, err := channel.Consume(
+		queue.Name,
 		"",
-		wabbit.Option{
-			"autoAck":   false,
-			"exclusive": false,
-			"noLocal":   false,
-			"noWait":    false,
-		})
+		false,
+		false,
+		false,
+		false,
+		amqp.Table{})
 
 	if err != nil {
 		logger.Error(err.Error())
@@ -183,8 +177,8 @@ func (a *Adapter) ConsumeMessages(channel *wabbit.Channel,
 	return msgs, err
 }
 
-func (a *Adapter) PollForMessages(channel *wabbit.Channel,
-	queue *wabbit.Queue, stopCh <-chan struct{}) error {
+func (a *Adapter) PollForMessages(channel *amqp.Channel,
+	queue *amqp.Queue, stopCh <-chan struct{}) error {
 	logger := a.logger
 	var err error
 	if a.config.BackoffDelay != "" {
@@ -207,7 +201,7 @@ func (a *Adapter) PollForMessages(channel *wabbit.Channel,
 	wg := &sync.WaitGroup{}
 	workerCount := a.config.Parallelism
 	wg.Add(workerCount)
-	workerQueue := make(chan wabbit.Delivery, workerCount)
+	workerQueue := make(chan amqp.Delivery, workerCount)
 	logger.Info("Starting GoRoutines Workers: ", zap.Int("WorkerCount", workerCount))
 
 	for i := 0; i < workerCount; i++ {
@@ -232,11 +226,11 @@ func (a *Adapter) PollForMessages(channel *wabbit.Channel,
 	}
 }
 
-func (a *Adapter) processMessages(wg *sync.WaitGroup, queue <-chan wabbit.Delivery) {
+func (a *Adapter) processMessages(wg *sync.WaitGroup, queue <-chan amqp.Delivery) {
 	defer wg.Done()
 	for msg := range queue {
-		a.logger.Info("Received: ", zap.String("MessageId", msg.MessageId()))
-		if err := a.postMessage(msg); err == nil {
+		a.logger.Info("Received: ", zap.String("MessageId", msg.MessageId))
+		if err := a.postMessage(&msg); err == nil {
 			a.logger.Info("Successfully sent event to sink")
 			err = msg.Ack(false)
 			if err != nil {
@@ -252,7 +246,7 @@ func (a *Adapter) processMessages(wg *sync.WaitGroup, queue <-chan wabbit.Delive
 	}
 }
 
-func (a *Adapter) postMessage(msg wabbit.Delivery) error {
+func (a *Adapter) postMessage(msg *amqp.Delivery) error {
 	a.logger.Info("target: " + a.httpMessageSender.Target)
 	req, err := a.httpMessageSender.NewCloudEventRequest(a.context)
 	if err != nil {

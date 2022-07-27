@@ -23,17 +23,15 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/NeowayLabs/wabbit"
-	"github.com/NeowayLabs/wabbit/amqp"
 	"github.com/google/uuid"
 	"github.com/kelseyhightower/envconfig"
-	amqperr "github.com/rabbitmq/amqp091-go"
-	"knative.dev/pkg/kmeta"
+	amqp "github.com/rabbitmq/amqp091-go"
 
 	dispatcherstats "knative.dev/eventing-rabbitmq/pkg/broker/dispatcher"
 	"knative.dev/eventing-rabbitmq/pkg/dispatcher"
 	"knative.dev/eventing-rabbitmq/pkg/utils"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
+	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/signals"
@@ -58,8 +56,8 @@ type envConfig struct {
 	PodName       string `envconfig:"POD_NAME"`
 	Namespace     string `envconfig:"NAMESPACE"`
 
-	connection *amqp.Conn
-	channel    wabbit.Channel
+	connection *amqp.Connection
+	channel    *amqp.Channel
 }
 
 func main() {
@@ -93,13 +91,13 @@ func main() {
 	env.setupRabbitMQ(ctx)
 	defer func() {
 		err := env.connection.Close()
-		if err != nil && !errors.Is(err, amqperr.ErrClosed) {
+		if err != nil && !errors.Is(err, amqp.ErrClosed) {
 			logging.FromContext(ctx).Warn("Failed to close connection: ", err)
 		}
 	}()
 	defer func() {
 		err := env.channel.Close()
-		if err != nil && !errors.Is(err, amqperr.ErrClosed) {
+		if err != nil && !errors.Is(err, amqp.ErrClosed) {
 			logging.FromContext(ctx).Warn("Failed to close channel: ", err)
 		}
 	}()
@@ -119,7 +117,7 @@ func main() {
 	for {
 		if err := d.ConsumeFromQueue(ctx, env.channel, env.QueueName); err != nil {
 			// ignore ctx cancelled and channel closed errors
-			if errors.Is(err, amqperr.ErrClosed) {
+			if errors.Is(err, amqp.ErrClosed) {
 				env.setupRabbitMQ(ctx)
 				continue
 			}
