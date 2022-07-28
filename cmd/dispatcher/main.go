@@ -23,17 +23,15 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/NeowayLabs/wabbit"
-	"github.com/NeowayLabs/wabbit/amqp"
 	"github.com/google/uuid"
 	"github.com/kelseyhightower/envconfig"
-	amqperr "github.com/rabbitmq/amqp091-go"
-	"knative.dev/pkg/kmeta"
 
 	dispatcherstats "knative.dev/eventing-rabbitmq/pkg/broker/dispatcher"
 	"knative.dev/eventing-rabbitmq/pkg/dispatcher"
+	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	"knative.dev/eventing-rabbitmq/pkg/utils"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
+	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/signals"
@@ -58,13 +56,12 @@ type envConfig struct {
 	PodName       string `envconfig:"POD_NAME"`
 	Namespace     string `envconfig:"NAMESPACE"`
 
-	connection *amqp.Conn
-	channel    wabbit.Channel
+	connection rabbit.RabbitMQConnectionInterface
+	channel    rabbit.RabbitMQChannelInterface
 }
 
 func main() {
 	ctx := signals.NewContext()
-
 	// Report stats on Go memory usage every 30 seconds.
 	metrics.MemStatsOrDie(ctx)
 
@@ -90,20 +87,6 @@ func main() {
 	backoffDelay := env.BackoffDelay
 	logging.FromContext(ctx).Infow("Setting BackoffDelay", zap.Any("backoffDelay", backoffDelay))
 
-	env.setupRabbitMQ(ctx)
-	defer func() {
-		err := env.connection.Close()
-		if err != nil && !errors.Is(err, amqperr.ErrClosed) {
-			logging.FromContext(ctx).Warn("Failed to close connection: ", err)
-		}
-	}()
-	defer func() {
-		err := env.channel.Close()
-		if err != nil && !errors.Is(err, amqperr.ErrClosed) {
-			logging.FromContext(ctx).Warn("Failed to close channel: ", err)
-		}
-	}()
-
 	reporter := dispatcherstats.NewStatsReporter(env.ContainerName, kmeta.ChildName(env.PodName, uuid.New().String()), env.Namespace)
 	d := &dispatcher.Dispatcher{
 		BrokerIngressURL: env.BrokerIngressURL,
@@ -116,45 +99,22 @@ func main() {
 		Reporter:         reporter,
 	}
 
+	var err error
+	rmqHelper := rabbit.NewRabbitMQHelper(1, make(chan bool), rabbit.DialWrapper)
+	defer rmqHelper.CleanupRabbitMQ(env.connection, logger)
 	for {
-		if err := d.ConsumeFromQueue(ctx, env.channel, env.QueueName); err != nil {
-			// ignore ctx cancelled and channel closed errors
-			if errors.Is(err, amqperr.ErrClosed) {
-				env.setupRabbitMQ(ctx)
-				continue
-			}
-
+		env.connection, env.channel, err = rmqHelper.SetupRabbitMQ(env.RabbitURL, rabbit.ChannelQoS, logger)
+		if err != nil {
+			logger.Errorf("error creating RabbitMQ connections: %s, waiting for a retry", err)
+		} else if err := d.ConsumeFromQueue(ctx, env.channel, env.QueueName); err != nil {
 			if errors.Is(err, context.Canceled) {
 				return
 			}
-
-			logging.FromContext(ctx).Fatal("Failed to consume from queue: ", err)
+		}
+		logger.Warn("recreating RabbitMQ resources")
+		if retry := rmqHelper.WaitForRetrySignal(); !retry {
+			logger.Warn("stopped listenning for RabbitMQ resources retries")
 			break
 		}
-	}
-}
-
-func (env *envConfig) setupRabbitMQ(ctx context.Context) {
-	var err error
-
-	if env.connection == nil || env.connection.IsClosed() {
-		env.connection, err = amqp.Dial(env.RabbitURL)
-		if err != nil {
-			logging.FromContext(ctx).Fatal("Failed to connect to RabbitMQ: ", err)
-		}
-	}
-
-	env.channel, err = env.connection.Channel()
-	if err != nil {
-		logging.FromContext(ctx).Fatal("Failed to open a channel: ", err)
-	}
-
-	err = env.channel.Qos(
-		100,   // prefetch count
-		0,     // prefetch size
-		false, // global
-	)
-	if err != nil {
-		logging.FromContext(ctx).Fatal("Failed to create QoS: ", err)
 	}
 }

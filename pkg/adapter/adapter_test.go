@@ -19,7 +19,6 @@ package rabbitmq
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -29,13 +28,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/NeowayLabs/wabbit"
-	"github.com/NeowayLabs/wabbit/amqp"
-	"github.com/NeowayLabs/wabbit/amqptest"
-	"github.com/NeowayLabs/wabbit/amqptest/server"
-	origamqp "github.com/rabbitmq/amqp091-go"
+	amqp "github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"
 
+	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	"knative.dev/eventing/pkg/adapter/v2"
 	v1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/eventing/pkg/kncloudevents"
@@ -51,7 +47,7 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 		reqBody, expectedEventType string
 		reqHeaders                 http.Header
 		data                       map[string]interface{}
-		headers                    wabbit.Option
+		headers                    amqp.Table
 		attributes                 map[string]string
 		withMsgId, isCe, error     bool
 		retry                      int
@@ -79,7 +75,7 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 			data: map[string]interface{}{
 				"test": "test",
 			},
-			headers: wabbit.Option{
+			headers: amqp.Table{
 				"specversion": "1.0",
 				"source":      "example/source.uri",
 				"testheader":  "testHeader",
@@ -92,7 +88,7 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 				`"type":"dev.knative.rabbitmq.event","source":"example/source.uri",` +
 				`"content-type":"text/plain","data":"test"}`,
 			withMsgId: true,
-			headers:   wabbit.Option{"content-type": "application/cloudevents+json"},
+			headers:   amqp.Table{"content-type": "application/cloudevents+json"},
 			data: map[string]interface{}{
 				"specversion":  "1.0",
 				"id":           1234,
@@ -149,14 +145,13 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 				t.Errorf("unexpected error, %v", err)
 			}
 
-			m := &amqp.Delivery{}
-			m.Delivery = &origamqp.Delivery{
+			m := &amqp.Delivery{
 				Body:    data,
-				Headers: origamqp.Table(tc.headers),
+				Headers: tc.headers,
 			}
 
 			if tc.withMsgId {
-				m.Delivery.MessageId = "id"
+				m.MessageId = "id"
 			}
 
 			err = a.postMessage(m)
@@ -199,113 +194,6 @@ func compareHeaders(expected, received http.Header, t *testing.T) bool {
 		}
 	}
 	return true
-}
-
-func TestAdapter_CreateConn(t *testing.T) {
-	fakeServer := server.NewServer("amqp://localhost:5672/%2f")
-	err := fakeServer.Start()
-	if err != nil {
-		t.Errorf("%s: %s", "Failed to connect to RabbitMQ", err)
-	}
-
-	statsReporter, _ := source.NewStatsReporter()
-
-	a := &Adapter{
-		config:   &adapterConfig{},
-		logger:   zap.NewNop(),
-		reporter: statsReporter,
-	}
-
-	conn, _ := a.CreateConn(logging.FromContext(context.TODO()).Desugar())
-	if conn.(*amqp.Conn) != nil {
-		t.Errorf("Failed to connect to RabbitMQ")
-	}
-
-	conn, _ = a.CreateConn(logging.FromContext(context.TODO()).Desugar())
-	if conn.(*amqp.Conn) != nil {
-		t.Errorf("Failed to connect to RabbitMQ")
-	}
-	fakeServer.Stop()
-}
-
-func TestAdapter_CreateChannel(t *testing.T) {
-	fakeServer := server.NewServer("amqp://localhost:5672/%2f")
-	err := fakeServer.Start()
-	if err != nil {
-		t.Errorf("%s: %s", "Failed to connect to RabbitMQ", err)
-	}
-
-	conn, err := amqptest.Dial("amqp://localhost:5672/%2f")
-	if err != nil {
-		t.Errorf("%s: %s", "Failed to connect to RabbitMQ", err)
-	}
-
-	statsReporter, _ := source.NewStatsReporter()
-
-	a := &Adapter{
-		config:   &adapterConfig{},
-		logger:   zap.NewNop(),
-		reporter: statsReporter,
-	}
-
-	for i := 1; i <= 2048; i++ {
-		channel, _ := a.CreateChannel(nil, conn, logging.FromContext(context.TODO()).Desugar())
-		if channel == nil {
-			t.Logf("Failed to open a channel")
-			break
-		}
-	}
-	fakeServer.Stop()
-}
-
-func TestAdapter_StartAmqpClient(t *testing.T) {
-	testQueue := "testqueue"
-	fakeServer := server.NewServer("amqp://localhost:5674/%2f")
-	err := fakeServer.Start()
-	if err != nil {
-		t.Errorf("%s: %s", "Failed to connect to RabbitMQ", err)
-	}
-
-	conn, err := amqptest.Dial("amqp://localhost:5674/%2f")
-	if err != nil {
-		t.Errorf("%s: %s", "Failed to connect to RabbitMQ", err)
-	}
-
-	statsReporter, _ := source.NewStatsReporter()
-
-	channel, err := conn.Channel()
-	if err != nil {
-		t.Errorf("Failed to open a channel: %s", err)
-	}
-
-	a := &Adapter{
-		config: &adapterConfig{
-			Predeclared: true,
-			QueueName:   testQueue,
-		},
-		logger:   zap.NewNop(),
-		reporter: statsReporter,
-	}
-
-	_, err = a.StartAmqpClient(&channel)
-	if err.Error() != fmt.Sprintf("no queue named %s", testQueue) {
-		t.Errorf("Was expecting an error due to invalid queue name, got error: %s", err)
-	}
-
-	_, err = channel.QueueDeclare(testQueue, wabbit.Option{})
-	if err != nil {
-		t.Errorf("Failed to declare new Queue: %s", err)
-	}
-	queue, err := a.StartAmqpClient(&channel)
-	if err != nil {
-		t.Errorf("An error has occurred and it shouldn't: %s", err)
-	}
-
-	_, err = a.ConsumeMessages(&channel, queue, logging.FromContext(context.TODO()).Desugar())
-	if err != nil {
-		t.Errorf("Failed to consume from RabbitMQ: %s", err)
-	}
-	fakeServer.Stop()
 }
 
 type fakeHandler struct {
@@ -400,62 +288,30 @@ func TestAdapter_VhostHandler(t *testing.T) {
 }
 
 func TestAdapter_PollForMessages(t *testing.T) {
-	fakeServer := server.NewServer("amqp://localhost:5672/%2f")
-	err := fakeServer.Start()
-	if err != nil {
-		t.Errorf("%s: %s", "Failed to connect to RabbitMQ", err)
-	}
-
-	conn, err := amqptest.Dial("amqp://localhost:5672/%2f")
-	if err != nil {
-		t.Errorf("%s: %s", "Failed to connect to RabbitMQ", err)
-	}
-
-	channel, err := conn.Channel()
-	if err != nil {
-		t.Errorf("Failed to open a channel")
-	}
-
 	statsReporter, _ := source.NewStatsReporter()
-
 	a := &Adapter{
 		config: &adapterConfig{
-			ExchangeName: "Test-exchange",
-			QueueName:    "",
+			ExchangeName:  "Test-exchange",
+			QueueName:     "",
+			Parallelism:   10,
+			BackoffPolicy: string(v1.BackoffPolicyLinear),
+			BackoffDelay:  "50ms",
+			Retry:         1,
 		},
-		context:  context.TODO(),
-		logger:   zap.NewNop(),
-		reporter: statsReporter,
+		context:   context.TODO(),
+		logger:    zap.NewNop(),
+		reporter:  statsReporter,
+		rmqHelper: rabbit.NewRabbitMQHelper(1, make(chan bool), rabbit.ValidDial),
 	}
 
-	err = channel.ExchangeDeclare(a.config.ExchangeName, "headers", nil)
-	if err != nil {
-		t.Errorf("Failed to declare an exchange")
-	}
-
-	queue, err := channel.QueueDeclare("", wabbit.Option{
-		"durable": true,
-		"delete":  false,
-	})
-	if err != nil {
-		t.Errorf(err.Error())
-	}
-
-	if err := channel.Confirm(false); err != nil {
-		t.Fatalf("[x] Channel could not be put into confirm mode: %s", err)
-	}
-
-	ctx, cancelFunc := context.WithDeadline(context.TODO(), time.Now().Add(100*time.Millisecond))
-	defer cancelFunc()
-
-	err = a.PollForMessages(&channel, &queue, ctx.Done())
-
-	if err != nil {
-		t.Errorf("testing err %s", err)
-	}
-
-	channel.Close()
-	fakeServer.Stop()
+	go func() {
+		time.Sleep(500)
+		// Signal to the adapter to finish and do not retry
+		a.rmqHelper.SignalRetry(false)
+		// Wait for the adapter signal to finish any external retry cycle
+		a.rmqHelper.WaitForRetrySignal()
+	}()
+	a.Start(a.context)
 }
 
 func TestAdapter_NewEnvConfig(t *testing.T) {

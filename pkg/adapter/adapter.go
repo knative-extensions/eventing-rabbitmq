@@ -23,11 +23,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/NeowayLabs/wabbit"
-	"github.com/NeowayLabs/wabbit/amqp"
-	"github.com/NeowayLabs/wabbit/amqptest"
-
 	"go.uber.org/zap"
+
+	amqp "github.com/rabbitmq/amqp091-go"
 
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	"knative.dev/eventing-rabbitmq/pkg/utils"
@@ -64,6 +62,9 @@ type Adapter struct {
 	reporter          source.StatsReporter
 	logger            *zap.Logger
 	context           context.Context
+	rmqHelper         rabbit.RabbitMQHelperInterface
+	connection        rabbit.RabbitMQConnectionInterface
+	channel           rabbit.RabbitMQChannelInterface
 }
 
 var _ adapter.MessageAdapter = (*Adapter)(nil)
@@ -94,88 +95,33 @@ func vhostHandler(broker string, vhost string) string {
 	return fmt.Sprintf("%s%s", broker, vhost)
 }
 
-func (a *Adapter) CreateConn(logger *zap.Logger) (wabbit.Conn, error) {
-	conn, err := amqp.Dial(vhostHandler(a.config.RabbitURL, a.config.Vhost))
-	if err != nil {
-		logger.Error(err.Error())
-	}
-	return conn, err
-}
-
-func (a *Adapter) CreateChannel(conn wabbit.Conn, connTest *amqptest.Conn,
-	logger *zap.Logger) (wabbit.Channel, error) {
-	var ch wabbit.Channel
-	var err error
-
-	if conn != nil {
-		ch, err = conn.Channel()
-	} else {
-		ch, err = connTest.Channel()
-	}
-	if err != nil {
-		logger.Error(err.Error())
-		return nil, err
-	}
-
-	logger.Info("Initializing Channel with Config: ",
-		zap.Int("Parallelism", a.config.Parallelism),
-	)
-
-	err = ch.Qos(
-		a.config.Parallelism,
-		0,
-		false,
-	)
-
-	return ch, err
-}
-
 func (a *Adapter) Start(ctx context.Context) error {
 	return a.start(ctx.Done())
 }
 
 func (a *Adapter) start(stopCh <-chan struct{}) error {
-	logger := a.logger
+	logger := a.logger.Sugar()
 	logger.Info("Starting with config: ",
 		zap.String("Name", a.config.Name),
 		zap.String("Namespace", a.config.Namespace),
 		zap.String("QueueName", a.config.QueueName),
 		zap.String("SinkURI", a.config.Sink))
 
-	conn, err := a.CreateConn(logger)
-	if err == nil {
-		defer conn.Close()
+	if a.rmqHelper == nil {
+		a.rmqHelper = rabbit.NewRabbitMQHelper(1, make(chan bool), rabbit.DialWrapper)
 	}
-
-	ch, err := a.CreateChannel(conn, nil, logger)
-	if err == nil {
-		defer ch.Close()
-	}
-
-	queue, err := a.StartAmqpClient(&ch)
-	if err != nil {
-		logger.Error(err.Error())
-	}
-
-	return a.PollForMessages(&ch, queue, stopCh)
+	return a.PollForMessages(stopCh)
 }
 
-func (a *Adapter) StartAmqpClient(ch *wabbit.Channel) (*wabbit.Queue, error) {
-	queue, err := (*ch).QueueInspect(a.config.QueueName)
-	return &queue, err
-}
-
-func (a *Adapter) ConsumeMessages(channel *wabbit.Channel,
-	queue *wabbit.Queue, logger *zap.Logger) (<-chan wabbit.Delivery, error) {
-	msgs, err := (*channel).Consume(
-		(*queue).Name(),
+func (a *Adapter) ConsumeMessages(queue *amqp.Queue, logger *zap.SugaredLogger) (<-chan amqp.Delivery, error) {
+	msgs, err := a.channel.Consume(
+		queue.Name,
 		"",
-		wabbit.Option{
-			"autoAck":   false,
-			"exclusive": false,
-			"noLocal":   false,
-			"noWait":    false,
-		})
+		false,
+		false,
+		false,
+		false,
+		amqp.Table{})
 
 	if err != nil {
 		logger.Error(err.Error())
@@ -183,10 +129,11 @@ func (a *Adapter) ConsumeMessages(channel *wabbit.Channel,
 	return msgs, err
 }
 
-func (a *Adapter) PollForMessages(channel *wabbit.Channel,
-	queue *wabbit.Queue, stopCh <-chan struct{}) error {
-	logger := a.logger
+func (a *Adapter) PollForMessages(stopCh <-chan struct{}) error {
+	logger := a.logger.Sugar()
 	var err error
+	var queue amqp.Queue
+	var msgs <-chan (amqp.Delivery)
 	if a.config.BackoffDelay != "" {
 		retriesInt32 = int32(a.config.Retry)
 		backoffPolicy := utils.SetBackoffPolicy(a.context, a.config.BackoffPolicy)
@@ -203,40 +150,74 @@ func (a *Adapter) PollForMessages(channel *wabbit.Channel,
 		}
 	}
 
-	msgs, _ := a.ConsumeMessages(channel, queue, logger)
 	wg := &sync.WaitGroup{}
 	workerCount := a.config.Parallelism
 	wg.Add(workerCount)
-	workerQueue := make(chan wabbit.Delivery, workerCount)
+	workerQueue := make(chan amqp.Delivery, workerCount)
 	logger.Info("Starting GoRoutines Workers: ", zap.Int("WorkerCount", workerCount))
 
 	for i := 0; i < workerCount; i++ {
 		go a.processMessages(wg, workerQueue)
 	}
 
+	retryChan := make(chan bool)
+	defer a.rmqHelper.CleanupRabbitMQ(a.connection, logger)
+	for {
+		a.connection, a.channel, err = a.rmqHelper.SetupRabbitMQ(vhostHandler(a.config.RabbitURL, a.config.Vhost), rabbit.ChannelQoS, logger)
+		if err != nil {
+			logger.Errorf("error creating RabbitMQ connections: %s, waiting for a retry", err)
+		} else {
+			queue, err = a.channel.QueueInspect(a.config.QueueName)
+			if err != nil {
+				logger.Error(err.Error())
+				continue
+			}
+			msgs, _ = a.ConsumeMessages(&queue, logger)
+			go PollCycle(retryChan, stopCh, workerQueue, wg, msgs, a.rmqHelper, logger)
+		}
+		if retry := a.rmqHelper.WaitForRetrySignal(); !retry {
+			logger.Warn("stopped listenning for RabbitMQ resources retries")
+			return nil
+		}
+		if err != nil {
+			retryChan <- true
+		}
+		logger.Warn("recreating RabbitMQ resources")
+	}
+}
+
+func PollCycle(
+	retryChan chan bool,
+	stopCh <-chan struct{},
+	workerQueue chan amqp.Delivery,
+	wg *sync.WaitGroup,
+	msgs <-chan amqp.Delivery,
+	rmqHelper rabbit.RabbitMQHelperInterface,
+	logger *zap.SugaredLogger) {
 	for {
 		select {
 		case <-stopCh:
 			close(workerQueue)
 			wg.Wait()
 			logger.Info("Shutting down...")
-			return nil
+			rmqHelper.SignalRetry(false)
+			return
 		case msg, ok := <-msgs:
 			if !ok {
-				close(workerQueue)
-				wg.Wait()
-				return nil
+				return
 			}
 			workerQueue <- msg
+		case <-retryChan:
+			return
 		}
 	}
 }
 
-func (a *Adapter) processMessages(wg *sync.WaitGroup, queue <-chan wabbit.Delivery) {
+func (a *Adapter) processMessages(wg *sync.WaitGroup, queue <-chan amqp.Delivery) {
 	defer wg.Done()
 	for msg := range queue {
-		a.logger.Info("Received: ", zap.String("MessageId", msg.MessageId()))
-		if err := a.postMessage(msg); err == nil {
+		a.logger.Info("Received: ", zap.String("MessageId", msg.MessageId))
+		if err := a.postMessage(&msg); err == nil {
 			a.logger.Info("Successfully sent event to sink")
 			err = msg.Ack(false)
 			if err != nil {
@@ -252,7 +233,7 @@ func (a *Adapter) processMessages(wg *sync.WaitGroup, queue <-chan wabbit.Delive
 	}
 }
 
-func (a *Adapter) postMessage(msg wabbit.Delivery) error {
+func (a *Adapter) postMessage(msg *amqp.Delivery) error {
 	a.logger.Info("target: " + a.httpMessageSender.Target)
 	req, err := a.httpMessageSender.NewCloudEventRequest(a.context)
 	if err != nil {

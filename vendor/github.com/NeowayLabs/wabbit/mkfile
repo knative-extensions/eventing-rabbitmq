@@ -1,5 +1,0 @@
-
-
-check:
-	./hack/check.rc
-

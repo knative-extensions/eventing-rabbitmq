@@ -1,2 +1,0 @@
-test:
-	./hack/check.sh

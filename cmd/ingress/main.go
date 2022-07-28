@@ -57,8 +57,8 @@ type envConfig struct {
 	BrokerURL    string `envconfig:"BROKER_URL" required:"true"`
 	ExchangeName string `envconfig:"EXCHANGE_NAME" required:"true"`
 
-	connection *amqp.Connection
-	channel    *amqp.Channel
+	connection rabbit.RabbitMQConnectionInterface
+	channel    rabbit.RabbitMQChannelInterface
 
 	ContainerName   string `envconfig:"CONTAINER_NAME" default:"ingress"`
 	PodName         string `envconfig:"POD_NAME" default:"rabbitmq-broker-ingress"`
@@ -92,26 +92,22 @@ func main() {
 		logger.Errorw("failed to create the metrics exporter", zap.Error(err))
 	}
 
-	rmqHelper := rabbit.NewRabbitMQHelper(1, make(chan bool))
+	rmqHelper := rabbit.NewRabbitMQHelper(1, make(chan bool), rabbit.DialWrapper)
 	// Wait for RabbitMQ retry messages
+	defer rmqHelper.CleanupRabbitMQ(env.connection, logger)
 	go func() {
 		for {
+			env.connection, env.channel, err = rmqHelper.SetupRabbitMQ(env.BrokerURL, rabbit.ChannelConfirm, logger)
+			if err != nil {
+				logger.Errorf("error creating RabbitMQ connections: %s, waiting for a retry", err)
+			}
 			if retry := rmqHelper.WaitForRetrySignal(); !retry {
 				logger.Warn("stopped listenning for RabbitMQ resources retries")
 				break
 			}
 			logger.Warn("recreating RabbitMQ resources")
-			env.connection, env.channel, err = env.CreateRabbitMQConnections(rmqHelper, logger)
-			if err != nil {
-				logger.Errorf("error recreating RabbitMQ connections: %s, waiting for a retry", err)
-			}
 		}
 	}()
-	env.connection, env.channel, err = env.CreateRabbitMQConnections(rmqHelper, logger)
-	if err != nil {
-		logger.Errorf("error creating RabbitMQ connections: %s, waiting for a retry", err)
-	}
-	defer rmqHelper.CleanupRabbitMQ(env.connection, logger)
 
 	env.reporter = ingress.NewStatsReporter(env.ContainerName, kmeta.ChildName(env.PodName, uuid.New().String()))
 	connectionArgs := kncloudevents.ConnectionArgs{
@@ -200,43 +196,31 @@ func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, tim
 		headers[key] = val
 	}
 
-	start := time.Now()
-	dc, err := env.channel.PublishWithDeferredConfirm(
-		env.ExchangeName,
-		"",    // routing key
-		false, // mandatory
-		false, // immediate
-		amqp.Publishing{
-			Headers:      headers,
-			MessageId:    event.ID(),
-			ContentType:  event.DataContentType(),
-			Body:         event.Data(),
-			DeliveryMode: amqp.Persistent,
-		})
-	if err != nil {
-		return http.StatusInternalServerError, noDuration, fmt.Errorf("failed to publish message: %w", err)
+	if env.channel != nil {
+		start := time.Now()
+		dc, err := env.channel.PublishWithDeferredConfirm(
+			env.ExchangeName,
+			"",    // routing key
+			false, // mandatory
+			false, // immediate
+			amqp.Publishing{
+				Headers:      headers,
+				MessageId:    event.ID(),
+				ContentType:  event.DataContentType(),
+				Body:         event.Data(),
+				DeliveryMode: amqp.Persistent,
+			})
+		if err != nil {
+			return http.StatusInternalServerError, noDuration, fmt.Errorf("failed to publish message: %w", err)
+		}
+
+		ack := dc.Wait()
+		dispatchTime := time.Since(start)
+		if !ack {
+			return http.StatusInternalServerError, noDuration, errors.New("failed to publish message: nacked")
+		}
+		return http.StatusAccepted, dispatchTime, nil
 	}
 
-	ack := dc.Wait()
-	dispatchTime := time.Since(start)
-	if !ack {
-		return http.StatusInternalServerError, noDuration, errors.New("failed to publish message: nacked")
-	}
-	return http.StatusAccepted, dispatchTime, nil
-}
-
-func (env *envConfig) CreateRabbitMQConnections(
-	rmqHelper *rabbit.RabbitMQHelper,
-	logger *zap.SugaredLogger) (conn *amqp.Connection, channel *amqp.Channel, err error) {
-	conn, channel, err = rmqHelper.SetupRabbitMQ(env.BrokerURL, logger)
-	if err == nil {
-		err = channel.Confirm(false)
-	}
-	if err != nil {
-		rmqHelper.CloseRabbitMQConnections(conn, logger)
-		logger.Warn("Retrying RabbitMQ connections setup")
-		go rmqHelper.SignalRetry(true)
-		return nil, nil, err
-	}
-	return conn, channel, nil
+	return http.StatusInternalServerError, noDuration, errors.New("failed to publish message: RabbitMQ channel is nil")
 }
