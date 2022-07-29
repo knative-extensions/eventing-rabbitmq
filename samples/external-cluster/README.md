@@ -1,4 +1,4 @@
-# RabbitMQ Knative Eventing external Cluster Example
+# Eventing RabbitMQ external Cluster Example
 
 ## Prerequisites and installation
 

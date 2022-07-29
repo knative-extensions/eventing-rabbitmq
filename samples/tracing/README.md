@@ -1,4 +1,4 @@
-# Configuring tracing with eventing-rabbitmq
+# Configuring tracing with Eventing RabbitMQ
 
 For an overview of tracing with Knative in general, [this blog
 post](https://knative.dev/blog/articles/distributed-tracing/) introduces the

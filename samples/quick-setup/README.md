@@ -1,4 +1,4 @@
-# RabbitMQ Knative Eventing Broker with Trigger and DLQ Example
+# Eventing RabbitMQ Broker with Trigger and DLQ Example
 
 ## Prerequisites and installation
 

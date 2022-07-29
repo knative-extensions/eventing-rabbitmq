@@ -1,8 +1,8 @@
-# Knative Eventing RabbitMQ Broker
+# Eventing RabbitMQ Broker
 
 RabbitMQ *is a Messaging Broker* - an intermediary for messaging. It gives your applications a common platform to send and receive messages, and your messages a safe place to live until received.
 
-![RabbitMQ Broker for Knative Eventing](rabbitmq-knative-broker.png)
+![Eventing RabbitMQ Broker](rabbitmq-knative-broker.png)
 
 # Table of Contents
 
