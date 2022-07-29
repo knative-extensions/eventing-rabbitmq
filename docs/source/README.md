@@ -1,11 +1,11 @@
-# RabbitMQ Source
+# Eventing RabbitMQ Source
 
 The RabbitMQ source translates messages on a RabbitMQ exchange to CloudEvents
 based on the [RabbitMQ Protocol Binding for CloudEvents Spec](https://github.com/knative-sandbox/eventing-rabbitmq/blob/main/cloudevents-protocol-spec/spec.md),
 which can then be used with Knative Eventing over HTTP. The source can bind to
 an existing RabbitMQ exchange, or create a new exchange if required.
 
-![RabbitMQ Source for Knative Eventing](rabbitmq-knative-source.png)
+![Eventing RabbitMQ Source](rabbitmq-knative-source.png)
 
 
 # Table of Contents

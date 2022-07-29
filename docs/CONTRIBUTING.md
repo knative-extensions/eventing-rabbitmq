@@ -1,6 +1,6 @@
 # Contribution guidelines
 
-Glad to hack you onboard on the Knative Eventing RabbitMQ Broker! Please refer to Knative's overall
+Glad to have you onboard on Eventing RabbitMQ! Please refer to Knative's overall
 [contribution guidelines](https://www.knative.dev/contributing/) to find out how you can help.
 
 ## Getting started

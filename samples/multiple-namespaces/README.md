@@ -1,4 +1,4 @@
-# RabbitMQ Knative Eventing Multi-Namespaces Cluster Example
+# Eventing RabbitMQ Multi-Namespaces Cluster Example
 
 ## Prerequisites
 

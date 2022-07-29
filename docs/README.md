@@ -1,4 +1,4 @@
-# Knative Eventing RabbitMQ Broker & Source
+# Eventing RabbitMQ Broker & Source
 
 This document contains links to different sections related with the Broker and Source implementation.
 You can also find information about how to contribute back to the project and report issues if you find them.

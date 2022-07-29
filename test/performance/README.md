@@ -29,7 +29,7 @@ kubectl patch configmap/config-network \
 ```
 
 
-## Install Knative Eventing RabbitMQ
+## Install Eventing RabbitMQ
 
 ```sh
 # Installing Knative Eventing ... https://github.com/knative/eventing/releases
@@ -48,10 +48,10 @@ curl -sL https://github.com/jetstack/cert-manager/releases/download/v1.8.0/cert-
 kubectl apply --filename https://github.com/rabbitmq/messaging-topology-operator/releases/download/v1.6.0/messaging-topology-operator-with-certmanager.yaml
 
 
-# Installing Knative Eventing RabbitMQ Broker ... https://github.com/knative-sandbox/eventing-rabbitmq/releases
+# Installing Eventing RabbitMQ Broker ... https://github.com/knative-sandbox/eventing-rabbitmq/releases
 kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/download/knative-v1.5.0/rabbitmq-broker.yaml
 
-# Installing Knative Eventing RabbitMQ Source ... https://github.com/knative-sandbox/eventing-rabbitmq/releases
+# Installing Eventing RabbitMQ Source ... https://github.com/knative-sandbox/eventing-rabbitmq/releases
 kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/download/knative-v1.5.0/rabbitmq-source.yaml
 ```
 
@@ -65,7 +65,7 @@ cd $GOPATH/src/knative-dev/eventing-rabbitmq
 ko apply --filename config/broker
 ```
 
-### Run Knative Eventing Broker RabbitMQ benchmarks
+### Run Eventing RabbitMQ Broker benchmarks
 
 ```sh
 cd $GOPATH/src/knative.dev/eventing-rabbitmq
@@ -124,7 +124,7 @@ cd $GOPATH/src/knative-dev/eventing-rabbitmq
 ko apply --filename config/source
 ```
 
-### Run Knative Eventing RabbitMQ Source benchmarks
+### Run Eventing RabbitMQ Source benchmarks
 
 ```sh
 cd $GOPATH/src/knative.dev/eventing-rabbitmq
@@ -168,7 +168,7 @@ finally:
 kubectl delete --filename test/performance/broker-setup/100-source-perf-setup.yaml
 ```
 
-## Download & visualize Knative Eventing RabbitMQ benchmark results
+## Download & visualize Eventing RabbitMQ benchmark results
 
 Pre-requisite: [gnuplot](http://www.gnuplot.info/) (on macOS it's `brew install gnuplot`)
 

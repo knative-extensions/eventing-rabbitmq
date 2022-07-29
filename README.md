@@ -11,7 +11,7 @@
 [![Slack](https://img.shields.io/badge/Signup-Knative_Slack-white.svg?logo=slack)](https://slack.knative.dev)
 [![Slack](https://img.shields.io/badge/%23eventing-white.svg?logo=slack&color=522a5e)](https://knative.slack.com/archives/C9JP909F0)
 
-This repository contains the Knative Eventing RabbitMQ Broker and Source implementations.
+This repository contains the Eventing RabbitMQ Broker and Source implementations.
 
 ## Documentation
 

@@ -1,4 +1,4 @@
-# Trigger example with customizations
+# Eventing RabbitMQ Trigger example with customizations
 
 ## Prerequisites and installation
 
