@@ -15,16 +15,16 @@ require (
 	github.com/rabbitmq/messaging-topology-operator v1.6.0
 	go.opencensus.io v0.23.0
 	go.uber.org/zap v1.21.0
-	k8s.io/api v0.23.8
-	k8s.io/apiextensions-apiserver v0.23.8
-	k8s.io/apimachinery v0.23.8
-	k8s.io/client-go v0.23.8
-	k8s.io/code-generator v0.23.8
+	k8s.io/api v0.23.9
+	k8s.io/apiextensions-apiserver v0.23.9
+	k8s.io/apimachinery v0.23.9
+	k8s.io/client-go v0.23.9
+	k8s.io/code-generator v0.23.9
 	k8s.io/kube-openapi v0.0.0-20211115234752-e816edb12b65
-	knative.dev/eventing v0.33.1-0.20220722122720-c8435ed74ba8
-	knative.dev/hack v0.0.0-20220725145124-782bbaabb8a1
-	knative.dev/pkg v0.0.0-20220725182823-ed7ab1d18a8b
-	knative.dev/reconciler-test v0.0.0-20220725125124-c8b6d66439f6
+	knative.dev/eventing v0.33.1-0.20220728144837-15dd7ca8c811
+	knative.dev/hack v0.0.0-20220728013938-9dabf7cf62e3
+	knative.dev/pkg v0.0.0-20220802185824-a01dfedb0486
+	knative.dev/reconciler-test v0.0.0-20220728013938-124ae0741d42
 	sigs.k8s.io/controller-runtime v0.11.2
 )
 
@@ -121,9 +121,9 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/component-base v0.23.8 // indirect
-	k8s.io/gengo v0.0.0-20220307231824-4627b89bbf1b // indirect
-	k8s.io/klog/v2 v2.60.1 // indirect
+	k8s.io/component-base v0.23.9 // indirect
+	k8s.io/gengo v0.0.0-20220613173612-397b4ae3bce7 // indirect
+	k8s.io/klog/v2 v2.70.2-0.20220707122935-0990e81f1a8f // indirect
 	sigs.k8s.io/json v0.0.0-20211020170558-c049b76a60c6 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
