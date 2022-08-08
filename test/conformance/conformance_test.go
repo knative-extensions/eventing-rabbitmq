@@ -63,7 +63,7 @@ func TestBrokerDataPlaneConformance(t *testing.T) {
 
 	env.Prerequisite(ctx, t, rabbitmqcluster.GoesReady("rabbitbroker", b.WithEnvConfig()...))
 	// Install and wait for a Ready Broker.
-	env.Prerequisite(ctx, t, broker.GoesReady("default3", b.WithEnvConfig()...))
+	env.Prerequisite(ctx, t, broker.GoesReady("default", b.WithEnvConfig()...))
 
-	env.TestSet(ctx, t, broker.DataPlaneConformance("default3"))
+	env.TestSet(ctx, t, broker.DataPlaneConformance("default"))
 }
