@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq-perf-test
+  namespace: rabbitmq-mtls-sample
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq-perf-test
+  template:
+    metadata:
+      labels:
+        app: rabbitmq-perf-test
+    spec:
+      containers:
+        - name: perftest
+          # https://hub.docker.com/r/pivotalrabbitmq/perf-test/tags
+          image: pivotalrabbitmq/perf-test:2.16.0
+          resources:
+            limits:
+              cpu: 0.5
+              memory: 128Mi
+            requests:
+              cpu: 0.5
+              memory: 128Mi
+          command:
+            - /bin/bash
+            - -c
+          # docker run --rm pivotalrabbitmq:perf-test --help
+          args:
+            - |-
+              bin/runjava com.rabbitmq.perf.PerfTest \
+                --uri "$RABBITMQ_PROTOCOL://$RABBITMQ_USER:$RABBITMQ_PASS@$RABBITMQ_URL"
+          # docker run --rm pivotalrabbitmq:perf-test --help --env
+          env:
+            - name: RABBITMQ_USER
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-default-user
+                  key: username
+            - name: RABBITMQ_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-default-user
+                  key: password
+            - name: RABBITMQ_URL
+              value: $YOUR_RABBITMQ_IP:PORT/URL
+            - name: PRODUCERS
+              value: "1"
+            - name: VARIABLE_RATE
+              value: "1:30,0:30"
+            - name: JSON_BODY
+              value: "true"
+            - name: SIZE
+              value: "1000"
+            - name: PREDECLARED
+              value: "true"
+            - name: EXCHANGE
+              value: "eventing-rabbitmq-source"
+            - name: TYPE
+              value: "headers"
+            # This version of PerfTest cannot declare a durable exchange: https://github.com/rabbitmq/rabbitmq-perf-test/issues/281
+            # This version of PerfTest will create an exchange if it does not exist if PREDECLARED is set to true: https://github.com/rabbitmq/rabbitmq-perf-test/issues/282
+            # This means that we cannot use the messaging topology operator to manage our exchange as it can create race conditions with PerfTest: https://github.com/rabbitmq/messaging-topology-operator
+            # We have chosen the "lesser evil" and are using a non-durable exchange
+            - name: CONSUMERS
+              value: "0"

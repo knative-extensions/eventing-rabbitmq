@@ -254,6 +254,7 @@ func isReady(conditions []v1beta1.Condition) bool {
 }
 
 func (r *Rabbit) RabbitMQURL(ctx context.Context, clusterRef *rabbitv1beta1.RabbitmqClusterReference) (*url.URL, error) {
+	protocol := "amqp"
 	if clusterRef.ConnectionSecret != nil {
 		s, err := r.kubeClientSet.CoreV1().Secrets(clusterRef.Namespace).Get(ctx, clusterRef.ConnectionSecret.Name, metav1.GetOptions{})
 		if err != nil {
@@ -271,8 +272,16 @@ func (r *Rabbit) RabbitMQURL(ctx context.Context, clusterRef *rabbitv1beta1.Rabb
 		if !ok {
 			return nil, fmt.Errorf("rabbit Secret missing key username")
 		}
+		port, ok := s.Data["port"]
+		if !ok {
+			port = []byte("5672")
+		}
+		ssl, ok := s.Data["ssl"]
+		if ok && strings.ToLower(string(ssl)) == "true" {
+			protocol = "amqps"
+		}
 		splittedUri := strings.Split(string(uri), ":")
-		return url.Parse(fmt.Sprintf("amqp://%s:%s@%s:5672", username, password, splittedUri[0]))
+		return url.Parse(fmt.Sprintf("%s://%s:%s@%s:%s", protocol, username, password, splittedUri[0], port))
 	}
 
 	// TODO: make this better.
@@ -322,7 +331,10 @@ func (r *Rabbit) RabbitMQURL(ctx context.Context, clusterRef *rabbitv1beta1.Rabb
 	if !ok {
 		port = []byte("5672")
 	}
+	if rab.Spec.TLS != nil {
+		protocol = "amqps"
+	}
 	host := network.GetServiceHostname(rab.Status.DefaultUser.ServiceReference.Name, rab.Status.DefaultUser.ServiceReference.Namespace)
 
-	return url.Parse(fmt.Sprintf("amqp://%s:%s@%s:%s", username, password, host, port))
+	return url.Parse(fmt.Sprintf("%s://%s:%s@%s:%s", protocol, username, password, host, port))
 }

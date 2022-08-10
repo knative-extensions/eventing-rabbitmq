@@ -167,7 +167,7 @@ Sources are Kubernetes objects. In addition to the standard Kubernetes
 Source parameters
 | Field  | Value  |
 |--------|--------|
-| `rabbitmqClusterReference` | A reference to a RabbitMQ Cluster |
+| `rabbitmqClusterReference` | A reference to a RabbitMQ Cluster containing `uri`, `username`, `password`, `port* (default 5672)` and `ssl* (default false)` (* optional) |
 | `rabbitmqClusterReference.name`| This is the name of the RabbitMQ Cluster CRD, if this is set then the `connectionSecret` must not be set |
 | `rabbitmqClusterReference.connectionSecret.name`| The RabbitMQ Connection Secret name, if this is set then the `clusterReference.name` must not be set |
 | `rabbitmqClusterReference.namespace`| the namespace where the RabbitMQ Cluster CRD lives |

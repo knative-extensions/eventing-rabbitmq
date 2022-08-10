@@ -1,0 +1,29 @@
+apiVersion: sources.knative.dev/v1
+kind: PingSource
+metadata:
+  name: ping-source
+  namespace: rabbitmq-mtls-sample
+spec:
+  schedule: "*/1 * * * *"
+  data: '{"responsecode": 200}'
+  sink:
+    ref:
+      apiVersion: eventing.knative.dev/v1
+      kind: Broker
+      name: default
+      namespace: rabbitmq-mtls-sample
+---
+apiVersion: sources.knative.dev/v1
+kind: PingSource
+metadata:
+  name: ping-source-2
+  namespace: rabbitmq-mtls-sample
+spec:
+  schedule: "*/1 * * * *"
+  data: '{"responsecode": 500}'
+  sink:
+    ref:
+      apiVersion: eventing.knative.dev/v1
+      kind: Broker
+      name: default
+      namespace: rabbitmq-mtls-sample
