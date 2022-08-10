@@ -21,10 +21,10 @@ require (
 	k8s.io/client-go v0.23.9
 	k8s.io/code-generator v0.23.9
 	k8s.io/kube-openapi v0.0.0-20211115234752-e816edb12b65
-	knative.dev/eventing v0.33.1-0.20220728144837-15dd7ca8c811
+	knative.dev/eventing v0.33.1-0.20220810093734-37cb0e9ee17a
 	knative.dev/hack v0.0.0-20220728013938-9dabf7cf62e3
-	knative.dev/pkg v0.0.0-20220802185824-a01dfedb0486
-	knative.dev/reconciler-test v0.0.0-20220728013938-124ae0741d42
+	knative.dev/pkg v0.0.0-20220805012121-7b8b06028e4f
+	knative.dev/reconciler-test v0.0.0-20220810085034-80f0d4dc7d6e
 	sigs.k8s.io/controller-runtime v0.11.2
 )
 
@@ -36,6 +36,7 @@ require (
 
 require (
 	cloud.google.com/go v0.99.0 // indirect
+	cloud.google.com/go/storage v1.18.2 // indirect
 	contrib.go.opencensus.io/exporter/ocagent v0.7.1-0.20200907061046-05415f1de66d // indirect
 	contrib.go.opencensus.io/exporter/prometheus v0.4.0 // indirect
 	contrib.go.opencensus.io/exporter/zipkin v0.1.2 // indirect
@@ -50,8 +51,12 @@ require (
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/cloudevents/conformance v0.2.0 // indirect
 	github.com/cloudevents/sdk-go/sql/v2 v2.8.0 // indirect
+	github.com/cncf/udpa/go v0.0.0-20210930031921-04548b0d99d4 // indirect
+	github.com/cncf/xds/go v0.0.0-20211130200136-a8f946100490 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/emicklei/go-restful v2.9.5+incompatible // indirect
+	github.com/envoyproxy/go-control-plane v0.10.1 // indirect
+	github.com/envoyproxy/protoc-gen-validate v0.6.2 // indirect
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
@@ -70,6 +75,7 @@ require (
 	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/mako v0.0.0-20190821191249-122f8dcef9e3 // indirect
+	github.com/googleapis/gax-go/v2 v2.1.1 // indirect
 	github.com/googleapis/gnostic v0.5.5 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
