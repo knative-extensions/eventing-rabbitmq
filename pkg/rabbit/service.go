@@ -310,7 +310,6 @@ func (r *Rabbit) RabbitMQURL(ctx context.Context, clusterRef *rabbitv1beta1.Rabb
 	if err != nil {
 		return nil, err
 	}
-
 	password, ok := s.Data[rab.Status.DefaultUser.SecretReference.Keys["password"]]
 	if !ok {
 		return nil, fmt.Errorf("rabbit Secret missing key %s", rab.Status.DefaultUser.SecretReference.Keys["password"])
@@ -319,7 +318,11 @@ func (r *Rabbit) RabbitMQURL(ctx context.Context, clusterRef *rabbitv1beta1.Rabb
 	if !ok {
 		return nil, fmt.Errorf("rabbit Secret missing key %s", rab.Status.DefaultUser.SecretReference.Keys["username"])
 	}
+	port, ok := s.Data["port"]
+	if !ok {
+		port = []byte("5672")
+	}
 	host := network.GetServiceHostname(rab.Status.DefaultUser.ServiceReference.Name, rab.Status.DefaultUser.ServiceReference.Namespace)
 
-	return url.Parse(fmt.Sprintf("amqp://%s:%s@%s:%d", username, password, host, 5672))
+	return url.Parse(fmt.Sprintf("amqp://%s:%s@%s:%s", username, password, host, port))
 }

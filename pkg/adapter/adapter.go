@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	nethttp "net/http"
-	"strings"
 	"sync"
 
 	"go.uber.org/zap"
@@ -84,15 +83,6 @@ func NewAdapter(ctx context.Context, processed adapter.EnvConfigAccessor, httpMe
 		logger:            logger,
 		context:           ctx,
 	}
-}
-
-func vhostHandler(broker string, vhost string) string {
-	if len(vhost) > 0 && len(broker) > 0 && !strings.HasSuffix(broker, "/") &&
-		!strings.HasPrefix(vhost, "/") {
-		return fmt.Sprintf("%s/%s", broker, vhost)
-	}
-
-	return fmt.Sprintf("%s%s", broker, vhost)
 }
 
 func (a *Adapter) Start(ctx context.Context) error {
@@ -163,7 +153,7 @@ func (a *Adapter) PollForMessages(stopCh <-chan struct{}) error {
 	retryChan := make(chan bool)
 	defer a.rmqHelper.CleanupRabbitMQ(a.connection, logger)
 	for {
-		a.connection, a.channel, err = a.rmqHelper.SetupRabbitMQ(vhostHandler(a.config.RabbitURL, a.config.Vhost), rabbit.ChannelQoS, logger)
+		a.connection, a.channel, err = a.rmqHelper.SetupRabbitMQ(rabbit.VHostHandler(a.config.RabbitURL, a.config.Vhost), rabbit.ChannelQoS, logger)
 		if err != nil {
 			logger.Errorf("error creating RabbitMQ connections: %s, waiting for a retry", err)
 		} else {

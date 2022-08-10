@@ -385,18 +385,18 @@ spec:
     ref:
       apiVersion: serving.knative.dev/v1
       kind: Service
-      name: rabbitmq-source-sink
+      name: event-display
       namespace: external-cluster-sample
 EOF
 ```
 
 ### Check the results
 
-Check the rabbitmq-source-sink (the Dead Letter Sink) to see if it is receiving events.
+Check the event-display (the Dead Letter Sink) to see if it is receiving events.
 It may take a while for the Source to start sending events to the Sink, so be patient :p!
 
 ```sh
-kubectl -n external-cluster-sample -l='serving.knative.dev/service=rabbitmq-source-sink' logs -c user-container
+kubectl -n external-cluster-sample -l='serving.knative.dev/service=event-display' logs -c user-container
 ☁️  cloudevents.Event
 Context Attributes,
   specversion: 1.0
