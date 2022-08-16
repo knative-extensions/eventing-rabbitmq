@@ -46,7 +46,8 @@ func (e *EnvConfig) SetupTracing() error {
 	if err != nil {
 		logger.Warn("Tracing configuration is invalid, using the no-op default", zap.Error(err))
 	}
-	return tracing.SetupStaticPublishing(logger, "", config)
+	_, err = tracing.SetupPublishingWithStaticConfig(logger, "", config)
+	return err
 }
 
 func (e *EnvConfig) GetLogger() *zap.SugaredLogger {
