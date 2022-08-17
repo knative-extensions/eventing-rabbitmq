@@ -330,7 +330,7 @@ func (r *Rabbit) RabbitMQURL(ctx context.Context, clusterRef *rabbitv1beta1.Rabb
 	if !ok {
 		port = []byte("5672")
 	}
-	if (rab.Spec != duckv1beta1.RabbitSpec{} && *rab.Spec.TLS != duckv1beta1.RabbitTLSConfig{}) {
+	if (rab.Spec.TLS != nil && *rab.Spec.TLS != duckv1beta1.RabbitTLSConfig{}) {
 		protocol = []byte("amqps")
 	}
 	host := network.GetServiceHostname(rab.Status.DefaultUser.ServiceReference.Name, rab.Status.DefaultUser.ServiceReference.Namespace)
