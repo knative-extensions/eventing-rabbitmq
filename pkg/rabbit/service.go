@@ -276,8 +276,7 @@ func (r *Rabbit) RabbitMQURL(ctx context.Context, clusterRef *rabbitv1beta1.Rabb
 		if !ok {
 			port = []byte("5672")
 		}
-		ssl, ok := s.Data["ssl"]
-		if ok && strings.ToLower(string(ssl)) == "true" {
+		if strings.HasPrefix(strings.ToLower(string(uri)), "https") {
 			protocol = []byte("amqps")
 		}
 		splittedUri := strings.Split(string(uri), ":")
@@ -331,8 +330,7 @@ func (r *Rabbit) RabbitMQURL(ctx context.Context, clusterRef *rabbitv1beta1.Rabb
 	if !ok {
 		port = []byte("5672")
 	}
-	ssl, ok := s.Data["ssl"]
-	if (rab.Spec != duckv1beta1.RabbitSpec{} && *rab.Spec.TLS != duckv1beta1.RabbitTLSConfig{}) && (!ok || strings.ToLower(string(ssl)) == "true") {
+	if (rab.Spec != duckv1beta1.RabbitSpec{} && *rab.Spec.TLS != duckv1beta1.RabbitTLSConfig{}) {
 		protocol = []byte("amqps")
 	}
 	host := network.GetServiceHostname(rab.Status.DefaultUser.ServiceReference.Name, rab.Status.DefaultUser.ServiceReference.Namespace)

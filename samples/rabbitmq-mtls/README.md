@@ -43,7 +43,6 @@ stringData:
   password: $EXTERNAL_RABBITMQ_PASSWORD
   uri: $EXTERNAL_RABBITMQ_MANAGEMENT_UI_URI:$PORT
   port: $EXTERNAL_RABBITMQ_PORT
-  ssl: true
 EOF
 ```
 
