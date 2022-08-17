@@ -254,7 +254,7 @@ func isReady(conditions []v1beta1.Condition) bool {
 }
 
 func (r *Rabbit) RabbitMQURL(ctx context.Context, clusterRef *rabbitv1beta1.RabbitmqClusterReference) (*url.URL, error) {
-	protocol := "amqp"
+	protocol := []byte("amqp")
 	if clusterRef.ConnectionSecret != nil {
 		s, err := r.kubeClientSet.CoreV1().Secrets(clusterRef.Namespace).Get(ctx, clusterRef.ConnectionSecret.Name, metav1.GetOptions{})
 		if err != nil {
@@ -278,7 +278,7 @@ func (r *Rabbit) RabbitMQURL(ctx context.Context, clusterRef *rabbitv1beta1.Rabb
 		}
 		ssl, ok := s.Data["ssl"]
 		if ok && strings.ToLower(string(ssl)) == "true" {
-			protocol = "amqps"
+			protocol = []byte("amqps")
 		}
 		splittedUri := strings.Split(string(uri), ":")
 		return url.Parse(fmt.Sprintf("%s://%s:%s@%s:%s", protocol, username, password, splittedUri[0], port))
@@ -332,10 +332,9 @@ func (r *Rabbit) RabbitMQURL(ctx context.Context, clusterRef *rabbitv1beta1.Rabb
 		port = []byte("5672")
 	}
 	ssl, ok := s.Data["ssl"]
-	if rab.Spec.TLS != nil && (!ok || strings.ToLower(string(ssl)) == "true") {
-		protocol = "amqps"
+	if (rab.Spec != duckv1beta1.RabbitSpec{} && *rab.Spec.TLS != duckv1beta1.RabbitTLSConfig{}) && (!ok || strings.ToLower(string(ssl)) == "true") {
+		protocol = []byte("amqps")
 	}
 	host := network.GetServiceHostname(rab.Status.DefaultUser.ServiceReference.Name, rab.Status.DefaultUser.ServiceReference.Namespace)
-
 	return url.Parse(fmt.Sprintf("%s://%s:%s@%s:%s", protocol, username, password, host, port))
 }

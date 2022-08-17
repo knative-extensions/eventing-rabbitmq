@@ -21,7 +21,7 @@ or
 kubectl create ns rabbitmq-mtls-sample
 ```
 
-### Update the RabbitMQ credentials Secret 
+### Update the RabbitMQ credentials Secret
 
 If you're not using the RabbitMQ Cluster Operator, you need to go through this step, ignore this otherwise
 This are the credentials from your external RabbitMQ instance
@@ -46,6 +46,10 @@ stringData:
   ssl: true
 EOF
 ```
+
+After this two steps you are ready to the next steps:
+- [Eventing RabbitMQ Broker Setup](#eventing-rabbitmq-broker-setup)
+- [Eventing RabbitMQ Source Setup](#eventing-rabbitmq-source-setup)
 
 ## Eventing RabbitMQ Broker Setup
 
@@ -297,4 +301,119 @@ Data,
 
 ```sh
 kubectl delete ns rabbitmq-mtls-sample
+```
+
+## Eventing RabbitMQ Source Setup
+
+### Overview
+
+This demo will use a RabbitMQ Source to fetch messages from a RabbitMQ Exchange, convert them into [CloudEvents](https://cloudevents.io/) and send them to a [Sink](https://knative.dev/docs/eventing/sinks/#about-sinks). The complete list of the Source's config parameters are shown [here](../../docs/source.md)
+
+### Components
+
+- [perf-test](https://github.com/rabbitmq/rabbitmq-perf-test) RabbitMQ has a throughput testing tool, PerfTest, that is based on the Java client and can be configured to simulate basic to advanced workloads of messages sent to a RabbitMQ Cluster. More info about the perf-test testing tool can be found [here](../perf-test.help.env.text)
+
+- [event-display](https://github.com/knative/eventing/tree/main/cmd/event_display)
+  which is a tool that logs the CloudEvent that it receives formatted nicely.
+
+- [RabbitMQ Source](../../docs/source.md)
+
+### Configuration
+
+Demo creates a `PerfTest` and has it executes a loop where it sends 1 event per second for 30 seconds, and then no events for 30 seconds to the `RabbitMQ Cluster Exchange` called `eventing-rabbitmq-source` predeclared by the user.
+
+Demo creates a `Source` to read messages from the `eventing-rabbitmq-source` `Exchange` and to send them to the `event-display` `sink` after the translation to CloudEvents.
+
+### Create the Perf Test Service
+
+This will create a Kubernetes Deployment which sends events to the RabbitMQ Cluster Exchange
+
+```sh
+kubectl apply -f samples/rabbitmq-mtls-sample/source-files/100-perf-test.yaml
+```
+
+Messages from the `rabbitmq-perf-test`
+
+### Create the RabbitMQ Source's Sink
+
+Then create the Knative Serving Service which will receive translated events.
+
+```sh
+kubectl apply -f samples/rabbitmq-mtls-sample/300-sink.yaml
+```
+or
+```sh
+kubectl apply -f - << EOF
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: event-display
+  namespace: rabbitmq-mtls-sample
+spec:
+  template:
+    spec:
+      containers:
+      - image: gcr.io/knative-releases/knative.dev/eventing/cmd/event_display
+EOF
+```
+
+### Create the RabbitMQ Source
+
+```sh
+kubectl apply -f samples/rabbitmq-mtls-sample/source-files/200-source.yaml
+```
+or
+```sh
+kubectl apply -f - << EOF
+apiVersion: sources.knative.dev/v1alpha1
+kind: RabbitmqSource
+metadata:
+  name: rabbitmq-source
+  namespace: rabbitmq-mtls-sample
+spec:
+  rabbitmqClusterReference:
+    namespace: rabbitmq-mtls-sample
+    connectionSecret: rabbitmq-secret-credentials
+  rabbitmqResourcesConfig:
+    predeclared: true
+    exchangeName: "eventing-rabbitmq-source"
+    queueName: "eventing-rabbitmq-source"
+  sink:
+    ref:
+      apiVersion: serving.knative.dev/v1
+      kind: Service
+      name: event-display
+      namespace: rabbitmq-mtls-sample
+EOF
+```
+
+### Check the results
+
+Check the event-display (the Dead Letter Sink) to see if it is receiving events.
+It may take a while for the Source to start sending events to the Sink, so be patient :p!
+
+```sh
+kubectl -n rabbitmq-mtls-sample -l='serving.knative.dev/service=event-display' logs -c user-container
+☁️  cloudevents.Event
+Context Attributes,
+  specversion: 1.0
+  type: dev.knative.rabbitmq.event
+  source: /apis/v1/namespaces/rabbitmq-mtls-sample/rabbitmqsources/rabbitmq-source
+  subject: f147099d-c64d-41f7-b8eb-a2e53b228349
+  id: f147099d-c64d-41f7-b8eb-a2e53b228349
+  time: 2021-12-16T20:11:39.052276498Z
+  datacontenttype: application/json
+Data,
+  {
+    ...
+    Random Data
+    ...
+  }
+```
+
+### Cleanup
+
+```sh
+kubectl delete -f samples/rabbitmq-mtls-sample/source-files/200-source.yaml
+kubectl delete -f samples/rabbitmq-mtls-sample/
 ```
