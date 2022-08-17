@@ -40,6 +40,8 @@ stringData:
   username: $EXTERNAL_RABBITMQ_USERNAME
   password: $EXTERNAL_RABBITMQ_PASSWORD
   uri: $EXTERNAL_RABBITMQ_MANAGEMENT_UI_URI:$PORT
+  port: "5672"
+  ssl: "false"
 EOF
 ```
 

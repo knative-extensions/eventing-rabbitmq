@@ -7,7 +7,7 @@ metadata:
 spec:
   replicas: 1
   tls:
-    secretName: tls-secret
+    secretName: server-secret
     caSecretName: ca-secret
   rabbitmq:
     additionalConfig: |
