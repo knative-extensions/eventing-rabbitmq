@@ -1,24 +1,25 @@
-apiVersion: sources.eventing.knative.dev/v1alpha1
+apiVersion: sources.knative.dev/v1alpha1
 kind: RabbitmqSource
 metadata:
   name: rabbitmq-source
   namespace: rabbitsource
 spec:
-  vhost: RABBITMQ_CLUSTER_VHOST
   rabbitmqClusterReference:
     name: RABBITMQ_CLUSTERREF_NAME
     namespace: RABBITMQ_CLUSTERREF_NAMESPACE
   delivery:
     retry: 5
     backoffPolicy: "linear"
-    backoffDelay: "50ms"
+    backoffDelay: "PT0.2S"
   rabbitmqResourcesConfig:
+    vhost: RABBITMQ_CLUSTER_VHOST
     predeclared: false
     exchangeName: RABBITMQ_EXCHANGE_NAME
     queueName: RABBITMQ_QUEUE_NAME
     parallelism: 100
   sink:
-    apiVersion: serving.knative.dev/v1
-    kind: Service
-    name: event-display
-    namespace: rabbitsource
+    ref:
+      apiVersion: serving.knative.dev/v1
+      kind: Service
+      name: event-display
+      namespace: rabbitsource
