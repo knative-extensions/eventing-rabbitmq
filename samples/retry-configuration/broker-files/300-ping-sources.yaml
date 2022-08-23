@@ -1,0 +1,29 @@
+apiVersion: sources.knative.dev/v1
+kind: PingSource
+metadata:
+  name: ping-source
+  namespace: retry-config-sample
+spec:
+  schedule: "*/1 * * * *"
+  data: '{"responsecode": 200}'
+  sink:
+    ref:
+      apiVersion: eventing.knative.dev/v1
+      kind: Broker
+      name: default
+      namespace: retry-config-sample
+---
+apiVersion: sources.knative.dev/v1
+kind: PingSource
+metadata:
+  name: ping-source-2
+  namespace: retry-config-sample
+spec:
+  schedule: "*/1 * * * *"
+  data: '{"responsecode": 500}'
+  sink:
+    ref:
+      apiVersion: eventing.knative.dev/v1
+      kind: Broker
+      name: default
+      namespace: retry-config-sample
