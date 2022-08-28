@@ -207,7 +207,7 @@ func TestMakeReceiveAdapter(t *testing.T) {
 										},
 										{
 											Name:  "HTTP_SENDER_BACKOFF_DELAY",
-											Value: "100ms",
+											Value: "PT0.1S",
 										},
 									},
 								},
