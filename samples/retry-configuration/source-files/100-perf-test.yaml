@@ -50,11 +50,11 @@ spec:
             - name: PRODUCERS
               value: "1"
             - name: VARIABLE_RATE
-              value: "1:30,0:30"
+              value: "1:1,0:59"
             - name: JSON_BODY
               value: "true"
             - name: SIZE
-              value: "1000"
+              value: "500"
             - name: PREDECLARED
               value: "true"
             - name: EXCHANGE

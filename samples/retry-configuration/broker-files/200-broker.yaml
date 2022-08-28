@@ -17,6 +17,7 @@ spec:
         kind: Service
         name: event-display
         namespace: retry-config-sample
-    retry: 5
+    # this retry config is going to be applied for the messages going to the Broker's DLQ
+    retry: 4
     backoffPolicy: "linear"
     backoffDelay: "PT1S"

@@ -295,7 +295,7 @@ func TestAdapter_PollForMessages(t *testing.T) {
 			QueueName:     "",
 			Parallelism:   10,
 			BackoffPolicy: string(v1.BackoffPolicyLinear),
-			BackoffDelay:  "50ms",
+			BackoffDelay:  "PT0.20S",
 			Retry:         1,
 		},
 		context:   context.TODO(),

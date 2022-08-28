@@ -62,9 +62,8 @@ func (f *failer) gotEvent(inputEvent event.Event) (*event.Event, error) {
 		log.Println("Got error while unmarshalling data, using default response code: ", err.Error())
 	} else if data.ResponseCode != 0 {
 		rc = data.ResponseCode
-		log.Printf("using response code: %d\n", rc)
 	}
-
+	log.Printf("using response code: %d\n", rc)
 	return nil, cloudevents.NewHTTPResult(rc, "Responding with: %d", rc)
 }
 

@@ -20,6 +20,6 @@ spec:
       name: failer
       namespace: retry-config-sample
   delivery:
-    retry: 5
+    retry: 4
     backoffPolicy: "linear"
-    backoffDelay: "PT1S"
+    backoffDelay: "PT0.2S"

@@ -1,4 +1,4 @@
-# Eventing RabbitMQ Broker with Trigger and DLQ Example
+# Eventing RabbitMQ Broker with Trigger/Source and DLQ Example
 
 ## Prerequisites and installation
 
@@ -149,7 +149,6 @@ spec:
         kind: Service
         name: event-display
         namespace: quick-setup-sample
-    retry: 5
 EOF
 ```
 
@@ -178,7 +177,6 @@ spec:
         kind: Service
         name: event-display
         namespace: quick-setup-sample
-    retry: 5
 EOF
 ```
 
@@ -317,8 +315,8 @@ kubectl -n quick-setup-sample -l='serving.knative.dev/service=failer' logs -c us
 
 You see there are both 200 / 500 events there. And more importantly, you can see
 that 200 is only sent once to the failer since it's processed correctly.
-However, the 500 is sent a total of 6 times because we have specified the retry
-of 5 (original, plus 5 retries for a total of 6 log entries).
+However, the 500 is sent a total of 6 times because the default retry for the `Trigger` is 5
+(original, plus 5 retries for a total of 6 log entries).
 
 However, the event-display (the Dead Letter Sink) only sees the failed events
 with the response code set to 500.

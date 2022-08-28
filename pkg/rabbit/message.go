@@ -84,7 +84,7 @@ func ConvertMessageToHTTPRequest(
 		logger.Error("Error converting RabbitMQ msg to CloudEvent", zap.Error(err))
 		return err
 	}
-	return http.WriteRequest(ctx, binding.ToMessage(&event), req)
+	return http.WriteRequest(cloudevents.WithEncodingBinary(ctx), binding.ToMessage(&event), req)
 }
 
 // NewMessageFromDelivery returns a binding.Message that holds the provided RabbitMQ Message.
