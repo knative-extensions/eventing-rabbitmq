@@ -17,4 +17,3 @@ spec:
         kind: Service
         name: event-display
         namespace: quick-setup-sample
-    retry: 5

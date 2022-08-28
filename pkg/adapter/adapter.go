@@ -46,7 +46,7 @@ type adapterConfig struct {
 	Predeclared   bool   `envconfig:"RABBITMQ_PREDECLARED" required:"false"`
 	Retry         int    `envconfig:"HTTP_SENDER_RETRY" required:"false"`
 	BackoffPolicy string `envconfig:"HTTP_SENDER_BACKOFF_POLICY" required:"false"`
-	BackoffDelay  string `envconfig:"HTTP_SENDER_BACKOFF_DELAY" default:"50ms" required:"false"`
+	BackoffDelay  string `envconfig:"HTTP_SENDER_BACKOFF_DELAY" default:"PT0.2S" required:"false"`
 	Parallelism   int    `envconfig:"RABBITMQ_CHANNEL_PARALLELISM" default:"1" required:"false"`
 	ExchangeName  string `envconfig:"RABBITMQ_EXCHANGE_NAME" required:"false"`
 	QueueName     string `envconfig:"RABBITMQ_QUEUE_NAME" required:"true"`
@@ -70,8 +70,8 @@ type Adapter struct {
 var _ adapter.MessageAdapter = (*Adapter)(nil)
 var _ adapter.MessageAdapterConstructor = NewAdapter
 var (
-	retryConfig  kncloudevents.RetryConfig = kncloudevents.NoRetries()
-	retriesInt32 int32                     = 0
+	retryConfig  *kncloudevents.RetryConfig
+	retriesInt32 int32 = 0
 )
 
 func NewAdapter(ctx context.Context, processed adapter.EnvConfigAccessor, httpMessageSender *kncloudevents.HTTPMessageSender, reporter source.StatsReporter) adapter.MessageAdapter {
@@ -134,13 +134,14 @@ func (a *Adapter) PollForMessages(stopCh <-chan struct{}) error {
 	var err error
 	var queue amqp.Queue
 	var msgs <-chan (amqp.Delivery)
+	auxRetryConfig := kncloudevents.NoRetries()
 	if a.config.BackoffDelay != "" {
 		retriesInt32 = int32(a.config.Retry)
 		backoffPolicy := utils.SetBackoffPolicy(a.context, a.config.BackoffPolicy)
 		if backoffPolicy == "" {
 			a.logger.Sugar().Fatalf("Invalid BACKOFF_POLICY specified: must be %q or %q", v1.BackoffPolicyExponential, v1.BackoffPolicyLinear)
 		}
-		retryConfig, err = kncloudevents.RetryConfigFromDeliverySpec(v1.DeliverySpec{
+		auxRetryConfig, err = kncloudevents.RetryConfigFromDeliverySpec(v1.DeliverySpec{
 			BackoffPolicy: &backoffPolicy,
 			BackoffDelay:  &a.config.BackoffDelay,
 			Retry:         &retriesInt32,
@@ -150,6 +151,7 @@ func (a *Adapter) PollForMessages(stopCh <-chan struct{}) error {
 		}
 	}
 
+	retryConfig = &auxRetryConfig
 	wg := &sync.WaitGroup{}
 	workerCount := a.config.Parallelism
 	wg.Add(workerCount)
@@ -253,7 +255,7 @@ func (a *Adapter) postMessage(msg *amqp.Delivery) error {
 		return err
 	}
 
-	res, err := a.httpMessageSender.SendWithRetries(req, &retryConfig)
+	res, err := a.httpMessageSender.SendWithRetries(req, retryConfig)
 	if err != nil {
 		a.logger.Error("error while sending the message", zap.Error(err))
 		return err
