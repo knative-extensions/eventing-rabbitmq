@@ -1,4 +1,4 @@
-# Eventing RabbitMQ Broker with Trigger/Source and DLQ Example
+# Eventing RabbitMQ Quick Setup Example
 
 ## Prerequisites and installation
 

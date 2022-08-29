@@ -1,4 +1,4 @@
-# Eventing RabbitMQ Broker and Source Retries Config Example
+# Eventing RabbitMQ Retries Configuration Example
 
 ## Prerequisites and installation
 
