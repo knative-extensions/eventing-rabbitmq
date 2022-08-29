@@ -25,7 +25,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/rickb777/date/period"
 	"knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
@@ -123,10 +122,9 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 		}
 
 		if args.Source.Spec.Delivery.BackoffDelay != nil {
-			p, _ := period.Parse(*args.Source.Spec.Delivery.BackoffDelay)
 			env = append(env, corev1.EnvVar{
 				Name:  "HTTP_SENDER_BACKOFF_DELAY",
-				Value: p.DurationApprox().String(),
+				Value: *args.Source.Spec.Delivery.BackoffDelay,
 			})
 		}
 	}

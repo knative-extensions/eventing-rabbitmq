@@ -2,7 +2,7 @@ apiVersion: eventing.knative.dev/v1
 kind: Broker
 metadata:
   name: default
-  namespace: quick-setup-sample
+  namespace: retry-config-sample
   annotations:
     eventing.knative.dev/broker.class: RabbitMQBroker
 spec:
@@ -16,4 +16,8 @@ spec:
         apiVersion: serving.knative.dev/v1
         kind: Service
         name: event-display
-        namespace: quick-setup-sample
+        namespace: retry-config-sample
+    # this retry config is going to be applied for the messages going to the Broker's DLQ
+    retry: 4
+    backoffPolicy: "linear"
+    backoffDelay: "PT1S"

@@ -164,7 +164,6 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg amqp.Delivery, ceClient c
 	}
 
 	response, result := ceClient.Request(ctx, *event)
-
 	statusCode, isSuccess := getStatus(ctx, result)
 	if statusCode != -1 {
 		args := &dispatcher.ReportArgs{EventType: event.Type()}
