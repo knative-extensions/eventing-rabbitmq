@@ -54,7 +54,7 @@ spec:
                   connectionSecret:
                     description: Secret contains the http management uri for the RabbitMQ
                       cluster. The Secret must contain the key `uri`, `username` and
-                      `password`. . It may optionally contain port or will be defaulted to 5672.
+                      `password`. It may optionally contain port or will be defaulted to 5672.
                       Have to set either name or connectionSecret, but not both.
                     properties:
                       name:

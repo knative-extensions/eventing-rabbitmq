@@ -18,17 +18,22 @@ package rabbit
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
+
 	rabbitduck "knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
 	"knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	fakerabbitclient "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/client/fake"
+	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	fakekubeclient "knative.dev/pkg/client/injection/kube/client/fake"
 	"knative.dev/pkg/injection"
 	fakedynamicclient "knative.dev/pkg/injection/clients/dynamicclient/fake"
+	"knative.dev/pkg/kmeta"
 )
 
 func Test_NewService(t *testing.T) {
@@ -75,5 +80,102 @@ func Test_isReadyFunc(t *testing.T) {
 				t.Errorf("unexpected error checking conditions want: %v, got: %v", tt.want, got)
 			}
 		})
+	}
+}
+
+func Test_RabbitMQURL(t *testing.T) {
+	ctx := context.TODO()
+	ctx, _ = injection.Fake.SetupInformers(ctx, &rest.Config{})
+	ctx, _ = fakedynamicclient.With(ctx, runtime.NewScheme())
+	ctx = rabbitduck.WithDuck(ctx)
+	ctx, fakekubeClientSet := fakekubeclient.With(ctx)
+	i := fakerabbitclient.Get(ctx)
+	r := &Rabbit{Interface: i, rabbitLister: rabbitduck.Get(ctx), kubeClientSet: fakekubeClientSet}
+	for i, tt := range []struct {
+		name, wantUrl      string
+		secretData         map[string][]byte
+		conSecret, wantErr bool
+	}{{
+		name:    "connection secret not available",
+		wantErr: true,
+	}, {
+		name:      "missing uri connection secret",
+		conSecret: true,
+		wantErr:   true,
+	}, {
+		name:       "missing password connection secret",
+		conSecret:  true,
+		secretData: map[string][]byte{"uri": []byte("test-uri")},
+		wantErr:    true,
+	}, {
+		name:       "missing username connection secret",
+		conSecret:  true,
+		secretData: map[string][]byte{"uri": []byte("test-uri"), "password": []byte("1234")},
+		wantErr:    true,
+	}, {
+		name:       "valid connection secret",
+		conSecret:  true,
+		secretData: map[string][]byte{"uri": []byte("test-uri"), "password": []byte("1234"), "username": []byte("test")},
+		wantUrl:    "amqp://test:1234@test-uri:5672",
+		wantErr:    false,
+	}, {
+		name:       "https with custom port secret",
+		conSecret:  true,
+		secretData: map[string][]byte{"uri": []byte("https://test-uri"), "password": []byte("1234"), "username": []byte("test"), "port": []byte("1234")},
+		wantUrl:    "amqps://test:1234@https:1234",
+		wantErr:    false,
+	}} {
+		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			i := i
+			t.Parallel()
+			var name string
+			var s *v1.Secret
+			b := CreateBroker("test-broker", "default")
+			if !tt.conSecret {
+				name = "non-existing-secret"
+			} else {
+				s = CreateSecret(fmt.Sprint(i), "broker", "default", "test-url", b, tt.secretData)
+				r.kubeClientSet.CoreV1().Secrets("default").Create(ctx, s, metav1.CreateOptions{})
+				name = s.Name
+			}
+			cr := &v1beta1.RabbitmqClusterReference{
+				Name:             fmt.Sprintf("test-%d", i),
+				Namespace:        "default",
+				ConnectionSecret: &v1.LocalObjectReference{Name: name},
+			}
+
+			gotUrl, err := r.RabbitMQURL(ctx, cr)
+			if (err != nil && !tt.wantErr) || (err == nil && tt.wantErr) {
+				t.Errorf("unexpected error checking conditions want: %v, got: %v", tt.wantErr, err)
+			} else if !tt.wantErr && gotUrl.String() != tt.wantUrl {
+				t.Errorf("got wrong url want: %s, got: %s", tt.wantUrl, gotUrl)
+			}
+		})
+	}
+}
+
+func CreateBroker(name, namespace string) *eventingv1.Broker {
+	b := &eventingv1.Broker{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      name,
+		},
+	}
+	b.SetDefaults(context.Background())
+	return b
+}
+
+func CreateSecret(name, typeString, namespace, url string, owner kmeta.OwnerRefable, secretData map[string][]byte) *v1.Secret {
+	return &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      SecretName(name, typeString),
+			OwnerReferences: []metav1.OwnerReference{
+				*kmeta.NewControllerRef(owner),
+			},
+			Labels: SecretLabels(name, typeString),
+		},
+		Data: secretData,
 	}
 }
