@@ -1,0 +1,10 @@
+apiVersion: eventing.knative.dev/v1alpha1
+kind: RabbitmqBrokerConfig
+metadata:
+  name: default-config
+  namespace: retry-config-sample
+spec:
+  rabbitmqClusterReference:
+    name: rabbitmq
+    namespace: retry-config-sample
+  queueType: quorum

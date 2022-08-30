@@ -1,0 +1,15 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: failer
+  namespace: retry-config-sample
+  labels:
+    rabbitmq.eventing.knative.dev/release: "v20211216-d49cd0f2"
+spec:
+  template:
+    spec:
+      containers:
+        - image: ko://knative.dev/eventing-rabbitmq/cmd/failer
+          env:
+            - name: DEFAULT_RESPONSE_CODE
+              value: "502"
