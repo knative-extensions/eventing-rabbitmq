@@ -43,6 +43,13 @@ rules:
       - "watch"
       - "patch"
 
+  - apiGroups:
+      - ""
+    resources:
+      - "namespaces/finalizers"
+    verbs:
+      - "update"
+
   # For getting our Deployment so we can decorate with ownerref.
   - apiGroups:
       - "apps"
