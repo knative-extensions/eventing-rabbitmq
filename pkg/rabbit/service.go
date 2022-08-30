@@ -254,6 +254,7 @@ func isReady(conditions []v1beta1.Condition) bool {
 }
 
 func (r *Rabbit) RabbitMQURL(ctx context.Context, clusterRef *rabbitv1beta1.RabbitmqClusterReference) (*url.URL, error) {
+	protocol := []byte("amqp")
 	if clusterRef.ConnectionSecret != nil {
 		s, err := r.kubeClientSet.CoreV1().Secrets(clusterRef.Namespace).Get(ctx, clusterRef.ConnectionSecret.Name, metav1.GetOptions{})
 		if err != nil {
@@ -271,8 +272,15 @@ func (r *Rabbit) RabbitMQURL(ctx context.Context, clusterRef *rabbitv1beta1.Rabb
 		if !ok {
 			return nil, fmt.Errorf("rabbit Secret missing key username")
 		}
+		port, ok := s.Data["port"]
+		if !ok {
+			port = []byte("5672")
+		}
+		if strings.HasPrefix(strings.ToLower(string(uri)), "https") {
+			protocol = []byte("amqps")
+		}
 		splittedUri := strings.Split(string(uri), ":")
-		return url.Parse(fmt.Sprintf("amqp://%s:%s@%s:5672", username, password, splittedUri[0]))
+		return url.Parse(fmt.Sprintf("%s://%s:%s@%s:%s", protocol, username, password, splittedUri[0], port))
 	}
 
 	// TODO: make this better.
@@ -310,7 +318,6 @@ func (r *Rabbit) RabbitMQURL(ctx context.Context, clusterRef *rabbitv1beta1.Rabb
 	if err != nil {
 		return nil, err
 	}
-
 	password, ok := s.Data[rab.Status.DefaultUser.SecretReference.Keys["password"]]
 	if !ok {
 		return nil, fmt.Errorf("rabbit Secret missing key %s", rab.Status.DefaultUser.SecretReference.Keys["password"])
@@ -319,7 +326,13 @@ func (r *Rabbit) RabbitMQURL(ctx context.Context, clusterRef *rabbitv1beta1.Rabb
 	if !ok {
 		return nil, fmt.Errorf("rabbit Secret missing key %s", rab.Status.DefaultUser.SecretReference.Keys["username"])
 	}
+	port, ok := s.Data["port"]
+	if !ok {
+		port = []byte("5672")
+	}
+	if (rab.Spec.TLS != nil && *rab.Spec.TLS != duckv1beta1.RabbitTLSConfig{}) {
+		protocol = []byte("amqps")
+	}
 	host := network.GetServiceHostname(rab.Status.DefaultUser.ServiceReference.Name, rab.Status.DefaultUser.ServiceReference.Namespace)
-
-	return url.Parse(fmt.Sprintf("amqp://%s:%s@%s:%d", username, password, host, 5672))
+	return url.Parse(fmt.Sprintf("%s://%s:%s@%s:%s", protocol, username, password, host, port))
 }

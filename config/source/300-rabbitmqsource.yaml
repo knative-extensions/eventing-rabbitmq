@@ -77,8 +77,8 @@ spec:
                   connectionSecret:
                     description: Secret contains the http management uri for the RabbitMQ
                       cluster. The Secret must contain the key `uri`, `username` and
-                      `password` or operator will error. Have to set either name or
-                      connectionSecret, but not both.
+                      `password`. It may optionally contain port or will be defaulted to 5672.
+                      Have to set either name or connectionSecret, but not both.
                     properties:
                       name:
                         description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names

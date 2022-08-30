@@ -45,7 +45,14 @@ type Rabbit struct {
 
 var _ duck.Implementable = (*Rabbit)(nil)
 
-type RabbitSpec struct{}
+type RabbitSpec struct {
+	TLS *RabbitTLSConfig `json:"tls,omitempty"`
+}
+
+type RabbitTLSConfig struct {
+	SecretName   string `json:"secretName,omitempty"`
+	CASecretName string `json:"caSecretName,omitempty"`
+}
 
 type RabbitStatus struct {
 	// DefaultUser identifies information on internal resources.

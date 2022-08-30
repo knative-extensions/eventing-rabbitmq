@@ -18,6 +18,8 @@ package rabbit
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -26,7 +28,7 @@ import (
 
 type RabbitMQHelperInterface interface {
 	SetupRabbitMQ(string, func(RabbitMQConnectionInterface, RabbitMQChannelInterface) error, *zap.SugaredLogger) (RabbitMQConnectionInterface, RabbitMQChannelInterface, error)
-	WatchRabbitMQConnections(RabbitMQConnectionInterface, RabbitMQChannelInterface, string, *zap.SugaredLogger)
+	WatchRabbitMQConnections(RabbitMQConnectionInterface, RabbitMQChannelInterface, *zap.SugaredLogger)
 	SignalRetry(bool)
 	WaitForRetrySignal() bool
 	CloseRabbitMQConnections(RabbitMQConnectionInterface, *zap.SugaredLogger)
@@ -137,14 +139,13 @@ func (r *RabbitMQHelper) SetupRabbitMQ(
 	// if there is no error reset the retryCounter and cycle values
 	r.retryCounter = 0
 	// Wait for a channel or connection close message to rerun the RabbitMQ setup
-	go r.WatchRabbitMQConnections(connInterface, channelInterface, RabbitMQURL, logger)
+	go r.WatchRabbitMQConnections(connInterface, channelInterface, logger)
 	return connInterface, channelInterface, nil
 }
 
 func (r *RabbitMQHelper) WatchRabbitMQConnections(
 	connection RabbitMQConnectionInterface,
 	channel RabbitMQChannelInterface,
-	RabbitMQURL string,
 	logger *zap.SugaredLogger) {
 	var err error
 	select {
@@ -201,4 +202,13 @@ func DialWrapper(url string) (RabbitMQConnectionInterface, error) {
 		rmqConn = NewConnection(conn)
 	}
 	return rmqConn, err
+}
+
+func VHostHandler(broker string, vhost string) string {
+	if len(vhost) > 0 && len(broker) > 0 && !strings.HasSuffix(broker, "/") &&
+		!strings.HasPrefix(vhost, "/") {
+		return fmt.Sprintf("%s/%s", broker, vhost)
+	}
+
+	return fmt.Sprintf("%s%s", broker, vhost)
 }
