@@ -29,6 +29,7 @@ import (
 	_ "knative.dev/pkg/system/testing"
 
 	"knative.dev/eventing-rabbitmq/test/conformance/features/rabbitmqcluster"
+	r "knative.dev/eventing-rabbitmq/test/conformance/resources/rabbitmqcluster"
 	"knative.dev/eventing/test/rekt/features/broker"
 	b "knative.dev/eventing/test/rekt/resources/broker"
 	"knative.dev/reconciler-test/pkg/environment"
@@ -46,7 +47,7 @@ func TestBrokerControlPlaneConformance(t *testing.T) {
 		environment.Managed(t),
 	)
 
-	env.Prerequisite(ctx, t, rabbitmqcluster.GoesReady("rabbitbroker", b.WithEnvConfig()...))
+	env.Prerequisite(ctx, t, rabbitmqcluster.GoesReady("rabbitbroker", r.WithEnvConfig()...))
 	// Install and wait for a Ready Broker.
 	env.Prerequisite(ctx, t, broker.GoesReady("default", b.WithEnvConfig()...))
 	env.TestSet(ctx, t, broker.ControlPlaneConformance("default"))
@@ -61,7 +62,7 @@ func TestBrokerDataPlaneConformance(t *testing.T) {
 		environment.Managed(t),
 	)
 
-	env.Prerequisite(ctx, t, rabbitmqcluster.GoesReady("rabbitbroker", b.WithEnvConfig()...))
+	env.Prerequisite(ctx, t, rabbitmqcluster.GoesReady("rabbitbroker", r.WithEnvConfig()...))
 	// Install and wait for a Ready Broker.
 	env.Prerequisite(ctx, t, broker.GoesReady("default3", b.WithEnvConfig()...))
 
