@@ -58,7 +58,7 @@ const (
 func RabbitMQCluster() *feature.Feature {
 	f := new(feature.Feature)
 
-	f.Setup("install a rabbitmqcluster", rabbitmq.Install())
+	f.Setup("install a rabbitmqcluster", rabbitmq.Install(rabbitmq.WithEnvConfig()...))
 	f.Requirement("RabbitMQCluster goes ready", RabbitMQClusterReady)
 	return f
 }
@@ -66,7 +66,7 @@ func RabbitMQCluster() *feature.Feature {
 func RabbitMQClusterVHost() *feature.Feature {
 	f := new(feature.Feature)
 
-	f.Setup("install a rabbitmqcluster with a default vhost and user permissions to it", rabbitmqvhost.Install())
+	f.Setup("install a rabbitmqcluster with a default vhost and user permissions to it", rabbitmqvhost.Install(rabbitmqvhost.WithEnvConfig()...))
 	f.Requirement("RabbitMQCluster goes ready", RabbitMQClusterReady)
 	f.Requirement("Add credentials to default user secret", RabbitMQClusterConnectionSecretVhost)
 	return f
