@@ -399,6 +399,7 @@ func TestProtocol_CloudEventToRabbitMQMessage(t *testing.T) {
 	e.SetSubject(e.ID())
 	e.SetTime(time.Now())
 	e.SetExtension("testExtension", "testing the extensions")
+	e.SetDataSchema("test.data.schema")
 	e.SetData(*cloudevents.StringOfApplicationJSON(), map[string]string{"test": "test body data"})
 
 	for _, tt := range []struct {
@@ -431,6 +432,9 @@ func TestProtocol_CloudEventToRabbitMQMessage(t *testing.T) {
 				"source":          e.Source(),
 				"type":            e.Type(),
 				"testextension":   e.Extensions()["testextension"].(string),
+				"dataschema":      e.DataSchema(),
+				"traceparent":     "tp",
+				"tracestate":      "ts",
 			}},
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -438,10 +442,14 @@ func TestProtocol_CloudEventToRabbitMQMessage(t *testing.T) {
 			t.Parallel()
 
 			testEvent := e
+			tp := "tp"
+			ts := "ts"
 			if tt.empty {
+				tp = ""
+				ts = ""
 				testEvent = cloudevents.NewEvent()
 			}
-			got := CloudEventToRabbitMQMessage(&testEvent, "", "")
+			got := CloudEventToRabbitMQMessage(&testEvent, tp, ts)
 			if !comparePublishings(tt.wantMsg, got) {
 				t.Errorf("Unexpected RabbitMQ message want:\n%v\ngot:\n%v", tt.wantMsg, got)
 			}
