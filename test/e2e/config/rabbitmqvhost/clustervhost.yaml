@@ -44,3 +44,4 @@ spec:
       default_permissions.configure = .*
       default_permissions.read = .*
       default_permissions.write = .*
+      loopback_users = none
