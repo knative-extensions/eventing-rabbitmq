@@ -221,3 +221,41 @@ func ConvertToCloudEvent(event *cloudevents.Event, msg *amqp.Delivery, namespace
 	}
 	return nil
 }
+
+func CloudEventToRabbitMQMessage(event *cloudevents.Event, tp, ts string) *amqp.Publishing {
+	headers := amqp.Table{
+		"content-type": event.DataContentType(),
+		"specversion":  event.SpecVersion(),
+		"time":         cloudevents.Timestamp{Time: event.Time().UTC()}.String(),
+		"id":           event.ID(),
+	}
+
+	if event.Type() != "" {
+		headers["type"] = event.Type()
+	}
+	if event.Source() != "" {
+		headers["source"] = event.Source()
+	}
+	if event.Subject() != "" {
+		headers["subject"] = event.Subject()
+	}
+	if event.DataSchema() != "" {
+		headers["dataschema"] = event.DataSchema()
+	}
+	if tp != "" {
+		headers["traceparent"] = tp
+		headers["tracestate"] = ts
+	}
+
+	for key, val := range event.Extensions() {
+		headers[key] = val
+	}
+
+	return &amqp.Publishing{
+		Headers:      headers,
+		MessageId:    event.ID(),
+		ContentType:  event.DataContentType(),
+		Body:         event.Data(),
+		DeliveryMode: amqp.Persistent,
+	}
+}
