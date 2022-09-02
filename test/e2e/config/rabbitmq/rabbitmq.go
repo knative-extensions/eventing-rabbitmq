@@ -19,7 +19,9 @@ package rabbitmq
 import (
 	"context"
 	"embed"
+	"log"
 
+	"github.com/kelseyhightower/envconfig"
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/manifest"
 )
@@ -27,9 +29,54 @@ import (
 //go:embed "*.yaml"
 var yamls embed.FS
 
-func Install() feature.StepFn {
+var EnvCfg EnvConfig
+
+type EnvConfig struct {
+	RabbitmqServerImage     string `envconfig:"RABBITMQ_SERVER_IMAGE"`
+	RabbitmqImagePullSecret string `envconfig:"RABBITMQ_IMAGE_PULL_SECRET"`
+}
+
+func init() {
+	// Process EventingGlobal.
+	if err := envconfig.Process("", &EnvCfg); err != nil {
+		log.Fatal("Failed to process env var", err)
+	}
+}
+
+func WithEnvConfig() []manifest.CfgFn {
+	cfg := []manifest.CfgFn{}
+
+	if EnvCfg.RabbitmqServerImage != "" {
+		cfg = append(cfg, WithRabbitmqServerImage(EnvCfg.RabbitmqServerImage))
+	}
+
+	if EnvCfg.RabbitmqImagePullSecret != "" {
+		cfg = append(cfg, WithRabbitmqImagePullSecret(EnvCfg.RabbitmqImagePullSecret))
+	}
+
+	return cfg
+}
+
+func WithRabbitmqServerImage(name string) manifest.CfgFn {
+	return func(cfg map[string]interface{}) {
+		cfg["rabbitmqServerImage"] = name
+	}
+}
+
+func WithRabbitmqImagePullSecret(name string) manifest.CfgFn {
+	return func(cfg map[string]interface{}) {
+		cfg["rabbitmqImagePullSecretName"] = name
+	}
+}
+
+func Install(opts ...manifest.CfgFn) feature.StepFn {
+	cfg := map[string]interface{}{}
+	for _, fn := range opts {
+		fn(cfg)
+	}
+
 	return func(ctx context.Context, t feature.T) {
-		if _, err := manifest.InstallYamlFS(ctx, yamls, nil); err != nil {
+		if _, err := manifest.InstallYamlFS(ctx, yamls, cfg); err != nil {
 			t.Fatal(err)
 		}
 	}
