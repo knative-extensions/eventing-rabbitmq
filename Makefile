@@ -367,20 +367,28 @@ test-e2e-publish: | $(KUBECONFIG) ## Run TestKoPublish end-to-end tests  - assum
 .PHONY: test-e2e-broker
 test-e2e-broker: | $(KUBECONFIG) ## Run Broker end-to-end tests - assumes a K8S with all necessary components installed (Knative & RabbitMQ)
 	@printf "$(WARN)$(BOLD)rabbitmqcluster$(NORMAL)$(WARN) has large resource requirements 🤔$(NORMAL)\n"
+	RABBITMQ_SERVER_IMAGE=$(RABBITMQ_SERVER_IMAGE) \
+	RABBITMQ_IMAGE_PULL_SECRET=$(RABBITMQ_IMAGE_PULL_SECRET) \
 	go test -v -race -count=1 -timeout=20m -tags=e2e ./test/e2e/... -run 'Test.*Broker.*'
 
 .PHONY: test-e2e-source
 test-e2e-source: | $(KUBECONFIG) ## Run Source end-to-end tests - assumes a K8S with all necessary components installed (Knative & RabbitMQ)
+	RABBITMQ_SERVER_IMAGE=$(RABBITMQ_SERVER_IMAGE) \
+	RABBITMQ_IMAGE_PULL_SECRET=$(RABBITMQ_IMAGE_PULL_SECRET) \
 	go test -v -race -count=1 -timeout=15m -tags=e2e ./test/e2e/... -run 'Test.*Source.*'
 
 .PHONY: test-e2e
 test-e2e: install ## Run all end-to-end tests - manages all dependencies, including K8S components
+	RABBITMQ_SERVER_IMAGE=$(RABBITMQ_SERVER_IMAGE) \
+	RABBITMQ_IMAGE_PULL_SECRET=$(RABBITMQ_IMAGE_PULL_SECRET) \
 	go test -v -race -count=1 -timeout=50m -tags=e2e ./test/e2e/...
 
 .PHONY: _test-conformance
 _test-conformance:
 	BROKER_TEMPLATES=$(BROKER_TEMPLATES) \
 	BROKER_CLASS=RabbitMQBroker \
+	RABBITMQ_SERVER_IMAGE=$(RABBITMQ_SERVER_IMAGE) \
+	RABBITMQ_IMAGE_PULL_SECRET=$(RABBITMQ_IMAGE_PULL_SECRET) \
 	go test -v -tags=e2e \
 		-count=1 -parallel=8 -timeout=1h \
 		-run TestBroker.*Conformance.* $(CURDIR)/test/conformance/...
