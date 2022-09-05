@@ -4,6 +4,13 @@ metadata:
   name: {{ .name }}
   namespace: {{ .namespace }}
 spec:
+  {{ if .rabbitmqServerImage }}
+  image: {{ .rabbitmqServerImage }}
+  {{ end }}
+  {{ if .rabbitmqImagePullSecretName }}
+  imagePullSecrets:
+  - name: {{ .rabbitmqImagePullSecretName }}
+  {{ end }}
   replicas: 1
   resources:
     limits:
