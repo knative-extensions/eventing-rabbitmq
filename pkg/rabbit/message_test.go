@@ -391,6 +391,72 @@ func TestProtocol_NewMessageFromDelivery(t *testing.T) {
 	}
 }
 
+func TestProtocol_CloudEventToRabbitMQMessage(t *testing.T) {
+	e := cloudevents.NewEvent()
+	e.SetID("1234")
+	e.SetType(sourcesv1alpha1.RabbitmqEventType)
+	e.SetSource(sourcesv1alpha1.RabbitmqEventSource(namespace, sourceName, queueName))
+	e.SetSubject(e.ID())
+	e.SetTime(time.Now())
+	e.SetExtension("testExtension", "testing the extensions")
+	e.SetDataSchema("test.data.schema")
+	e.SetData(*cloudevents.StringOfApplicationJSON(), map[string]string{"test": "test body data"})
+
+	for _, tt := range []struct {
+		name    string
+		empty   bool
+		wantMsg *amqp.Publishing
+	}{{
+		name:  "convert empty cloudevent",
+		empty: true,
+		wantMsg: &amqp.Publishing{
+			DeliveryMode: 2,
+			Timestamp:    time.Time{}.UTC(),
+			Headers: amqp.Table{
+				contentTypeHeader: "", "id": "", specversionHeader: "1.0", "time": cloudevents.Timestamp{Time: time.Time{}.UTC()}.String(),
+			}},
+	}, {
+		name: "convert cloudevent",
+		wantMsg: &amqp.Publishing{
+			DeliveryMode: 2,
+			Timestamp:    time.Time{}.UTC(),
+			MessageId:    e.ID(),
+			ContentType:  e.DataContentType(),
+			Body:         e.Data(),
+			Headers: amqp.Table{
+				contentTypeHeader: e.DataContentType(),
+				"id":              e.ID(),
+				"subject":         e.Subject(),
+				specversionHeader: e.SpecVersion(),
+				"time":            cloudevents.Timestamp{Time: e.Time().UTC()}.String(),
+				"source":          e.Source(),
+				"type":            e.Type(),
+				"testextension":   e.Extensions()["testextension"].(string),
+				"dataschema":      e.DataSchema(),
+				"traceparent":     "tp",
+				"tracestate":      "ts",
+			}},
+	}} {
+		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
+
+			testEvent := e
+			tp := "tp"
+			ts := "ts"
+			if tt.empty {
+				tp = ""
+				ts = ""
+				testEvent = cloudevents.NewEvent()
+			}
+			got := CloudEventToRabbitMQMessage(&testEvent, tp, ts)
+			if !comparePublishings(tt.wantMsg, got) {
+				t.Errorf("Unexpected RabbitMQ message want:\n%v\ngot:\n%v", tt.wantMsg, got)
+			}
+		})
+	}
+}
+
 func compareMessages(m1, m2 *Message) bool {
 	if len(m1.Headers) != len(m2.Headers) {
 		return false
@@ -406,4 +472,21 @@ func compareMessages(m1, m2 *Message) bool {
 
 	return (m1.format == m2.format && m1.version == m2.version &&
 		m1.ContentType == m2.ContentType && bytes.Equal(m1.Value, m2.Value))
+}
+
+func comparePublishings(p1, p2 *amqp.Publishing) bool {
+	if len(p1.Headers) != len(p2.Headers) {
+		return false
+	}
+
+	for key, val := range p1.Headers {
+		if val2, ok := p2.Headers[key]; ok {
+			if val.(string) != val2.(string) {
+				return false
+			}
+		}
+	}
+
+	return (bytes.Equal(p1.Body, p2.Body) && p1.MessageId == p2.MessageId &&
+		p1.ContentType == p2.ContentType && p1.DeliveryMode == p2.DeliveryMode)
 }

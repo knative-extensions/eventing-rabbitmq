@@ -27,7 +27,6 @@ import (
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/google/uuid"
 	"github.com/kelseyhightower/envconfig"
-	amqp "github.com/rabbitmq/amqp091-go"
 	"go.opencensus.io/plugin/ochttp/propagation/tracecontext"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
@@ -179,23 +178,6 @@ func (env *envConfig) ServeHTTP(writer http.ResponseWriter, request *http.Reques
 
 func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, time.Duration, error) {
 	tp, ts := (&tracecontext.HTTPFormat{}).SpanContextToHeaders(span.SpanContext())
-	headers := amqp.Table{
-		"content-type": event.DataContentType(),
-		"specversion":  event.SpecVersion(),
-		"time":         cloudevents.Timestamp{Time: event.Time().UTC()}.String(),
-		"type":         event.Type(),
-		"source":       event.Source(),
-		"subject":      event.Subject(),
-		"id":           event.ID(),
-		"dataschema":   event.DataSchema(),
-		"traceparent":  tp,
-		"tracestate":   ts,
-	}
-
-	for key, val := range event.Extensions() {
-		headers[key] = val
-	}
-
 	if env.channel != nil {
 		start := time.Now()
 		dc, err := env.channel.PublishWithDeferredConfirm(
@@ -203,13 +185,7 @@ func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, tim
 			"",    // routing key
 			false, // mandatory
 			false, // immediate
-			amqp.Publishing{
-				Headers:      headers,
-				MessageId:    event.ID(),
-				ContentType:  event.DataContentType(),
-				Body:         event.Data(),
-				DeliveryMode: amqp.Persistent,
-			})
+			*rabbit.CloudEventToRabbitMQMessage(event, tp, ts))
 		if err != nil {
 			return http.StatusInternalServerError, noDuration, fmt.Errorf("failed to publish message: %w", err)
 		}
