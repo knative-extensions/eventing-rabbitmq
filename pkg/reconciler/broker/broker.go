@@ -183,12 +183,22 @@ func (r *Reconciler) reconcileService(ctx context.Context, svc *corev1.Service) 
 
 // reconcileIngressDeploymentCRD reconciles the Ingress Deployment.
 func (r *Reconciler) reconcileIngressDeployment(ctx context.Context, b *eventingv1.Broker) error {
+	clusterRef, err := r.brokerConfig.GetRabbitMQClusterRef(ctx, b)
+	if err != nil {
+		return err
+	}
+	secretName, err := r.rabbit.GetRabbitMQCASecret(ctx, clusterRef)
+	if err != nil {
+		return err
+	}
+
 	expected := resources.MakeIngressDeployment(&resources.IngressArgs{
-		Broker:             b,
-		Image:              r.ingressImage,
-		RabbitMQSecretName: rabbit.SecretName(b.Name, "broker"),
-		BrokerUrlSecretKey: rabbit.BrokerURLSecretKey,
-		Configs:            r.configs,
+		Broker:               b,
+		Image:                r.ingressImage,
+		RabbitMQSecretName:   rabbit.SecretName(b.Name, "broker"),
+		RabbitMQCASecretName: secretName,
+		BrokerUrlSecretKey:   rabbit.BrokerURLSecretKey,
+		Configs:              r.configs,
 	})
 	return r.reconcileDeployment(ctx, expected)
 }
@@ -203,17 +213,26 @@ func (r *Reconciler) reconcileIngressService(ctx context.Context, b *eventingv1.
 func (r *Reconciler) reconcileDLXDispatcherDeployment(ctx context.Context, b *eventingv1.Broker, sub *apis.URL) error {
 	// If there's a sub, then reconcile the deployment as usual.
 	if sub != nil {
+		clusterRef, err := r.brokerConfig.GetRabbitMQClusterRef(ctx, b)
+		if err != nil {
+			return err
+		}
+		secretName, err := r.rabbit.GetRabbitMQCASecret(ctx, clusterRef)
+		if err != nil {
+			return err
+		}
 		expected := resources.MakeDispatcherDeployment(&resources.DispatcherArgs{
 			Broker: b,
 			Image:  r.dispatcherImage,
 			//ServiceAccountName string
-			Delivery:           b.Spec.Delivery,
-			RabbitMQSecretName: rabbit.SecretName(b.Name, "broker"),
-			QueueName:          naming.CreateBrokerDeadLetterQueueName(b),
-			BrokerUrlSecretKey: rabbit.BrokerURLSecretKey,
-			Subscriber:         sub,
-			BrokerIngressURL:   b.Status.Address.URL,
-			Configs:            r.configs,
+			Delivery:             b.Spec.Delivery,
+			RabbitMQSecretName:   rabbit.SecretName(b.Name, "broker"),
+			RabbitMQCASecretName: secretName,
+			QueueName:            naming.CreateBrokerDeadLetterQueueName(b),
+			BrokerUrlSecretKey:   rabbit.BrokerURLSecretKey,
+			Subscriber:           sub,
+			BrokerIngressURL:     b.Status.Address.URL,
+			Configs:              r.configs,
 		})
 		return r.reconcileDeployment(ctx, expected)
 	}

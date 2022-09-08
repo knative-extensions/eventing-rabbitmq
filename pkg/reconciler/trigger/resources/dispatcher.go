@@ -47,14 +47,15 @@ type DispatcherArgs struct {
 	Trigger  *eventingv1.Trigger
 	Image    string
 	//ServiceAccountName string
-	RabbitMQHost       string
-	RabbitMQSecretName string
-	QueueName          string
-	BrokerUrlSecretKey string
-	BrokerIngressURL   *apis.URL
-	Subscriber         *apis.URL
-	DLX                bool
-	Configs            reconcilersource.ConfigAccessor
+	RabbitMQHost         string
+	RabbitMQSecretName   string
+	RabbitMQCASecretName string
+	QueueName            string
+	BrokerUrlSecretKey   string
+	BrokerIngressURL     *apis.URL
+	Subscriber           *apis.URL
+	DLX                  bool
+	Configs              reconcilersource.ConfigAccessor
 }
 
 // MakeDispatcherDeployment creates the in-memory representation of the Broker's Dispatcher Deployment.
@@ -167,7 +168,7 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 				Value: "1",
 			})
 	}
-	return &appsv1.Deployment{
+	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: args.Trigger.Namespace,
 			Name:      name,
@@ -192,6 +193,23 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 			},
 		},
 	}
+	if args.RabbitMQCASecretName != "" {
+		deployment.Spec.Template.Spec.Volumes = []corev1.Volume{{
+			Name: "rabbitmq-ca",
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: args.RabbitMQCASecretName,
+				},
+			},
+		}}
+
+		deployment.Spec.Template.Spec.Containers[0].VolumeMounts = []corev1.VolumeMount{
+			{
+				MountPath: "/etc/ssl/certs/",
+				Name:      "rabbitmq-ca",
+			}}
+	}
+	return deployment
 }
 
 // DispatcherLabels generates the labels present on all resources representing the dispatcher of the given
