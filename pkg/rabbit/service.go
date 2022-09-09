@@ -45,6 +45,8 @@ import (
 	"knative.dev/pkg/network"
 )
 
+const CA_SECRET_KEYNAME = "caSecretName"
+
 func New(ctx context.Context) *Rabbit {
 	return &Rabbit{
 		Interface:     rabbitmqclient.Get(ctx),
@@ -318,7 +320,6 @@ func (r *Rabbit) RabbitMQURL(ctx context.Context, clusterRef *rabbitv1beta1.Rabb
 }
 
 func (r *Rabbit) GetRabbitMQCASecret(ctx context.Context, clusterRef *rabbitv1beta1.RabbitmqClusterReference) (string, error) {
-	// TODO: add tests
 	if clusterRef == nil {
 		return "", errors.New("GetRabbitMQCASecret: nil clusterReference")
 	}
@@ -327,7 +328,7 @@ func (r *Rabbit) GetRabbitMQCASecret(ctx context.Context, clusterRef *rabbitv1be
 		if err != nil {
 			return "", err
 		}
-		return string(s.Data["caSecretName"]), nil
+		return string(s.Data[CA_SECRET_KEYNAME]), nil
 	}
 
 	rabbitMQCluster, err := r.getClusterFromReference(ctx, clusterRef)

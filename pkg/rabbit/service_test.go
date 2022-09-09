@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 
+	rabbitclusterv1beta1 "github.com/rabbitmq/cluster-operator/api/v1beta1"
 	rabbitduck "knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
 	"knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	fakerabbitclient "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/client/fake"
@@ -150,6 +151,98 @@ func Test_RabbitMQURL(t *testing.T) {
 				t.Errorf("unexpected error checking conditions want: %v, got: %v", tt.wantErr, err)
 			} else if !tt.wantErr && gotUrl.String() != tt.wantUrl {
 				t.Errorf("got wrong url want: %s, got: %s", tt.wantUrl, gotUrl)
+			}
+		})
+	}
+}
+
+func TestGetRabbitMQCASecret(t *testing.T) {
+	for _, tt := range []struct {
+		name, wantSecret string
+		clusterRef       *v1beta1.RabbitmqClusterReference
+		secret           *v1.Secret
+		wantErr          bool
+	}{{
+		name: "errors when connection secret not available",
+		clusterRef: &v1beta1.RabbitmqClusterReference{
+			ConnectionSecret: &v1.LocalObjectReference{Name: "secret"},
+		},
+		wantErr: true,
+	}, {
+		name:       "errors for nil clusterRef",
+		clusterRef: nil,
+		wantErr:    true,
+	}, {
+		name: "no error, empty secretName when secret doesn't have correct field set",
+		clusterRef: &v1beta1.RabbitmqClusterReference{
+			Namespace: "default",
+			ConnectionSecret: &v1.LocalObjectReference{
+				Name: "secret-name",
+			},
+		},
+		secret: &v1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "secret-name",
+				Namespace: "default",
+			},
+		},
+		wantErr: false,
+	}, {
+		name: "no error, correct secret name when clusterRef is a secret",
+		clusterRef: &v1beta1.RabbitmqClusterReference{
+			Namespace: "default",
+			ConnectionSecret: &v1.LocalObjectReference{
+				Name: "secret-name",
+			},
+		},
+		secret: &v1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "secret-name",
+				Namespace: "default",
+			},
+			Data: map[string][]byte{
+				"caSecretName": []byte("some-secret-name"),
+			},
+		},
+		wantErr:    false,
+		wantSecret: "some-secret-name",
+	}, {
+		name: "errors if RabbitMQCluster not found",
+		clusterRef: &v1beta1.RabbitmqClusterReference{
+			Namespace: "default",
+			Name:      "some-cluster",
+		},
+		wantErr: true,
+	}} {
+		// TODO: add more RabbitmqCluster tests
+		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			ctx, _ = injection.Fake.SetupInformers(ctx, &rest.Config{})
+			scheme := runtime.NewScheme()
+			rabbitclusterv1beta1.AddToScheme(scheme)
+			ctx, _ = fakedynamicclient.With(ctx, scheme)
+			ctx = rabbitduck.WithDuck(ctx)
+			ctx, fakekubeClientSet := fakekubeclient.With(ctx)
+			i := fakerabbitclient.Get(ctx)
+
+			if tt.secret != nil {
+				_, err := fakekubeClientSet.CoreV1().Secrets(tt.clusterRef.Namespace).Create(ctx, tt.secret, metav1.CreateOptions{})
+				if err != nil {
+					t.Errorf("failed to create secret: %s", err)
+				}
+			}
+
+			r := &Rabbit{Interface: i, rabbitLister: rabbitduck.Get(ctx), kubeClientSet: fakekubeClientSet}
+
+			gotSecretName, err := r.GetRabbitMQCASecret(ctx, tt.clusterRef)
+			if (err != nil && !tt.wantErr) || (err == nil && tt.wantErr) {
+				t.Errorf("unexpected error checking conditions want: %v, got: %v", tt.wantErr, err)
+			}
+			if tt.wantSecret != gotSecretName {
+				t.Errorf("unexpected secretname: want: %s, got: %s", tt.wantSecret, gotSecretName)
 			}
 		})
 	}
