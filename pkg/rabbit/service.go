@@ -324,8 +324,7 @@ func (r *Rabbit) GetRabbitMQCASecret(ctx context.Context, clusterRef *rabbitv1be
 		if err != nil {
 			return "", err
 		}
-		secretName, _ := s.Data["caSecretName"]
-		return string(secretName), nil
+		return string(s.Data["caSecretName"]), nil
 	}
 
 	rabbitMQCluster, err := r.getClusterFromReference(ctx, clusterRef)
