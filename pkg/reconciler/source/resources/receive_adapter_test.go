@@ -81,9 +81,10 @@ func TestMakeReceiveAdapter(t *testing.T) {
 					"test-key1": "test-value1",
 					"test-key2": "test-value2",
 				},
-				SinkURI:            "sink-uri",
-				RabbitMQSecretName: secretName,
-				BrokerUrlSecretKey: brokerURLKey,
+				SinkURI:              "sink-uri",
+				RabbitMQSecretName:   secretName,
+				RabbitMQCASecretName: "rabbitmq-ca-secret",
+				BrokerUrlSecretKey:   brokerURLKey,
 			})
 
 			boPolicy := tt.backoffPolicy
@@ -131,6 +132,14 @@ func TestMakeReceiveAdapter(t *testing.T) {
 						},
 						Spec: corev1.PodSpec{
 							ServiceAccountName: "source-svc-acct",
+							Volumes: []corev1.Volume{{
+								Name: "rabbitmq-ca",
+								VolumeSource: corev1.VolumeSource{
+									Secret: &corev1.SecretVolumeSource{
+										SecretName: "rabbitmq-ca-secret",
+									},
+								},
+							}},
 							Containers: []corev1.Container{
 								{
 									Name:            "receive-adapter",
@@ -144,6 +153,11 @@ func TestMakeReceiveAdapter(t *testing.T) {
 											corev1.ResourceCPU:    resource.MustParse("4000m"),
 											corev1.ResourceMemory: resource.MustParse("600Mi")},
 									},
+									VolumeMounts: []corev1.VolumeMount{
+										{
+											MountPath: "/etc/ssl/certs/",
+											Name:      "rabbitmq-ca",
+										}},
 									Env: []corev1.EnvVar{
 										{
 											Name: "RABBIT_URL",

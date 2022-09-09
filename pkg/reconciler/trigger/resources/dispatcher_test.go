@@ -135,6 +135,14 @@ func deployment(opts ...func(*appsv1.Deployment)) *appsv1.Deployment {
 					},
 				},
 				Spec: corev1.PodSpec{
+					Volumes: []corev1.Volume{{
+						Name: "rabbitmq-ca",
+						VolumeSource: corev1.VolumeSource{
+							Secret: &corev1.SecretVolumeSource{
+								SecretName: "rabbitmq-ca-secret",
+							},
+						},
+					}},
 					Containers: []corev1.Container{{
 						Name:  "dispatcher",
 						Image: image,
@@ -146,6 +154,11 @@ func deployment(opts ...func(*appsv1.Deployment)) *appsv1.Deployment {
 								corev1.ResourceCPU:    resource.MustParse("4000m"),
 								corev1.ResourceMemory: resource.MustParse("600Mi")},
 						},
+						VolumeMounts: []corev1.VolumeMount{
+							{
+								MountPath: "/etc/ssl/certs/",
+								Name:      "rabbitmq-ca",
+							}},
 						Env: []corev1.EnvVar{{
 							Name:  system.NamespaceEnvKey,
 							Value: system.Namespace(),
@@ -223,14 +236,15 @@ func dispatcherArgs(opts ...func(*DispatcherArgs)) *DispatcherArgs {
 		Spec:       eventingv1.TriggerSpec{Broker: brokerName},
 	}
 	args := &DispatcherArgs{
-		Trigger:            trigger,
-		Image:              image,
-		RabbitMQHost:       rabbitHost,
-		RabbitMQSecretName: secretName,
-		QueueName:          queueName,
-		BrokerUrlSecretKey: brokerURLKey,
-		BrokerIngressURL:   ingressURL,
-		Subscriber:         sURL,
+		Trigger:              trigger,
+		Image:                image,
+		RabbitMQHost:         rabbitHost,
+		RabbitMQSecretName:   secretName,
+		RabbitMQCASecretName: "rabbitmq-ca-secret",
+		QueueName:            queueName,
+		BrokerUrlSecretKey:   brokerURLKey,
+		BrokerIngressURL:     ingressURL,
+		Subscriber:           sURL,
 	}
 	for _, o := range opts {
 		o(args)

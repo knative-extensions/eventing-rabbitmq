@@ -54,14 +54,15 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 	}
 	linear := v1.BackoffPolicyLinear
 	args := &DispatcherArgs{
-		Broker:             broker,
-		Image:              image,
-		RabbitMQHost:       rabbitHost,
-		RabbitMQSecretName: secretName,
-		QueueName:          queueName,
-		BrokerUrlSecretKey: brokerURLKey,
-		Subscriber:         sURL,
-		BrokerIngressURL:   bURL,
+		Broker:               broker,
+		Image:                image,
+		RabbitMQHost:         rabbitHost,
+		RabbitMQSecretName:   secretName,
+		RabbitMQCASecretName: "rabbitmq-ca-secret",
+		QueueName:            queueName,
+		BrokerUrlSecretKey:   brokerURLKey,
+		Subscriber:           sURL,
+		BrokerIngressURL:     bURL,
 		Delivery: &v1.DeliverySpec{
 			Retry:         ptr.Int32(10),
 			BackoffDelay:  ptr.String("PT20S"),
@@ -103,6 +104,14 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 					},
 				},
 				Spec: corev1.PodSpec{
+					Volumes: []corev1.Volume{{
+						Name: "rabbitmq-ca",
+						VolumeSource: corev1.VolumeSource{
+							Secret: &corev1.SecretVolumeSource{
+								SecretName: "rabbitmq-ca-secret",
+							},
+						},
+					}},
 					Containers: []corev1.Container{{
 						Name:  "dispatcher",
 						Image: image,
@@ -114,6 +123,11 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 								corev1.ResourceCPU:    resource.MustParse("4000m"),
 								corev1.ResourceMemory: resource.MustParse("600Mi")},
 						},
+						VolumeMounts: []corev1.VolumeMount{
+							{
+								MountPath: "/etc/ssl/certs/",
+								Name:      "rabbitmq-ca",
+							}},
 						Env: []corev1.EnvVar{{
 							Name:  system.NamespaceEnvKey,
 							Value: system.Namespace(),

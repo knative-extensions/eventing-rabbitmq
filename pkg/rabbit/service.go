@@ -319,6 +319,9 @@ func (r *Rabbit) RabbitMQURL(ctx context.Context, clusterRef *rabbitv1beta1.Rabb
 
 func (r *Rabbit) GetRabbitMQCASecret(ctx context.Context, clusterRef *rabbitv1beta1.RabbitmqClusterReference) (string, error) {
 	// TODO: add tests
+	if clusterRef == nil {
+		return "", errors.New("GetRabbitMQCASecret: nil clusterReference")
+	}
 	if clusterRef.ConnectionSecret != nil {
 		s, err := r.kubeClientSet.CoreV1().Secrets(clusterRef.Namespace).Get(ctx, clusterRef.ConnectionSecret.Name, metav1.GetOptions{})
 		if err != nil {

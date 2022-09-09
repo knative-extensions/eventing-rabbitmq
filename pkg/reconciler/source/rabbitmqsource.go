@@ -212,15 +212,21 @@ func (r *Reconciler) createReceiveAdapter(ctx context.Context, src *v1alpha1.Rab
 		logging.FromContext(ctx).Error("error while converting metrics config to JSON", zap.Any("receiveAdapter", err))
 	}
 
+	secretName, err := r.rabbit.GetRabbitMQCASecret(ctx, src.Spec.RabbitmqClusterReference)
+	if err != nil {
+		return nil, err
+	}
+
 	raArgs := resources.ReceiveAdapterArgs{
-		Image:              r.receiveAdapterImage,
-		Source:             src,
-		Labels:             resources.GetLabels(src.Name),
-		SinkURI:            sinkURI.String(),
-		MetricsConfig:      metricsConfig,
-		LoggingConfig:      loggingConfig,
-		RabbitMQSecretName: rabbit.SecretName(src.Name, "source"),
-		BrokerUrlSecretKey: rabbit.BrokerURLSecretKey,
+		Image:                r.receiveAdapterImage,
+		Source:               src,
+		Labels:               resources.GetLabels(src.Name),
+		SinkURI:              sinkURI.String(),
+		MetricsConfig:        metricsConfig,
+		LoggingConfig:        loggingConfig,
+		RabbitMQSecretName:   rabbit.SecretName(src.Name, "source"),
+		RabbitMQCASecretName: secretName,
+		BrokerUrlSecretKey:   rabbit.BrokerURLSecretKey,
 	}
 	expected := resources.MakeReceiveAdapter(&raArgs)
 

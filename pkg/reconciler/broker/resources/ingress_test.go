@@ -41,10 +41,11 @@ const (
 func TestMakeIngressDeployment(t *testing.T) {
 	var TrueValue = true
 	args := &IngressArgs{
-		Broker:             &eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: ns, UID: brokerUID}},
-		Image:              image,
-		RabbitMQSecretName: secretName,
-		BrokerUrlSecretKey: brokerURLKey,
+		Broker:               &eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: ns, UID: brokerUID}},
+		Image:                image,
+		RabbitMQSecretName:   secretName,
+		RabbitMQCASecretName: "rabbitmq-ca-secret",
+		BrokerUrlSecretKey:   brokerURLKey,
 	}
 
 	got := MakeIngressDeployment(args)
@@ -80,6 +81,14 @@ func TestMakeIngressDeployment(t *testing.T) {
 					},
 				},
 				Spec: corev1.PodSpec{
+					Volumes: []corev1.Volume{{
+						Name: "rabbitmq-ca",
+						VolumeSource: corev1.VolumeSource{
+							Secret: &corev1.SecretVolumeSource{
+								SecretName: "rabbitmq-ca-secret",
+							},
+						},
+					}},
 					Containers: []corev1.Container{{
 						Image: image,
 						Name:  "ingress",
@@ -91,6 +100,11 @@ func TestMakeIngressDeployment(t *testing.T) {
 								corev1.ResourceCPU:    resource.MustParse("1000m"),
 								corev1.ResourceMemory: resource.MustParse("400Mi")},
 						},
+						VolumeMounts: []corev1.VolumeMount{
+							{
+								MountPath: "/etc/ssl/certs/",
+								Name:      "rabbitmq-ca",
+							}},
 						Env: []corev1.EnvVar{{
 							Name:  system.NamespaceEnvKey,
 							Value: system.Namespace(),
