@@ -389,17 +389,27 @@ func (r *Reconciler) reconcileDispatcherDeployment(ctx context.Context, t *event
 		queueName = naming.CreateTriggerDeadLetterQueueName(t)
 	}
 
+	clusterRef, err := r.brokerConfig.GetRabbitMQClusterRef(ctx, b)
+	if err != nil {
+		return nil, err
+	}
+	secretName, err := r.rabbit.GetRabbitMQCASecret(ctx, clusterRef)
+	if err != nil {
+		return nil, err
+	}
+
 	expected := resources.MakeDispatcherDeployment(&resources.DispatcherArgs{
-		Trigger:            t,
-		Image:              r.dispatcherImage,
-		RabbitMQSecretName: rabbitmqSecret.Name,
-		QueueName:          queueName,
-		BrokerUrlSecretKey: rabbit.BrokerURLSecretKey,
-		BrokerIngressURL:   b.Status.Address.URL,
-		Subscriber:         sub,
-		DLX:                dlq,
-		Delivery:           delivery,
-		Configs:            r.configs,
+		Trigger:              t,
+		Image:                r.dispatcherImage,
+		RabbitMQSecretName:   rabbitmqSecret.Name,
+		RabbitMQCASecretName: secretName,
+		QueueName:            queueName,
+		BrokerUrlSecretKey:   rabbit.BrokerURLSecretKey,
+		BrokerIngressURL:     b.Status.Address.URL,
+		Subscriber:           sub,
+		DLX:                  dlq,
+		Delivery:             delivery,
+		Configs:              r.configs,
 	})
 	return r.reconcileDeployment(ctx, expected)
 }

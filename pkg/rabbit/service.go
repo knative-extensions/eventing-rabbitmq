@@ -45,6 +45,8 @@ import (
 	"knative.dev/pkg/network"
 )
 
+const CA_SECRET_KEYNAME = "caSecretName"
+
 func New(ctx context.Context) *Rabbit {
 	return &Rabbit{
 		Interface:     rabbitmqclient.Get(ctx),
@@ -283,33 +285,13 @@ func (r *Rabbit) RabbitMQURL(ctx context.Context, clusterRef *rabbitv1beta1.Rabb
 		return url.Parse(fmt.Sprintf("%s://%s:%s@%s:%s", protocol, username, password, splittedUri[0], port))
 	}
 
-	// TODO: make this better.
-	ref := &duckv1.KReference{
-		Kind:       "RabbitmqCluster",
-		APIVersion: "rabbitmq.com/v1beta1",
-		Name:       clusterRef.Name,
-		Namespace:  clusterRef.Namespace,
-	}
-	gv, err := schema.ParseGroupVersion(ref.APIVersion)
+	rab, err := r.getClusterFromReference(ctx, clusterRef)
 	if err != nil {
 		return nil, err
 	}
 
-	gvk := gv.WithKind(ref.Kind)
-	gvr, _ := meta.UnsafeGuessKindToResource(gvk)
-	_, lister, err := r.rabbitLister.Get(ctx, gvr)
-	if err != nil {
-		return nil, err
-	}
-
-	o, err := lister.ByNamespace(ref.Namespace).Get(ref.Name)
-	if err != nil {
-		return nil, err
-	}
-
-	rab := o.(*duckv1beta1.Rabbit)
 	if rab.Status.DefaultUser == nil || rab.Status.DefaultUser.SecretReference == nil || rab.Status.DefaultUser.ServiceReference == nil {
-		return nil, fmt.Errorf("rabbit \"%s/%s\" not ready", ref.Namespace, ref.Name)
+		return nil, fmt.Errorf("rabbit \"%s/%s\" not ready", rab.Namespace, rab.Name)
 	}
 
 	_ = rab.Status.DefaultUser.SecretReference
@@ -335,4 +317,54 @@ func (r *Rabbit) RabbitMQURL(ctx context.Context, clusterRef *rabbitv1beta1.Rabb
 	}
 	host := network.GetServiceHostname(rab.Status.DefaultUser.ServiceReference.Name, rab.Status.DefaultUser.ServiceReference.Namespace)
 	return url.Parse(fmt.Sprintf("%s://%s:%s@%s:%s", protocol, username, password, host, port))
+}
+
+func (r *Rabbit) GetRabbitMQCASecret(ctx context.Context, clusterRef *rabbitv1beta1.RabbitmqClusterReference) (string, error) {
+	if clusterRef == nil {
+		return "", errors.New("GetRabbitMQCASecret: nil clusterReference")
+	}
+	if clusterRef.ConnectionSecret != nil {
+		s, err := r.kubeClientSet.CoreV1().Secrets(clusterRef.Namespace).Get(ctx, clusterRef.ConnectionSecret.Name, metav1.GetOptions{})
+		if err != nil {
+			return "", err
+		}
+		return string(s.Data[CA_SECRET_KEYNAME]), nil
+	}
+
+	rabbitMQCluster, err := r.getClusterFromReference(ctx, clusterRef)
+	if err != nil {
+		return "", err
+	}
+	if rabbitMQCluster.Spec.TLS != nil {
+		return rabbitMQCluster.Spec.TLS.CASecretName, nil
+	}
+
+	return "", nil
+}
+
+func (r *Rabbit) getClusterFromReference(ctx context.Context, clusterRef *rabbitv1beta1.RabbitmqClusterReference) (*duckv1beta1.Rabbit, error) {
+	// TODO: make this better.
+	ref := &duckv1.KReference{
+		Kind:       "RabbitmqCluster",
+		APIVersion: "rabbitmq.com/v1beta1",
+		Name:       clusterRef.Name,
+		Namespace:  clusterRef.Namespace,
+	}
+	gv, err := schema.ParseGroupVersion(ref.APIVersion)
+	if err != nil {
+		return nil, err
+	}
+
+	gvk := gv.WithKind(ref.Kind)
+	gvr, _ := meta.UnsafeGuessKindToResource(gvk)
+	_, lister, err := r.rabbitLister.Get(ctx, gvr)
+	if err != nil {
+		return nil, err
+	}
+
+	o, err := lister.ByNamespace(ref.Namespace).Get(ref.Name)
+	if err != nil {
+		return nil, err
+	}
+	return o.(*duckv1beta1.Rabbit), nil
 }

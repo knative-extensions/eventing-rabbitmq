@@ -257,6 +257,7 @@ func TestReconcile(t *testing.T) {
 					triggerWithFilter(),
 					createSecret(rabbitURL),
 					createRabbitMQBrokerConfig(),
+					createRabbitMQCluster(),
 					markReady(createQueue(config, false)),
 					markReady(createBinding(true, false)),
 				},
@@ -274,6 +275,7 @@ func TestReconcile(t *testing.T) {
 					triggerWithFilter(),
 					createSecret(rabbitURL),
 					createRabbitMQBrokerConfig(),
+					createRabbitMQCluster(),
 					markReady(createQueue(config, false)),
 					markReady(createBinding(true, false)),
 				},
@@ -292,6 +294,7 @@ func TestReconcile(t *testing.T) {
 					triggerWithDeliverySpec(),
 					createSecret(rabbitURL),
 					createRabbitMQBrokerConfig(),
+					createRabbitMQCluster(),
 					markReady(createQueue(config, false)),
 					markReady(createBinding(true, false)),
 				},
@@ -386,6 +389,7 @@ func TestReconcile(t *testing.T) {
 					triggerWithFilter(),
 					createSecret(rabbitURL),
 					createRabbitMQBrokerConfig(),
+					createRabbitMQCluster(),
 					markReady(createQueue(config, false)),
 					markReady(createBinding(true, false)),
 				},
@@ -408,6 +412,7 @@ func TestReconcile(t *testing.T) {
 						WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS)),
 					createSecret(rabbitURL),
 					createRabbitMQBrokerConfig(),
+					createRabbitMQCluster(),
 				},
 				WantCreates: []runtime.Object{
 					createDispatcherDeployment(false),
@@ -461,6 +466,7 @@ func TestReconcile(t *testing.T) {
 						WithTriggerSubscriberURI(subscriberURI)),
 					createSecret(rabbitURL),
 					createRabbitMQBrokerConfig(),
+					createRabbitMQCluster(),
 					markReady(createQueue(config, false)),
 					markReady(createBinding(false, false)),
 				},
@@ -496,6 +502,7 @@ func TestReconcile(t *testing.T) {
 						WithTriggerSubscriberURI(subscriberURI)),
 					createSecret(rabbitURL),
 					createRabbitMQBrokerConfig(),
+					createRabbitMQCluster(),
 					createDifferentDispatcherDeployment(),
 					markReady(createQueue(config, false)),
 					markReady(createBinding(false, false)),
@@ -532,6 +539,7 @@ func TestReconcile(t *testing.T) {
 						WithTriggerSubscriberURI(subscriberURI)),
 					createSecret(rabbitURL),
 					createRabbitMQBrokerConfig(),
+					createRabbitMQCluster(),
 					markReady(createQueue(config, false)),
 					markReady(createBinding(false, false)),
 					createDispatcherDeployment(false),
@@ -556,6 +564,7 @@ func TestReconcile(t *testing.T) {
 					triggerWithFilter(),
 					createSecret(rabbitURL),
 					createRabbitMQBrokerConfig(),
+					createRabbitMQCluster(),
 					markReady(createQueue(config, false)),
 					markReady(createBinding(true, false)),
 					createDispatcherDeployment(false),
@@ -722,6 +731,7 @@ func TestReconcile(t *testing.T) {
 					),
 					createSecret(rabbitURL),
 					createRabbitMQBrokerConfig(),
+					createRabbitMQCluster(),
 					markReady(createQueue(config, false)),
 					markReady(createBinding(false, false)),
 				},
@@ -754,6 +764,7 @@ func TestReconcile(t *testing.T) {
 						WithTriggerSubscriberURI(subscriberURI)),
 					createSecret(rabbitURL),
 					createRabbitMQBrokerConfig(),
+					createRabbitMQCluster(),
 					markReady(createQueue(config, false)),
 					markReady(createBinding(false, false)),
 					createDispatcherDeploymentWithParallelism(),
@@ -782,6 +793,7 @@ func TestReconcile(t *testing.T) {
 					triggerWithFilter(),
 					createSecret(rabbitURL),
 					createRabbitMQBrokerConfig(),
+					createRabbitMQCluster(),
 					markReady(createQueue(config, true)),
 					markReady(createBinding(true, false)),
 					markReady(createQueue(config, false)),
@@ -1214,6 +1226,20 @@ func makeSubscriberNotAddressableAsUnstructured() *unstructured.Unstructured {
 			"metadata": map[string]interface{}{
 				"namespace": testNS,
 				"name":      subscriberName,
+			},
+		},
+	}
+}
+
+func createRabbitMQCluster() *unstructured.Unstructured {
+	return &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "rabbitmq.com/v1beta1",
+			"kind":       "RabbitmqCluster",
+			"metadata": map[string]interface{}{
+				"creationTimestamp": nil,
+				"namespace":         testNS,
+				"name":              rabbitMQBrokerName,
 			},
 		},
 	}

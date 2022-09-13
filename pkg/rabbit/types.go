@@ -36,4 +36,5 @@ type Service interface {
 	ReconcileBrokerDLXPolicy(context.Context, *QueueArgs) (Result, error)
 	ReconcileDLQPolicy(context.Context, *QueueArgs) (Result, error)
 	DeleteResource(ctx context.Context, args *DeleteResourceArgs) error
+	GetRabbitMQCASecret(ctx context.Context, clusterRef *rabbitv1beta1.RabbitmqClusterReference) (string, error)
 }

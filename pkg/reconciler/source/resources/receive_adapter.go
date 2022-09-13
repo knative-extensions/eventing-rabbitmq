@@ -31,14 +31,15 @@ import (
 )
 
 type ReceiveAdapterArgs struct {
-	Image              string
-	Source             *v1alpha1.RabbitmqSource
-	Labels             map[string]string
-	SinkURI            string
-	MetricsConfig      string
-	LoggingConfig      string
-	RabbitMQSecretName string
-	BrokerUrlSecretKey string
+	Image                string
+	Source               *v1alpha1.RabbitmqSource
+	Labels               map[string]string
+	SinkURI              string
+	MetricsConfig        string
+	LoggingConfig        string
+	RabbitMQSecretName   string
+	RabbitMQCASecretName string
+	BrokerUrlSecretKey   string
 }
 
 func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
@@ -129,7 +130,7 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 		}
 	}
 
-	return &v1.Deployment{
+	deployment := &v1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:         kmeta.ChildName(fmt.Sprintf("rabbitmqsource-%s-", args.Source.Name), string(args.Source.UID)),
 			Namespace:    args.Source.Namespace,
@@ -175,4 +176,22 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 			},
 		},
 	}
+	if args.RabbitMQCASecretName != "" {
+		deployment.Spec.Template.Spec.Volumes = []corev1.Volume{{
+			Name: "rabbitmq-ca",
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: args.RabbitMQCASecretName,
+				},
+			},
+		}}
+
+		deployment.Spec.Template.Spec.Containers[0].VolumeMounts = []corev1.VolumeMount{
+			{
+				MountPath: "/etc/ssl/certs/",
+				Name:      "rabbitmq-ca",
+			}}
+	}
+
+	return deployment
 }
