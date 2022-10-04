@@ -60,7 +60,7 @@ github.com/cloudevents/conformance/pkg/http
 ## explicit; go 1.17
 github.com/cloudevents/sdk-go/observability/opencensus/v2/client
 github.com/cloudevents/sdk-go/observability/opencensus/v2/http
-# github.com/cloudevents/sdk-go/sql/v2 v2.12.0
+# github.com/cloudevents/sdk-go/sql/v2 v2.0.0-20220930150014-52b12276cc4a
 ## explicit; go 1.17
 github.com/cloudevents/sdk-go/sql/v2
 github.com/cloudevents/sdk-go/sql/v2/expression

@@ -50,7 +50,7 @@ require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/cloudevents/conformance v0.2.0 // indirect
-	github.com/cloudevents/sdk-go/sql/v2 v2.12.0 // indirect
+	github.com/cloudevents/sdk-go/sql/v2 v2.0.0-20220930150014-52b12276cc4a // indirect
 	github.com/cncf/udpa/go v0.0.0-20210930031921-04548b0d99d4 // indirect
 	github.com/cncf/xds/go v0.0.0-20211130200136-a8f946100490 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
