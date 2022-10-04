@@ -15,6 +15,9 @@ See [Install and Demo](source/)
 
 See [Performance](../test/performance/)
 
+## Configuring self-signed certificates
+See [Self-Signed Certificates](self-signed-certs/)
+
 ## Contributing
 
 To contribute to the project, fork this repository, clone it and make a branch.
