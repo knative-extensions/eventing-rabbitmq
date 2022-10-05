@@ -1305,7 +1305,7 @@ knative.dev/eventing/test/test_images/event-sender
 knative.dev/eventing/test/test_images/heartbeats
 knative.dev/eventing/test/test_images/performance
 knative.dev/eventing/test/test_images/print
-# knative.dev/hack v0.0.0-20221003111221-b3c97904d3b5
+# knative.dev/hack v0.0.0-20221004153928-92a65f105c37
 ## explicit; go 1.18
 knative.dev/hack
 # knative.dev/pkg v0.0.0-20221003153827-158538cc46ec
