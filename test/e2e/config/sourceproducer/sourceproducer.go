@@ -20,6 +20,7 @@ import (
 	"context"
 	"embed"
 
+	"knative.dev/eventing-rabbitmq/test/e2e/config/rabbitmq"
 	"knative.dev/eventing-rabbitmq/test/e2e/images"
 	"knative.dev/eventing-rabbitmq/test/e2e/step"
 	"knative.dev/reconciler-test/pkg/feature"
@@ -29,17 +30,33 @@ import (
 //go:embed "*.yaml"
 var yamls embed.FS
 
-func Install(producerCount int) feature.StepFn {
+func Install(opts ...manifest.CfgFn) feature.StepFn {
 	return step.Union(
 		images.Register(yamls),
-		install(producerCount),
+		install(opts...),
 	)
 }
 
-func install(producerCount int) feature.StepFn {
+func WithProducerCount(producerCount int) manifest.CfgFn {
+	return func(cfg map[string]interface{}) {
+		cfg["producerCount"] = producerCount
+	}
+}
+
+func WithCASecret() manifest.CfgFn {
+	return func(cfg map[string]interface{}) {
+		cfg["caSecretName"] = rabbitmq.CA_SECRET_NAME
+	}
+}
+
+func install(opts ...manifest.CfgFn) feature.StepFn {
+	cfg := map[string]interface{}{}
+	for _, fn := range opts {
+		fn(cfg)
+	}
+
 	return func(ctx context.Context, t feature.T) {
-		args := map[string]interface{}{"producerCount": producerCount}
-		if _, err := manifest.InstallYamlFS(ctx, yamls, args); err != nil {
+		if _, err := manifest.InstallYamlFS(ctx, yamls, cfg); err != nil {
 			t.Fatal(err)
 		}
 	}

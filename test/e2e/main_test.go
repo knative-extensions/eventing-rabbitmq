@@ -78,6 +78,40 @@ func TestBrokerDirect(t *testing.T) {
 	env.Finish()
 }
 
+// TestBrokerDirectSelfSignedCerts makes sure a Broker can delivery events to a consumer while using a RabbitMQ instance with self-signed certificates.
+func TestBrokerDirectSelfSignedCerts(t *testing.T) {
+	ctx, env := global.Environment(
+		knative.WithKnativeNamespace(system.Namespace()),
+		knative.WithLoggingConfig,
+		knative.WithTracingConfig,
+		k8s.WithEventListener,
+	)
+
+	env.Test(ctx, t, SetupSelfSignedCerts())
+	env.Test(ctx, t, RabbitMQClusterWithTLS())
+	env.Test(ctx, t, RecorderFeature())
+	env.Test(ctx, t, DirectTestBroker())
+	env.Test(ctx, t, CleanupSelfSignedCerts())
+	env.Finish()
+}
+
+// TestSourceDirectSelfSignedCerts makes sure a source delivers events to Sink while using a RabbitMQ instance with self-signed certificates.
+func TestSourceDirectSelfSignedCerts(t *testing.T) {
+	ctx, env := global.Environment(
+		knative.WithKnativeNamespace(system.Namespace()),
+		knative.WithLoggingConfig,
+		knative.WithTracingConfig,
+		k8s.WithEventListener,
+	)
+
+	env.Test(ctx, t, SetupSelfSignedCerts())
+	env.Test(ctx, t, RabbitMQClusterWithTLS())
+	env.Test(ctx, t, RecorderFeature())
+	env.Test(ctx, t, DirectSourceTestWithCerts())
+	env.Test(ctx, t, CleanupSelfSignedCerts())
+	env.Finish()
+}
+
 // TestBrokerDLQ makes sure a Broker delivers events to a DLQ.
 func TestBrokerDLQ(t *testing.T) {
 	t.Parallel()

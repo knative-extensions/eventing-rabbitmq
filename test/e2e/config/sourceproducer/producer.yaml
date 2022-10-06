@@ -19,9 +19,20 @@ metadata:
   namespace: {{ .namespace }}
 spec:
   restartPolicy: Never
+  {{ if .caSecretName }}
+  volumes:
+    - name: rabbitmq-ca
+      secret:
+        secretName: {{ .caSecretName }}
+  {{ end }}
   containers:
     - name: producer
       image: ko://knative.dev/eventing-rabbitmq/test/e2e/cmd/rabbitproducer
+      {{ if .caSecretName }}
+      volumeMounts:
+        - name: rabbitmq-ca
+          mountPath: "/etc/ssl/certs/"
+      {{ end }}
       env:
         - name: COUNT
           value: '{{ .producerCount }}'
@@ -36,5 +47,8 @@ spec:
               name: rabbitmqc-default-user
               key: password
         - name: RABBITBROKER
-          value: rabbitmqc.{{ .namespace }}.svc.cluster.local:5672
-
+          value: rabbitmqc.{{ .namespace }}.svc.cluster.local
+        {{ if .caSecretName }}
+        - name: USE_TLS
+          value: "1"
+        {{ end }}

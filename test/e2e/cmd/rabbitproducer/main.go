@@ -31,6 +31,7 @@ type envConfig struct {
 	Password string `envconfig:"PASSWORD" required:"true"`
 	Broker   string `envconfig:"RABBITBROKER" required:"true"`
 	Count    int    `envconfig:"COUNT" default:"1"`
+	UseTLS   int    `envconfig:"USE_TLS" default:"0"`
 }
 
 func failOnError(err error, msg string) {
@@ -44,7 +45,14 @@ func main() {
 	if err := envconfig.Process("", &env); err != nil {
 		log.Fatal("[ERROR] Failed to process env var: ", err)
 	}
-	connStr := fmt.Sprintf("amqp://%s:%s@%s", env.Username, env.Password, env.Broker)
+
+	var connStr string
+	if env.UseTLS == 1 {
+		log.Default().Println("Using TLS")
+		connStr = fmt.Sprintf("amqps://%s:%s@%s:5671", env.Username, env.Password, env.Broker)
+	} else {
+		connStr = fmt.Sprintf("amqp://%s:%s@%s:5672", env.Username, env.Password, env.Broker)
+	}
 
 	time.Sleep(1 * time.Minute)
 
