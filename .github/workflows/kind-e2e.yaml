@@ -9,6 +9,8 @@ on:
 jobs:
 
   ko-resolve:
+    env:
+      KUBERNETES_MIN_VERSION: ${{ matrix.k8s-version }}
     name: e2e tests
     runs-on: ubuntu-latest
     strategy:
@@ -18,8 +20,8 @@ jobs:
         - v1.22.1
         - v1.23.3
         knative-version:
-        - 1.3.2
-        - 1.4.0
+        - 1.6.0
+        - 1.7.0
 
         # Map between K8s and KinD versions.
         # This is attempting to make it a bit clearer what's being tested.

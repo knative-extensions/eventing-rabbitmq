@@ -14,6 +14,8 @@ on:
 jobs:
 
   run:
+    env:
+      KUBERNETES_MIN_VERSION: ${{ matrix.k8s-version }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false # Keep running if one leg fails.
