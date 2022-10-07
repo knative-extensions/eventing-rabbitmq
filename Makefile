@@ -95,7 +95,7 @@ releases-ko:
 	$(OPEN) $(KO_RELEASES)
 
 KIND_RELEASES := https://github.com/kubernetes-sigs/kind/releases
-KIND_VERSION := 0.12.0
+KIND_VERSION := 0.16.0
 KIND_URL := $(KIND_RELEASES)/download/v$(KIND_VERSION)/kind-$(platform)-amd64
 KIND := $(LOCAL_BIN)/kind_$(KIND_VERSION)_$(platform)_amd64
 $(KIND): | $(CURL) $(LOCAL_BIN)
