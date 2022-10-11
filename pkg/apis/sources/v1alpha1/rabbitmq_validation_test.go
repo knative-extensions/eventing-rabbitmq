@@ -21,6 +21,8 @@ import (
 	"testing"
 
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/eventing-rabbitmq/pkg/utils"
 	"knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -289,9 +291,10 @@ func TestRabbitmqSourceExchangeConfig(t *testing.T) {
 	}
 }
 
-func TestRabbitmqSourceSpecValidation(t *testing.T) {
+func TestRabbitmqSourceValidation(t *testing.T) {
 	testCases := map[string]struct {
 		spec    *RabbitmqSourceSpec
+		meta    metav1.ObjectMeta
 		wantErr bool
 	}{
 		"valid config": {
@@ -341,12 +344,31 @@ func TestRabbitmqSourceSpecValidation(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		"invalid resource requirements": {
+			spec: &fullSpec,
+			meta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					utils.CPURequestAnnotation: "invalid",
+				},
+			},
+			wantErr: true,
+		},
+		"valid resource requirements": {
+			spec: &fullSpec,
+			meta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					utils.CPURequestAnnotation: "50m",
+				},
+			},
+			wantErr: false,
+		},
 	}
 
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
 			src := &RabbitmqSource{
-				Spec: *tc.spec,
+				ObjectMeta: tc.meta,
+				Spec:       *tc.spec,
 			}
 
 			err := src.Validate(context.TODO())

@@ -42,6 +42,10 @@ func (current *RabbitmqSource) Validate(ctx context.Context) *apis.FieldError {
 		}
 	}
 
+	if apiErr := utils.ValidateResourceRequestsAndLimits(current.ObjectMeta); apiErr != nil {
+		return apiErr
+	}
+
 	if current.Spec.RabbitmqResourcesConfig == nil {
 		return apis.ErrMissingField("rabbitmqResourcesConfig").ViaField("spec")
 	} else {

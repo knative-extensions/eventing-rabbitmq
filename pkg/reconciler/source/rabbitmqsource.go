@@ -22,8 +22,9 @@ import (
 
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
+	"knative.dev/eventing-rabbitmq/pkg/utils"
 	rabbitlisters "knative.dev/eventing-rabbitmq/third_party/pkg/client/listers/rabbitmq.com/v1beta1"
-	"knative.dev/eventing/pkg/utils"
+	eventingutils "knative.dev/eventing/pkg/utils"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/kmeta"
 
@@ -217,6 +218,11 @@ func (r *Reconciler) createReceiveAdapter(ctx context.Context, src *v1alpha1.Rab
 		return nil, err
 	}
 
+	resourceRequirements, err := utils.GetResourceRequirements(src.ObjectMeta)
+	if err != nil {
+		return nil, err
+	}
+
 	raArgs := resources.ReceiveAdapterArgs{
 		Image:                r.receiveAdapterImage,
 		Source:               src,
@@ -227,6 +233,7 @@ func (r *Reconciler) createReceiveAdapter(ctx context.Context, src *v1alpha1.Rab
 		RabbitMQSecretName:   rabbit.SecretName(src.Name, "source"),
 		RabbitMQCASecretName: secretName,
 		BrokerUrlSecretKey:   rabbit.BrokerURLSecretKey,
+		ResourceRequirements: resourceRequirements,
 	}
 	expected := resources.MakeReceiveAdapter(&raArgs)
 
@@ -234,7 +241,7 @@ func (r *Reconciler) createReceiveAdapter(ctx context.Context, src *v1alpha1.Rab
 	if apierrors.IsNotFound(err) {
 		// Issue eventing#2842: Adater deployment name uses kmeta.ChildName. If a deployment by the previous name pattern is found, it should
 		// be deleted. This might cause temporary downtime.
-		if deprecatedName := utils.GenerateFixedName(raArgs.Source, fmt.Sprintf("rabbitmqsource-%s", raArgs.Source.Name)); deprecatedName != expected.Name {
+		if deprecatedName := eventingutils.GenerateFixedName(raArgs.Source, fmt.Sprintf("rabbitmqsource-%s", raArgs.Source.Name)); deprecatedName != expected.Name {
 			if err := r.KubeClientSet.AppsV1().Deployments(src.Namespace).Delete(ctx, deprecatedName, metav1.DeleteOptions{}); err != nil && !apierrors.IsNotFound(err) {
 				return nil, fmt.Errorf("error deleting deprecated named deployment: %v", err)
 			}
