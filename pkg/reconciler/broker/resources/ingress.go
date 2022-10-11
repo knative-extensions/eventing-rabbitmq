@@ -46,6 +46,7 @@ type IngressArgs struct {
 	RabbitMQCASecretName string
 	BrokerUrlSecretKey   string
 	Configs              reconcilersource.ConfigAccessor
+	ResourceRequirements corev1.ResourceRequirements
 }
 
 // MakeIngressDeployment creates the in-memory representation of the Broker's ingress Deployment.
@@ -85,6 +86,20 @@ func MakeIngressDeployment(args *IngressArgs) *appsv1.Deployment {
 		envs = append(envs, args.Configs.ToEnvVars()...)
 	}
 
+	// Default requirements only if none of the requirements are set through annotations
+	if len(args.ResourceRequirements.Limits) == 0 && len(args.ResourceRequirements.Requests) == 0 {
+		// This resource requests and limits comes from performance testing 1500msgs/s with a parallelism of 1000
+		// more info in this issue: https://github.com/knative-sandbox/eventing-rabbitmq/issues/703
+		args.ResourceRequirements = corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("50m"),
+				corev1.ResourceMemory: resource.MustParse("32Mi")},
+			Limits: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("1000m"),
+				corev1.ResourceMemory: resource.MustParse("400Mi")},
+		}
+	}
+
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: args.Broker.Namespace,
@@ -122,16 +137,7 @@ func MakeIngressDeployment(args *IngressArgs) *appsv1.Deployment {
 							ContainerPort: 8080,
 							Name:          "http",
 						}},
-						// This resource requests and limits comes from performance testing 1500msgs/s with a parallelism of 1000
-						// more info in this issue: https://github.com/knative-sandbox/eventing-rabbitmq/issues/703
-						Resources: corev1.ResourceRequirements{
-							Requests: corev1.ResourceList{
-								corev1.ResourceCPU:    resource.MustParse("50m"),
-								corev1.ResourceMemory: resource.MustParse("32Mi")},
-							Limits: corev1.ResourceList{
-								corev1.ResourceCPU:    resource.MustParse("1000m"),
-								corev1.ResourceMemory: resource.MustParse("400Mi")},
-						},
+						Resources: args.ResourceRequirements,
 					}},
 				},
 			},

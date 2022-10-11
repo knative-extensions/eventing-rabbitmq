@@ -22,6 +22,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
+	"knative.dev/eventing-rabbitmq/pkg/utils"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/apis/duck"
@@ -74,6 +75,11 @@ func (b *RabbitBroker) Validate(ctx context.Context) *apis.FieldError {
 		}
 		return nil
 	}
+
+	if apiErr := utils.ValidateResourceRequestsAndLimits(b.ObjectMeta); apiErr != nil {
+		return apiErr
+	}
+
 	var errs *apis.FieldError
 	if b.Spec.Config == nil {
 		return apis.ErrMissingField("config").ViaField("spec")
