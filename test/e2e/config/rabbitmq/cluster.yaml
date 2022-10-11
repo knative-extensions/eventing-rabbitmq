@@ -37,6 +37,12 @@ spec:
     requests:
       cpu: "400m"
       memory: "600Mi"
+  {{ if .caSecretName }}
+  tls:
+    caSecretName: {{ .caSecretName }}
+    secretName: {{ .tlsSecretName }}
+    disableNonTLSListeners: true
+  {{ end }}
   override:
     statefulSet:
       spec:

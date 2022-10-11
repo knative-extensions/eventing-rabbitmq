@@ -29,6 +29,11 @@ import (
 //go:embed "*.yaml"
 var yamls embed.FS
 
+const (
+	CA_SECRET_NAME  = "rabbitmq-ca"
+	TLS_SECRET_NAME = "tls-secret"
+)
+
 var EnvCfg EnvConfig
 
 type EnvConfig struct {
@@ -66,6 +71,13 @@ func WithRabbitmqServerImage(name string) manifest.CfgFn {
 func WithRabbitmqImagePullSecret(name string) manifest.CfgFn {
 	return func(cfg map[string]interface{}) {
 		cfg["rabbitmqImagePullSecretName"] = name
+	}
+}
+
+func WithTLSSpec() manifest.CfgFn {
+	return func(cfg map[string]interface{}) {
+		cfg["caSecretName"] = CA_SECRET_NAME
+		cfg["tlsSecretName"] = TLS_SECRET_NAME
 	}
 }
 

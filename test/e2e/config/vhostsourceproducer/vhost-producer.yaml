@@ -36,5 +36,7 @@ spec:
               name: rabbitmqc-default-user
               key: password
         - name: RABBITBROKER
-          value: rabbitmqc.{{ .namespace }}.svc.cluster.local:5672/test-vhost
+          value: rabbitmqc.{{ .namespace }}.svc.cluster.local
+        - name: VHOST
+          value: test-vhost
 

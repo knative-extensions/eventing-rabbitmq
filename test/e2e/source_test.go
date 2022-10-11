@@ -51,7 +51,26 @@ func DirectSourceTest() *feature.Feature {
 	f.Alpha("RabbitMQ source").Must("goes ready", AllGoReady)
 	// Note this is a different producer than events hub because it publishes
 	// directly to RabbitMQ
-	f.Setup("install producer", sourceproducer.Install(eventsNumber))
+	f.Setup("install producer", sourceproducer.Install(sourceproducer.WithProducerCount(eventsNumber)))
+	f.Alpha("RabbitMQ source").
+		Must("the recorder received all sent events within the time",
+			func(ctx context.Context, t feature.T) {
+				// TODO: Use constraint matching instead of just counting number of events.
+				eventshub.StoreFromContext(ctx, "recorder").AssertAtLeast(t, eventsNumber)
+			})
+	f.Teardown("Delete feature resources", f.DeleteResources)
+	return f
+}
+
+func DirectSourceTestWithCerts() *feature.Feature {
+	eventsNumber := 10
+	f := new(feature.Feature)
+
+	f.Setup("install RabbitMQ source", source.Install())
+	f.Alpha("RabbitMQ source").Must("goes ready", AllGoReady)
+	// Note this is a different producer than events hub because it publishes
+	// directly to RabbitMQ
+	f.Setup("install producer", sourceproducer.Install(sourceproducer.WithProducerCount(eventsNumber), sourceproducer.WithCASecret()))
 	f.Alpha("RabbitMQ source").
 		Must("the recorder received all sent events within the time",
 			func(ctx context.Context, t feature.T) {
@@ -75,7 +94,7 @@ func DirectSourceConnectionSecretTest() *feature.Feature {
 	f.Alpha("RabbitMQ source").Must("goes ready", AllGoReady)
 	// Note this is a different producer than events hub because it publishes
 	// directly to RabbitMQ
-	f.Setup("install producer", sourceproducer.Install(eventsNumber))
+	f.Setup("install producer", sourceproducer.Install(sourceproducer.WithProducerCount(eventsNumber)))
 	f.Alpha("RabbitMQ source").
 		Must("the recorder received all sent events within the time",
 			func(ctx context.Context, t feature.T) {
@@ -126,7 +145,7 @@ func SourceConcurrentreceiveAdapterProcessingTest() *feature.Feature {
 	f.Requirement("recorder is addressable", k8s.IsAddressable(serviceGVR, "recorder"))
 	f.Requirement("RabbitMQ broker goes ready", AllGoReady)
 
-	f.Setup("install producer", sourceproducer.Install(eventsNumber))
+	f.Setup("install producer", sourceproducer.Install(sourceproducer.WithProducerCount(eventsNumber)))
 	f.Assert("the adapter sends events concurrently", func(ctx context.Context, t feature.T) {
 		events := eventshub.StoreFromContext(ctx, "recorder").AssertExact(t, eventsNumber)
 		diff := events[1].Time.Sub(events[0].Time)

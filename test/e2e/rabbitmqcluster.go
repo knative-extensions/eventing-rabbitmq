@@ -63,6 +63,17 @@ func RabbitMQCluster() *feature.Feature {
 	return f
 }
 
+func RabbitMQClusterWithTLS() *feature.Feature {
+	f := new(feature.Feature)
+
+	cfgFns := rabbitmq.WithEnvConfig()
+	cfgFns = append(cfgFns, rabbitmq.WithTLSSpec())
+
+	f.Setup("Install a rabbitmqcluster with self-signed certs", rabbitmq.Install(cfgFns...))
+	f.Requirement("RabbitMQCluster goes ready", RabbitMQClusterReady)
+	return f
+}
+
 func RabbitMQClusterVHost() *feature.Feature {
 	f := new(feature.Feature)
 
