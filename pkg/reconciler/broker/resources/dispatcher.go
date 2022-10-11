@@ -172,6 +172,10 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 						Image:     args.Image,
 						Env:       envs,
 						Resources: args.ResourceRequirements,
+						Ports: []corev1.ContainerPort{{
+							Name:          "http-metrics",
+							ContainerPort: 9090,
+						}},
 					}},
 				},
 			},
