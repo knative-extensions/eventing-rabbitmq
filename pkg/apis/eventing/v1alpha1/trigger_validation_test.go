@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	v1 "knative.dev/eventing-rabbitmq/pkg/apis/eventing/v1alpha1"
+	"knative.dev/eventing-rabbitmq/pkg/utils"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	"knative.dev/eventing/pkg/client/clientset/versioned/fake"
 	"knative.dev/pkg/apis"
@@ -86,6 +87,15 @@ func TestTriggerValidate(t *testing.T) {
 		{
 			name:    "valid Parallelisp count annotation",
 			trigger: trigger(withBroker("foo"), brokerExistsAndIsValid, withParallelism("100")),
+		},
+		{
+			name:    "invalid resource annotations",
+			trigger: trigger(withBroker("foo"), brokerExistsAndIsValid, withAnnotation(utils.CPURequestAnnotation, "invalid")),
+			err: &apis.FieldError{
+				Message: "Failed to parse quantity from rabbitmq.eventing.knative.dev/cpu-request",
+				Paths:   []string{"metadata", "annotations", "rabbitmq.eventing.knative.dev/cpu-request"},
+				Details: "quantities must match the regular expression '^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$'",
+			},
 		},
 	}
 	for _, tc := range tests {
@@ -163,5 +173,15 @@ func withParallelism(parallelism string) triggerOpt {
 		}
 
 		t.Annotations[parallelismAnnotation] = parallelism
+	}
+}
+
+func withAnnotation(key, value string) triggerOpt {
+	return func(t *v1.RabbitTrigger) {
+		if t.Annotations == nil {
+			t.Annotations = map[string]string{}
+		}
+
+		t.Annotations[key] = value
 	}
 }
