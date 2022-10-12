@@ -4,7 +4,7 @@ When topologies with Brokers, Trigger and RabbitMQSources are created, they crea
 
 ## Available Annotations
 
-The following annotations are availble to be attached to Brokers, Triggers and RabbitMQSources. Click [here](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/) for more information on Kubernetes resource requirements.
+The following annotations are available to be attached to Brokers, Triggers and RabbitMQSources. Click [here](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/) for more information on Kubernetes resource requirements.
 
 | Annotation                                   | Usage                             |
 |----------------------------------------------|-----------------------------------|
