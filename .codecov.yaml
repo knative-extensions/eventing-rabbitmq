@@ -1,3 +1,14 @@
+coverage:
+  # Commit status https://docs.codecov.io/docs/commit-status are used
+  # to block PR based on coverage threshold.
+  status:
+    patch:
+      default:
+        target: auto
+        threshold: 8%
+comment:
+  # Update existing comment or create new if deleted.
+  behavior: default
 ignore:
   - "**/zz_generated*.go" # Ignore generated files.
   - "pkg/client"
