@@ -24,6 +24,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -37,6 +38,7 @@ import (
 	rabbitduck "knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
+	"knative.dev/eventing-rabbitmq/pkg/utils"
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	fakerabbitclient "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/client/fake"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
@@ -1060,6 +1062,80 @@ func TestReconcile(t *testing.T) {
 				},
 				WantErr: false,
 			}, {
+				Name: fmt.Sprintf("%s: broker with custom resource requests. resource requirements gets used for both ingress and dlq dispatcher", configName),
+				Key:  testKey,
+				Objects: []runtime.Object{
+					NewBroker(brokerName, testNS,
+						WithBrokerUID(brokerUID),
+						WithBrokerClass(brokerClass),
+						WithBrokerConfig(config),
+						WithBrokerDelivery(delivery),
+						WithInitBrokerConditions,
+						WithAnnotation(utils.CPURequestAnnotation, "500m"),
+						WithAnnotation(utils.CPULimitAnnotation, "1000m"),
+						WithAnnotation(utils.MemoryRequestAnnotation, "500Mi"),
+						WithAnnotation(utils.MemoryLimitAnnotation, "1000Mi")),
+					createSecretForRabbitmqCluster(),
+					createRabbitMQCluster(),
+					createRabbitMQBrokerConfig(),
+					createReadyExchange(false),
+					createReadyExchange(true),
+					createReadyQueue(true, config),
+					createReadyBinding(true),
+					createReadyPolicy(),
+					rt.NewEndpoints(ingressServiceName, testNS,
+						rt.WithEndpointsLabels(IngressLabels()),
+						rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
+					createExchangeSecret(),
+				},
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+					Object: NewBroker(brokerName, testNS,
+						WithBrokerUID(brokerUID),
+						WithBrokerClass(brokerClass),
+						WithInitBrokerConditions,
+						WithBrokerConfig(config),
+						WithBrokerDelivery(delivery),
+						WithIngressAvailable(),
+						WithDLXReady(),
+						WithDeadLetterSinkReady(),
+						WithDeadLetterSinkResolvedSucceeded(delivery.DeadLetterSink.URI),
+						WithSecretReady(),
+						WithBrokerAddressURI(brokerAddress),
+						WithAnnotation(utils.CPURequestAnnotation, "500m"),
+						WithAnnotation(utils.CPULimitAnnotation, "1000m"),
+						WithAnnotation(utils.MemoryRequestAnnotation, "500Mi"),
+						WithAnnotation(utils.MemoryLimitAnnotation, "1000Mi"),
+						WithExchangeReady()),
+				}},
+				WantCreates: []runtime.Object{
+					createIngressDeployment(
+						func(args *resources.IngressArgs) {
+							args.ResourceRequirements = corev1.ResourceRequirements{
+								Requests: corev1.ResourceList{
+									corev1.ResourceCPU:    resource.MustParse("500m"),
+									corev1.ResourceMemory: resource.MustParse("500Mi")},
+								Limits: corev1.ResourceList{
+									corev1.ResourceCPU:    resource.MustParse("1000m"),
+									corev1.ResourceMemory: resource.MustParse("1000Mi")},
+							}
+						},
+					),
+					createIngressService(),
+					createDispatcherDeployment(
+						func(args *resources.DispatcherArgs) {
+							args.ResourceRequirements = corev1.ResourceRequirements{
+								Requests: corev1.ResourceList{
+									corev1.ResourceCPU:    resource.MustParse("500m"),
+									corev1.ResourceMemory: resource.MustParse("500Mi")},
+								Limits: corev1.ResourceList{
+									corev1.ResourceCPU:    resource.MustParse("1000m"),
+									corev1.ResourceMemory: resource.MustParse("1000Mi")},
+							}
+						},
+					),
+				},
+				WantErr: false,
+			}, {
 				Name: fmt.Sprintf("%s: Exchange created with unresolvable delivery, DLQ dispatcher fails", configName),
 				Key:  testKey,
 				Objects: []runtime.Object{
@@ -1266,12 +1342,16 @@ func createSecretForRabbitmqClusterNoPassword() *corev1.Secret {
 	}
 }
 
-func createIngressDeployment() *appsv1.Deployment {
+func createIngressDeployment(opts ...func(*resources.IngressArgs)) *appsv1.Deployment {
 	args := &resources.IngressArgs{
 		Broker:             &eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: testNS, UID: brokerUID}},
 		Image:              ingressImage,
 		RabbitMQSecretName: rabbitBrokerSecretName,
 		BrokerUrlSecretKey: rabbit.BrokerURLSecretKey,
+	}
+
+	for _, o := range opts {
+		o(args)
 	}
 	return resources.MakeIngressDeployment(args)
 }
@@ -1331,7 +1411,7 @@ func IngressLabels() map[string]string {
 	}
 }
 
-func createDispatcherDeployment() *appsv1.Deployment {
+func createDispatcherDeployment(opts ...func(*resources.DispatcherArgs)) *appsv1.Deployment {
 	broker := &eventingv1.Broker{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      brokerName,
@@ -1352,6 +1432,9 @@ func createDispatcherDeployment() *appsv1.Deployment {
 		BrokerUrlSecretKey: "brokerURL",
 		BrokerIngressURL:   brokerAddress,
 		Subscriber:         deadLetterSinkAddress,
+	}
+	for _, o := range opts {
+		o(args)
 	}
 	return resources.MakeDispatcherDeployment(args)
 }

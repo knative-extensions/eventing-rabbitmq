@@ -223,12 +223,16 @@ func WithIngressAvailable() BrokerOption {
 }
 
 func WithBrokerClass(bc string) BrokerOption {
+	return WithAnnotation(broker.ClassAnnotationKey, bc)
+}
+
+func WithAnnotation(key, value string) BrokerOption {
 	return func(b *v1.Broker) {
 		annotations := b.GetAnnotations()
 		if annotations == nil {
 			annotations = make(map[string]string, 1)
 		}
-		annotations[broker.ClassAnnotationKey] = bc
+		annotations[key] = value
 		b.SetAnnotations(annotations)
 	}
 }

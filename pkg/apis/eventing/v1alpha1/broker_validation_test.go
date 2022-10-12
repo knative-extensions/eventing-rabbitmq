@@ -23,6 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"knative.dev/eventing-rabbitmq/pkg/utils"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -276,6 +277,21 @@ func TestValidate(t *testing.T) {
 				},
 			},
 		}},
+	}, {
+		name: "invalid resource annotations",
+		b: RabbitBroker{eventingv1.Broker{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					"eventing.knative.dev/broker.class": "RabbitMQBroker",
+					utils.CPURequestAnnotation:          "invalid",
+				},
+			},
+		}},
+		want: &apis.FieldError{
+			Message: "Failed to parse quantity from rabbitmq.eventing.knative.dev/cpu-request",
+			Paths:   []string{"metadata", "annotations", "rabbitmq.eventing.knative.dev/cpu-request"},
+			Details: "quantities must match the regular expression '^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$'",
+		},
 	}}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

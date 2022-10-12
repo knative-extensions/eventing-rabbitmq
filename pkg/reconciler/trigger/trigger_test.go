@@ -31,6 +31,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -44,6 +45,7 @@ import (
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
+	"knative.dev/eventing-rabbitmq/pkg/utils"
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	fakerabbitclient "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/client/fake"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
@@ -266,6 +268,24 @@ func TestReconcile(t *testing.T) {
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: triggerWithFilterReady(),
+				}},
+			}, {
+				Name: fmt.Sprintf("%s: Creates everything ok, custom resource requirements", name),
+				Key:  testKey,
+				Objects: []runtime.Object{
+					ReadyBroker(config),
+					triggerWithResourceAnnotations(),
+					createSecret(rabbitURL),
+					createRabbitMQBrokerConfig(),
+					createRabbitMQCluster(),
+					markReady(createQueue(config, false)),
+					markReady(createBinding(true, false)),
+				},
+				WantCreates: []runtime.Object{
+					createDispatcherDeploymentWithResourceRequirements(false),
+				},
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+					Object: triggerWithResourceAnnotationsReady(),
 				}},
 			}, {
 				Name: fmt.Sprintf("%s: Creates everything ok while using Broker DLQ", name),
@@ -972,6 +992,20 @@ func triggerWithFilter() *eventingv1.Trigger {
 	return t
 }
 
+func triggerWithResourceAnnotations() *eventingv1.Trigger {
+	t := NewTrigger(triggerName, testNS, brokerName,
+		WithTriggerUID(triggerUID),
+		WithTriggerSubscriberURI(subscriberURI),
+		WithAnnotation(utils.CPURequestAnnotation, "500m"),
+		WithAnnotation(utils.CPULimitAnnotation, "1000m"),
+		WithAnnotation(utils.MemoryRequestAnnotation, "500Mi"),
+		WithAnnotation(utils.MemoryLimitAnnotation, "1000Mi"))
+	t.Spec.Filter = &eventingv1.TriggerFilter{
+		Attributes: map[string]string{"type": "dev.knative.sources.ping"},
+	}
+	return t
+}
+
 func triggerWithDeliverySpec() *eventingv1.Trigger {
 	t := NewTrigger(triggerName, testNS, brokerName,
 		WithTriggerUID(triggerUID),
@@ -993,6 +1027,26 @@ func triggerWithFilterReady() *eventingv1.Trigger {
 		WithTriggerSubscribed(),
 		WithTriggerSubscriberResolvedSucceeded(),
 		WithTriggerStatusSubscriberURI(subscriberURI))
+	t.Spec.Filter = &eventingv1.TriggerFilter{
+		Attributes: map[string]string{"type": "dev.knative.sources.ping"},
+	}
+	return t
+}
+
+func triggerWithResourceAnnotationsReady() *eventingv1.Trigger {
+	t := NewTrigger(triggerName, testNS, brokerName,
+		WithTriggerUID(triggerUID),
+		WithTriggerSubscriberURI(subscriberURI),
+		WithTriggerBrokerReady(),
+		WithTriggerDeadLetterSinkNotConfigured(),
+		WithTriggerDependencyReady(),
+		WithTriggerSubscribed(),
+		WithTriggerSubscriberResolvedSucceeded(),
+		WithTriggerStatusSubscriberURI(subscriberURI),
+		WithAnnotation(utils.CPURequestAnnotation, "500m"),
+		WithAnnotation(utils.CPULimitAnnotation, "1000m"),
+		WithAnnotation(utils.MemoryRequestAnnotation, "500Mi"),
+		WithAnnotation(utils.MemoryLimitAnnotation, "1000Mi"))
 	t.Spec.Filter = &eventingv1.TriggerFilter{
 		Attributes: map[string]string{"type": "dev.knative.sources.ping"},
 	}
@@ -1126,6 +1180,37 @@ func createDispatcherDeployment(dlq bool) *appsv1.Deployment {
 		BrokerIngressURL:   brokerAddress,
 		Subscriber:         subscriberAddress,
 		DLX:                dlq,
+	}
+	return resources.MakeDispatcherDeployment(args)
+}
+
+func createDispatcherDeploymentWithResourceRequirements(dlq bool) *appsv1.Deployment {
+	args := &resources.DispatcherArgs{
+		Trigger: &eventingv1.Trigger{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      triggerName,
+				Namespace: testNS,
+				UID:       triggerUID,
+			},
+			Spec: eventingv1.TriggerSpec{
+				Broker: brokerName,
+			},
+		},
+		Image:              dispatcherImage,
+		RabbitMQSecretName: rabbitSecretName,
+		QueueName:          queueName,
+		BrokerUrlSecretKey: "brokerURL",
+		BrokerIngressURL:   brokerAddress,
+		Subscriber:         subscriberAddress,
+		DLX:                dlq,
+		ResourceRequirements: corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("500m"),
+				corev1.ResourceMemory: resource.MustParse("500Mi")},
+			Limits: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("1000m"),
+				corev1.ResourceMemory: resource.MustParse("1000Mi")},
+		},
 	}
 	return resources.MakeDispatcherDeployment(args)
 }

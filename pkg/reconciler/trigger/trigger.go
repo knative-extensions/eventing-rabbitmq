@@ -32,6 +32,7 @@ import (
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/trigger/resources"
+	"knative.dev/eventing-rabbitmq/pkg/utils"
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	rabbitclientset "knative.dev/eventing-rabbitmq/third_party/pkg/client/clientset/versioned"
 	rabbitlisters "knative.dev/eventing-rabbitmq/third_party/pkg/client/listers/rabbitmq.com/v1beta1"
@@ -397,6 +398,10 @@ func (r *Reconciler) reconcileDispatcherDeployment(ctx context.Context, t *event
 	if err != nil {
 		return nil, err
 	}
+	resourceRequirements, err := utils.GetResourceRequirements(t.ObjectMeta)
+	if err != nil {
+		return nil, err
+	}
 
 	expected := resources.MakeDispatcherDeployment(&resources.DispatcherArgs{
 		Trigger:              t,
@@ -410,6 +415,7 @@ func (r *Reconciler) reconcileDispatcherDeployment(ctx context.Context, t *event
 		DLX:                  dlq,
 		Delivery:             delivery,
 		Configs:              r.configs,
+		ResourceRequirements: resourceRequirements,
 	})
 	return r.reconcileDeployment(ctx, expected)
 }

@@ -56,12 +56,27 @@ type DispatcherArgs struct {
 	Subscriber           *apis.URL
 	DLX                  bool
 	Configs              reconcilersource.ConfigAccessor
+	ResourceRequirements corev1.ResourceRequirements
 }
 
 // MakeDispatcherDeployment creates the in-memory representation of the Broker's Dispatcher Deployment.
 func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 	one := int32(1)
 	name := DispatcherName(args.Trigger.Name, args.DLX)
+
+	// Default requirements only if none of the requirements are set through annotations
+	if len(args.ResourceRequirements.Limits) == 0 && len(args.ResourceRequirements.Requests) == 0 {
+		// This resource requests and limits comes from performance testing 1500msgs/s with a parallelism of 1000
+		// more info in this issue: https://github.com/knative-sandbox/eventing-rabbitmq/issues/703
+		args.ResourceRequirements = corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("50m"),
+				corev1.ResourceMemory: resource.MustParse("64Mi")},
+			Limits: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("4000m"),
+				corev1.ResourceMemory: resource.MustParse("600Mi")},
+		}
+	}
 
 	dispatcher := corev1.Container{
 		Name:  dispatcherContainerName,
@@ -98,16 +113,7 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 			Name:  "POD_NAME",
 			Value: name,
 		}},
-		// This resource requests and limits comes from performance testing 1500msgs/s with a parallelism of 1000
-		// more info in this issue: https://github.com/knative-sandbox/eventing-rabbitmq/issues/703
-		Resources: corev1.ResourceRequirements{
-			Requests: corev1.ResourceList{
-				corev1.ResourceCPU:    resource.MustParse("50m"),
-				corev1.ResourceMemory: resource.MustParse("64Mi")},
-			Limits: corev1.ResourceList{
-				corev1.ResourceCPU:    resource.MustParse("4000m"),
-				corev1.ResourceMemory: resource.MustParse("600Mi")},
-		},
+		Resources: args.ResourceRequirements,
 		Ports: []corev1.ContainerPort{{
 			Name:          "http-metrics",
 			ContainerPort: 9090,

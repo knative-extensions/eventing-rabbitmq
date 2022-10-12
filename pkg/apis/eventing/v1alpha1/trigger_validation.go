@@ -22,6 +22,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"knative.dev/eventing-rabbitmq/pkg/utils"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	"knative.dev/eventing/pkg/client/clientset/versioned"
 	"knative.dev/eventing/pkg/client/injection/client"
@@ -78,6 +79,10 @@ func (t *RabbitTrigger) Validate(ctx context.Context) *apis.FieldError {
 		if parallelismInt < 1 || parallelismInt > 1000 {
 			return apis.ErrOutOfBoundsValue(parallelismInt, 1, 1000, parallelismAnnotation)
 		}
+	}
+
+	if apiErr := utils.ValidateResourceRequestsAndLimits(t.ObjectMeta); apiErr != nil {
+		return apiErr
 	}
 
 	if apis.IsInUpdate(ctx) {

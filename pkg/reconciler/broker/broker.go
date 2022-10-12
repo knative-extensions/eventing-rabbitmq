@@ -41,6 +41,7 @@ import (
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/broker/resources"
+	"knative.dev/eventing-rabbitmq/pkg/utils"
 	rabbitclientset "knative.dev/eventing-rabbitmq/third_party/pkg/client/clientset/versioned"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	clientset "knative.dev/eventing/pkg/client/clientset/versioned"
@@ -191,6 +192,10 @@ func (r *Reconciler) reconcileIngressDeployment(ctx context.Context, b *eventing
 	if err != nil {
 		return err
 	}
+	resourceRequirements, err := utils.GetResourceRequirements(b.ObjectMeta)
+	if err != nil {
+		return err
+	}
 
 	expected := resources.MakeIngressDeployment(&resources.IngressArgs{
 		Broker:               b,
@@ -199,6 +204,7 @@ func (r *Reconciler) reconcileIngressDeployment(ctx context.Context, b *eventing
 		RabbitMQCASecretName: secretName,
 		BrokerUrlSecretKey:   rabbit.BrokerURLSecretKey,
 		Configs:              r.configs,
+		ResourceRequirements: resourceRequirements,
 	})
 	return r.reconcileDeployment(ctx, expected)
 }
@@ -221,6 +227,10 @@ func (r *Reconciler) reconcileDLXDispatcherDeployment(ctx context.Context, b *ev
 		if err != nil {
 			return err
 		}
+		requirements, err := utils.GetResourceRequirements(b.ObjectMeta)
+		if err != nil {
+			return err
+		}
 		expected := resources.MakeDispatcherDeployment(&resources.DispatcherArgs{
 			Broker: b,
 			Image:  r.dispatcherImage,
@@ -233,6 +243,7 @@ func (r *Reconciler) reconcileDLXDispatcherDeployment(ctx context.Context, b *ev
 			Subscriber:           sub,
 			BrokerIngressURL:     b.Status.Address.URL,
 			Configs:              r.configs,
+			ResourceRequirements: requirements,
 		})
 		return r.reconcileDeployment(ctx, expected)
 	}

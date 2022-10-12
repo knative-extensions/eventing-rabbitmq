@@ -57,7 +57,7 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 		{
 			name: "base",
 			args: dispatcherArgs(),
-			want: deployment(withEnv(corev1.EnvVar{Name: "PARALLELISM", Value: "1"})),
+			want: deployment(withEnv(corev1.EnvVar{Name: "PARALLELISM", Value: "1"}), withDefaultResourceRequirements()),
 		},
 		{
 			name: "with delivery spec",
@@ -73,6 +73,7 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 				withEnv(corev1.EnvVar{Name: "BACKOFF_DELAY", Value: "20s"}),
 				withEnv(corev1.EnvVar{Name: "TIMEOUT", Value: "10s"}),
 				withEnv(corev1.EnvVar{Name: "PARALLELISM", Value: "1"}),
+				withDefaultResourceRequirements(),
 			),
 		},
 		{
@@ -82,12 +83,39 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 				deploymentNamed("testtrigger-dlx-dispatcher"),
 				withEnv(corev1.EnvVar{Name: "PARALLELISM", Value: "1"}),
 				withEnv(corev1.EnvVar{Name: "POD_NAME", Value: "testtrigger-dlx-dispatcher"}),
+				withDefaultResourceRequirements(),
 			),
 		},
 		{
 			name: "with parallelism",
 			args: dispatcherArgs(withParallelism("10")),
-			want: deployment(withEnv(corev1.EnvVar{Name: "PARALLELISM", Value: "10"})),
+			want: deployment(withEnv(corev1.EnvVar{Name: "PARALLELISM", Value: "10"}), withDefaultResourceRequirements()),
+		},
+		{
+			name: "with resource requirements",
+			args: dispatcherArgs(
+				withResourceArgs(corev1.ResourceRequirements{
+					Requests: corev1.ResourceList{
+						"key1": resource.MustParse("5m"),
+						"key2": resource.MustParse("10m"),
+					},
+					Limits: corev1.ResourceList{
+						"key3": resource.MustParse("15m"),
+					},
+				}),
+			),
+			want: deployment(
+				withEnv(corev1.EnvVar{Name: "PARALLELISM", Value: "1"}),
+				withResourceRequirements(corev1.ResourceRequirements{
+					Requests: corev1.ResourceList{
+						"key1": resource.MustParse("5m"),
+						"key2": resource.MustParse("10m"),
+					},
+					Limits: corev1.ResourceList{
+						"key3": resource.MustParse("15m"),
+					},
+				}),
+			),
 		},
 	}
 	for _, tt := range tests {
@@ -146,14 +174,6 @@ func deployment(opts ...func(*appsv1.Deployment)) *appsv1.Deployment {
 					Containers: []corev1.Container{{
 						Name:  "dispatcher",
 						Image: image,
-						Resources: corev1.ResourceRequirements{
-							Requests: corev1.ResourceList{
-								corev1.ResourceCPU:    resource.MustParse("50m"),
-								corev1.ResourceMemory: resource.MustParse("64Mi")},
-							Limits: corev1.ResourceList{
-								corev1.ResourceCPU:    resource.MustParse("4000m"),
-								corev1.ResourceMemory: resource.MustParse("600Mi")},
-						},
 						VolumeMounts: []corev1.VolumeMount{
 							{
 								MountPath: "/etc/ssl/certs/",
@@ -268,6 +288,31 @@ func withParallelism(c string) func(*DispatcherArgs) {
 			args.Trigger.ObjectMeta.Annotations = map[string]string{ParallelismAnnotation: c}
 		} else {
 			args.Trigger.ObjectMeta.Annotations[ParallelismAnnotation] = c
+		}
+	}
+}
+
+func withResourceArgs(req corev1.ResourceRequirements) func(*DispatcherArgs) {
+	return func(args *DispatcherArgs) {
+		args.ResourceRequirements = req
+	}
+}
+
+func withResourceRequirements(req corev1.ResourceRequirements) func(*appsv1.Deployment) {
+	return func(d *appsv1.Deployment) {
+		d.Spec.Template.Spec.Containers[0].Resources = req
+	}
+}
+
+func withDefaultResourceRequirements() func(*appsv1.Deployment) {
+	return func(d *appsv1.Deployment) {
+		d.Spec.Template.Spec.Containers[0].Resources = corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("50m"),
+				corev1.ResourceMemory: resource.MustParse("64Mi")},
+			Limits: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("4000m"),
+				corev1.ResourceMemory: resource.MustParse("600Mi")},
 		}
 	}
 }
