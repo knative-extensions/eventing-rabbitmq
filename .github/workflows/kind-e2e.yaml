@@ -17,9 +17,15 @@ jobs:
         k8s-version:
         - v1.23.12
         - v1.24.6
+        - v1.24.6
         knative-version:
         - 1.6.2
         - 1.7.3
+        - 1.7.3
+        use-eventing-latest:
+        - ""
+        - ""
+        - "true"
 
         # Map between K8s and KinD versions.
         # This is attempting to make it a bit clearer what's being tested.
@@ -66,7 +72,8 @@ jobs:
         make install \
           KIND_K8S_VERSION=${{ matrix.k8s-version }} \
           KIND_K8S_DIGEST=${{ matrix.kind-image-sha }} \
-          KNATIVE_VERSION=${{ matrix.knative-version }}
+          KNATIVE_VERSION=${{ matrix.knative-version }} \
+          USE_LATEST_EVENTING=$${{ matrix.use-eventing-latest }}
 
     - name: Run ko publish e2e Tests
       run: |

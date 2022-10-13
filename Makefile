@@ -328,6 +328,13 @@ install-rabbitmq-topology-operator: | install-cert-manager $(KUBECTL) ## Install
 		https://github.com/rabbitmq/messaging-topology-operator/releases/download/v$(RABBITMQ_TOPOLOGY_OPERATOR_VERSION)/messaging-topology-operator-with-certmanager.yaml
 
 KNATIVE_VERSION ?= 1.5.0
+EVENTING_CRDS ?= https://github.com/knative/eventing/releases/download/knative-v$(KNATIVE_VERSION)/eventing-crds.yaml
+EVENTING_CORE ?= https://github.com/knative/eventing/releases/download/knative-v$(KNATIVE_VERSION)/eventing-core.yaml
+
+ifneq (,$(USE_LATEST_EVENTING))
+EVENTING_CRDS = ./third_party/eventing-latest/eventing-crds.yaml
+EVENTING_CORE = ./third_party/eventing-latest/eventing-core.yaml
+endif
 
 # https://github.com/knative/serving/releases
 .PHONY: install-knative-serving
@@ -345,10 +352,8 @@ install-knative-serving: | $(KUBECONFIG) $(KUBECTL) ## Install Knative Serving
 # https://github.com/knative/eventing/releases
 .PHONY: install-knative-eventing
 install-knative-eventing: | $(KUBECONFIG) $(KUBECTL) ## Install Knative Eventing
-	$(KUBECTL) $(K_CMD) --filename \
-		https://github.com/knative/eventing/releases/download/knative-v$(KNATIVE_VERSION)/eventing-crds.yaml
-	$(KUBECTL) $(K_CMD) --filename \
-		https://github.com/knative/eventing/releases/download/knative-v$(KNATIVE_VERSION)/eventing-core.yaml
+	$(KUBECTL) $(K_CMD) --filename $(EVENTING_CRDS)
+	$(KUBECTL) $(K_CMD) --filename $(EVENTING_CORE)
 	$(KUBECTL) wait --for=condition=available deploy/eventing-controller --timeout=60s --namespace $(EVENTING_NAMESPACE)
 	$(KUBECTL) wait --for=condition=available deploy/eventing-webhook --timeout=60s --namespace $(EVENTING_NAMESPACE)
 
