@@ -123,6 +123,14 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 								corev1.ResourceCPU:    resource.MustParse("4000m"),
 								corev1.ResourceMemory: resource.MustParse("600Mi")},
 						},
+						SecurityContext: &corev1.SecurityContext{
+							AllowPrivilegeEscalation: ptr.Bool(false),
+							ReadOnlyRootFilesystem:   ptr.Bool(true),
+							RunAsNonRoot:             ptr.Bool(true),
+							Capabilities: &corev1.Capabilities{
+								Drop: []corev1.Capability{"all"},
+							},
+						},
 						VolumeMounts: []corev1.VolumeMount{
 							{
 								MountPath: "/etc/ssl/certs/",
