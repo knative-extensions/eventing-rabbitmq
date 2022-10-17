@@ -18,6 +18,9 @@ See [Performance](../test/performance/)
 ## Configuring self-signed certificates
 See [Self-Signed Certificates](self-signed-certs/)
 
+## Configuring pod resources
+See [Pod Resources](pod-resources) to configure the resource requests and limits for pods
+
 ## Contributing
 
 To contribute to the project, fork this repository, clone it and make a branch.
