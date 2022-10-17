@@ -26,6 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
+	"knative.dev/pkg/ptr"
 	"knative.dev/pkg/system"
 
 	_ "knative.dev/pkg/system/testing"
@@ -100,11 +101,18 @@ func TestMakeIngressDeployment(t *testing.T) {
 								corev1.ResourceCPU:    resource.MustParse("1000m"),
 								corev1.ResourceMemory: resource.MustParse("400Mi")},
 						},
-						VolumeMounts: []corev1.VolumeMount{
-							{
-								MountPath: "/etc/ssl/certs/",
-								Name:      "rabbitmq-ca",
-							}},
+						SecurityContext: &corev1.SecurityContext{
+							AllowPrivilegeEscalation: ptr.Bool(false),
+							ReadOnlyRootFilesystem:   ptr.Bool(true),
+							RunAsNonRoot:             ptr.Bool(true),
+							Capabilities: &corev1.Capabilities{
+								Drop: []corev1.Capability{"all"},
+							},
+						},
+						VolumeMounts: []corev1.VolumeMount{{
+							MountPath: "/etc/ssl/certs/",
+							Name:      "rabbitmq-ca",
+						}},
 						Env: []corev1.EnvVar{{
 							Name:  system.NamespaceEnvKey,
 							Value: system.Namespace(),

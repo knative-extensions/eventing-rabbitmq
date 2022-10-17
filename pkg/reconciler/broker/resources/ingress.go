@@ -30,6 +30,7 @@ import (
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	reconcilersource "knative.dev/eventing/pkg/reconciler/source"
 	"knative.dev/pkg/kmeta"
+	"knative.dev/pkg/ptr"
 	"knative.dev/pkg/system"
 )
 
@@ -138,6 +139,14 @@ func MakeIngressDeployment(args *IngressArgs) *appsv1.Deployment {
 							Name:          "http",
 						}},
 						Resources: args.ResourceRequirements,
+						SecurityContext: &corev1.SecurityContext{
+							AllowPrivilegeEscalation: ptr.Bool(false),
+							ReadOnlyRootFilesystem:   ptr.Bool(true),
+							RunAsNonRoot:             ptr.Bool(true),
+							Capabilities: &corev1.Capabilities{
+								Drop: []corev1.Capability{"all"},
+							},
+						},
 					}},
 				},
 			},
