@@ -26,6 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1alpha12 "knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
+	"knative.dev/pkg/ptr"
 )
 
 const (
@@ -152,6 +153,14 @@ func TestMakeReceiveAdapter(t *testing.T) {
 										Limits: corev1.ResourceList{
 											corev1.ResourceCPU:    resource.MustParse("4000m"),
 											corev1.ResourceMemory: resource.MustParse("600Mi")},
+									},
+									SecurityContext: &corev1.SecurityContext{
+										AllowPrivilegeEscalation: ptr.Bool(false),
+										ReadOnlyRootFilesystem:   ptr.Bool(true),
+										RunAsNonRoot:             ptr.Bool(true),
+										Capabilities: &corev1.Capabilities{
+											Drop: []corev1.Capability{"all"},
+										},
 									},
 									VolumeMounts: []corev1.VolumeMount{
 										{

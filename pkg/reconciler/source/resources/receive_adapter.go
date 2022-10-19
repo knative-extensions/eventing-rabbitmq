@@ -28,6 +28,7 @@ import (
 	"knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
+	"knative.dev/pkg/ptr"
 )
 
 type ReceiveAdapterArgs struct {
@@ -168,17 +169,23 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 				},
 				Spec: corev1.PodSpec{
 					ServiceAccountName: args.Source.Spec.ServiceAccountName,
-					Containers: []corev1.Container{
-						{
-							Name:            "receive-adapter",
-							Image:           args.Image,
-							ImagePullPolicy: "IfNotPresent",
-							Env:             env,
-							// This resource requests and limits comes from performance testing 1500msgs/s with a parallelism of 1000
-							// more info in this issue: https://github.com/knative-sandbox/eventing-rabbitmq/issues/703
-							Resources: args.ResourceRequirements,
+					Containers: []corev1.Container{{
+						Name:            "receive-adapter",
+						Image:           args.Image,
+						ImagePullPolicy: "IfNotPresent",
+						Env:             env,
+						// This resource requests and limits comes from performance testing 1500msgs/s with a parallelism of 1000
+						// more info in this issue: https://github.com/knative-sandbox/eventing-rabbitmq/issues/703
+						Resources: args.ResourceRequirements,
+						SecurityContext: &corev1.SecurityContext{
+							AllowPrivilegeEscalation: ptr.Bool(false),
+							ReadOnlyRootFilesystem:   ptr.Bool(true),
+							RunAsNonRoot:             ptr.Bool(true),
+							Capabilities: &corev1.Capabilities{
+								Drop: []corev1.Capability{"all"},
+							},
 						},
-					},
+					}},
 				},
 			},
 		},
