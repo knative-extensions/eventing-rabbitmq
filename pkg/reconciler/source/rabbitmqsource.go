@@ -154,6 +154,18 @@ func (r *Reconciler) reconcileRabbitObjects(ctx context.Context, src *v1alpha1.R
 	src.Status.MarkSecretReady()
 
 	if src.Spec.RabbitmqResourcesConfig.Predeclared {
+		_, err := r.rabbit.RabbitmqV1beta1().Exchanges(src.Namespace).Get(ctx, src.Spec.RabbitmqResourcesConfig.ExchangeName, metav1.GetOptions{})
+		if apierrors.IsNotFound(err) {
+			logger.Error("exchange not found", "exchange", src.Spec.RabbitmqResourcesConfig.ExchangeName)
+			return err
+		}
+
+		_, err = r.rabbit.RabbitmqV1beta1().Queues(src.Namespace).Get(ctx, src.Spec.RabbitmqResourcesConfig.QueueName, metav1.GetOptions{})
+		if apierrors.IsNotFound(err) {
+			logger.Error("queue not found", "queue", src.Spec.RabbitmqResourcesConfig.QueueName)
+			return err
+		}
+
 		logger.Info("predeclared set to true; no RabbitMQ objects to reconcile",
 			"source", src.Name,
 			"predeclared queue", src.Spec.RabbitmqResourcesConfig.QueueName)
