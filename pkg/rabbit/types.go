@@ -21,6 +21,8 @@ import (
 	"net/url"
 
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
+
+	rmqv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/client/clientset/versioned/typed/rabbitmq.com/v1beta1"
 )
 
 type Result struct {
@@ -29,6 +31,7 @@ type Result struct {
 }
 
 type Service interface {
+	RabbitmqV1beta1() rmqv1beta1.RabbitmqV1beta1Interface
 	RabbitMQURL(context.Context, *rabbitv1beta1.RabbitmqClusterReference) (*url.URL, error)
 	ReconcileExchange(context.Context, *ExchangeArgs) (Result, error)
 	ReconcileQueue(context.Context, *QueueArgs) (Result, error)
