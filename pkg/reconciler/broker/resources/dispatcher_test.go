@@ -128,7 +128,7 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 							ReadOnlyRootFilesystem:   ptr.Bool(true),
 							RunAsNonRoot:             ptr.Bool(true),
 							Capabilities: &corev1.Capabilities{
-								Drop: []corev1.Capability{"all"},
+								Drop: []corev1.Capability{"ALL"},
 							},
 						},
 						VolumeMounts: []corev1.VolumeMount{
