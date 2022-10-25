@@ -32,6 +32,7 @@ import (
 
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/kmeta"
+	"knative.dev/pkg/ptr"
 	"knative.dev/pkg/system"
 )
 
@@ -118,6 +119,14 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 			Name:          "http-metrics",
 			ContainerPort: 9090,
 		}},
+		SecurityContext: &corev1.SecurityContext{
+			AllowPrivilegeEscalation: ptr.Bool(false),
+			ReadOnlyRootFilesystem:   ptr.Bool(true),
+			RunAsNonRoot:             ptr.Bool(true),
+			Capabilities: &corev1.Capabilities{
+				Drop: []corev1.Capability{"ALL"},
+			},
+		},
 	}
 	if args.Configs != nil {
 		dispatcher.Env = append(dispatcher.Env, args.Configs.ToEnvVars()...)
