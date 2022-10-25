@@ -182,7 +182,7 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 							ReadOnlyRootFilesystem:   ptr.Bool(true),
 							RunAsNonRoot:             ptr.Bool(true),
 							Capabilities: &corev1.Capabilities{
-								Drop: []corev1.Capability{"all"},
+								Drop: []corev1.Capability{"ALL"},
 							},
 						},
 					}},
