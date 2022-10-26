@@ -215,6 +215,14 @@ func deployment(opts ...func(*appsv1.Deployment)) *appsv1.Deployment {
 							Name:          "http-metrics",
 							ContainerPort: 9090,
 						}},
+						SecurityContext: &corev1.SecurityContext{
+							AllowPrivilegeEscalation: ptr.Bool(false),
+							ReadOnlyRootFilesystem:   ptr.Bool(true),
+							RunAsNonRoot:             ptr.Bool(true),
+							Capabilities: &corev1.Capabilities{
+								Drop: []corev1.Capability{"ALL"},
+							},
+						},
 					}},
 				},
 			},
