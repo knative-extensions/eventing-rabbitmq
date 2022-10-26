@@ -1325,7 +1325,7 @@ knative.dev/eventing/test/test_images/print
 # knative.dev/hack v0.0.0-20221024013916-9d2ae47c16b2
 ## explicit; go 1.18
 knative.dev/hack
-# knative.dev/pkg v0.0.0-20221024013716-9823d960ed40
+# knative.dev/pkg v0.0.0-20221025200856-6ce976ce9255
 ## explicit; go 1.18
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
