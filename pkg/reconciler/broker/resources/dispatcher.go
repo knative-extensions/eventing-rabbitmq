@@ -134,13 +134,13 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 					Value: p.DurationApprox().String(),
 				})
 		}
-		if args.RabbitMQVhost != "" {
-			envs = append(envs,
-				corev1.EnvVar{
-					Name:  "RABBITMQ_VHOST",
-					Value: args.RabbitMQVhost,
-				})
-		}
+	}
+	if args.RabbitMQVhost != "" {
+		envs = append(envs,
+			corev1.EnvVar{
+				Name:  "RABBITMQ_VHOST",
+				Value: args.RabbitMQVhost,
+			})
 	}
 	// Default requirements only if none of the requirements are set through annotations
 	if len(args.ResourceRequirements.Limits) == 0 && len(args.ResourceRequirements.Requests) == 0 {
