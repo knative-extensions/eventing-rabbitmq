@@ -39,7 +39,6 @@ const (
 	image            = "dispatcherimage"
 	secretName       = "testbroker-broker-rabbit"
 	brokerURLKey     = "testbrokerurl"
-	rabbitHost       = "amqp://localhost.example.com"
 	queueName        = "testnamespace-testtrigger"
 	brokerIngressURL = "http://broker.example.com"
 	subscriberURL    = "http://function.example.com"
