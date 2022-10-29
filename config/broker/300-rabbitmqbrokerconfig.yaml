@@ -41,6 +41,10 @@ spec:
             type: object
           spec:
             properties:
+              vhost:
+                description: VHost is the name of the VHost that will be used to set
+                  up our sources
+                type: string
               queueType:
                 default: quorum
                 enum:

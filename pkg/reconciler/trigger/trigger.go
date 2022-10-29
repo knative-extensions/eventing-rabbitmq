@@ -138,6 +138,10 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 	if err != nil {
 		return err
 	}
+	rabbitmqVhost, err := r.brokerConfig.GetRabbitMQVhost(ctx, broker)
+	if err != nil {
+		return err
+	}
 	if t.Spec.Delivery != nil && t.Spec.Delivery.DeadLetterSink != nil {
 		// If there's DeadLetterSink, we need to create a DLX that's specific for this Trigger as well
 		// as a Queue for it, and Dispatcher that pulls from that queue.
@@ -147,6 +151,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 			Namespace:                t.Namespace,
 			Broker:                   broker,
 			RabbitmqClusterReference: ref,
+			RabbitMQVhost:            rabbitmqVhost,
 			Trigger:                  t,
 		}
 		dlx, err := r.rabbit.ReconcileExchange(ctx, args)
@@ -164,6 +169,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 			Name:                     naming.CreateTriggerDeadLetterQueueName(t),
 			Namespace:                t.Namespace,
 			RabbitmqClusterReference: ref,
+			RabbitMQVhost:            rabbitmqVhost,
 			Owner:                    *kmeta.NewControllerRef(t),
 			Labels:                   rabbit.Labels(broker, t, nil),
 			QueueType:                queueType,
@@ -178,7 +184,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 			t.Status.MarkDependencyFailed("DLQueueFailure", "DLQ %q is not ready", dlq.Name)
 			return nil
 		}
-		dlqBinding, err := r.reconcileDLQBinding(ctx, broker, t)
+		dlqBinding, err := r.reconcileDLQBinding(ctx, broker, t, rabbitmqVhost)
 		if err != nil {
 			logging.FromContext(ctx).Error("Problem reconciling Trigger DLQ Binding", zap.Error(err))
 			t.Status.MarkDependencyFailed("BindingFailure", "%v", err)
@@ -198,7 +204,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		}
 		t.Status.MarkDeadLetterSinkResolvedSucceeded()
 		t.Status.DeadLetterSinkURI = deadLetterSinkURI
-		_, err = r.reconcileDispatcherDeployment(ctx, t, deadLetterSinkURI, t.Spec.Delivery, true)
+		_, err = r.reconcileDispatcherDeployment(ctx, t, deadLetterSinkURI, t.Spec.Delivery, true, rabbitmqVhost)
 		if err != nil {
 			logging.FromContext(ctx).Error("Problem reconciling DLX dispatcher Deployment", zap.Error(err))
 			t.Status.MarkDependencyFailed("DeploymentFailure", "%v", err)
@@ -216,6 +222,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		Namespace:                t.Namespace,
 		QueueName:                naming.CreateTriggerQueueRabbitName(t, string(broker.GetUID())),
 		RabbitmqClusterReference: ref,
+		RabbitMQVhost:            rabbitmqVhost,
 		Owner:                    *kmeta.NewControllerRef(t),
 		Labels:                   rabbit.Labels(broker, t, nil),
 		DLXName:                  dlxName,
@@ -248,7 +255,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		}
 	}
 
-	binding, err := r.reconcileBinding(ctx, broker, t)
+	binding, err := r.reconcileBinding(ctx, broker, t, rabbitmqVhost)
 	if err != nil {
 		logging.FromContext(ctx).Error("Problem reconciling Trigger Queue Binding", zap.Error(err))
 		t.Status.MarkDependencyFailed("BindingFailure", "%v", err)
@@ -293,7 +300,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		delivery = broker.Spec.Delivery
 	}
 
-	_, err = r.reconcileDispatcherDeployment(ctx, t, subscriberURI, delivery, false)
+	_, err = r.reconcileDispatcherDeployment(ctx, t, subscriberURI, delivery, false, rabbitmqVhost)
 	if err != nil {
 		logging.FromContext(ctx).Error("Problem reconciling dispatcher Deployment", zap.Error(err))
 		t.Status.MarkDependencyFailed("DeploymentFailure", "%v", err)
@@ -374,7 +381,13 @@ func (r *Reconciler) deleteDeployment(ctx context.Context, namespace, name strin
 }
 
 // reconcileDispatcherDeployment reconciles Trigger's dispatcher deployment.
-func (r *Reconciler) reconcileDispatcherDeployment(ctx context.Context, t *eventingv1.Trigger, sub *apis.URL, delivery *eventingduckv1.DeliverySpec, dlq bool) (*v1.Deployment, error) {
+func (r *Reconciler) reconcileDispatcherDeployment(
+	ctx context.Context,
+	t *eventingv1.Trigger,
+	sub *apis.URL,
+	delivery *eventingduckv1.DeliverySpec,
+	dlq bool,
+	rabbitmqVhost string) (*v1.Deployment, error) {
 	rabbitmqSecret, err := r.getRabbitmqSecret(ctx, t)
 	if err != nil {
 		return nil, err
@@ -408,6 +421,7 @@ func (r *Reconciler) reconcileDispatcherDeployment(ctx context.Context, t *event
 		Image:                r.dispatcherImage,
 		RabbitMQSecretName:   rabbitmqSecret.Name,
 		RabbitMQCASecretName: secretName,
+		RabbitMQVHost:        rabbitmqVhost,
 		QueueName:            queueName,
 		BrokerUrlSecretKey:   rabbit.BrokerURLSecretKey,
 		BrokerIngressURL:     b.Status.Address.URL,
@@ -475,7 +489,7 @@ func (r *Reconciler) getRabbitmqSecret(ctx context.Context, t *eventingv1.Trigge
 	return r.kubeClientSet.CoreV1().Secrets(t.Namespace).Get(ctx, rabbit.SecretName(t.Spec.Broker, "broker"), metav1.GetOptions{})
 }
 
-func (r *Reconciler) reconcileBinding(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger) (rabbit.Result, error) {
+func (r *Reconciler) reconcileBinding(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger, rabbitmqVhost string) (rabbit.Result, error) {
 	bindingName := naming.CreateTriggerQueueName(t)
 	var filters map[string]string
 	if t.Spec.Filter != nil && t.Spec.Filter.Attributes != nil {
@@ -493,7 +507,7 @@ func (r *Reconciler) reconcileBinding(ctx context.Context, b *eventingv1.Broker,
 		Name:                     bindingName,
 		Namespace:                t.Namespace,
 		RabbitmqClusterReference: ref,
-		Vhost:                    "/",
+		RabbitMQVhost:            rabbitmqVhost,
 		Source:                   naming.BrokerExchangeName(b, false),
 		Destination:              naming.CreateTriggerQueueRabbitName(t, string(b.GetUID())),
 		Owner:                    *kmeta.NewControllerRef(t),
@@ -502,7 +516,7 @@ func (r *Reconciler) reconcileBinding(ctx context.Context, b *eventingv1.Broker,
 	})
 }
 
-func (r *Reconciler) reconcileDLQBinding(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger) (rabbit.Result, error) {
+func (r *Reconciler) reconcileDLQBinding(ctx context.Context, b *eventingv1.Broker, t *eventingv1.Trigger, rabbitmqVhost string) (rabbit.Result, error) {
 	bindingName := naming.CreateTriggerDeadLetterQueueName(t)
 	ref, err := r.brokerConfig.GetRabbitMQClusterRef(ctx, b)
 	if err != nil {
@@ -512,7 +526,7 @@ func (r *Reconciler) reconcileDLQBinding(ctx context.Context, b *eventingv1.Brok
 		Name:                     bindingName,
 		Namespace:                t.Namespace,
 		RabbitmqClusterReference: ref,
-		Vhost:                    "/",
+		RabbitMQVhost:            rabbitmqVhost,
 		Source:                   naming.TriggerDLXExchangeName(t),
 		Destination:              bindingName,
 		Owner:                    *kmeta.NewControllerRef(t),

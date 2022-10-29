@@ -42,6 +42,7 @@ type envConfig struct {
 
 	QueueName        string `envconfig:"QUEUE_NAME" required:"true"`
 	RabbitURL        string `envconfig:"RABBIT_URL" required:"true"`
+	RabbitMQVhost    string `envconfig:"RABBITMQ_VHOST" required:"false"`
 	BrokerIngressURL string `envconfig:"BROKER_INGRESS_URL" required:"true"`
 	SubscriberURL    string `envconfig:"SUBSCRIBER" required:"true"`
 

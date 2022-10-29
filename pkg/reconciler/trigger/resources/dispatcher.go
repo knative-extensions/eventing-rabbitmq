@@ -48,7 +48,7 @@ type DispatcherArgs struct {
 	Trigger  *eventingv1.Trigger
 	Image    string
 	//ServiceAccountName string
-	RabbitMQHost         string
+	RabbitMQVHost        string
 	RabbitMQSecretName   string
 	RabbitMQCASecretName string
 	QueueName            string
@@ -167,6 +167,13 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 				corev1.EnvVar{
 					Name:  "TIMEOUT",
 					Value: timeout.DurationApprox().String(),
+				})
+		}
+		if args.RabbitMQVHost != "" {
+			dispatcher.Env = append(dispatcher.Env,
+				corev1.EnvVar{
+					Name:  "RABBITMQ_VHOST",
+					Value: args.RabbitMQVHost,
 				})
 		}
 	}

@@ -58,9 +58,14 @@ func (r *BrokerConfigService) GetExchangeArgs(ctx context.Context, b *eventingv1
 		return nil, err
 	}
 
+	rabbitmqVhost, err := r.GetRabbitMQVhost(ctx, b)
+	if err != nil {
+		return nil, err
+	}
 	return &rabbit.ExchangeArgs{
 		Namespace:                b.Namespace,
 		Broker:                   b,
+		RabbitMQVhost:            rabbitmqVhost,
 		RabbitmqClusterReference: rabbitmqClusterRef,
 		RabbitMQURL:              rabbitmqURL,
 	}, nil
@@ -118,5 +123,27 @@ func (r *BrokerConfigService) GetQueueType(ctx context.Context, b *eventingv1.Br
 		return config.Spec.QueueType, nil
 	default:
 		return "", errors.New("Broker.Spec.Config configuration not supported, only [kind: RabbitmqCluster, apiVersion: rabbitmq.com/v1beta1] and [Kind: RabbitmqBrokerConfig, apiVersion: eventing.knative.dev/v1alpha1]")
+	}
+}
+
+func (r *BrokerConfigService) GetRabbitMQVhost(ctx context.Context, b *eventingv1.Broker) (string, error) {
+	if b.Spec.Config == nil {
+		return "", nil
+	}
+
+	if b.Spec.Config.Namespace == "" || b.Spec.Config.Name == "" {
+		return "", errors.New("broker.spec.config.[name, namespace] are required")
+	}
+
+	gvk := fmt.Sprintf("%s.%s", b.Spec.Config.Kind, b.Spec.Config.APIVersion)
+	switch gvk {
+	case "RabbitmqBrokerConfig.eventing.knative.dev/v1alpha1":
+		config, err := r.rmqeventingClientSet.EventingV1alpha1().RabbitmqBrokerConfigs(b.Spec.Config.Namespace).Get(ctx, b.Spec.Config.Name, metav1.GetOptions{})
+		if err != nil {
+			return "", err
+		}
+		return config.Spec.Vhost, nil
+	default:
+		return "", nil
 	}
 }

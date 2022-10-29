@@ -59,6 +59,10 @@ type RabbitmqBrokerConfigSpec struct {
 	// +kubebuilder:default:=quorum
 	// +kubebuilder:validation:Enum=quorum;classic
 	QueueType QueueType `json:"queueType"`
+
+	// VHost is the name of the VHost that will be used to set up our sources
+	// +optional
+	Vhost string `json:"vhost,omitempty"`
 }
 
 func (s *RabbitmqBrokerConfig) GetGroupVersionKind() schema.GroupVersionKind {

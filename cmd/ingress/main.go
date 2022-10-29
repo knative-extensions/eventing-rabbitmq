@@ -52,9 +52,10 @@ const (
 type envConfig struct {
 	utils.EnvConfig
 
-	Port         int    `envconfig:"PORT" default:"8080"`
-	BrokerURL    string `envconfig:"BROKER_URL" required:"true"`
-	ExchangeName string `envconfig:"EXCHANGE_NAME" required:"true"`
+	Port          int    `envconfig:"PORT" default:"8080"`
+	BrokerURL     string `envconfig:"BROKER_URL" required:"true"`
+	ExchangeName  string `envconfig:"EXCHANGE_NAME" required:"true"`
+	RabbitMQVhost string `envconfig:"RABBITMQ_VHOST" required:"false"`
 
 	rmqHelper rabbit.RabbitMQConnectionsHandlerInterface
 

@@ -89,6 +89,8 @@ type Reconciler struct {
 	// config accessor for observability/logging/tracing
 	configs      reconcilersource.ConfigAccessor
 	brokerConfig *brokerconfig.BrokerConfigService
+
+	rabbitmqVhost string
 }
 
 // Check that our Reconciler implements Interface
@@ -129,7 +131,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *eventingv1.Broker) pk
 		MarkExchangeFailed(&b.Status, "ExchangeCredentialsUnavailable", "Failed to get arguments for creating exchange: %s", err)
 		return err
 	}
-
+	r.rabbitmqVhost = args.RabbitMQVhost
 	return r.reconcileRabbitResources(ctx, b, args)
 }
 
@@ -196,13 +198,13 @@ func (r *Reconciler) reconcileIngressDeployment(ctx context.Context, b *eventing
 	if err != nil {
 		return err
 	}
-
 	expected := resources.MakeIngressDeployment(&resources.IngressArgs{
 		Broker:               b,
 		Image:                r.ingressImage,
 		RabbitMQSecretName:   rabbit.SecretName(b.Name, "broker"),
 		RabbitMQCASecretName: secretName,
 		BrokerUrlSecretKey:   rabbit.BrokerURLSecretKey,
+		RabbitMQVhost:        r.rabbitmqVhost,
 		Configs:              r.configs,
 		ResourceRequirements: resourceRequirements,
 	})
@@ -238,6 +240,7 @@ func (r *Reconciler) reconcileDLXDispatcherDeployment(ctx context.Context, b *ev
 			Delivery:             b.Spec.Delivery,
 			RabbitMQSecretName:   rabbit.SecretName(b.Name, "broker"),
 			RabbitMQCASecretName: secretName,
+			RabbitMQVhost:        r.rabbitmqVhost,
 			QueueName:            naming.CreateBrokerDeadLetterQueueName(b),
 			BrokerUrlSecretKey:   rabbit.BrokerURLSecretKey,
 			Subscriber:           sub,
@@ -312,6 +315,7 @@ func (r *Reconciler) reconcileDeadLetterResources(ctx context.Context, b *eventi
 	queue, err := r.rabbit.ReconcileQueue(ctx, &rabbit.QueueArgs{
 		Name:                     naming.CreateBrokerDeadLetterQueueName(b),
 		Namespace:                b.Namespace,
+		RabbitMQVhost:            args.RabbitMQVhost,
 		RabbitmqClusterReference: clusterRef,
 		Owner:                    *kmeta.NewControllerRef(b),
 		Labels:                   rabbit.Labels(b, nil, nil),
@@ -333,7 +337,7 @@ func (r *Reconciler) reconcileDeadLetterResources(ctx context.Context, b *eventi
 		Name:                     bindingName,
 		Namespace:                b.Namespace,
 		RabbitmqClusterReference: clusterRef,
-		Vhost:                    "/",
+		RabbitMQVhost:            args.RabbitMQVhost,
 		Source:                   naming.BrokerExchangeName(b, true),
 		Destination:              bindingName,
 		Owner:                    *kmeta.NewControllerRef(b),
@@ -357,6 +361,7 @@ func (r *Reconciler) reconcileDeadLetterResources(ctx context.Context, b *eventi
 	policy, err := r.rabbit.ReconcileBrokerDLXPolicy(ctx, &rabbit.QueueArgs{
 		Name:                     policyName,
 		Namespace:                b.Namespace,
+		RabbitMQVhost:            args.RabbitMQVhost,
 		RabbitmqClusterReference: clusterRef,
 		Owner:                    *kmeta.NewControllerRef(b),
 		Labels:                   rabbit.Labels(b, nil, nil),

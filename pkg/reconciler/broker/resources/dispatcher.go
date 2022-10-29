@@ -50,6 +50,7 @@ type DispatcherArgs struct {
 	RabbitMQHost         string
 	RabbitMQSecretName   string
 	RabbitMQCASecretName string
+	RabbitMQVhost        string
 	QueueName            string
 	BrokerUrlSecretKey   string
 	BrokerIngressURL     *apis.URL
@@ -132,6 +133,13 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 				corev1.EnvVar{
 					Name:  "BACKOFF_DELAY",
 					Value: p.DurationApprox().String(),
+				})
+		}
+		if args.RabbitMQVhost != "" {
+			envs = append(envs,
+				corev1.EnvVar{
+					Name:  "RABBITMQ_VHOST",
+					Value: args.RabbitMQVhost,
 				})
 		}
 	}

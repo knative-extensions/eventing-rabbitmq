@@ -265,7 +265,7 @@ func dispatcherArgs(opts ...func(*DispatcherArgs)) *DispatcherArgs {
 	args := &DispatcherArgs{
 		Trigger:              trigger,
 		Image:                image,
-		RabbitMQHost:         rabbitHost,
+		RabbitMQVHost:        rabbitHost,
 		RabbitMQSecretName:   secretName,
 		RabbitMQCASecretName: "rabbitmq-ca-secret",
 		QueueName:            queueName,

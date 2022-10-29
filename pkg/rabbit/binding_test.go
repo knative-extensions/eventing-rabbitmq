@@ -52,8 +52,8 @@ func TestNewBinding(t *testing.T) {
 				RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
 					Name: rabbitmqcluster,
 				},
-				Vhost:  "/",
-				Labels: map[string]string{"label": "cool"},
+				RabbitMQVhost: "/",
+				Labels:        map[string]string{"label": "cool"},
 				Owner: metav1.OwnerReference{
 					Kind:       "Broker",
 					APIVersion: "eventing.knative.dev/v1",
@@ -98,8 +98,8 @@ func TestNewBinding(t *testing.T) {
 					Name:      rabbitmqcluster,
 					Namespace: "single-rabbitmq-cluster",
 				},
-				Vhost:  "/",
-				Labels: map[string]string{"label": "cool"},
+				RabbitMQVhost: "/",
+				Labels:        map[string]string{"label": "cool"},
 				Owner: metav1.OwnerReference{
 					Kind:       "Broker",
 					APIVersion: "eventing.knative.dev/v1",
@@ -139,7 +139,7 @@ func TestNewBinding(t *testing.T) {
 		{
 			name: "appends to filters if given",
 			args: &rabbit.BindingArgs{
-				Vhost: "/",
+				RabbitMQVhost: "/",
 				RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
 					Name:      rabbitmqcluster,
 					Namespace: "single-rabbitmq-cluster",
