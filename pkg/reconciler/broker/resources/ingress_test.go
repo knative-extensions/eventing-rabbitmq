@@ -46,6 +46,7 @@ func TestMakeIngressDeployment(t *testing.T) {
 		Image:                image,
 		RabbitMQSecretName:   secretName,
 		RabbitMQCASecretName: "rabbitmq-ca-secret",
+		RabbitMQVhost:        "test-vhost",
 		BrokerUrlSecretKey:   brokerURLKey,
 	}
 
@@ -141,6 +142,9 @@ func TestMakeIngressDeployment(t *testing.T) {
 						}, {
 							Name:  "BROKER_NAMESPACE",
 							Value: "testnamespace",
+						}, {
+							Name:  "RABBITMQ_VHOST",
+							Value: "test-vhost",
 						}},
 						Ports: []corev1.ContainerPort{{
 							ContainerPort: 8080,

@@ -169,13 +169,6 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 					Value: timeout.DurationApprox().String(),
 				})
 		}
-		if args.RabbitMQVHost != "" {
-			dispatcher.Env = append(dispatcher.Env,
-				corev1.EnvVar{
-					Name:  "RABBITMQ_VHOST",
-					Value: args.RabbitMQVHost,
-				})
-		}
 	}
 	if parallelism, ok := args.Trigger.ObjectMeta.Annotations[ParallelismAnnotation]; ok {
 		dispatcher.Env = append(dispatcher.Env,
@@ -188,6 +181,13 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 			corev1.EnvVar{
 				Name:  "PARALLELISM",
 				Value: "1",
+			})
+	}
+	if args.RabbitMQVHost != "" {
+		dispatcher.Env = append(dispatcher.Env,
+			corev1.EnvVar{
+				Name:  "RABBITMQ_VHOST",
+				Value: args.RabbitMQVHost,
 			})
 	}
 	deployment := &appsv1.Deployment{

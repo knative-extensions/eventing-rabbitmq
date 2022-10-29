@@ -56,7 +56,7 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 	args := &DispatcherArgs{
 		Broker:               broker,
 		Image:                image,
-		RabbitMQHost:         rabbitHost,
+		RabbitMQVhost:        "test-vhost",
 		RabbitMQSecretName:   secretName,
 		RabbitMQCASecretName: "rabbitmq-ca-secret",
 		QueueName:            queueName,
@@ -179,6 +179,9 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 						}, {
 							Name:  "BACKOFF_DELAY",
 							Value: "20s",
+						}, {
+							Name:  "RABBITMQ_VHOST",
+							Value: "test-vhost",
 						}},
 						Ports: []corev1.ContainerPort{{
 							Name:          "http-metrics",

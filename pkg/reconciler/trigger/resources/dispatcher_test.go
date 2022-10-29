@@ -91,6 +91,14 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 			want: deployment(withEnv(corev1.EnvVar{Name: "PARALLELISM", Value: "10"}), withDefaultResourceRequirements()),
 		},
 		{
+			name: "with vhost",
+			args: dispatcherArgs(withVhost()),
+			want: deployment(
+				withEnv(corev1.EnvVar{Name: "PARALLELISM", Value: "1"}),
+				withEnv(corev1.EnvVar{Name: "RABBITMQ_VHOST", Value: "test-vhost"}),
+				withDefaultResourceRequirements()),
+		},
+		{
 			name: "with resource requirements",
 			args: dispatcherArgs(
 				withResourceArgs(corev1.ResourceRequirements{
@@ -265,7 +273,6 @@ func dispatcherArgs(opts ...func(*DispatcherArgs)) *DispatcherArgs {
 	args := &DispatcherArgs{
 		Trigger:              trigger,
 		Image:                image,
-		RabbitMQVHost:        rabbitHost,
 		RabbitMQSecretName:   secretName,
 		RabbitMQCASecretName: "rabbitmq-ca-secret",
 		QueueName:            queueName,
@@ -321,6 +328,12 @@ func withDefaultResourceRequirements() func(*appsv1.Deployment) {
 				corev1.ResourceCPU:    resource.MustParse("4000m"),
 				corev1.ResourceMemory: resource.MustParse("600Mi")},
 		}
+	}
+}
+
+func withVhost() func(*DispatcherArgs) {
+	return func(args *DispatcherArgs) {
+		args.RabbitMQVHost = "test-vhost"
 	}
 }
 

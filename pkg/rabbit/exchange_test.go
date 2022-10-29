@@ -147,8 +147,9 @@ func TestNewExchange(t *testing.T) {
 	}, {
 		name: "source exchange",
 		args: &rabbit.ExchangeArgs{
-			Name:      sourceName,
-			Namespace: namespace,
+			Name:          sourceName,
+			Namespace:     namespace,
+			RabbitMQVhost: "test",
 			RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
 				ConnectionSecret: &corev1.LocalObjectReference{
 					Name: connectionSecret,

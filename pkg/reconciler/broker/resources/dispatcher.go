@@ -47,7 +47,6 @@ type DispatcherArgs struct {
 	Broker   *eventingv1.Broker
 	Image    string
 	//ServiceAccountName string
-	RabbitMQHost         string
 	RabbitMQSecretName   string
 	RabbitMQCASecretName string
 	RabbitMQVhost        string
