@@ -1428,7 +1428,7 @@ func createExchange() *rabbitv1beta1.Exchange {
 		},
 		Spec: rabbitv1beta1.ExchangeSpec{
 			Name:       dlxExchangeName,
-			Vhost:      "/",
+			Vhost:      "",
 			Type:       "headers",
 			Durable:    true,
 			AutoDelete: false,
@@ -1461,7 +1461,7 @@ func createQueue(kref *duckv1.KReference, dlq bool) *rabbitv1beta1.Queue {
 		},
 		Spec: rabbitv1beta1.QueueSpec{
 			Name:    queueName,
-			Vhost:   "/",
+			Vhost:   "",
 			Durable: true,
 			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
 				Name:      rabbitMQBrokerName,
@@ -1499,7 +1499,7 @@ func createBinding(withFilter bool, dlq bool) *rabbitv1beta1.Binding {
 			Labels: labels,
 		},
 		Spec: rabbitv1beta1.BindingSpec{
-			Vhost:           "/",
+			Vhost:           "",
 			DestinationType: "queue",
 			Destination:     queueName,
 			Source:          "b.test-namespace.test-broker.broker-test-uid",

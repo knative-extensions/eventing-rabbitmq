@@ -164,6 +164,7 @@ func (r *Reconciler) reconcileRabbitObjects(ctx context.Context, src *v1alpha1.R
 		Name:                     naming.CreateSourceRabbitName(src),
 		Namespace:                src.Namespace,
 		RabbitmqClusterReference: src.Spec.RabbitmqClusterReference,
+		RabbitMQVhost:            src.Spec.RabbitmqResourcesConfig.Vhost,
 		Source:                   src,
 	})
 	if err != nil {
@@ -175,6 +176,7 @@ func (r *Reconciler) reconcileRabbitObjects(ctx context.Context, src *v1alpha1.R
 		Name:                     naming.CreateSourceRabbitName(src),
 		Namespace:                src.Namespace,
 		RabbitmqClusterReference: src.Spec.RabbitmqClusterReference,
+		RabbitMQVhost:            src.Spec.RabbitmqResourcesConfig.Vhost,
 		Source:                   src,
 		Owner:                    *kmeta.NewControllerRef(src),
 		Labels:                   rabbit.Labels(nil, nil, src),

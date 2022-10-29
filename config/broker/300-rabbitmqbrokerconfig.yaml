@@ -43,7 +43,7 @@ spec:
             properties:
               vhost:
                 description: VHost is the name of the VHost that will be used to set
-                  up our sources
+                  up our broker's resources, and the trigger's resources that connects to it
                 type: string
               queueType:
                 default: quorum

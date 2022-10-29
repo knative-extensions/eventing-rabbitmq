@@ -52,7 +52,7 @@ func TestNewBinding(t *testing.T) {
 				RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
 					Name: rabbitmqcluster,
 				},
-				RabbitMQVhost: "/",
+				RabbitMQVhost: "",
 				Labels:        map[string]string{"label": "cool"},
 				Owner: metav1.OwnerReference{
 					Kind:       "Broker",
@@ -78,7 +78,7 @@ func TestNewBinding(t *testing.T) {
 					Labels: map[string]string{"label": "cool"},
 				},
 				Spec: rabbitv1beta1.BindingSpec{
-					Vhost:           "/",
+					Vhost:           "",
 					Source:          "source",
 					Destination:     "destination",
 					DestinationType: "queue",
@@ -98,7 +98,7 @@ func TestNewBinding(t *testing.T) {
 					Name:      rabbitmqcluster,
 					Namespace: "single-rabbitmq-cluster",
 				},
-				RabbitMQVhost: "/",
+				RabbitMQVhost: "",
 				Labels:        map[string]string{"label": "cool"},
 				Owner: metav1.OwnerReference{
 					Kind:       "Broker",
@@ -124,7 +124,7 @@ func TestNewBinding(t *testing.T) {
 					Labels: map[string]string{"label": "cool"},
 				},
 				Spec: rabbitv1beta1.BindingSpec{
-					Vhost:           "/",
+					Vhost:           "",
 					Source:          "source",
 					Destination:     "destination",
 					DestinationType: "queue",
@@ -139,7 +139,7 @@ func TestNewBinding(t *testing.T) {
 		{
 			name: "appends to filters if given",
 			args: &rabbit.BindingArgs{
-				RabbitMQVhost: "/",
+				RabbitMQVhost: "",
 				RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
 					Name:      rabbitmqcluster,
 					Namespace: "single-rabbitmq-cluster",
@@ -149,7 +149,7 @@ func TestNewBinding(t *testing.T) {
 			want: &rabbitv1beta1.Binding{
 				ObjectMeta: metav1.ObjectMeta{OwnerReferences: []metav1.OwnerReference{{}}},
 				Spec: rabbitv1beta1.BindingSpec{
-					Vhost:           "/",
+					Vhost:           "",
 					DestinationType: "queue",
 					Arguments:       &runtime.RawExtension{Raw: []byte(`{"filter":"this","x-match":"all"}`)},
 				},
