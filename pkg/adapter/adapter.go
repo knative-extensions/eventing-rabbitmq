@@ -21,7 +21,6 @@ import (
 	"fmt"
 	nethttp "net/http"
 	"sync"
-	"time"
 
 	"go.uber.org/zap"
 
@@ -164,7 +163,6 @@ func (a *Adapter) PollForMessages(stopCh <-chan struct{}) error {
 			if err != nil {
 				logger.Error(err.Error())
 				a.rmqHelper.CloseRabbitMQConnections(a.connection, logger)
-				time.Sleep(time.Second)
 				retryChan <- true
 				continue
 			} else {

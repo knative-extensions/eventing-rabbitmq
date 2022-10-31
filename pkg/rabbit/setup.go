@@ -73,7 +73,7 @@ func (r *RabbitMQConnection) ChannelWrapper() (RabbitMQChannelInterface, error) 
 	} else if ci, ok := r.connection.(RabbitMQConnectionInterface); ok {
 		return ci.ChannelWrapper()
 	}
-	return nil, errors.New("Wrong typed Connection arg")
+	return nil, errors.New("wrong typed connection arg")
 }
 
 func (r *RabbitMQConnection) NotifyClose(c chan *amqp.Error) chan *amqp.Error {
@@ -88,7 +88,7 @@ func (r *RabbitMQConnection) Close() error {
 	if ci, ok := r.connection.(RabbitMQConnectionInterface); ok {
 		return ci.Close()
 	}
-	return errors.New("Wrong typed Connection arg")
+	return errors.New("wrong typed connection arg")
 }
 
 func (r *RabbitMQConnection) IsClosed() bool {
@@ -131,7 +131,6 @@ func (r *RabbitMQHelper) SetupRabbitMQ(
 	// If there is an error trying to setup rabbit send a retry msg
 	if err != nil {
 		logger.Warnf("retry number %d", r.retryCounter)
-		time.Sleep(time.Second * r.cycleDuration)
 		go r.SignalRetry(true)
 		return nil, nil, err
 	}
@@ -153,6 +152,7 @@ func (r *RabbitMQHelper) WatchRabbitMQConnections(
 	case err = <-channel.NotifyClose(make(chan *amqp.Error)):
 	}
 	if !r.cleaningUp {
+		time.Sleep(time.Second * r.cycleDuration)
 		logger.Warn("Lost connection to RabbitMQ, reconnecting. Error: %v", zap.Error(err))
 		r.CloseRabbitMQConnections(connection, logger)
 		r.SignalRetry(true)

@@ -111,7 +111,6 @@ func main() {
 				return
 			}
 			rmqHelper.CloseRabbitMQConnections(env.connection, logger)
-			time.Sleep(time.Second)
 			rmqHelper.SignalRetry(true)
 		}
 		logger.Warn("recreating RabbitMQ resources")
