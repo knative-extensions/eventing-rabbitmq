@@ -7,7 +7,7 @@ This document outlines the steps needed to use Eventing RabbitMQ on an instance 
 The certificate will need to have additional Subject Alternative Names (SAN) if using Eventing RabbitMQ with the cluster operator:
 
 - <RABBITMQ_CLUSTER_NAME>.<RABBITMQ_CLUSTER_NAMESPACE>.svc
-- <RABBITMQ_CLUSTER_NAME>.<RABBITMQ_CLUSTER_NAMESPACE>.svc.<Kubernetes Cluster Domain>
+- <RABBITMQ_CLUSTER_NAME>.<RABBITMQ_CLUSTER_NAMESPACE>.svc.<KUBERNETES_CLUSTER_DOMAIN>
 
 Create a Kubernetes Secret with the data from the server certificate and private key. The <NAMESPACE> should be the namespace of the RabbitMQ Cluster if using cluster operator or the namespace of the Secret when connecting to an external RabbitMQ instance:
 ```
