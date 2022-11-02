@@ -110,8 +110,6 @@ func main() {
 			if errors.Is(err, context.Canceled) {
 				return
 			}
-			rmqHelper.CloseRabbitMQConnections(env.connection, logger)
-			rmqHelper.SignalRetry(true)
 		}
 		logger.Warn("recreating RabbitMQ resources")
 		if retry := rmqHelper.WaitForRetrySignal(); !retry {

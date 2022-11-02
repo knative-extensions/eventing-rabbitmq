@@ -21,6 +21,7 @@ import (
 	"fmt"
 	nethttp "net/http"
 	"sync"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -163,16 +164,19 @@ func (a *Adapter) PollForMessages(stopCh <-chan struct{}) error {
 			if err != nil {
 				logger.Error(err.Error())
 				a.rmqHelper.CloseRabbitMQConnections(a.connection, logger)
-				retryChan <- true
+				go a.rmqHelper.WaitForRetrySignal()
+				time.Sleep(time.Second)
 				continue
-			} else {
-				msgs, _ = a.ConsumeMessages(&queue, logger)
 			}
+			msgs, _ = a.ConsumeMessages(&queue, logger)
 			go PollCycle(retryChan, stopCh, workerQueue, wg, msgs, a.rmqHelper, logger)
 		}
 		if retry := a.rmqHelper.WaitForRetrySignal(); !retry {
 			logger.Warn("stopped listenning for RabbitMQ resources retries")
 			return nil
+		}
+		if err != nil {
+			retryChan <- true
 		}
 		logger.Warn("recreating RabbitMQ resources")
 	}
