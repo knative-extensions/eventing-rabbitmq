@@ -159,7 +159,6 @@ func (a *Adapter) PollForMessages(stopCh <-chan struct{}) error {
 	for {
 		a.connection, a.channel, err = a.rmqHelper.SetupRabbitMQ(rabbit.VHostHandler(a.config.RabbitURL, a.config.Vhost), rabbit.ChannelQoS, logger, listenToConnections)
 		if err != nil {
-			listenToConnections = true
 			logger.Errorf("error creating RabbitMQ connections: %s, waiting for a retry", err)
 		} else {
 			queue, err = a.channel.QueueInspect(a.config.QueueName)
@@ -180,6 +179,7 @@ func (a *Adapter) PollForMessages(stopCh <-chan struct{}) error {
 		if err != nil {
 			retryChan <- true
 		}
+		listenToConnections = true
 		logger.Warn("recreating RabbitMQ resources")
 	}
 }
