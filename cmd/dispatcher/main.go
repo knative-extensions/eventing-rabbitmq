@@ -103,13 +103,14 @@ func main() {
 	rmqHelper := rabbit.NewRabbitMQHelper(1, make(chan bool), rabbit.DialWrapper)
 	defer rmqHelper.CleanupRabbitMQ(env.connection, logger)
 	for {
-		env.connection, env.channel, err = rmqHelper.SetupRabbitMQ(env.RabbitURL, rabbit.ChannelQoS, logger)
+		env.connection, env.channel, err = rmqHelper.SetupRabbitMQ(env.RabbitURL, rabbit.ChannelQoS, logger, true)
 		if err != nil {
 			logger.Errorf("error creating RabbitMQ connections: %s, waiting for a retry", err)
 		} else if err := d.ConsumeFromQueue(ctx, env.channel, env.QueueName); err != nil {
-			if errors.Is(err, context.Canceled) {
-				return
+			if !errors.Is(err, context.Canceled) {
+				logger.Errorf("error consuming from RabbitMQ: %s", err)
 			}
+			return
 		}
 		logger.Warn("recreating RabbitMQ resources")
 		if retry := rmqHelper.WaitForRetrySignal(); !retry {

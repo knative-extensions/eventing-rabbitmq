@@ -31,7 +31,7 @@ func Test_SetupRabbitMQConnectionsError(t *testing.T) {
 	go Watcher(testChannel, *rabbitMQHelper)
 	<-testChannel
 	// Testing a failing setup
-	conn, _, err := rabbitMQHelper.SetupRabbitMQ("amqp://localhost:5672/%2f", nil, logger)
+	conn, _, err := rabbitMQHelper.SetupRabbitMQ("amqp://localhost:5672/%2f", nil, logger, true)
 	<-testChannel
 	if err == nil {
 		t.Error("SetupRabbitMQ should fail with the default DialFunc in testing environments")
@@ -48,7 +48,7 @@ func Test_SetupRabbitMQChannelError(t *testing.T) {
 	testChannel := make(chan bool)
 	go Watcher(testChannel, *rabbitMQHelper)
 	<-testChannel
-	conn, _, err := rabbitMQHelper.SetupRabbitMQ("amqp://localhost:5672/%2f", nil, logger)
+	conn, _, err := rabbitMQHelper.SetupRabbitMQ("amqp://localhost:5672/%2f", nil, logger, true)
 	<-testChannel
 	if err == nil {
 		t.Error("SetupRabbitMQ should fail when creating a channel when using ValidConnectionDial")
@@ -62,7 +62,7 @@ func Test_ValidSetupRabbitMQ(t *testing.T) {
 	testChannel := make(chan bool)
 	go Watcher(testChannel, *rabbitMQHelper)
 	<-testChannel
-	conn, channel, err := rabbitMQHelper.SetupRabbitMQ("amqp://localhost:5672/%2f", ConfigTest, logger)
+	conn, channel, err := rabbitMQHelper.SetupRabbitMQ("amqp://localhost:5672/%2f", ConfigTest, logger, true)
 	if err != nil {
 		t.Errorf("Setup should'nt fail when using ValidDial func %s", err)
 	}

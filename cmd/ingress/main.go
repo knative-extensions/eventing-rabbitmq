@@ -96,7 +96,7 @@ func main() {
 	defer rmqHelper.CleanupRabbitMQ(env.connection, logger)
 	go func() {
 		for {
-			env.connection, env.channel, err = rmqHelper.SetupRabbitMQ(env.BrokerURL, rabbit.ChannelConfirm, logger)
+			env.connection, env.channel, err = rmqHelper.SetupRabbitMQ(env.BrokerURL, rabbit.ChannelConfirm, logger, true)
 			if err != nil {
 				logger.Errorf("error creating RabbitMQ connections: %s, waiting for a retry", err)
 			}

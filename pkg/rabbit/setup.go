@@ -27,7 +27,7 @@ import (
 )
 
 type RabbitMQHelperInterface interface {
-	SetupRabbitMQ(string, func(RabbitMQConnectionInterface, RabbitMQChannelInterface) error, *zap.SugaredLogger) (RabbitMQConnectionInterface, RabbitMQChannelInterface, error)
+	SetupRabbitMQ(string, func(RabbitMQConnectionInterface, RabbitMQChannelInterface) error, *zap.SugaredLogger, bool) (RabbitMQConnectionInterface, RabbitMQChannelInterface, error)
 	WatchRabbitMQConnections(RabbitMQConnectionInterface, RabbitMQChannelInterface, *zap.SugaredLogger)
 	SignalRetry(bool)
 	WaitForRetrySignal() bool
@@ -116,7 +116,8 @@ func NewRabbitMQHelper(
 func (r *RabbitMQHelper) SetupRabbitMQ(
 	RabbitMQURL string,
 	configFunction func(RabbitMQConnectionInterface, RabbitMQChannelInterface) error,
-	logger *zap.SugaredLogger) (RabbitMQConnectionInterface, RabbitMQChannelInterface, error) {
+	logger *zap.SugaredLogger,
+	listenToConnections bool) (RabbitMQConnectionInterface, RabbitMQChannelInterface, error) {
 	r.retryCounter += 1
 	var err error
 	var connInterface RabbitMQChannelWrapperInterface
@@ -142,7 +143,9 @@ func (r *RabbitMQHelper) SetupRabbitMQ(
 	// if there is no error reset the retryCounter and cycle values
 	r.retryCounter = 0
 	// Wait for a channel or connection close message to rerun the RabbitMQ setup
-	go r.WatchRabbitMQConnections(connInterface, channelInterface, logger)
+	if listenToConnections {
+		go r.WatchRabbitMQConnections(connInterface, channelInterface, logger)
+	}
 	return connInterface, channelInterface, nil
 }
 

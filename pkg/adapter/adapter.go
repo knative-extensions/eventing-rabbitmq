@@ -155,16 +155,18 @@ func (a *Adapter) PollForMessages(stopCh <-chan struct{}) error {
 
 	retryChan := make(chan bool)
 	defer a.rmqHelper.CleanupRabbitMQ(a.connection, logger)
+	listenToConnections := true
 	for {
-		a.connection, a.channel, err = a.rmqHelper.SetupRabbitMQ(rabbit.VHostHandler(a.config.RabbitURL, a.config.Vhost), rabbit.ChannelQoS, logger)
+		a.connection, a.channel, err = a.rmqHelper.SetupRabbitMQ(rabbit.VHostHandler(a.config.RabbitURL, a.config.Vhost), rabbit.ChannelQoS, logger, listenToConnections)
 		if err != nil {
+			listenToConnections = true
 			logger.Errorf("error creating RabbitMQ connections: %s, waiting for a retry", err)
 		} else {
 			queue, err = a.channel.QueueInspect(a.config.QueueName)
 			if err != nil {
+				listenToConnections = false
 				logger.Error(err.Error())
 				a.rmqHelper.CloseRabbitMQConnections(a.connection, logger)
-				go a.rmqHelper.WaitForRetrySignal()
 				time.Sleep(time.Second * 2)
 				continue
 			}
