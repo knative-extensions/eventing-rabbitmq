@@ -165,7 +165,7 @@ func (a *Adapter) PollForMessages(stopCh <-chan struct{}) error {
 				logger.Error(err.Error())
 				a.rmqHelper.CloseRabbitMQConnections(a.connection, logger)
 				go a.rmqHelper.WaitForRetrySignal()
-				time.Sleep(time.Second)
+				time.Sleep(time.Second * 2)
 				continue
 			}
 			msgs, _ = a.ConsumeMessages(&queue, logger)
