@@ -1058,7 +1058,7 @@ func TestReconcile(t *testing.T) {
 				}},
 				WantCreates: []runtime.Object{
 					createIngressService(),
-					createDispatcherDeployment(),
+					createDispatcherDeployment(true),
 				},
 				WantErr: false,
 			}, {
@@ -1122,6 +1122,7 @@ func TestReconcile(t *testing.T) {
 					),
 					createIngressService(),
 					createDispatcherDeployment(
+						false,
 						func(args *resources.DispatcherArgs) {
 							args.ResourceRequirements = corev1.ResourceRequirements{
 								Requests: corev1.ResourceList{
@@ -1385,6 +1386,14 @@ func rabbitmqClusterConfigRef() *duckv1.KReference {
 	}
 }
 
+func rabbitmqClusterConfigRefNoNS() *duckv1.KReference {
+	return &duckv1.KReference{
+		Name:       rabbitMQBrokerName,
+		Kind:       "RabbitmqCluster",
+		APIVersion: "rabbitmq.com/v1beta1",
+	}
+}
+
 func rabbitmqBrokerConfigRef() *duckv1.KReference {
 	return &duckv1.KReference{
 		Name:       rabbitMQBrokerConfigName,
@@ -1411,7 +1420,11 @@ func IngressLabels() map[string]string {
 	}
 }
 
-func createDispatcherDeployment(opts ...func(*resources.DispatcherArgs)) *appsv1.Deployment {
+func createDispatcherDeployment(noNS bool, opts ...func(*resources.DispatcherArgs)) *appsv1.Deployment {
+	clusterConfig := rabbitmqClusterConfigRef()
+	if noNS {
+		clusterConfig = rabbitmqClusterConfigRefNoNS()
+	}
 	broker := &eventingv1.Broker{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      brokerName,
@@ -1419,7 +1432,7 @@ func createDispatcherDeployment(opts ...func(*resources.DispatcherArgs)) *appsv1
 			UID:       brokerUID,
 		},
 		Spec: eventingv1.BrokerSpec{
-			Config:   rabbitmqClusterConfigRef(),
+			Config:   clusterConfig,
 			Delivery: delivery,
 		},
 	}
