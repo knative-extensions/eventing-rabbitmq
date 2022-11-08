@@ -20,7 +20,9 @@ metadata:
 spec:
   rabbitmqClusterReference:
     name: rabbitmqc
+    {{ if .brokerClusterRefNamespace }}
     namespace: {{ .namespace }}
+    {{ end }}
   rabbitmqResourcesConfig:
     exchangeName: "logs"
     queueName: "test"

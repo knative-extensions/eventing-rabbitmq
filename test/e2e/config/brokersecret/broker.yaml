@@ -11,11 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 apiVersion: v1
 kind: Namespace
 metadata:
   name: {{ .namespace }}
+
 ---
+
 apiVersion: eventing.knative.dev/v1
 kind: Broker
 metadata:
@@ -29,3 +32,19 @@ spec:
     kind: RabbitmqBrokerConfig
     name: default-config
     namespace: {{ .namespace }}
+
+---
+
+apiVersion: eventing.knative.dev/v1alpha1
+kind: RabbitmqBrokerConfig
+metadata:
+  name: default-config
+  namespace: {{ .namespace }}
+spec:
+  rabbitmqClusterReference:
+    {{ if .brokerClusterRefNamespace }}
+    namespace: {{ .namespace }}
+    {{ end }}
+    connectionSecret:
+      name: rabbitmqc-default-user
+  queueType: quorum

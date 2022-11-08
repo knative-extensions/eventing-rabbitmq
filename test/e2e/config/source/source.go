@@ -27,10 +27,20 @@ import (
 //go:embed "*.yaml"
 var yamls embed.FS
 
-func Install() feature.StepFn {
+func WithBrokerConfigClusterRefNS(brokerClusterRefNamespace bool) manifest.CfgFn {
+	return func(cfg map[string]interface{}) {
+		cfg["brokerClusterRefNamespace"] = brokerClusterRefNamespace
+	}
+}
+
+func Install(opts ...manifest.CfgFn) feature.StepFn {
+	cfg := map[string]interface{}{"producerCount": 5}
+	for _, fn := range opts {
+		fn(cfg)
+	}
+
 	return func(ctx context.Context, t feature.T) {
-		args := map[string]interface{}{"producerCount": 5}
-		if _, err := manifest.InstallYamlFS(ctx, yamls, args); err != nil {
+		if _, err := manifest.InstallYamlFS(ctx, yamls, cfg); err != nil {
 			t.Fatal(err)
 		}
 	}

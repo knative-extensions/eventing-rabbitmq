@@ -33,17 +33,27 @@ type Topology struct {
 	Triggers    []duckv1.KReference
 }
 
-func Install(topology Topology) feature.StepFn {
+func WithBrokerConfigClusterRefNS(brokerClusterRefNamespace bool) manifest.CfgFn {
+	return func(cfg map[string]interface{}) {
+		cfg["brokerClusterRefNamespace"] = brokerClusterRefNamespace
+	}
+}
+
+func Install(topology Topology, opts ...manifest.CfgFn) feature.StepFn {
+	cfg := map[string]interface{}{
+		"triggers":    topology.Triggers,
+		"Parallelism": topology.Parallelism,
+	}
+	for _, fn := range opts {
+		fn(cfg)
+	}
+
 	if topology.Parallelism == 0 {
 		topology.Parallelism = 1
 	}
 
-	args := map[string]interface{}{
-		"triggers":    topology.Triggers,
-		"Parallelism": topology.Parallelism,
-	}
 	return func(ctx context.Context, t feature.T) {
-		if _, err := manifest.InstallYamlFS(ctx, yamls, args); err != nil {
+		if _, err := manifest.InstallYamlFS(ctx, yamls, cfg); err != nil {
 			t.Fatal(err)
 		}
 	}

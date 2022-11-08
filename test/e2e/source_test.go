@@ -43,11 +43,11 @@ import (
 //
 
 // DirectSourceTest makes sure an RabbitMQ Source delivers events to a sink.
-func DirectSourceTest() *feature.Feature {
+func DirectSourceClusterRefNS(setClusterRef bool) *feature.Feature {
 	eventsNumber := 10
 	f := new(feature.Feature)
 
-	f.Setup("install RabbitMQ source", source.Install())
+	f.Setup("install RabbitMQ source", source.Install(source.WithBrokerConfigClusterRefNS(setClusterRef)))
 	f.Alpha("RabbitMQ source").Must("goes ready", AllGoReady)
 	// Note this is a different producer than events hub because it publishes
 	// directly to RabbitMQ
@@ -86,11 +86,11 @@ func DirectSourceTestWithCerts() *feature.Feature {
 //
 
 // DirectSourceConnectionSecretTest makes sure an RabbitMQ Source with a connection secret delivers events to a sink.
-func DirectSourceConnectionSecretTest() *feature.Feature {
+func DirectSourceConnectionSecretClusterRefNS(setClusterRef bool) *feature.Feature {
 	eventsNumber := 10
 	f := new(feature.Feature)
 
-	f.Setup("install RabbitMQ source", sourcesecret.Install())
+	f.Setup("install RabbitMQ source", sourcesecret.Install(sourcesecret.WithBrokerConfigClusterRefNS(setClusterRef)))
 	f.Alpha("RabbitMQ source").Must("goes ready", AllGoReady)
 	// Note this is a different producer than events hub because it publishes
 	// directly to RabbitMQ
@@ -135,7 +135,7 @@ func VHostSourceTest() *feature.Feature {
 // received and then calculates the time between events to determine that the
 // adapter did not block on receiving a response to the first event before
 // processing the second.
-func SourceConcurrentreceiveAdapterProcessingTest() *feature.Feature {
+func SourceConcurrentReceiveAdapterProcessingTest() *feature.Feature {
 	eventsNumber := 2
 	f := new(feature.Feature)
 

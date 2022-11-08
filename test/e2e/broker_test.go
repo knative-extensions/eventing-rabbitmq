@@ -47,7 +47,7 @@ import (
 //
 
 // DirectTestBrokerImpl makes sure an RabbitMQ Broker delivers events to a single consumer.
-func DirectTestBroker() *feature.Feature {
+func DirectTestBrokerClusterRefNS(setClusterRef bool) *feature.Feature {
 	f := new(feature.Feature)
 
 	f.Setup("install test resources", brokertrigger.Install(brokertrigger.Topology{
@@ -57,7 +57,7 @@ func DirectTestBroker() *feature.Feature {
 				Name: "recorder",
 			},
 		},
-	}))
+	}, brokertrigger.WithBrokerConfigClusterRefNS(setClusterRef)))
 	f.Setup("RabbitMQ broker goes ready", AllGoReady)
 
 	prober := eventshub.NewProber()
@@ -77,7 +77,7 @@ func DirectTestBroker() *feature.Feature {
 	return f
 }
 
-func DirectTestBrokerConnectionSecret() *feature.Feature {
+func DirectTestBrokerConnectionSecretClusterRefNS(setClusterRef bool) *feature.Feature {
 	f := new(feature.Feature)
 
 	f.Setup("install test resources", brokersecret.Install(brokersecret.Topology{
@@ -87,7 +87,7 @@ func DirectTestBrokerConnectionSecret() *feature.Feature {
 				Name: "recorder",
 			},
 		},
-	}))
+	}, brokersecret.WithBrokerConfigClusterRefNS(setClusterRef)))
 	f.Setup("RabbitMQ broker goes ready", AllGoReady)
 
 	prober := eventshub.NewProber()

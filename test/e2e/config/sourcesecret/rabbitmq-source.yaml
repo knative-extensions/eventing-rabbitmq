@@ -19,7 +19,9 @@ metadata:
   namespace: {{ .namespace }}
 spec:
   rabbitmqClusterReference:
+    {{ if .brokerClusterRefNamespace }}
     namespace: {{ .namespace }}
+    {{ end }}
     connectionSecret:
       name: rabbitmqc-default-user
   rabbitmqResourcesConfig:

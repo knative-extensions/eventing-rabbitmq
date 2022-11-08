@@ -74,7 +74,50 @@ func TestBrokerDirect(t *testing.T) {
 	)
 	env.Test(ctx, t, RabbitMQCluster())
 	env.Test(ctx, t, RecorderFeature())
-	env.Test(ctx, t, DirectTestBroker())
+	env.Test(ctx, t, DirectTestBrokerClusterRefNS(true))
+	env.Finish()
+}
+
+func TestBrokerDirectNoClusterRefNS(t *testing.T) {
+	t.Parallel()
+	ctx, env := global.Environment(
+		knative.WithKnativeNamespace(system.Namespace()),
+		knative.WithLoggingConfig,
+		knative.WithTracingConfig,
+		k8s.WithEventListener,
+	)
+	env.Test(ctx, t, RabbitMQCluster())
+	env.Test(ctx, t, RecorderFeature())
+	env.Test(ctx, t, DirectTestBrokerClusterRefNS(false))
+	env.Finish()
+}
+
+// TestBrokerDirect makes sure a Broker can delivery events to a consumer.
+func TestBrokerConnectionSecret(t *testing.T) {
+	t.Parallel()
+	ctx, env := global.Environment(
+		knative.WithKnativeNamespace(system.Namespace()),
+		knative.WithLoggingConfig,
+		knative.WithTracingConfig,
+		k8s.WithEventListener,
+	)
+	env.Test(ctx, t, RabbitMQCluster())
+	env.Test(ctx, t, RecorderFeature())
+	env.Test(ctx, t, DirectTestBrokerConnectionSecretClusterRefNS(true))
+	env.Finish()
+}
+
+func TestBrokerConnectionSecretNoClusterRefNs(t *testing.T) {
+	t.Parallel()
+	ctx, env := global.Environment(
+		knative.WithKnativeNamespace(system.Namespace()),
+		knative.WithLoggingConfig,
+		knative.WithTracingConfig,
+		k8s.WithEventListener,
+	)
+	env.Test(ctx, t, RabbitMQCluster())
+	env.Test(ctx, t, RecorderFeature())
+	env.Test(ctx, t, DirectTestBrokerConnectionSecretClusterRefNS(false))
 	env.Finish()
 }
 
@@ -90,7 +133,7 @@ func TestBrokerDirectSelfSignedCerts(t *testing.T) {
 	env.Test(ctx, t, SetupSelfSignedCerts())
 	env.Test(ctx, t, RabbitMQClusterWithTLS())
 	env.Test(ctx, t, RecorderFeature())
-	env.Test(ctx, t, DirectTestBroker())
+	env.Test(ctx, t, DirectTestBrokerClusterRefNS(true))
 	env.Test(ctx, t, CleanupSelfSignedCerts())
 	env.Finish()
 }
@@ -139,7 +182,52 @@ func TestSourceDirect(t *testing.T) {
 	)
 	env.Test(ctx, t, RabbitMQCluster())
 	env.Test(ctx, t, RecorderFeature())
-	env.Test(ctx, t, DirectSourceTest())
+	env.Test(ctx, t, DirectSourceClusterRefNS(true))
+	env.Finish()
+}
+
+func TestSourceDirectNoClusterRefNs(t *testing.T) {
+	t.Parallel()
+
+	ctx, env := global.Environment(
+		knative.WithKnativeNamespace(system.Namespace()),
+		knative.WithLoggingConfig,
+		knative.WithTracingConfig,
+		k8s.WithEventListener,
+	)
+	env.Test(ctx, t, RabbitMQCluster())
+	env.Test(ctx, t, RecorderFeature())
+	env.Test(ctx, t, DirectSourceClusterRefNS(false))
+	env.Finish()
+}
+
+func TestSourceConnectionSecret(t *testing.T) {
+	t.Parallel()
+
+	ctx, env := global.Environment(
+		knative.WithKnativeNamespace(system.Namespace()),
+		knative.WithLoggingConfig,
+		knative.WithTracingConfig,
+		k8s.WithEventListener,
+	)
+	env.Test(ctx, t, RabbitMQCluster())
+	env.Test(ctx, t, RecorderFeature())
+	env.Test(ctx, t, DirectSourceConnectionSecretClusterRefNS(true))
+	env.Finish()
+}
+
+func TestSourceConnectionSecretNoClusterRefNs(t *testing.T) {
+	t.Parallel()
+
+	ctx, env := global.Environment(
+		knative.WithKnativeNamespace(system.Namespace()),
+		knative.WithLoggingConfig,
+		knative.WithTracingConfig,
+		k8s.WithEventListener,
+	)
+	env.Test(ctx, t, RabbitMQCluster())
+	env.Test(ctx, t, RecorderFeature())
+	env.Test(ctx, t, DirectSourceConnectionSecretClusterRefNS(false))
 	env.Finish()
 }
 
@@ -177,7 +265,7 @@ func TestSourceAdapterConcurrency(t *testing.T) {
 		k8s.WithEventListener,
 	)
 	env.Test(ctx, t, RabbitMQCluster())
-	env.Test(ctx, t, SourceConcurrentreceiveAdapterProcessingTest())
+	env.Test(ctx, t, SourceConcurrentReceiveAdapterProcessingTest())
 	env.Finish()
 }
 
