@@ -20,6 +20,6 @@ import "context"
 
 func (r *RabbitmqSource) SetDefaults(ctx context.Context) {
 	if r.Spec.RabbitmqClusterReference != nil && r.Spec.RabbitmqClusterReference.Namespace == "" {
-		r.Spec.RabbitmqClusterReference.Namespace = "default"
+		r.Spec.RabbitmqClusterReference.Namespace = r.Namespace
 	}
 }
