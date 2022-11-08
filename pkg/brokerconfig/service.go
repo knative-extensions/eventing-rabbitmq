@@ -90,6 +90,9 @@ func (r *BrokerConfigService) GetRabbitMQClusterRef(ctx context.Context, b *even
 		if config.Spec.RabbitmqClusterReference == nil {
 			return nil, fmt.Errorf("rabbitmqBrokerConfig %s/%s spec is empty", b.Spec.Config.Namespace, b.Spec.Config.Name)
 		}
+		if config.Spec.RabbitmqClusterReference.Namespace == "" {
+			config.Spec.RabbitmqClusterReference.Namespace = b.Spec.Config.Namespace
+		}
 		return config.Spec.RabbitmqClusterReference, nil
 	default:
 		return nil, errors.New("Broker.Spec.Config configuration not supported, only [kind: RabbitmqCluster, apiVersion: rabbitmq.com/v1beta1] and [Kind: RabbitmqBrokerConfig, apiVersion: eventing.knative.dev/v1alpha1]")
