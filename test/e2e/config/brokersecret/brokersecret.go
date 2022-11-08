@@ -40,10 +40,7 @@ func WithBrokerConfigClusterRefNS(brokerClusterRefNamespace bool) manifest.CfgFn
 }
 
 func Install(topology Topology, opts ...manifest.CfgFn) feature.StepFn {
-	cfg := map[string]interface{}{
-		"triggers":    topology.Triggers,
-		"Parallelism": topology.Parallelism,
-	}
+	cfg := map[string]interface{}{}
 	for _, fn := range opts {
 		fn(cfg)
 	}
@@ -51,6 +48,9 @@ func Install(topology Topology, opts ...manifest.CfgFn) feature.StepFn {
 	if topology.Parallelism == 0 {
 		topology.Parallelism = 1
 	}
+
+	cfg["triggers"] = topology.Triggers
+	cfg["Parallelism"] = topology.Parallelism
 
 	return func(ctx context.Context, t feature.T) {
 		if _, err := manifest.InstallYamlFS(ctx, yamls, cfg); err != nil {

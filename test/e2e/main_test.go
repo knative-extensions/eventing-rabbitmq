@@ -94,7 +94,6 @@ func TestBrokerDirectNoClusterRefNS(t *testing.T) {
 
 // TestBrokerDirect makes sure a Broker can delivery events to a consumer.
 func TestBrokerConnectionSecret(t *testing.T) {
-	t.Parallel()
 	ctx, env := global.Environment(
 		knative.WithKnativeNamespace(system.Namespace()),
 		knative.WithLoggingConfig,
@@ -108,7 +107,6 @@ func TestBrokerConnectionSecret(t *testing.T) {
 }
 
 func TestBrokerConnectionSecretNoClusterRefNs(t *testing.T) {
-	t.Parallel()
 	ctx, env := global.Environment(
 		knative.WithKnativeNamespace(system.Namespace()),
 		knative.WithLoggingConfig,
@@ -173,7 +171,6 @@ func TestBrokerDLQ(t *testing.T) {
 // TestSourceDirect makes sure a source delivers events to Sink.
 func TestSourceDirect(t *testing.T) {
 	t.Parallel()
-
 	ctx, env := global.Environment(
 		knative.WithKnativeNamespace(system.Namespace()),
 		knative.WithLoggingConfig,
@@ -188,7 +185,6 @@ func TestSourceDirect(t *testing.T) {
 
 func TestSourceDirectNoClusterRefNs(t *testing.T) {
 	t.Parallel()
-
 	ctx, env := global.Environment(
 		knative.WithKnativeNamespace(system.Namespace()),
 		knative.WithLoggingConfig,
@@ -203,7 +199,6 @@ func TestSourceDirectNoClusterRefNs(t *testing.T) {
 
 func TestSourceConnectionSecret(t *testing.T) {
 	t.Parallel()
-
 	ctx, env := global.Environment(
 		knative.WithKnativeNamespace(system.Namespace()),
 		knative.WithLoggingConfig,
@@ -218,7 +213,6 @@ func TestSourceConnectionSecret(t *testing.T) {
 
 func TestSourceConnectionSecretNoClusterRefNs(t *testing.T) {
 	t.Parallel()
-
 	ctx, env := global.Environment(
 		knative.WithKnativeNamespace(system.Namespace()),
 		knative.WithLoggingConfig,
@@ -233,7 +227,6 @@ func TestSourceConnectionSecretNoClusterRefNs(t *testing.T) {
 
 func TestSourceVhostSetup(t *testing.T) {
 	t.Parallel()
-
 	ctx, env := global.Environment(
 		knative.WithKnativeNamespace(system.Namespace()),
 		knative.WithLoggingConfig,
@@ -248,7 +241,6 @@ func TestSourceVhostSetup(t *testing.T) {
 
 func TestBrokerInDifferentNamespaceThanRabbitMQCluster(t *testing.T) {
 	t.Parallel()
-
 	ctx, env := global.Environment()
 	env.Test(ctx, t, RabbitMQCluster())
 	env.Test(ctx, t, NamespacedBrokerTest("broker-namespace"))
@@ -257,7 +249,6 @@ func TestBrokerInDifferentNamespaceThanRabbitMQCluster(t *testing.T) {
 
 func TestSourceAdapterConcurrency(t *testing.T) {
 	t.Parallel()
-
 	ctx, env := global.Environment(
 		knative.WithKnativeNamespace(system.Namespace()),
 		knative.WithLoggingConfig,
@@ -271,7 +262,6 @@ func TestSourceAdapterConcurrency(t *testing.T) {
 
 func TestBrokerDispatcherConcurrency(t *testing.T) {
 	t.Parallel()
-
 	ctx, env := global.Environment(
 		knative.WithKnativeNamespace(system.Namespace()),
 		knative.WithLoggingConfig,

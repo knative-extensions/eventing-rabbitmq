@@ -34,11 +34,11 @@ func WithBrokerConfigClusterRefNS(brokerClusterRefNamespace bool) manifest.CfgFn
 }
 
 func Install(opts ...manifest.CfgFn) feature.StepFn {
-	cfg := map[string]interface{}{"producerCount": 5}
+	cfg := map[string]interface{}{}
 	for _, fn := range opts {
 		fn(cfg)
 	}
-
+	cfg["producerCount"] = 5
 	return func(ctx context.Context, t feature.T) {
 		if _, err := manifest.InstallYamlFS(ctx, yamls, cfg); err != nil {
 			t.Fatal(err)
