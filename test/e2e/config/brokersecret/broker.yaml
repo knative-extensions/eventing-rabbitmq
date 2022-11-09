@@ -48,3 +48,14 @@ spec:
     connectionSecret:
       name: rabbitmqc-default-user
   queueType: quorum
+
+---
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: rabbitmqc-default-user
+  namespace: {{ .namespace }}
+# This is just a sample, don't use it this way in production
+stringData:
+  uri: rabbitmqc.{{ .namespace }}.svc

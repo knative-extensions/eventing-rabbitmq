@@ -103,7 +103,7 @@ func TestBrokerConnectionSecret(t *testing.T) {
 	env.Test(ctx, t, RabbitMQCluster())
 	env.Test(ctx, t, RecorderFeature())
 	env.Test(ctx, t, DirectTestBrokerConnectionSecretClusterRefNS(true))
-	env.Finish()
+	//env.Finish()
 }
 
 func TestBrokerConnectionSecretNoClusterRefNs(t *testing.T) {
