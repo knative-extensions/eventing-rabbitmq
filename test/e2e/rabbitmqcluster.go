@@ -29,6 +29,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"log"
@@ -180,4 +181,19 @@ func getConditions(ctx context.Context, namespace string) ([]apis.Condition, err
 	obj.ResourceVersion = gvr.Version
 	obj.APIVersion = gvr.GroupVersion().String()
 	return obj.Status.GetConditions(), nil
+}
+
+func CleanupRabbitMQResources(ctx context.Context, t feature.T) {
+	namespace := environment.FromContext(ctx).Namespace()
+	client := dynamicclient.Get(ctx)
+	for _, crd := range []string{"queues", "bindings", "exchanges"} {
+		gvr := schema.GroupVersionResource{Group: "rabbitmq.com", Version: "v1beta1", Resource: crd}
+		resources, err := client.Resource(gvr).Namespace(namespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			t.Fatalf("error listing rabbitmq %s, %w", crd, err)
+		}
+		for _, res := range resources.Items {
+			client.Resource(gvr).Namespace(namespace).Delete(ctx, res.GetName(), metav1.DeleteOptions{})
+		}
+	}
 }
