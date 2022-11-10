@@ -157,8 +157,9 @@ func init() {
 
 func TestReconcile(t *testing.T) {
 	brokerConfigs := map[string]*duckv1.KReference{
-		"rabbitmqClusterConfig": configWithRabbitMQCluster(),
-		"rabbitmqBrokerConfig":  configWithRabbitMQBrokerConfig(),
+		"rabbitmqClusterConfig":     configWithRabbitMQCluster(),
+		"rabbitmqClusterConfigNoNS": configWithRabbitMQBrokerConfigNoNS(),
+		"rabbitmqBrokerConfig":      configWithRabbitMQBrokerConfig(),
 	}
 	table := TableTest{
 		{
@@ -908,6 +909,15 @@ func configWithRabbitMQCluster() *duckv1.KReference {
 }
 
 func configWithRabbitMQBrokerConfig() *duckv1.KReference {
+	return &duckv1.KReference{
+		Name:       rabbitMQBrokerConfigName,
+		Namespace:  testNS,
+		Kind:       "RabbitmqBrokerConfig",
+		APIVersion: "eventing.knative.dev/v1alpha1",
+	}
+}
+
+func configWithRabbitMQBrokerConfigNoNS() *duckv1.KReference {
 	return &duckv1.KReference{
 		Name:       rabbitMQBrokerConfigName,
 		Namespace:  testNS,

@@ -218,8 +218,9 @@ func TestReconcile(t *testing.T) {
 	}}
 
 	brokerConfigs := map[string]*duckv1.KReference{
-		"rabbitmqClusterConfig": rabbitmqClusterConfigRef(),
-		"rabbitmqBrokerConfig":  rabbitmqBrokerConfigRef(),
+		"rabbitmqClusterConfig":     rabbitmqClusterConfigRef(),
+		"rabbitmqClusterConfigNoNS": rabbitmqClusterConfigRefNoNS(),
+		"rabbitmqBrokerConfig":      rabbitmqBrokerConfigRef(),
 	}
 
 	for configName, config := range brokerConfigs {
@@ -1380,6 +1381,14 @@ func rabbitmqClusterConfigRef() *duckv1.KReference {
 	return &duckv1.KReference{
 		Name:       rabbitMQBrokerName,
 		Namespace:  testNS,
+		Kind:       "RabbitmqCluster",
+		APIVersion: "rabbitmq.com/v1beta1",
+	}
+}
+
+func rabbitmqClusterConfigRefNoNS() *duckv1.KReference {
+	return &duckv1.KReference{
+		Name:       rabbitMQBrokerName,
 		Kind:       "RabbitmqCluster",
 		APIVersion: "rabbitmq.com/v1beta1",
 	}
