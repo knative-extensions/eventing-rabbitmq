@@ -28,6 +28,7 @@ import (
 	"knative.dev/eventing-rabbitmq/test/e2e/config/sourcesecret"
 	"knative.dev/eventing-rabbitmq/test/e2e/config/sourcevhost"
 	"knative.dev/eventing-rabbitmq/test/e2e/config/vhostsourceproducer"
+	"knative.dev/reconciler-test/pkg/manifest"
 
 	"knative.dev/reconciler-test/pkg/eventshub"
 	"knative.dev/reconciler-test/pkg/feature"
@@ -46,8 +47,12 @@ import (
 func DirectSourceClusterRefNS(setClusterRef bool) *feature.Feature {
 	eventsNumber := 10
 	f := new(feature.Feature)
+	var opts []manifest.CfgFn
+	if setClusterRef {
+		opts = append(opts, sourcesecret.WithBrokerConfigClusterRefNS(setClusterRef))
+	}
 
-	f.Setup("install RabbitMQ source", source.Install(source.WithBrokerConfigClusterRefNS(setClusterRef)))
+	f.Setup("install RabbitMQ source", source.Install(opts...))
 	f.Alpha("RabbitMQ source").Must("goes ready", AllGoReady)
 	// Note this is a different producer than events hub because it publishes
 	// directly to RabbitMQ
@@ -89,8 +94,12 @@ func DirectSourceTestWithCerts() *feature.Feature {
 func DirectSourceConnectionSecretClusterRefNS(setClusterRef bool) *feature.Feature {
 	eventsNumber := 10
 	f := new(feature.Feature)
+	var opts []manifest.CfgFn
+	if setClusterRef {
+		opts = append(opts, sourcesecret.WithBrokerConfigClusterRefNS(setClusterRef))
+	}
 
-	f.Setup("install RabbitMQ source", sourcesecret.Install(sourcesecret.WithBrokerConfigClusterRefNS(setClusterRef)))
+	f.Setup("install RabbitMQ source", sourcesecret.Install(opts...))
 	f.Alpha("RabbitMQ source").Must("goes ready", AllGoReady)
 	// Note this is a different producer than events hub because it publishes
 	// directly to RabbitMQ

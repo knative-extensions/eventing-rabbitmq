@@ -103,10 +103,12 @@ func TestBrokerConnectionSecret(t *testing.T) {
 	env.Test(ctx, t, RabbitMQCluster())
 	env.Test(ctx, t, RecorderFeature())
 	env.Test(ctx, t, DirectTestBrokerConnectionSecretClusterRefNS(true))
-	//env.Finish()
+	env.Test(ctx, t, CleanupConnectionSecret())
+	env.Finish()
 }
 
 func TestBrokerConnectionSecretNoClusterRefNs(t *testing.T) {
+	t.Parallel()
 	ctx, env := global.Environment(
 		knative.WithKnativeNamespace(system.Namespace()),
 		knative.WithLoggingConfig,
@@ -116,11 +118,13 @@ func TestBrokerConnectionSecretNoClusterRefNs(t *testing.T) {
 	env.Test(ctx, t, RabbitMQCluster())
 	env.Test(ctx, t, RecorderFeature())
 	env.Test(ctx, t, DirectTestBrokerConnectionSecretClusterRefNS(false))
+	env.Test(ctx, t, CleanupConnectionSecret())
 	env.Finish()
 }
 
 // TestBrokerDirectSelfSignedCerts makes sure a Broker can delivery events to a consumer while using a RabbitMQ instance with self-signed certificates.
 func TestBrokerDirectSelfSignedCerts(t *testing.T) {
+	t.Parallel()
 	ctx, env := global.Environment(
 		knative.WithKnativeNamespace(system.Namespace()),
 		knative.WithLoggingConfig,
@@ -138,6 +142,7 @@ func TestBrokerDirectSelfSignedCerts(t *testing.T) {
 
 // TestSourceDirectSelfSignedCerts makes sure a source delivers events to Sink while using a RabbitMQ instance with self-signed certificates.
 func TestSourceDirectSelfSignedCerts(t *testing.T) {
+	t.Parallel()
 	ctx, env := global.Environment(
 		knative.WithKnativeNamespace(system.Namespace()),
 		knative.WithLoggingConfig,
@@ -208,6 +213,7 @@ func TestSourceConnectionSecret(t *testing.T) {
 	env.Test(ctx, t, RabbitMQCluster())
 	env.Test(ctx, t, RecorderFeature())
 	env.Test(ctx, t, DirectSourceConnectionSecretClusterRefNS(true))
+	env.Test(ctx, t, CleanupConnectionSecret())
 	env.Finish()
 }
 
@@ -222,6 +228,7 @@ func TestSourceConnectionSecretNoClusterRefNs(t *testing.T) {
 	env.Test(ctx, t, RabbitMQCluster())
 	env.Test(ctx, t, RecorderFeature())
 	env.Test(ctx, t, DirectSourceConnectionSecretClusterRefNS(false))
+	env.Test(ctx, t, CleanupConnectionSecret())
 	env.Finish()
 }
 

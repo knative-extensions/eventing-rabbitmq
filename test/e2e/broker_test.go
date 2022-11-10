@@ -35,6 +35,7 @@ import (
 	"knative.dev/reconciler-test/pkg/eventshub"
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/k8s"
+	"knative.dev/reconciler-test/pkg/manifest"
 
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -49,7 +50,10 @@ import (
 // DirectTestBrokerImpl makes sure an RabbitMQ Broker delivers events to a single consumer.
 func DirectTestBrokerClusterRefNS(setClusterRef bool) *feature.Feature {
 	f := new(feature.Feature)
-
+	var opts []manifest.CfgFn
+	if setClusterRef {
+		opts = append(opts, brokersecret.WithBrokerConfigClusterRefNS(setClusterRef))
+	}
 	f.Setup("install test resources", brokertrigger.Install(brokertrigger.Topology{
 		Triggers: []duckv1.KReference{
 			{
@@ -57,7 +61,7 @@ func DirectTestBrokerClusterRefNS(setClusterRef bool) *feature.Feature {
 				Name: "recorder",
 			},
 		},
-	}, brokertrigger.WithBrokerConfigClusterRefNS(setClusterRef)))
+	}, opts...))
 	f.Setup("RabbitMQ broker goes ready", AllGoReady)
 
 	prober := eventshub.NewProber()
@@ -79,6 +83,10 @@ func DirectTestBrokerClusterRefNS(setClusterRef bool) *feature.Feature {
 
 func DirectTestBrokerConnectionSecretClusterRefNS(setClusterRef bool) *feature.Feature {
 	f := new(feature.Feature)
+	var opts []manifest.CfgFn
+	if setClusterRef {
+		opts = append(opts, brokersecret.WithBrokerConfigClusterRefNS(setClusterRef))
+	}
 
 	f.Setup("install test resources", brokersecret.Install(brokersecret.Topology{
 		Triggers: []duckv1.KReference{
@@ -87,7 +95,7 @@ func DirectTestBrokerConnectionSecretClusterRefNS(setClusterRef bool) *feature.F
 				Name: "recorder",
 			},
 		},
-	}, brokersecret.WithBrokerConfigClusterRefNS(setClusterRef)))
+	}, opts...))
 	f.Setup("RabbitMQ broker goes ready", AllGoReady)
 
 	prober := eventshub.NewProber()
@@ -103,7 +111,7 @@ func DirectTestBrokerConnectionSecretClusterRefNS(setClusterRef bool) *feature.F
 				// TODO: Use constraint matching instead of just counting number of events.
 				eventshub.StoreFromContext(ctx, "recorder").AssertAtLeast(t, 5)
 			})
-	//f.Teardown("Delete feature resources", f.DeleteResources)
+	f.Teardown("Delete feature resources", f.DeleteResources)
 	return f
 }
 
