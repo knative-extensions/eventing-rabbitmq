@@ -865,7 +865,7 @@ func TestReconcile(t *testing.T) {
 
 	table = append(table, TableTest{
 		{
-			Name: fmt.Sprintf("Trigger ready with cluster reference with no namespace"),
+			Name: "Trigger ready with cluster reference with no namespace",
 			Key:  testKey,
 			Objects: []runtime.Object{
 				ReadyBroker(configWithRabbitMQBrokerConfigNoNS()),
