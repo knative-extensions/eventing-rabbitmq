@@ -41,8 +41,8 @@ metadata:
 stringData:
   username: $EXTERNAL_RABBITMQ_USERNAME
   password: $EXTERNAL_RABBITMQ_PASSWORD
-  uri: $EXTERNAL_RABBITMQ_MANAGEMENT_UI_URI:$PORT
-  port: $EXTERNAL_RABBITMQ_PORT
+  uri: $EXTERNAL_RABBITMQ_URI:$HTTP_PORT # https://example.com:12345, example.com:12345, rabbitmqc.namespace:15672
+  port: $AMQP_PORT # 5672 default
 EOF
 ```
 

@@ -123,7 +123,7 @@ func Test_RabbitMQURL(t *testing.T) {
 		name:       "https with custom port secret",
 		conSecret:  true,
 		secretData: map[string][]byte{"uri": []byte("https://test-uri"), "password": []byte("1234"), "username": []byte("test"), "port": []byte("1234")},
-		wantUrl:    "amqps://test:1234@https:1234",
+		wantUrl:    "amqps://test:1234@test-uri:1234",
 		wantErr:    false,
 	}} {
 		t.Run(tt.name, func(t *testing.T) {

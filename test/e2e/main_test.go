@@ -78,15 +78,30 @@ func TestBrokerDirect(t *testing.T) {
 	env.Finish()
 }
 
-// TestBrokerDirectSelfSignedCerts makes sure a Broker can delivery events to a consumer while using a RabbitMQ instance with self-signed certificates.
-func TestBrokerDirectSelfSignedCerts(t *testing.T) {
+// TestBrokerDirect makes sure a Broker can delivery events to a consumer by connecting to a rabbitmq instance via a connection secret
+func TestBrokerDirectWithConnectionSecret(t *testing.T) {
+	t.Parallel()
 	ctx, env := global.Environment(
 		knative.WithKnativeNamespace(system.Namespace()),
 		knative.WithLoggingConfig,
 		knative.WithTracingConfig,
 		k8s.WithEventListener,
 	)
+	env.Test(ctx, t, RabbitMQClusterWithConnectionSecretUri())
+	env.Test(ctx, t, RecorderFeature())
+	env.Test(ctx, t, DirectTestBrokerConnectionSecret())
+	env.Finish()
+}
 
+// TestBrokerDirectSelfSignedCerts makes sure a Broker can delivery events to a consumer while using a RabbitMQ instance with self-signed certificates.
+func TestBrokerDirectSelfSignedCerts(t *testing.T) {
+	t.Parallel()
+	ctx, env := global.Environment(
+		knative.WithKnativeNamespace(system.Namespace()),
+		knative.WithLoggingConfig,
+		knative.WithTracingConfig,
+		k8s.WithEventListener,
+	)
 	env.Test(ctx, t, SetupSelfSignedCerts())
 	env.Test(ctx, t, RabbitMQClusterWithTLS())
 	env.Test(ctx, t, RecorderFeature())
@@ -97,13 +112,13 @@ func TestBrokerDirectSelfSignedCerts(t *testing.T) {
 
 // TestSourceDirectSelfSignedCerts makes sure a source delivers events to Sink while using a RabbitMQ instance with self-signed certificates.
 func TestSourceDirectSelfSignedCerts(t *testing.T) {
+	t.Parallel()
 	ctx, env := global.Environment(
 		knative.WithKnativeNamespace(system.Namespace()),
 		knative.WithLoggingConfig,
 		knative.WithTracingConfig,
 		k8s.WithEventListener,
 	)
-
 	env.Test(ctx, t, SetupSelfSignedCerts())
 	env.Test(ctx, t, RabbitMQClusterWithTLS())
 	env.Test(ctx, t, RecorderFeature())
@@ -143,9 +158,24 @@ func TestSourceDirect(t *testing.T) {
 	env.Finish()
 }
 
-func TestSourceVhostSetup(t *testing.T) {
+// TestSourceDirect makes sure a source delivers events to Sink by connecting to a rabbitmq instance via a connection secret.
+func TestSourceDirectWithConnectionSecret(t *testing.T) {
 	t.Parallel()
 
+	ctx, env := global.Environment(
+		knative.WithKnativeNamespace(system.Namespace()),
+		knative.WithLoggingConfig,
+		knative.WithTracingConfig,
+		k8s.WithEventListener,
+	)
+	env.Test(ctx, t, RabbitMQClusterWithConnectionSecretUri())
+	env.Test(ctx, t, RecorderFeature())
+	env.Test(ctx, t, DirectSourceConnectionSecretTest())
+	env.Finish()
+}
+
+func TestSourceVhostSetup(t *testing.T) {
+	t.Parallel()
 	ctx, env := global.Environment(
 		knative.WithKnativeNamespace(system.Namespace()),
 		knative.WithLoggingConfig,
@@ -160,7 +190,6 @@ func TestSourceVhostSetup(t *testing.T) {
 
 func TestBrokerInDifferentNamespaceThanRabbitMQCluster(t *testing.T) {
 	t.Parallel()
-
 	ctx, env := global.Environment()
 	env.Test(ctx, t, RabbitMQCluster())
 	env.Test(ctx, t, NamespacedBrokerTest("broker-namespace"))
@@ -169,7 +198,6 @@ func TestBrokerInDifferentNamespaceThanRabbitMQCluster(t *testing.T) {
 
 func TestSourceAdapterConcurrency(t *testing.T) {
 	t.Parallel()
-
 	ctx, env := global.Environment(
 		knative.WithKnativeNamespace(system.Namespace()),
 		knative.WithLoggingConfig,
@@ -177,13 +205,12 @@ func TestSourceAdapterConcurrency(t *testing.T) {
 		k8s.WithEventListener,
 	)
 	env.Test(ctx, t, RabbitMQCluster())
-	env.Test(ctx, t, SourceConcurrentreceiveAdapterProcessingTest())
+	env.Test(ctx, t, SourceConcurrentReceiveAdapterProcessingTest())
 	env.Finish()
 }
 
 func TestBrokerDispatcherConcurrency(t *testing.T) {
 	t.Parallel()
-
 	ctx, env := global.Environment(
 		knative.WithKnativeNamespace(system.Namespace()),
 		knative.WithLoggingConfig,
