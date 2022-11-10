@@ -218,9 +218,8 @@ func TestReconcile(t *testing.T) {
 	}}
 
 	brokerConfigs := map[string]*duckv1.KReference{
-		"rabbitmqClusterConfig":     rabbitmqClusterConfigRef(),
-		"rabbitmqClusterConfigNoNS": rabbitmqClusterConfigRefNoNS(),
-		"rabbitmqBrokerConfig":      rabbitmqBrokerConfigRef(),
+		"rabbitmqClusterConfig": rabbitmqClusterConfigRef(),
+		"rabbitmqBrokerConfig":  rabbitmqBrokerConfigRef(),
 	}
 
 	for configName, config := range brokerConfigs {
@@ -1190,6 +1189,52 @@ func TestReconcile(t *testing.T) {
 			},
 		}...)
 	}
+
+	table = append(table, TableTest{{
+		Name: "Created broker with DLQ and no Cluster Reference namespace",
+		Key:  testKey,
+		Objects: []runtime.Object{
+			NewBroker(brokerName, testNS,
+				WithBrokerUID(brokerUID),
+				WithBrokerClass(brokerClass),
+				WithBrokerConfig(rabbitmqClusterConfigRefNoNS()),
+				WithBrokerDelivery(delivery),
+				WithInitBrokerConditions),
+			createSecretForRabbitmqCluster(),
+			createRabbitMQCluster(),
+			createRabbitMQBrokerConfig(),
+			createReadyExchange(false),
+			createReadyExchange(true),
+			createReadyQueue(true, rabbitmqClusterConfigRefNoNS()),
+			createReadyBinding(true),
+			createReadyPolicy(),
+			rt.NewEndpoints(ingressServiceName, testNS,
+				rt.WithEndpointsLabels(IngressLabels()),
+				rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
+			createExchangeSecret(),
+			createIngressDeployment(),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewBroker(brokerName, testNS,
+				WithBrokerUID(brokerUID),
+				WithBrokerClass(brokerClass),
+				WithInitBrokerConditions,
+				WithBrokerConfig(rabbitmqClusterConfigRefNoNS()),
+				WithBrokerDelivery(delivery),
+				WithIngressAvailable(),
+				WithDLXReady(),
+				WithDeadLetterSinkReady(),
+				WithDeadLetterSinkResolvedSucceeded(delivery.DeadLetterSink.URI),
+				WithSecretReady(),
+				WithBrokerAddressURI(brokerAddress),
+				WithExchangeReady()),
+		}},
+		WantCreates: []runtime.Object{
+			createIngressService(),
+			createDispatcherDeployment(),
+		},
+		WantErr: false,
+	}}...)
 
 	logger := logtesting.TestLogger(t)
 	table.Test(t, rtlisters.MakeFactory(func(ctx context.Context, listers *rtlisters.Listers, cmw configmap.Watcher) controller.Reconciler {
