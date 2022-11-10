@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/dynamic"
 
 	"log"
 
@@ -61,6 +62,15 @@ func RabbitMQCluster() *feature.Feature {
 
 	f.Setup("install a rabbitmqcluster", rabbitmq.Install(rabbitmq.WithEnvConfig()...))
 	f.Requirement("RabbitMQCluster goes ready", RabbitMQClusterReady)
+	return f
+}
+
+func RabbitMQClusterConnectionSecret() *feature.Feature {
+	f := new(feature.Feature)
+
+	f.Setup("install a rabbitmqcluster", rabbitmq.Install(rabbitmq.WithEnvConfig()...))
+	f.Requirement("RabbitMQCluster goes ready", RabbitMQClusterReady)
+	f.Requirement("Create connection secret for the rabbitmq cluster", CreateUserConnectionSecret)
 	return f
 }
 
@@ -183,17 +193,65 @@ func getConditions(ctx context.Context, namespace string) ([]apis.Condition, err
 	return obj.Status.GetConditions(), nil
 }
 
+func CleanupUserConnectionSecret() *feature.Feature {
+	f := new(feature.Feature)
+	f.Teardown("clean up rabbitmq cluster user connection secret", DeleteUserConnectionSecret)
+	return f
+}
+
+func CreateUserConnectionSecret(ctx context.Context, t feature.T) {
+	namespace := environment.FromContext(ctx).Namespace()
+	secret, err := kubeClient.Get(ctx).CoreV1().Secrets(namespace).Get(ctx, "rabbitmqc-default-user", metav1.GetOptions{})
+	if err != nil {
+		t.Fatalf("error getting rabbitmq cluster default user secret %s in %s namespace, %w", "rabbitmqc-default-user", namespace, err)
+	}
+	secret.Data["uri"] = []byte(fmt.Sprintf("rabbitmqc.%s:15672", namespace))
+	if _, err = kubeClient.Get(ctx).CoreV1().Secrets(namespace).Create(ctx,
+		&corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: namespace,
+				Name:      "rabbitmqc-connection-secret",
+			},
+			Data: secret.Data,
+		},
+		metav1.CreateOptions{}); err != nil {
+		t.Fatalf("error creating rabbitmq cluster default user secret %s in %s namespace, %w", "rabbitmqc-connection-secret", namespace, err)
+	}
+	log.Printf("Successfully created Secret '%s' from namespace '%s' with RabbitMQ uri", "rabbitmqc-connection-secret", namespace)
+}
+
+func DeleteUserConnectionSecret(ctx context.Context, t feature.T) {
+	namespace := environment.FromContext(ctx).Namespace()
+	err := kubeClient.Get(ctx).CoreV1().Secrets(namespace).Delete(ctx, "rabbitmqc-connection-secret", metav1.DeleteOptions{})
+	if err != nil {
+		t.Fatalf("error deleting rabbitmq cluster default user secret %s in %s namespace, %w", "rabbitmqc-connection-secret", namespace, err)
+	}
+	log.Printf("Successfully deleted Secret '%s' from namespace '%s'", "rabbitmqc-connection-secret", namespace)
+}
+
 func CleanupRabbitMQResources(ctx context.Context, t feature.T) {
 	namespace := environment.FromContext(ctx).Namespace()
 	client := dynamicclient.Get(ctx)
-	for _, crd := range []string{"queues", "bindings", "exchanges"} {
-		gvr := schema.GroupVersionResource{Group: "rabbitmq.com", Version: "v1beta1", Resource: crd}
-		resources, err := client.Resource(gvr).Namespace(namespace).List(ctx, metav1.ListOptions{})
+	for _, crd := range []string{"bindings", "queues", "exchanges"} {
+		err := ListAndDeleteResource(ctx, client, namespace, crd)
 		if err != nil {
-			t.Fatalf("error listing rabbitmq %s, %w", crd, err)
-		}
-		for _, res := range resources.Items {
-			client.Resource(gvr).Namespace(namespace).Delete(ctx, res.GetName(), metav1.DeleteOptions{})
+			t.Fatalf(err.Error())
 		}
 	}
+}
+
+func ListAndDeleteResource(ctx context.Context, client dynamic.Interface, namespace, crd string) error {
+	gracePeriod := int64(0)
+	gvr := schema.GroupVersionResource{Group: "rabbitmq.com", Version: "v1beta1", Resource: crd}
+	resources, err := client.Resource(gvr).Namespace(namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return fmt.Errorf("error listing rabbitmq %s, %w", crd, err)
+	}
+	for _, res := range resources.Items {
+		err := client.Resource(gvr).Namespace(namespace).Delete(ctx, res.GetName(), metav1.DeleteOptions{GracePeriodSeconds: &gracePeriod})
+		if err != nil {
+			return fmt.Errorf("error deleting rabbitmq %s, %w", crd, err)
+		}
+	}
+	return nil
 }

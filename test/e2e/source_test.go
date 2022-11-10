@@ -111,7 +111,6 @@ func DirectSourceConnectionSecretClusterRefNS(setClusterRef bool) *feature.Featu
 				eventshub.StoreFromContext(ctx, "recorder").AssertAtLeast(t, eventsNumber)
 			})
 
-	f.Teardown("Delete Rabbitmq Resources", CleanupRabbitMQResources)
 	f.Teardown("Delete feature resources", f.DeleteResources)
 	return f
 }

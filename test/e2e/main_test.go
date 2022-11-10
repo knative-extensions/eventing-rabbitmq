@@ -94,13 +94,14 @@ func TestBrokerDirectNoClusterRefNS(t *testing.T) {
 
 // TestBrokerDirect makes sure a Broker can delivery events to a consumer.
 func TestBrokerConnectionSecret(t *testing.T) {
+	t.Parallel()
 	ctx, env := global.Environment(
 		knative.WithKnativeNamespace(system.Namespace()),
 		knative.WithLoggingConfig,
 		knative.WithTracingConfig,
 		k8s.WithEventListener,
 	)
-	env.Test(ctx, t, RabbitMQCluster())
+	env.Test(ctx, t, RabbitMQClusterConnectionSecret())
 	env.Test(ctx, t, RecorderFeature())
 	env.Test(ctx, t, DirectTestBrokerConnectionSecretClusterRefNS(true))
 	env.Finish()
@@ -114,7 +115,7 @@ func TestBrokerConnectionSecretNoClusterRefNs(t *testing.T) {
 		knative.WithTracingConfig,
 		k8s.WithEventListener,
 	)
-	env.Test(ctx, t, RabbitMQCluster())
+	env.Test(ctx, t, RabbitMQClusterConnectionSecret())
 	env.Test(ctx, t, RecorderFeature())
 	env.Test(ctx, t, DirectTestBrokerConnectionSecretClusterRefNS(false))
 	env.Finish()
@@ -208,7 +209,7 @@ func TestSourceConnectionSecret(t *testing.T) {
 		knative.WithTracingConfig,
 		k8s.WithEventListener,
 	)
-	env.Test(ctx, t, RabbitMQCluster())
+	env.Test(ctx, t, RabbitMQClusterConnectionSecret())
 	env.Test(ctx, t, RecorderFeature())
 	env.Test(ctx, t, DirectSourceConnectionSecretClusterRefNS(true))
 	env.Finish()
@@ -222,7 +223,7 @@ func TestSourceConnectionSecretNoClusterRefNs(t *testing.T) {
 		knative.WithTracingConfig,
 		k8s.WithEventListener,
 	)
-	env.Test(ctx, t, RabbitMQCluster())
+	env.Test(ctx, t, RabbitMQClusterConnectionSecret())
 	env.Test(ctx, t, RecorderFeature())
 	env.Test(ctx, t, DirectSourceConnectionSecretClusterRefNS(false))
 	env.Finish()

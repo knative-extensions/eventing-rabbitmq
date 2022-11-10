@@ -43,13 +43,3 @@ spec:
     secretName: {{ .tlsSecretName }}
     disableNonTLSListeners: true
   {{ end }}
-  override:
-    statefulSet:
-      spec:
-        template:
-          spec:
-            containers:
-            - name: rabbitmq
-              env:
-              - name: ERL_MAX_PORTS
-                value: "4096"

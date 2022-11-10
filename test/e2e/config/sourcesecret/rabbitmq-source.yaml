@@ -23,7 +23,7 @@ spec:
     namespace: {{ .namespace }}
     {{ end }}
     connectionSecret:
-      name: rabbitmqc-default-user
+      name: rabbitmqc-connection-secret
   rabbitmqResourcesConfig:
     exchangeName: "logs"
     queueName: "test"
@@ -33,14 +33,3 @@ spec:
       apiVersion: v1
       kind: Service
       name: recorder
-
----
-
-apiVersion: v1
-kind: Secret
-metadata:
-  name: rabbitmqc-default-user
-  namespace: {{ .namespace }}
-# This is just a sample, don't use it this way in production
-stringData:
-  uri: rabbitmqc.{{ .namespace }}:15672
