@@ -28,4 +28,3 @@ webhooks:
   failurePolicy: Fail
   name: defaulting.webhook.rabbitmq.eventing.knative.dev
   timeoutSeconds: 2
-  
