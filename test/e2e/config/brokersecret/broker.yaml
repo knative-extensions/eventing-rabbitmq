@@ -29,3 +29,17 @@ spec:
     kind: RabbitmqBrokerConfig
     name: default-config
     namespace: {{ .namespace }}
+
+---
+
+apiVersion: eventing.knative.dev/v1alpha1
+kind: RabbitmqBrokerConfig
+metadata:
+  name: default-config
+  namespace: {{ .namespace }}
+spec:
+  rabbitmqClusterReference:
+    namespace: {{ .namespace }}
+    connectionSecret:
+      name: rabbitmqc-default-user
+  queueType: quorum

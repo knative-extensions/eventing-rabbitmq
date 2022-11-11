@@ -266,6 +266,7 @@ func (r *Rabbit) RabbitMQURL(ctx context.Context, clusterRef *rabbitv1beta1.Rabb
 		if !ok {
 			return nil, fmt.Errorf("rabbit Secret missing key uri")
 		}
+		uriString := string(uri)
 		password, ok := s.Data["password"]
 		if !ok {
 			return nil, fmt.Errorf("rabbit Secret missing key password")
@@ -278,10 +279,14 @@ func (r *Rabbit) RabbitMQURL(ctx context.Context, clusterRef *rabbitv1beta1.Rabb
 		if !ok {
 			port = []byte("5672")
 		}
-		if strings.HasPrefix(strings.ToLower(string(uri)), "https") {
+
+		prefix := "http://"
+		if strings.HasPrefix(strings.ToLower(uriString), "https") {
 			protocol = []byte("amqps")
+			prefix = "https://"
 		}
-		splittedUri := strings.Split(string(uri), ":")
+		uriString = strings.TrimPrefix(uriString, prefix)
+		splittedUri := strings.Split(uriString, ":")
 		return url.Parse(fmt.Sprintf("%s://%s:%s@%s:%s", protocol, username, password, splittedUri[0], port))
 	}
 

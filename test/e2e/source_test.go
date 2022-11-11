@@ -135,7 +135,7 @@ func VHostSourceTest() *feature.Feature {
 // received and then calculates the time between events to determine that the
 // adapter did not block on receiving a response to the first event before
 // processing the second.
-func SourceConcurrentreceiveAdapterProcessingTest() *feature.Feature {
+func SourceConcurrentReceiveAdapterProcessingTest() *feature.Feature {
 	eventsNumber := 2
 	f := new(feature.Feature)
 

@@ -1,5 +1,4 @@
 {{- range $index, $kref := .triggers -}}
----
 apiVersion: eventing.knative.dev/v1
 kind: Trigger
 metadata:

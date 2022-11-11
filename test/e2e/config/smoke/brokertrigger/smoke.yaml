@@ -26,6 +26,7 @@ spec:
     apiVersion: eventing.knative.dev/v1alpha1
     kind: RabbitmqBrokerConfig
     name: rabbitmq-broker-config
+
 ---
 
 apiVersion: eventing.knative.dev/v1
