@@ -862,6 +862,48 @@ func TestReconcile(t *testing.T) {
 			},
 		}...)
 	}
+
+	table = append(table, TableTest{
+		{
+			Name: "Trigger ready with cluster reference with no namespace",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				ReadyBroker(configWithRabbitMQBrokerConfigNoNS()),
+				makeReadyPingSource(),
+				NewTrigger(triggerName, testNS, brokerName,
+					WithTriggerUID(triggerUID),
+					WithTriggerSubscriberURI(subscriberURI),
+					WithInitTriggerConditions,
+					WithDependencyAnnotation(dependencyAnnotation),
+				),
+				createSecret(rabbitURL),
+				createRabbitMQBrokerConfig(),
+				createRabbitMQCluster(),
+				markReady(createQueue(configWithRabbitMQBrokerConfigNoNS(), false)),
+				markReady(createBinding(false, false)),
+			},
+			WantErr: false,
+			WantCreates: []runtime.Object{
+				createDispatcherDeployment(false),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewTrigger(triggerName, testNS, brokerName,
+					WithTriggerUID(triggerUID),
+					WithTriggerSubscriberURI(subscriberURI),
+					// The first reconciliation will initialize the status conditions.
+					WithInitTriggerConditions,
+					WithDependencyAnnotation(dependencyAnnotation),
+					WithTriggerBrokerReady(),
+					WithTriggerDeadLetterSinkNotConfigured(),
+					WithTriggerSubscribed(),
+					WithTriggerStatusSubscriberURI(subscriberURI),
+					WithTriggerSubscriberResolvedSucceeded(),
+					WithTriggerDependencyReady(),
+				),
+			}},
+		},
+	}...)
+
 	logger := logtesting.TestLogger(t)
 	table.Test(t, rtlisters.MakeFactory(func(ctx context.Context, listers *rtlisters.Listers, cmw configmap.Watcher) controller.Reconciler {
 		ctx = v1a1addr.WithDuck(ctx)
@@ -908,6 +950,15 @@ func configWithRabbitMQCluster() *duckv1.KReference {
 }
 
 func configWithRabbitMQBrokerConfig() *duckv1.KReference {
+	return &duckv1.KReference{
+		Name:       rabbitMQBrokerConfigName,
+		Namespace:  testNS,
+		Kind:       "RabbitmqBrokerConfig",
+		APIVersion: "eventing.knative.dev/v1alpha1",
+	}
+}
+
+func configWithRabbitMQBrokerConfigNoNS() *duckv1.KReference {
 	return &duckv1.KReference{
 		Name:       rabbitMQBrokerConfigName,
 		Namespace:  testNS,

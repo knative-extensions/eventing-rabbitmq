@@ -31,6 +31,7 @@ import (
 	"knative.dev/pkg/webhook"
 	"knative.dev/pkg/webhook/certificates"
 	"knative.dev/pkg/webhook/resourcesemantics"
+	"knative.dev/pkg/webhook/resourcesemantics/defaulting"
 	"knative.dev/pkg/webhook/resourcesemantics/validation"
 
 	rabbitv1 "knative.dev/eventing-rabbitmq/pkg/apis/eventing/v1alpha1"
@@ -41,6 +42,33 @@ var ourTypes = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
 	v1.SchemeGroupVersion.WithKind("Broker"):                                                             &rabbitv1.RabbitBroker{},
 	v1.SchemeGroupVersion.WithKind("Trigger"):                                                            &v1.Trigger{},
 	schema.GroupVersion{Group: eventing.GroupName, Version: "v1alpha1"}.WithKind("RabbitmqBrokerConfig"): &rabbitv1.RabbitmqBrokerConfig{},
+}
+
+func NewDefaultingAdmissionController(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
+	// A function that infuses the context passed to ConvertTo/ConvertFrom/SetDefaults with custom metadata.
+	ctxFunc := func(ctx context.Context) context.Context {
+		return ctx
+	}
+
+	return defaulting.NewAdmissionController(ctx,
+
+		// Name of the resource webhook.
+		"defaulting.webhook.rabbitmq.eventing.knative.dev",
+
+		// The path on which to serve the webhook.
+		"/defaulting",
+
+		// The resources to default.
+		map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
+			schema.GroupVersion{Group: eventing.GroupName, Version: "v1alpha1"}.WithKind("RabbitmqBrokerConfig"): &rabbitv1.RabbitmqBrokerConfig{},
+		},
+
+		// A function that infuses the context passed to Validate/SetDefaults with custom metadata.
+		ctxFunc,
+
+		// Whether to disallow unknown fields.
+		true,
+	)
 }
 
 func NewValidationAdmissionController(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
@@ -91,5 +119,6 @@ func main() {
 	sharedmain.WebhookMainWithContext(ctx, "rabbitmq-broker-webhook",
 		certificates.NewController,
 		NewValidationAdmissionController,
+		NewDefaultingAdmissionController,
 	)
 }
