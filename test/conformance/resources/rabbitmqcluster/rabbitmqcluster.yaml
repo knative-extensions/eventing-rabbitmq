@@ -28,4 +28,4 @@ spec:
             - name: rabbitmq
               env:
               - name: ERL_MAX_PORTS
-                value: "1024"
+                value: "2048"
