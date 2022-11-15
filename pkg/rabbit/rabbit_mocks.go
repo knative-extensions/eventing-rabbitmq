@@ -90,11 +90,11 @@ func (rm *RabbitMQChannelMock) QueueInspect(string) (amqp.Queue, error) {
 	return amqp.Queue{}, nil
 }
 
-func ValidConnectionDial(url string) (RabbitMQConnectionInterface, error) {
+func ValidConnectionDial(url string) (RabbitMQConnectionWrapperInterface, error) {
 	return NewConnection(&RabbitMQBadConnectionMock{}), nil
 }
 
-func ValidDial(url string) (RabbitMQConnectionInterface, error) {
+func ValidDial(url string) (RabbitMQConnectionWrapperInterface, error) {
 	return NewConnection(&RabbitMQConnectionMock{}), nil
 }
 

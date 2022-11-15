@@ -34,7 +34,6 @@ import (
 
 	duckv1beta1 "knative.dev/eventing-rabbitmq/pkg/apis/duck/v1beta1"
 	rabbitv1duck "knative.dev/eventing-rabbitmq/pkg/client/injection/ducks/duck/v1beta1/rabbit"
-	"knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	rabbitclientset "knative.dev/eventing-rabbitmq/third_party/pkg/client/clientset/versioned"
 	rabbitmqclient "knative.dev/eventing-rabbitmq/third_party/pkg/client/injection/client"
@@ -240,7 +239,7 @@ func (r *Rabbit) DeleteResource(ctx context.Context, args *DeleteResourceArgs) e
 	return nil
 }
 
-func isReady(conditions []v1beta1.Condition) bool {
+func isReady(conditions []rabbitv1beta1.Condition) bool {
 	numConditions := len(conditions)
 	// If there are no conditions at all, the resource probably hasn't been reconciled yet => not ready
 	if numConditions == 0 {
