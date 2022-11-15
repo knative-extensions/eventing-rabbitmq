@@ -59,7 +59,6 @@ type envConfig struct {
 
 	rmqHelper             rabbit.RabbitMQHelperInterface
 	retryConnectionsSetup chan (bool)
-	connectionReady       chan (bool)
 
 	ContainerName   string `envconfig:"CONTAINER_NAME" default:"ingress"`
 	PodName         string `envconfig:"POD_NAME" default:"rabbitmq-broker-ingress"`
@@ -106,11 +105,7 @@ func main() {
 					env.retryConnectionsSetup <- true
 				}()
 			case r := <-env.retryConnectionsSetup:
-				if r {
-					env.rmqHelper.SetupRabbitMQConnectionAndChannel(env.BrokerURL, rabbit.ChannelConfirm)
-					env.connectionReady <- true
-				} else {
-					env.connectionReady <- false
+				if !r {
 					return
 				}
 			}
