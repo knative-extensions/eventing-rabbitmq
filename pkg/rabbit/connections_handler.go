@@ -108,6 +108,7 @@ func NewRabbitMQHelper(
 	logger *zap.SugaredLogger,
 	dialFunc func(string) (RabbitMQConnectionWrapperInterface, error)) RabbitMQHelperInterface {
 	return &RabbitMQHelper{
+		firstSetup:    true,
 		cycleDuration: cycleDuration,
 		logger:        logger,
 		DialFunc:      dialFunc,
@@ -125,7 +126,11 @@ func (r *RabbitMQHelper) SetupRabbitMQConnectionAndChannel(
 
 	for !retryConnection && !retryChannel {
 		// Wait one cycle duration always except the first time
-		time.Sleep(time.Second * r.cycleDuration)
+		if !r.firstSetup {
+			time.Sleep(time.Second * r.cycleDuration)
+		} else {
+			r.firstSetup = false
+		}
 		// Create the connection
 		if retryConnection {
 			if connInterface, err = r.DialFunc(RabbitMQURL); err != nil {
