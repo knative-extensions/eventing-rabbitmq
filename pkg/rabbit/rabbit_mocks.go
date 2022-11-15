@@ -63,6 +63,10 @@ type RabbitMQChannelMock struct {
 	ConsumeChannel     <-chan amqp.Delivery
 }
 
+func (rm *RabbitMQChannelMock) IsClosed() bool {
+	return false
+}
+
 func (rm *RabbitMQChannelMock) NotifyClose(c chan *amqp.Error) chan *amqp.Error {
 	return rm.NotifyCloseChannel
 }
@@ -90,22 +94,6 @@ func (rm *RabbitMQChannelMock) QueueInspect(string) (amqp.Queue, error) {
 	return amqp.Queue{}, nil
 }
 
-func ValidConnectionDial(url string) (RabbitMQConnectionWrapperInterface, error) {
-	return NewConnection(&RabbitMQBadConnectionMock{}), nil
-}
-
 func ValidDial(url string) (RabbitMQConnectionWrapperInterface, error) {
 	return NewConnection(&RabbitMQConnectionMock{}), nil
-}
-
-func Watcher(testChannel chan bool, rabbitmqHelper RabbitMQHelper) {
-	testChannel <- true
-	for {
-		retry := rabbitmqHelper.WaitForRetrySignal()
-		if !retry {
-			close(testChannel)
-			break
-		}
-		testChannel <- retry
-	}
 }

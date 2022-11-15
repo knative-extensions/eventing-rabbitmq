@@ -27,6 +27,7 @@ import (
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/google/uuid"
 	"github.com/kelseyhightower/envconfig"
+	"github.com/rabbitmq/amqp091-go"
 	"go.opencensus.io/plugin/ochttp/propagation/tracecontext"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
@@ -56,8 +57,9 @@ type envConfig struct {
 	BrokerURL    string `envconfig:"BROKER_URL" required:"true"`
 	ExchangeName string `envconfig:"EXCHANGE_NAME" required:"true"`
 
-	connection rabbit.RabbitMQConnectionInterface
-	channel    rabbit.RabbitMQChannelInterface
+	rmqHelper             rabbit.RabbitMQHelperInterface
+	retryConnectionsSetup chan (bool)
+	connectionReady       chan (bool)
 
 	ContainerName   string `envconfig:"CONTAINER_NAME" default:"ingress"`
 	PodName         string `envconfig:"POD_NAME" default:"rabbitmq-broker-ingress"`
@@ -91,20 +93,27 @@ func main() {
 		logger.Errorw("failed to create the metrics exporter", zap.Error(err))
 	}
 
-	rmqHelper := rabbit.NewRabbitMQHelper(1, make(chan bool), rabbit.DialWrapper)
+	env.rmqHelper = rabbit.NewRabbitMQHelper(1, logger, rabbit.DialWrapper)
 	// Wait for RabbitMQ retry messages
-	defer rmqHelper.CleanupRabbitMQ(env.connection, logger)
+	defer env.rmqHelper.CloseRabbitMQConnections()
 	go func() {
+		env.rmqHelper.SetupRabbitMQConnectionAndChannel(env.BrokerURL, rabbit.ChannelConfirm)
 		for {
-			env.connection, env.channel, err = rmqHelper.SetupRabbitMQ(env.BrokerURL, rabbit.ChannelConfirm, logger)
-			if err != nil {
-				logger.Errorf("error creating RabbitMQ connections: %s, waiting for a retry", err)
+			select {
+			case <-env.rmqHelper.GetChannel().NotifyClose(make(chan *amqp091.Error)):
+				env.rmqHelper.CloseRabbitMQConnections()
+				go func() {
+					env.retryConnectionsSetup <- true
+				}()
+			case r := <-env.retryConnectionsSetup:
+				if r {
+					env.rmqHelper.SetupRabbitMQConnectionAndChannel(env.BrokerURL, rabbit.ChannelConfirm)
+					env.connectionReady <- true
+				} else {
+					env.connectionReady <- false
+					return
+				}
 			}
-			if retry := rmqHelper.WaitForRetrySignal(); !retry {
-				logger.Warn("stopped listenning for RabbitMQ resources retries")
-				break
-			}
-			logger.Warn("recreating RabbitMQ resources")
 		}
 	}()
 
@@ -118,6 +127,7 @@ func main() {
 	if err = receiver.StartListen(ctx, &env); err != nil {
 		logger.Fatalf("failed to start listen, %v", err)
 	}
+	env.retryConnectionsSetup <- false
 }
 
 func (env *envConfig) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
@@ -178,9 +188,10 @@ func (env *envConfig) ServeHTTP(writer http.ResponseWriter, request *http.Reques
 
 func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, time.Duration, error) {
 	tp, ts := (&tracecontext.HTTPFormat{}).SpanContextToHeaders(span.SpanContext())
-	if env.channel != nil {
+	channel := env.rmqHelper.GetChannel()
+	if channel != nil {
 		start := time.Now()
-		dc, err := env.channel.PublishWithDeferredConfirm(
+		dc, err := channel.PublishWithDeferredConfirm(
 			env.ExchangeName,
 			"",    // routing key
 			false, // mandatory
