@@ -18,7 +18,7 @@ package dispatcher
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -94,7 +94,7 @@ func TestDispatcher_ReadSpan(t *testing.T) {
 				d = amqp.Delivery{Headers: amqp.Table{"traceparent": tp, "tracestate": ts}}
 			}
 
-			ctx, span := readSpan(ctx, d)
+			_, span := readSpan(ctx, d)
 			if span != nil && tt.err {
 				t.Error("invalid context is returning a valid span")
 			} else if span == nil && !tt.err {
@@ -152,7 +152,7 @@ func (h *fakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.header = r.Header
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "can not read body", http.StatusBadRequest)
 		return

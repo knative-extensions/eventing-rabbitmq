@@ -55,9 +55,6 @@ type envConfig struct {
 	ContainerName string `envconfig:"CONTAINER_NAME"`
 	PodName       string `envconfig:"POD_NAME"`
 	Namespace     string `envconfig:"NAMESPACE"`
-
-	connection rabbit.RabbitMQConnectionInterface
-	channel    rabbit.RabbitMQChannelInterface
 }
 
 func main() {
@@ -103,7 +100,7 @@ func main() {
 	defer rmqHelper.CloseRabbitMQConnections()
 	for {
 		rmqHelper.SetupRabbitMQConnectionAndChannel(env.RabbitURL, rabbit.ChannelQoS)
-		if err := d.ConsumeFromQueue(ctx, env.channel, env.QueueName); err != nil {
+		if err := d.ConsumeFromQueue(ctx, rmqHelper.GetChannel(), env.QueueName); err != nil {
 			if errors.Is(err, context.Canceled) {
 				return
 			}

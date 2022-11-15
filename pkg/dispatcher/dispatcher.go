@@ -59,6 +59,10 @@ type Dispatcher struct {
 // ConsumeFromQueue consumes messages from the given message channel and queue.
 // When the context is cancelled a context.Canceled error is returned.
 func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel rabbit.RabbitMQChannelInterface, queueName string) error {
+	if channel == nil {
+		return amqp.ErrClosed
+	}
+
 	msgs, err := channel.Consume(
 		queueName, // queue
 		"",        // consumer
@@ -108,7 +112,6 @@ func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel rabbit.Rabbit
 			close(workerQueue)
 			wg.Wait()
 			return ctx.Err()
-
 		case msg, ok := <-msgs:
 			if !ok {
 				logging.FromContext(ctx).Warn("message channel closed, stopping message consumers")
