@@ -102,19 +102,23 @@ func (a *Adapter) start(stopCh <-chan struct{}) error {
 }
 
 func (a *Adapter) ConsumeMessages(queue *amqp.Queue, logger *zap.SugaredLogger) (<-chan amqp.Delivery, error) {
-	msgs, err := a.rmqHelper.GetChannel().Consume(
-		queue.Name,
-		"",
-		false,
-		false,
-		false,
-		false,
-		amqp.Table{})
+	if channel := a.rmqHelper.GetChannel(); channel != nil {
+		msgs, err := a.rmqHelper.GetChannel().Consume(
+			queue.Name,
+			"",
+			false,
+			false,
+			false,
+			false,
+			amqp.Table{})
 
-	if err != nil {
-		logger.Error(err.Error())
+		if err != nil {
+			logger.Error(err.Error())
+		}
+		return msgs, err
+	} else {
+		return nil, amqp.ErrClosed
 	}
-	return msgs, err
 }
 
 func (a *Adapter) PollForMessages(stopCh <-chan struct{}) error {
