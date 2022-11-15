@@ -25,7 +25,6 @@ import (
 
 	eventingv1alpha1 "knative.dev/eventing-rabbitmq/pkg/apis/eventing/v1alpha1"
 	"knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
-	"knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 	rabbitv1beta1 "knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
 )
 
@@ -86,7 +85,7 @@ func NewPolicy(args *QueueArgs) *rabbitv1beta1.Policy {
 			OwnerReferences: []metav1.OwnerReference{args.Owner},
 			Labels:          args.Labels,
 		},
-		Spec: v1beta1.PolicySpec{
+		Spec: rabbitv1beta1.PolicySpec{
 			Name:                     args.Name,
 			Priority:                 1,
 			Pattern:                  fmt.Sprintf("^%s$", regexp.QuoteMeta(args.QueueName)),
@@ -106,7 +105,7 @@ func NewBrokerDLXPolicy(args *QueueArgs) *rabbitv1beta1.Policy {
 			OwnerReferences: []metav1.OwnerReference{args.Owner},
 			Labels:          args.Labels,
 		},
-		Spec: v1beta1.PolicySpec{
+		Spec: rabbitv1beta1.PolicySpec{
 			Name:                     args.Name,
 			Priority:                 0, // lower priority then policies created for trigger queues to allow overwrite
 			Pattern:                  fmt.Sprintf("%s$", regexp.QuoteMeta(args.BrokerUID)),
