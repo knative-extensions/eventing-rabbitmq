@@ -43,7 +43,7 @@ func Test_InvalidSetupRabbitMQ(t *testing.T) {
 	if err == nil || !retryConnection || rabbitMQHelper.GetConnection() != nil {
 		t.Errorf("unexpected error == nil when setting up invalid connection %s %s %s", rabbitMQHelper.GetConnection(), rabbitMQHelper.GetChannel(), err)
 	}
-	rabbitMQHelper.Connection, rabbitMQHelper.Channel, err = nil, nil, nil
+	rabbitMQHelper.Connection, rabbitMQHelper.Channel = nil, nil
 	rabbitMQHelper.CloseRabbitMQConnections()
 	// test invalid channel setup
 	rabbitMQHelper = NewRabbitMQHelper(1, logger, BadChannelDial).(*RabbitMQHelper)
@@ -52,7 +52,7 @@ func Test_InvalidSetupRabbitMQ(t *testing.T) {
 		t.Errorf("unexpected error == nil when setting up invalid channel %s %s %s", rabbitMQHelper.GetConnection(), rabbitMQHelper.GetChannel(), err)
 	}
 	rabbitMQHelper.CloseRabbitMQConnections()
-	rabbitMQHelper.Connection, rabbitMQHelper.Channel, err = nil, nil, nil
+	rabbitMQHelper.Connection, rabbitMQHelper.Channel = nil, nil
 	retryConnection, retryChannel = true, true
 	// test invalid config setup
 	rabbitMQHelper = NewRabbitMQHelper(1, logger, ValidDial).(*RabbitMQHelper)
