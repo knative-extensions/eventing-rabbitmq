@@ -27,7 +27,7 @@ func Test_ValidSetupRabbitMQ(t *testing.T) {
 	rabbitMQHelper := NewRabbitMQHelper(1, logger, ValidDial).(*RabbitMQHelper)
 	rabbitMQHelper.SetupRabbitMQConnectionAndChannel("amqp://localhost:5672/%2f", ConfigTest)
 	if rabbitMQHelper.Connection == nil || rabbitMQHelper.Channel == nil {
-		t.Errorf("rabbitMQHelper connection and channel should be set")
+		t.Errorf("rabbitMQHelper connection and channel should be set %s %s", rabbitMQHelper.Channel, rabbitMQHelper.Connection)
 	}
 	rabbitMQHelper.CloseRabbitMQConnections()
 }

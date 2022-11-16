@@ -119,49 +119,17 @@ func (r *RabbitMQHelper) SetupRabbitMQConnectionAndChannel(
 	RabbitMQURL string,
 	configFunction func(RabbitMQConnectionInterface, RabbitMQChannelInterface) error) {
 	var err error
-	var connInterface RabbitMQConnectionWrapperInterface
-	var channelInterface RabbitMQChannelInterface
 	retryConnection := true
 	retryChannel := true
 
-	for !retryConnection && !retryChannel {
+	for retryConnection || retryChannel {
 		// Wait one cycle duration always except the first time
 		if !r.firstSetup {
 			time.Sleep(time.Second * r.cycleDuration)
 		} else {
 			r.firstSetup = false
 		}
-		// Create the connection
-		if retryConnection {
-			if connInterface, err = r.DialFunc(RabbitMQURL); err != nil {
-				r.logger.Errorw("failed to create RabbitMQ connection", zap.Error(err))
-			} else {
-				retryConnection = false
-				r.Connection = connInterface
-			}
-		}
-		// Create the channel
-		if retryChannel {
-			if connInterface.IsClosed() {
-				err = amqp.ErrClosed
-				retryConnection = true
-			} else {
-				if channelInterface, err = connInterface.ChannelWrapper(); err != nil {
-					r.logger.Errorw("failed to create RabbitMQ channel", zap.Error(err))
-				} else {
-					retryChannel = false
-					r.Channel = channelInterface
-				}
-			}
-		}
-		// Config the connection and channel if needed
-		if err == nil && configFunction != nil {
-			if err = configFunction(connInterface, channelInterface); err != nil {
-				r.logger.Errorw("failed to configure RabbitMQ connections", zap.Error(err))
-				retryConnection = true
-				retryChannel = true
-			}
-		}
+		r.Connection, r.Channel, err = r.CreateAndConfigConnectionsAndChannel(&retryConnection, &retryChannel, RabbitMQURL, configFunction)
 		// If there is an error trying to setup the connections wait and retry
 		if err != nil {
 			if retryConnection {
@@ -171,6 +139,44 @@ func (r *RabbitMQHelper) SetupRabbitMQConnectionAndChannel(
 			r.Channel = nil
 		}
 	}
+}
+
+func (r *RabbitMQHelper) CreateAndConfigConnectionsAndChannel(
+	retryConnection, retryChannel *bool,
+	RabbitMQURL string,
+	configFunction func(RabbitMQConnectionInterface, RabbitMQChannelInterface) error,
+) (conn RabbitMQConnectionWrapperInterface, ch RabbitMQChannelInterface, err error) {
+	// Create the connection
+	if *retryConnection {
+		if conn, err = r.DialFunc(RabbitMQURL); err != nil {
+			r.logger.Errorw("failed to create RabbitMQ connection", zap.Error(err))
+		} else {
+			*retryConnection = false
+		}
+	}
+	// Create the channel
+	if *retryChannel && err == nil {
+		if conn.IsClosed() {
+			err = amqp.ErrClosed
+			*retryConnection = true
+		} else {
+			if ch, err = conn.ChannelWrapper(); err != nil {
+				r.logger.Errorw("failed to create RabbitMQ channel", zap.Error(err))
+			} else {
+				*retryChannel = false
+			}
+		}
+	}
+	// Config the connection and channel if needed
+	if err == nil && configFunction != nil {
+		if err = configFunction(conn, ch); err != nil {
+			r.logger.Errorw("failed to configure RabbitMQ connections", zap.Error(err))
+			*retryConnection = true
+			*retryChannel = true
+		}
+	}
+
+	return conn, ch, err
 }
 
 func (r *RabbitMQHelper) CloseRabbitMQConnections() {
