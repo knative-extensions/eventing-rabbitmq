@@ -29,7 +29,7 @@ func (rm *RabbitMQConnectionMock) ChannelWrapper() (RabbitMQChannelInterface, er
 }
 
 func (rm *RabbitMQConnectionMock) IsClosed() bool {
-	return true
+	return false
 }
 
 func (rm *RabbitMQConnectionMock) Close() error {
