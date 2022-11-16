@@ -104,7 +104,7 @@ func main() {
 		if err = d.ConsumeFromQueue(ctx, rmqHelper.GetChannel(), env.QueueName); err != nil {
 			if errors.Is(err, context.Canceled) {
 				return
-			} else if err != nil && prevError != nil && err.Error() != prevError.Error() {
+			} else if (err != nil && prevError == nil) || (err.Error() != prevError.Error()) {
 				logger.Error(err)
 			}
 			prevError = err
