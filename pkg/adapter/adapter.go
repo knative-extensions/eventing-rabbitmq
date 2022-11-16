@@ -180,8 +180,9 @@ func (a *Adapter) PollForMessages(stopCh <-chan struct{}) error {
 			}
 		}
 		if err != nil {
-			if prevError == nil || (err.Error() != prevError.Error()) {
+			if prevError == nil || err.Error() != prevError.Error() {
 				logger.Error(err)
+				logger.Info("Recreating RabbitMQ Connection and Channel")
 			}
 			a.rmqHelper.CloseRabbitMQConnections()
 		}
