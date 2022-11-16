@@ -17,6 +17,7 @@ limitations under the License.
 package rabbit
 
 import (
+	"errors"
 	"testing"
 
 	"go.uber.org/zap"
@@ -27,15 +28,43 @@ func Test_ValidSetupRabbitMQ(t *testing.T) {
 	rabbitMQHelper := NewRabbitMQHelper(1, logger, ValidDial).(*RabbitMQHelper)
 	rabbitMQHelper.SetupRabbitMQConnectionAndChannel("amqp://localhost:5672/%2f", ConfigTest)
 	if rabbitMQHelper.Connection == nil || rabbitMQHelper.Channel == nil {
-		t.Errorf("rabbitMQHelper connection and channel should be set %s %s", rabbitMQHelper.Channel, rabbitMQHelper.Connection)
+		t.Errorf("rabbitMQHelper connection and channel should be set %s %s", rabbitMQHelper.Connection, rabbitMQHelper.Channel)
 	}
 	rabbitMQHelper.CloseRabbitMQConnections()
+}
+
+func Test_InvalidSetupRabbitMQ(t *testing.T) {
+	retryConnection, retryChannel := true, true
+	logger := zap.NewNop().Sugar()
+	// test invalid connection setup
+	rabbitMQHelper := NewRabbitMQHelper(1, logger, BadConnectionDial).(*RabbitMQHelper)
+	conn, ch, err := rabbitMQHelper.CreateAndConfigConnectionsAndChannel(&retryConnection, &retryChannel, "amqp://localhost:5672/%2f", nil)
+	if err == nil || !retryConnection || conn != nil {
+		t.Errorf("unexpected error == nil when setting up invalid connection %s %s %s", conn, ch, err)
+	}
+	// test invalid channel setup
+	rabbitMQHelper = NewRabbitMQHelper(1, logger, BadChannelDial).(*RabbitMQHelper)
+	conn, ch, err = rabbitMQHelper.CreateAndConfigConnectionsAndChannel(&retryConnection, &retryChannel, "amqp://localhost:5672/%2f", ConfigTest)
+	if err == nil || !retryChannel || ch != nil {
+		t.Errorf("unexpected error == nil when setting up invalid channel %s %s %s", conn, ch, err)
+	}
+	retryConnection, retryChannel = true, true
+	// test invalid config setup
+	rabbitMQHelper = NewRabbitMQHelper(1, logger, ValidDial).(*RabbitMQHelper)
+	conn, ch, err = rabbitMQHelper.CreateAndConfigConnectionsAndChannel(&retryConnection, &retryChannel, "amqp://localhost:5672/%2f", InvalidConfigTest)
+	if err == nil || !retryConnection || !retryChannel || conn == nil || ch == nil {
+		t.Errorf("unexpected error == nil when setting up invalid config %s %s %s", conn, ch, err)
+	}
 }
 
 func ConfigTest(conn RabbitMQConnectionInterface, channel RabbitMQChannelInterface) error {
 	ChannelConfirm(conn, channel)
 	ChannelQoS(conn, channel)
 	return nil
+}
+
+func InvalidConfigTest(conn RabbitMQConnectionInterface, channel RabbitMQChannelInterface) error {
+	return errors.New("invalid config test")
 }
 
 func TestAdapter_VhostHandler(t *testing.T) {
