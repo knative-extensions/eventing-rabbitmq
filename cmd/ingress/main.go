@@ -95,8 +95,8 @@ func main() {
 	env.rmqHelper = rabbit.NewRabbitMQHelper(1, logger, rabbit.DialWrapper)
 	// Wait for RabbitMQ retry messages
 	defer env.rmqHelper.CloseRabbitMQConnections()
+	env.rmqHelper.SetupRabbitMQConnectionAndChannel(env.BrokerURL, rabbit.ChannelConfirm)
 	go func() {
-		env.rmqHelper.SetupRabbitMQConnectionAndChannel(env.BrokerURL, rabbit.ChannelConfirm)
 		for {
 			select {
 			case <-env.rmqHelper.GetChannel().NotifyClose(make(chan *amqp091.Error)):
@@ -108,6 +108,7 @@ func main() {
 				if !r {
 					return
 				}
+				env.rmqHelper.SetupRabbitMQConnectionAndChannel(env.BrokerURL, rabbit.ChannelConfirm)
 			}
 		}
 	}()
