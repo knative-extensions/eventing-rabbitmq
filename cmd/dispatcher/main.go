@@ -96,14 +96,18 @@ func main() {
 		Reporter:         reporter,
 	}
 
+	var err, prevError error
 	rmqHelper := rabbit.NewRabbitMQHelper(1, logger, rabbit.DialWrapper)
 	defer rmqHelper.CloseRabbitMQConnections()
 	for {
 		rmqHelper.SetupRabbitMQConnectionAndChannel(env.RabbitURL, rabbit.ChannelQoS)
-		if err := d.ConsumeFromQueue(ctx, rmqHelper.GetChannel(), env.QueueName); err != nil {
+		if err = d.ConsumeFromQueue(ctx, rmqHelper.GetChannel(), env.QueueName); err != nil {
 			if errors.Is(err, context.Canceled) {
 				return
+			} else if err != nil && prevError != nil && err.Error() != prevError.Error() {
+				logger.Error(err)
 			}
+			prevError = err
 			rmqHelper.CloseRabbitMQConnections()
 		}
 	}

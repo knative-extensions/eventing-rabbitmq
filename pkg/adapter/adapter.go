@@ -123,7 +123,7 @@ func (a *Adapter) ConsumeMessages(queue *amqp.Queue, logger *zap.SugaredLogger) 
 
 func (a *Adapter) PollForMessages(stopCh <-chan struct{}) error {
 	logger := a.logger.Sugar()
-	var err error
+	var err, prevError error
 	var queue amqp.Queue
 	var msgs <-chan (amqp.Delivery)
 	auxRetryConfig := kncloudevents.NoRetries()
@@ -158,13 +158,9 @@ func (a *Adapter) PollForMessages(stopCh <-chan struct{}) error {
 	for {
 		a.rmqHelper.SetupRabbitMQConnectionAndChannel(rabbit.VHostHandler(a.config.RabbitURL, a.config.Vhost), rabbit.ChannelQoS)
 		queue, err = a.rmqHelper.GetChannel().QueueInspect(a.config.QueueName)
-		if err != nil {
-			logger.Error(err.Error())
-		} else {
+		if err == nil {
 			msgs, err = a.ConsumeMessages(&queue, logger)
-			if err != nil {
-				logger.Error(err.Error())
-			} else {
+			if err == nil {
 				for {
 					select {
 					case <-stopCh:
@@ -174,17 +170,22 @@ func (a *Adapter) PollForMessages(stopCh <-chan struct{}) error {
 						return nil
 					case msg, ok := <-msgs:
 						if !ok {
+							close(workerQueue)
+							wg.Wait()
 							return amqp.ErrClosed
 						}
 						workerQueue <- msg
 					}
 				}
 			}
-			if err != nil {
-				logger.Warn("recreating RabbitMQ resources")
-				a.rmqHelper.CloseRabbitMQConnections()
-			}
 		}
+		if err != nil {
+			if prevError != nil && err.Error() != prevError.Error() {
+				logger.Error(err)
+			}
+			a.rmqHelper.CloseRabbitMQConnections()
+		}
+		prevError = err
 	}
 }
 
