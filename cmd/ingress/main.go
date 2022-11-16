@@ -27,7 +27,6 @@ import (
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/google/uuid"
 	"github.com/kelseyhightower/envconfig"
-	"github.com/rabbitmq/amqp091-go"
 	"go.opencensus.io/plugin/ochttp/propagation/tracecontext"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
@@ -58,7 +57,7 @@ type envConfig struct {
 	ExchangeName string `envconfig:"EXCHANGE_NAME" required:"true"`
 
 	rmqHelper             rabbit.RabbitMQHelperInterface
-	retryConnectionsSetup chan (bool)
+	retryConnectionsSetup chan bool
 
 	ContainerName   string `envconfig:"CONTAINER_NAME" default:"ingress"`
 	PodName         string `envconfig:"POD_NAME" default:"rabbitmq-broker-ingress"`
@@ -92,25 +91,17 @@ func main() {
 		logger.Errorw("failed to create the metrics exporter", zap.Error(err))
 	}
 
+	env.retryConnectionsSetup = make(chan bool)
 	env.rmqHelper = rabbit.NewRabbitMQHelper(1, logger, rabbit.DialWrapper)
 	// Wait for RabbitMQ retry messages
 	defer env.rmqHelper.CloseRabbitMQConnections()
 	env.rmqHelper.SetupRabbitMQConnectionAndChannel(env.BrokerURL, rabbit.ChannelConfirm)
 	go func() {
-		for {
-			select {
-			case <-env.rmqHelper.GetChannel().NotifyClose(make(chan *amqp091.Error)):
-				env.rmqHelper.CloseRabbitMQConnections()
-				go func() {
-					env.retryConnectionsSetup <- true
-				}()
-			case r := <-env.retryConnectionsSetup:
-				if !r {
-					return
-				}
-				env.rmqHelper.SetupRabbitMQConnectionAndChannel(env.BrokerURL, rabbit.ChannelConfirm)
-			}
+		for <-env.retryConnectionsSetup {
+			env.rmqHelper.CloseRabbitMQConnections()
+			env.rmqHelper.SetupRabbitMQConnectionAndChannel(env.BrokerURL, rabbit.ChannelConfirm)
 		}
+		logger.Info("stopped watching for rabbitmq connections")
 	}()
 
 	env.reporter = ingress.NewStatsReporter(env.ContainerName, kmeta.ChildName(env.PodName, uuid.New().String()))
@@ -194,6 +185,7 @@ func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, tim
 			false, // immediate
 			*rabbit.CloudEventToRabbitMQMessage(event, tp, ts))
 		if err != nil {
+			go func() { env.retryConnectionsSetup <- true }()
 			return http.StatusInternalServerError, noDuration, fmt.Errorf("failed to publish message: %w", err)
 		}
 
@@ -204,6 +196,6 @@ func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, tim
 		}
 		return http.StatusAccepted, dispatchTime, nil
 	}
-
+	go func() { env.retryConnectionsSetup <- true }()
 	return http.StatusInternalServerError, noDuration, errors.New("failed to publish message: RabbitMQ channel is nil")
 }

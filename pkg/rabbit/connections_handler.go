@@ -120,6 +120,9 @@ func (r *RabbitMQHelper) SetupRabbitMQConnectionAndChannel(
 	configFunction func(RabbitMQConnectionInterface, RabbitMQChannelInterface) error) {
 	var err, prevError error
 	retryConnection, retryChannel := true, true
+	if !r.firstSetup {
+		r.logger.Info("Recreating and Configuring RabbitMQ Connection and Channel")
+	}
 	for retryConnection || retryChannel {
 		// Wait one cycle duration always except the first time
 		if !r.firstSetup {
@@ -131,7 +134,7 @@ func (r *RabbitMQHelper) SetupRabbitMQConnectionAndChannel(
 		r.Connection, r.Channel, err = r.CreateAndConfigConnectionsAndChannel(&retryConnection, &retryChannel, RabbitMQURL, configFunction)
 		if err != nil {
 			// Log the error if it something different from the previous one
-			if prevError != nil && prevError.Error() != err.Error() {
+			if prevError == nil || (prevError.Error() != err.Error()) {
 				r.logger.Error(err)
 			}
 			if retryConnection {
