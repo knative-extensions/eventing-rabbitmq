@@ -175,6 +175,7 @@ func (a *Adapter) PollForMessages(stopCh <-chan struct{}) error {
 							return amqp.ErrClosed
 						}
 						workerQueue <- msg
+						prevError = nil
 					}
 				}
 			}
