@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -27,6 +28,7 @@ import (
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/google/uuid"
 	"github.com/kelseyhightower/envconfig"
+	"github.com/rabbitmq/amqp091-go"
 	"go.opencensus.io/plugin/ochttp/propagation/tracecontext"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
@@ -56,8 +58,7 @@ type envConfig struct {
 	BrokerURL    string `envconfig:"BROKER_URL" required:"true"`
 	ExchangeName string `envconfig:"EXCHANGE_NAME" required:"true"`
 
-	rmqHelper             rabbit.RabbitMQHelperInterface
-	retryConnectionsSetup chan error
+	rmqHelper rabbit.RabbitMQHelperInterface
 
 	ContainerName   string `envconfig:"CONTAINER_NAME" default:"ingress"`
 	PodName         string `envconfig:"POD_NAME" default:"rabbitmq-broker-ingress"`
@@ -91,28 +92,11 @@ func main() {
 		logger.Errorw("failed to create the metrics exporter", zap.Error(err))
 	}
 
-	env.retryConnectionsSetup = make(chan error)
 	env.rmqHelper = rabbit.NewRabbitMQHelper(1, logger, rabbit.DialWrapper)
 	// Wait for RabbitMQ retry messages
 	defer env.rmqHelper.CloseRabbitMQConnections()
 	env.rmqHelper.SetupRabbitMQConnectionAndChannel(env.BrokerURL, rabbit.ChannelConfirm)
-	go func() {
-		var err, prevError error
-		for {
-			err = <-env.retryConnectionsSetup
-			if err == nil {
-				break
-			}
-
-			if prevError == nil || prevError.Error() == err.Error() {
-				logger.Info("Recreating RabbitMQ Connection and Channel")
-			}
-			env.rmqHelper.CloseRabbitMQConnections()
-			env.rmqHelper.SetupRabbitMQConnectionAndChannel(env.BrokerURL, rabbit.ChannelConfirm)
-			prevError = err
-		}
-		logger.Info("stopped watching for rabbitmq connections")
-	}()
+	go env.WatchRabbitMQConnections(ctx, env.rmqHelper.GetConnection(), env.rmqHelper.GetChannel(), logger)
 
 	env.reporter = ingress.NewStatsReporter(env.ContainerName, kmeta.ChildName(env.PodName, uuid.New().String()))
 	connectionArgs := kncloudevents.ConnectionArgs{
@@ -124,7 +108,6 @@ func main() {
 	if err = receiver.StartListen(ctx, &env); err != nil {
 		logger.Fatalf("failed to start listen, %v", err)
 	}
-	env.retryConnectionsSetup <- nil
 }
 
 func (env *envConfig) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
@@ -195,9 +178,7 @@ func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, tim
 			false, // immediate
 			*rabbit.CloudEventToRabbitMQMessage(event, tp, ts))
 		if err != nil {
-			errorMsg := fmt.Errorf("failed to publish message: %w", err)
-			env.retryConnectionsSetup <- errorMsg
-			return http.StatusInternalServerError, noDuration, errorMsg
+			return http.StatusInternalServerError, noDuration, fmt.Errorf("failed to publish message: %w", err)
 		}
 
 		ack := dc.Wait()
@@ -207,7 +188,24 @@ func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, tim
 		}
 		return http.StatusAccepted, dispatchTime, nil
 	}
-	errorMsg := errors.New("failed to publish message: RabbitMQ channel is nil")
-	env.retryConnectionsSetup <- errorMsg
-	return http.StatusInternalServerError, noDuration, errorMsg
+	return http.StatusInternalServerError, noDuration, errors.New("failed to publish message: RabbitMQ channel is nil")
+}
+
+func (env *envConfig) WatchRabbitMQConnections(
+	ctx context.Context,
+	conn rabbit.RabbitMQConnectionInterface,
+	ch rabbit.RabbitMQChannelInterface,
+	logger *zap.SugaredLogger) {
+	select {
+	case <-ctx.Done():
+		logger.Info("stopped watching for rabbitmq connections")
+		return
+	case <-conn.NotifyClose(make(chan *amqp091.Error)):
+		break
+	case <-ch.NotifyClose(make(chan *amqp091.Error)):
+		break
+	}
+	env.rmqHelper.CloseRabbitMQConnections()
+	env.rmqHelper.SetupRabbitMQConnectionAndChannel(env.BrokerURL, rabbit.ChannelConfirm)
+	go env.WatchRabbitMQConnections(ctx, env.rmqHelper.GetConnection(), env.rmqHelper.GetChannel(), logger)
 }
