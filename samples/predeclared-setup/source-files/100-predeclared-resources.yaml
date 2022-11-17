@@ -1,0 +1,40 @@
+apiVersion: rabbitmq.com/v1beta1
+kind: Queue
+metadata:
+  name: source-queue
+  namespace: predeclared-setup-sample
+spec:
+  name: source-queue
+  autoDelete: false
+  durable: true
+  rabbitmqClusterReference:
+    name: rabbitmq
+
+---
+
+apiVersion: rabbitmq.com/v1beta1
+kind: Exchange
+metadata:
+  name: source-exchange
+  namespace: predeclared-setup-sample
+spec:
+  name: source-exchange # name of the exchange
+  type: fanout # default to 'direct' if not provided
+  autoDelete: false
+  durable: true
+  rabbitmqClusterReference:
+    name: rabbitmq
+
+---
+
+apiVersion: rabbitmq.com/v1beta1
+kind: Binding
+metadata:
+  name: binding
+  namespace: predeclared-setup-sample
+spec:
+  source: source-exchange
+  destination: source-queue
+  destinationType: queue
+  rabbitmqClusterReference:
+    name: rabbitmq

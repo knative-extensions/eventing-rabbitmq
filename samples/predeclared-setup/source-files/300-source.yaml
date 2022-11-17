@@ -1,0 +1,27 @@
+apiVersion: sources.knative.dev/v1alpha1
+kind: RabbitmqSource
+metadata:
+  name: rabbitmq-source
+  namespace: predeclared-setup-sample
+spec:
+  rabbitmqClusterReference:
+    name: rabbitmq
+    namespace: predeclared-setup-sample
+  rabbitmqResourcesConfig:
+    # Value must be between 1 and 1000
+    # A value of 1 RabbitMQ Source behaves as a FIFO queue
+    # Values above 1 break message ordering guarantees and can be seen as more performance oriented
+    # parallelism: 10
+    predeclared: true
+    exchangeName: "source-exchange"
+    queueName: source-queue
+  delivery:
+    retry: 5
+    backoffPolicy: "linear"
+    backoffDelay: "PT1S"
+  sink:
+    ref:
+      apiVersion: serving.knative.dev/v1
+      kind: Service
+      name: event-display
+      namespace: predeclared-setup-sample
