@@ -4,6 +4,9 @@ metadata:
   name: {{ .name }}
   namespace: {{ .namespace }}
 spec:
+  rabbitmq:
+    additionalConfig: |
+      disk_free_limit.absolute = 50MB
   {{ if .rabbitmqServerImage }}
   image: {{ .rabbitmqServerImage }}
   {{ end }}

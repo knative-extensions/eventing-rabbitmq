@@ -45,3 +45,4 @@ spec:
       default_permissions.read = .*
       default_permissions.write = .*
       loopback_users = none
+      disk_free_limit.absolute = 50MB

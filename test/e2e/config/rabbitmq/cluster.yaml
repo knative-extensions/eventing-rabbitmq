@@ -22,6 +22,9 @@ metadata:
     # to declare objects against this RabbitMQ cluster
     rabbitmq.com/topology-allowed-namespaces: "*"
 spec:
+  rabbitmq:
+    additionalConfig: |
+      disk_free_limit.absolute = 50MB
   {{ if .rabbitmqServerImage }}
   image: {{ .rabbitmqServerImage }}
   {{ end }}
