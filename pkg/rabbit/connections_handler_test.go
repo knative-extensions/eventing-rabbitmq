@@ -17,6 +17,7 @@ limitations under the License.
 package rabbit
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -25,8 +26,8 @@ import (
 
 func Test_ValidSetupRabbitMQ(t *testing.T) {
 	logger := zap.NewNop().Sugar()
-	rabbitMQHelper := NewRabbitMQHelper(1, logger, ValidDial).(*RabbitMQHelper)
-	rabbitMQHelper.SetupRabbitMQConnectionAndChannel("amqp://localhost:5672/%2f", ConfigTest)
+	rabbitMQHelper := NewRabbitMQHelper(1, logger).(*RabbitMQHelper)
+	rabbitMQHelper.SetupRabbitMQConnectionAndChannel(context.Background(), "amqp://localhost:5672/%2f", ConfigTest, ValidDial)
 	if rabbitMQHelper.Connection == nil || rabbitMQHelper.Channel == nil {
 		t.Errorf("rabbitMQHelper connection and channel should be set %s %s", rabbitMQHelper.Connection, rabbitMQHelper.Channel)
 	}
@@ -38,16 +39,16 @@ func Test_InvalidSetupRabbitMQ(t *testing.T) {
 	retryConnection, retryChannel := true, true
 	logger := zap.NewNop().Sugar()
 	// test invalid connection setup
-	rabbitMQHelper := NewRabbitMQHelper(1, logger, BadConnectionDial).(*RabbitMQHelper)
-	rabbitMQHelper.Connection, rabbitMQHelper.Channel, err = rabbitMQHelper.CreateAndConfigConnectionsAndChannel(&retryConnection, &retryChannel, "amqp://localhost:5672/%2f", nil)
+	rabbitMQHelper := NewRabbitMQHelper(1, logger).(*RabbitMQHelper)
+	rabbitMQHelper.Connection, rabbitMQHelper.Channel, err = rabbitMQHelper.CreateAndConfigConnectionsAndChannel(&retryConnection, &retryChannel, "amqp://localhost:5672/%2f", nil, BadConnectionDial)
 	if err == nil || !retryConnection || rabbitMQHelper.GetConnection() != nil {
 		t.Errorf("unexpected error == nil when setting up invalid connection %s %s %s", rabbitMQHelper.GetConnection(), rabbitMQHelper.GetChannel(), err)
 	}
 	rabbitMQHelper.Connection, rabbitMQHelper.Channel = nil, nil
 	rabbitMQHelper.CloseRabbitMQConnections()
 	// test invalid channel setup
-	rabbitMQHelper = NewRabbitMQHelper(1, logger, BadChannelDial).(*RabbitMQHelper)
-	rabbitMQHelper.Connection, rabbitMQHelper.Channel, err = rabbitMQHelper.CreateAndConfigConnectionsAndChannel(&retryConnection, &retryChannel, "amqp://localhost:5672/%2f", ConfigTest)
+	rabbitMQHelper = NewRabbitMQHelper(1, logger).(*RabbitMQHelper)
+	rabbitMQHelper.Connection, rabbitMQHelper.Channel, err = rabbitMQHelper.CreateAndConfigConnectionsAndChannel(&retryConnection, &retryChannel, "amqp://localhost:5672/%2f", ConfigTest, BadChannelDial)
 	if err == nil || !retryChannel || rabbitMQHelper.GetChannel() != nil {
 		t.Errorf("unexpected error == nil when setting up invalid channel %s %s %s", rabbitMQHelper.GetConnection(), rabbitMQHelper.GetChannel(), err)
 	}
@@ -55,8 +56,8 @@ func Test_InvalidSetupRabbitMQ(t *testing.T) {
 	rabbitMQHelper.Connection, rabbitMQHelper.Channel = nil, nil
 	retryConnection, retryChannel = true, true
 	// test invalid config setup
-	rabbitMQHelper = NewRabbitMQHelper(1, logger, ValidDial).(*RabbitMQHelper)
-	rabbitMQHelper.Connection, rabbitMQHelper.Channel, err = rabbitMQHelper.CreateAndConfigConnectionsAndChannel(&retryConnection, &retryChannel, "amqp://localhost:5672/%2f", InvalidConfigTest)
+	rabbitMQHelper = NewRabbitMQHelper(1, logger).(*RabbitMQHelper)
+	rabbitMQHelper.Connection, rabbitMQHelper.Channel, err = rabbitMQHelper.CreateAndConfigConnectionsAndChannel(&retryConnection, &retryChannel, "amqp://localhost:5672/%2f", InvalidConfigTest, ValidDial)
 	if err == nil || !retryConnection || !retryChannel || rabbitMQHelper.GetConnection() == nil || rabbitMQHelper.GetChannel() == nil {
 		t.Errorf("unexpected error == nil when setting up invalid config %s %s %s", rabbitMQHelper.GetConnection(), rabbitMQHelper.GetChannel(), err)
 	}

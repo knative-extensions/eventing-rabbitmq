@@ -17,7 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -28,7 +27,6 @@ import (
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/google/uuid"
 	"github.com/kelseyhightower/envconfig"
-	"github.com/rabbitmq/amqp091-go"
 	"go.opencensus.io/plugin/ochttp/propagation/tracecontext"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
@@ -58,7 +56,7 @@ type envConfig struct {
 	BrokerURL    string `envconfig:"BROKER_URL" required:"true"`
 	ExchangeName string `envconfig:"EXCHANGE_NAME" required:"true"`
 
-	rmqHelper rabbit.RabbitMQHelperInterface
+	rmqHelper rabbit.RabbitMQConnectionsHandlerInterface
 
 	ContainerName   string `envconfig:"CONTAINER_NAME" default:"ingress"`
 	PodName         string `envconfig:"POD_NAME" default:"rabbitmq-broker-ingress"`
@@ -92,11 +90,8 @@ func main() {
 		logger.Errorw("failed to create the metrics exporter", zap.Error(err))
 	}
 
-	env.rmqHelper = rabbit.NewRabbitMQHelper(1, logger, rabbit.DialWrapper)
-	// Wait for RabbitMQ retry messages
-	defer env.rmqHelper.CloseRabbitMQConnections()
-	env.rmqHelper.SetupRabbitMQConnectionAndChannel(env.BrokerURL, rabbit.ChannelConfirm)
-	go env.WatchRabbitMQConnections(ctx, env.rmqHelper.GetConnection(), env.rmqHelper.GetChannel(), logger)
+	env.rmqHelper = rabbit.NewRabbitMQHelper(1, logger)
+	env.rmqHelper.SetupRabbitMQConnectionAndChannel(ctx, env.BrokerURL, rabbit.ChannelConfirm, rabbit.DialWrapper)
 
 	env.reporter = ingress.NewStatsReporter(env.ContainerName, kmeta.ChildName(env.PodName, uuid.New().String()))
 	connectionArgs := kncloudevents.ConnectionArgs{
@@ -189,23 +184,4 @@ func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, tim
 		return http.StatusAccepted, dispatchTime, nil
 	}
 	return http.StatusInternalServerError, noDuration, errors.New("failed to publish message: RabbitMQ channel is nil")
-}
-
-func (env *envConfig) WatchRabbitMQConnections(
-	ctx context.Context,
-	conn rabbit.RabbitMQConnectionInterface,
-	ch rabbit.RabbitMQChannelInterface,
-	logger *zap.SugaredLogger) {
-	select {
-	case <-ctx.Done():
-		logger.Info("stopped watching for rabbitmq connections")
-		return
-	case <-conn.NotifyClose(make(chan *amqp091.Error)):
-		break
-	case <-ch.NotifyClose(make(chan *amqp091.Error)):
-		break
-	}
-	env.rmqHelper.CloseRabbitMQConnections()
-	env.rmqHelper.SetupRabbitMQConnectionAndChannel(env.BrokerURL, rabbit.ChannelConfirm)
-	go env.WatchRabbitMQConnections(ctx, env.rmqHelper.GetConnection(), env.rmqHelper.GetChannel(), logger)
 }
