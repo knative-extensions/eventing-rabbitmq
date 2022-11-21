@@ -123,7 +123,7 @@ func (r *RabbitMQHelper) SetupRabbitMQConnectionAndChannel(
 	for retryConnection || retryChannel {
 		// Wait one cycle duration always except the first time
 		if !r.firstSetup {
-			time.Sleep(time.Second * r.cycleDuration)
+			time.Sleep(time.Millisecond * r.cycleDuration)
 		} else {
 			r.logger.Info("Creating and Configuring RabbitMQ Connection and Channel")
 			r.firstSetup = false
