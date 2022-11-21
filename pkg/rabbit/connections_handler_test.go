@@ -20,13 +20,15 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
+	"github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"
 )
 
 func Test_ValidSetupRabbitMQ(t *testing.T) {
 	logger := zap.NewNop().Sugar()
-	rabbitMQHelper := NewRabbitMQHelper(1, logger).(*RabbitMQHelper)
+	rabbitMQHelper := NewRabbitMQHelper(100, logger).(*RabbitMQHelper)
 	rabbitMQHelper.SetupRabbitMQConnectionAndChannel(context.Background(), "amqp://localhost:5672/%2f", ConfigTest, ValidDial)
 	if rabbitMQHelper.Connection == nil || rabbitMQHelper.Channel == nil {
 		t.Errorf("rabbitMQHelper connection and channel should be set %s %s", rabbitMQHelper.Connection, rabbitMQHelper.Channel)
@@ -39,7 +41,7 @@ func Test_InvalidSetupRabbitMQ(t *testing.T) {
 	retryConnection, retryChannel := true, true
 	logger := zap.NewNop().Sugar()
 	// test invalid connection setup
-	rabbitMQHelper := NewRabbitMQHelper(1, logger).(*RabbitMQHelper)
+	rabbitMQHelper := NewRabbitMQHelper(100, logger).(*RabbitMQHelper)
 	rabbitMQHelper.Connection, rabbitMQHelper.Channel, err = rabbitMQHelper.CreateAndConfigConnectionsAndChannel(&retryConnection, &retryChannel, "amqp://localhost:5672/%2f", nil, BadConnectionDial)
 	if err == nil || !retryConnection || rabbitMQHelper.GetConnection() != nil {
 		t.Errorf("unexpected error == nil when setting up invalid connection %s %s %s", rabbitMQHelper.GetConnection(), rabbitMQHelper.GetChannel(), err)
@@ -47,7 +49,7 @@ func Test_InvalidSetupRabbitMQ(t *testing.T) {
 	rabbitMQHelper.Connection, rabbitMQHelper.Channel = nil, nil
 	rabbitMQHelper.CloseRabbitMQConnections()
 	// test invalid channel setup
-	rabbitMQHelper = NewRabbitMQHelper(1, logger).(*RabbitMQHelper)
+	rabbitMQHelper = NewRabbitMQHelper(100, logger).(*RabbitMQHelper)
 	rabbitMQHelper.Connection, rabbitMQHelper.Channel, err = rabbitMQHelper.CreateAndConfigConnectionsAndChannel(&retryConnection, &retryChannel, "amqp://localhost:5672/%2f", ConfigTest, BadChannelDial)
 	if err == nil || !retryChannel || rabbitMQHelper.GetChannel() != nil {
 		t.Errorf("unexpected error == nil when setting up invalid channel %s %s %s", rabbitMQHelper.GetConnection(), rabbitMQHelper.GetChannel(), err)
@@ -56,12 +58,47 @@ func Test_InvalidSetupRabbitMQ(t *testing.T) {
 	rabbitMQHelper.Connection, rabbitMQHelper.Channel = nil, nil
 	retryConnection, retryChannel = true, true
 	// test invalid config setup
-	rabbitMQHelper = NewRabbitMQHelper(1, logger).(*RabbitMQHelper)
+	rabbitMQHelper = NewRabbitMQHelper(100, logger).(*RabbitMQHelper)
 	rabbitMQHelper.Connection, rabbitMQHelper.Channel, err = rabbitMQHelper.CreateAndConfigConnectionsAndChannel(&retryConnection, &retryChannel, "amqp://localhost:5672/%2f", InvalidConfigTest, ValidDial)
 	if err == nil || !retryConnection || !retryChannel || rabbitMQHelper.GetConnection() == nil || rabbitMQHelper.GetChannel() == nil {
 		t.Errorf("unexpected error == nil when setting up invalid config %s %s %s", rabbitMQHelper.GetConnection(), rabbitMQHelper.GetChannel(), err)
 	}
 	rabbitMQHelper.CloseRabbitMQConnections()
+}
+
+func Test_WatchConnectionsRabbitMQ(t *testing.T) {
+	for _, tt := range []struct {
+		name, endFunc string
+	}{{
+		name:    "end watcher by context cancel func",
+		endFunc: "cancel",
+	}, {
+		name:    "reset watcher via connection and end via context cancel func",
+		endFunc: "connection",
+	}, {
+		name:    "reset watcher via channel and end via context cancel func",
+		endFunc: "channel",
+	}} {
+		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
+			t.Parallel()
+			ctx, cancelFunc := context.WithCancel(context.Background())
+			logger := zap.NewNop().Sugar()
+			// test invalid connection setup
+			rabbitMQHelper := NewRabbitMQHelper(100, logger).(*RabbitMQHelper)
+			rabbitMQHelper.SetupRabbitMQConnectionAndChannel(context.Background(), "amqp://localhost:5672/%2f", nil, ValidDial)
+			go func() {
+				time.Sleep(time.Millisecond * 600)
+				if tt.endFunc == "connection" {
+					rabbitMQHelper.Connection.(*RabbitMQConnection).connection.(*RabbitMQConnectionMock).NotifyCloseChannel <- amqp091.ErrClosed
+				} else if tt.endFunc == "channel" {
+					rabbitMQHelper.Channel.(*RabbitMQChannelMock).NotifyCloseChannel <- amqp091.ErrClosed
+				}
+				cancelFunc()
+			}()
+			rabbitMQHelper.WatchRabbitMQConnections(ctx, "amqp://localhost:5672/%2f", nil, ValidDial)
+		})
+	}
 }
 
 func ConfigTest(conn RabbitMQConnectionInterface, channel RabbitMQChannelInterface) error {

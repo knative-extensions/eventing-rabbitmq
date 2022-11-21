@@ -22,7 +22,7 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-type RabbitMQConnectionMock struct{}
+type RabbitMQConnectionMock struct{ NotifyCloseChannel chan *amqp.Error }
 
 func (rm *RabbitMQConnectionMock) ChannelWrapper() (RabbitMQChannelInterface, error) {
 	return &RabbitMQChannelMock{NotifyCloseChannel: make(chan *amqp.Error)}, nil
@@ -37,7 +37,7 @@ func (rm *RabbitMQConnectionMock) Close() error {
 }
 
 func (rm *RabbitMQConnectionMock) NotifyClose(c chan *amqp.Error) chan *amqp.Error {
-	return c
+	return rm.NotifyCloseChannel
 }
 
 type RabbitMQBadConnectionMock struct{}
@@ -103,5 +103,5 @@ func BadChannelDial(url string) (RabbitMQConnectionWrapperInterface, error) {
 }
 
 func ValidDial(url string) (RabbitMQConnectionWrapperInterface, error) {
-	return NewConnection(&RabbitMQConnectionMock{}), nil
+	return NewConnection(&RabbitMQConnectionMock{NotifyCloseChannel: make(chan *amqp.Error)}), nil
 }
