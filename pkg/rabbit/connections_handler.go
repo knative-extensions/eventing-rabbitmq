@@ -17,19 +17,22 @@ limitations under the License.
 package rabbit
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/rabbitmq/amqp091-go"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"
 )
 
-type RabbitMQHelperInterface interface {
+type RabbitMQConnectionsHandlerInterface interface {
 	GetConnection() RabbitMQConnectionInterface
 	GetChannel() RabbitMQChannelInterface
-	SetupRabbitMQConnectionAndChannel(string, func(RabbitMQConnectionInterface, RabbitMQChannelInterface) error)
+	SetupRabbitMQConnectionAndChannel(context.Context, string, func(RabbitMQConnectionInterface, RabbitMQChannelInterface) error, func(string) (RabbitMQConnectionWrapperInterface, error))
+	WatchRabbitMQConnections(context.Context, string, func(RabbitMQConnectionInterface, RabbitMQChannelInterface) error, func(string) (RabbitMQConnectionWrapperInterface, error))
 	CloseRabbitMQConnections()
 }
 
@@ -57,7 +60,6 @@ type RabbitMQChannelInterface interface {
 type RabbitMQHelper struct {
 	firstSetup    bool
 	cycleDuration time.Duration
-	DialFunc      func(string) (RabbitMQConnectionWrapperInterface, error)
 	Connection    RabbitMQConnectionWrapperInterface
 	Channel       RabbitMQChannelInterface
 
@@ -103,22 +105,20 @@ func (r *RabbitMQConnection) IsClosed() bool {
 	return true
 }
 
-func NewRabbitMQHelper(
-	cycleDuration time.Duration,
-	logger *zap.SugaredLogger,
-	dialFunc func(string) (RabbitMQConnectionWrapperInterface, error)) RabbitMQHelperInterface {
+func NewRabbitMQHelper(cycleDuration time.Duration, logger *zap.SugaredLogger) RabbitMQConnectionsHandlerInterface {
 	return &RabbitMQHelper{
 		firstSetup:    true,
 		cycleDuration: cycleDuration,
 		logger:        logger,
-		DialFunc:      dialFunc,
 	}
 }
 
 func (r *RabbitMQHelper) SetupRabbitMQConnectionAndChannel(
-	RabbitMQURL string,
-	configFunction func(RabbitMQConnectionInterface, RabbitMQChannelInterface) error) {
-	var err, prevError error
+	ctx context.Context,
+	rabbitMQURL string,
+	configFunction func(RabbitMQConnectionInterface, RabbitMQChannelInterface) error,
+	dialFunc func(string) (RabbitMQConnectionWrapperInterface, error)) {
+	var err error
 	retryConnection, retryChannel := true, true
 	for retryConnection || retryChannel {
 		// Wait one cycle duration always except the first time
@@ -128,33 +128,50 @@ func (r *RabbitMQHelper) SetupRabbitMQConnectionAndChannel(
 			r.logger.Info("Creating and Configuring RabbitMQ Connection and Channel")
 			r.firstSetup = false
 		}
-		r.Connection, r.Channel, err = r.CreateAndConfigConnectionsAndChannel(&retryConnection, &retryChannel, RabbitMQURL, configFunction)
+		r.Connection, r.Channel, err = r.CreateAndConfigConnectionsAndChannel(&retryConnection, &retryChannel, rabbitMQURL, configFunction, dialFunc)
 		if err != nil {
-			// Log the error if it something different from the previous one
-			if prevError == nil || (prevError.Error() != err.Error()) {
-				r.logger.Error(err)
-			}
+			r.logger.Error(err)
 			if retryConnection {
 				r.CloseRabbitMQConnections()
-				r.Connection = nil
 			}
-			r.Channel = nil
 		}
-		prevError = err
+	}
+	if r.firstSetup {
+		go r.WatchRabbitMQConnections(ctx, rabbitMQURL, configFunction, dialFunc)
+	}
+}
+
+func (r *RabbitMQHelper) WatchRabbitMQConnections(
+	ctx context.Context,
+	rabbitMQURL string,
+	configFunction func(RabbitMQConnectionInterface, RabbitMQChannelInterface) error,
+	dialFunc func(string) (RabbitMQConnectionWrapperInterface, error)) {
+	defer r.CloseRabbitMQConnections()
+	for {
+		select {
+		case <-ctx.Done():
+			r.logger.Info("stopped watching for rabbitmq connections")
+			return
+		case <-r.GetConnection().NotifyClose(make(chan *amqp091.Error)):
+		case <-r.GetChannel().NotifyClose(make(chan *amqp091.Error)):
+		}
+		r.CloseRabbitMQConnections()
+		r.SetupRabbitMQConnectionAndChannel(ctx, rabbitMQURL, configFunction, dialFunc)
 	}
 }
 
 func (r *RabbitMQHelper) CreateAndConfigConnectionsAndChannel(
 	retryConnection, retryChannel *bool,
-	RabbitMQURL string,
+	rabbitMQURL string,
 	configFunction func(RabbitMQConnectionInterface, RabbitMQChannelInterface) error,
+	dialFunc func(string) (RabbitMQConnectionWrapperInterface, error),
 ) (RabbitMQConnectionWrapperInterface, RabbitMQChannelInterface, error) {
 	var connection RabbitMQConnectionWrapperInterface
 	var channel RabbitMQChannelInterface
 	var err error
 	// Create the connection
 	if *retryConnection {
-		if connection, err = r.DialFunc(RabbitMQURL); err != nil {
+		if connection, err = dialFunc(rabbitMQURL); err != nil {
 			err = fmt.Errorf("failed to create RabbitMQ connection, error: %w", err)
 		} else {
 			*retryConnection = false

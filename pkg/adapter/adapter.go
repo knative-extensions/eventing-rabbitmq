@@ -21,6 +21,7 @@ import (
 	"fmt"
 	nethttp "net/http"
 	"sync"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -61,7 +62,7 @@ type Adapter struct {
 	reporter          source.StatsReporter
 	logger            *zap.Logger
 	context           context.Context
-	rmqHelper         rabbit.RabbitMQHelperInterface
+	rmqHelper         rabbit.RabbitMQConnectionsHandlerInterface
 }
 
 var _ adapter.MessageAdapter = (*Adapter)(nil)
@@ -96,7 +97,8 @@ func (a *Adapter) start(stopCh <-chan struct{}) error {
 		zap.String("SinkURI", a.config.Sink))
 
 	if a.rmqHelper == nil {
-		a.rmqHelper = rabbit.NewRabbitMQHelper(1, logger, rabbit.DialWrapper)
+		a.rmqHelper = rabbit.NewRabbitMQHelper(1, logger)
+		a.rmqHelper.SetupRabbitMQConnectionAndChannel(a.context, rabbit.VHostHandler(a.config.RabbitURL, a.config.Vhost), rabbit.ChannelQoS, rabbit.DialWrapper)
 	}
 	return a.PollForMessages(stopCh)
 }
@@ -123,7 +125,7 @@ func (a *Adapter) ConsumeMessages(queue *amqp.Queue, logger *zap.SugaredLogger) 
 
 func (a *Adapter) PollForMessages(stopCh <-chan struct{}) error {
 	logger := a.logger.Sugar()
-	var err, prevError error
+	var err error
 	var queue amqp.Queue
 	var msgs <-chan (amqp.Delivery)
 	auxRetryConfig := kncloudevents.NoRetries()
@@ -154,40 +156,38 @@ func (a *Adapter) PollForMessages(stopCh <-chan struct{}) error {
 		go a.processMessages(wg, workerQueue)
 	}
 
-	defer a.rmqHelper.CloseRabbitMQConnections()
 	for {
-		a.rmqHelper.SetupRabbitMQConnectionAndChannel(rabbit.VHostHandler(a.config.RabbitURL, a.config.Vhost), rabbit.ChannelQoS)
-		queue, err = a.rmqHelper.GetChannel().QueueInspect(a.config.QueueName)
-		if err == nil {
-			msgs, err = a.ConsumeMessages(&queue, logger)
+		if a.rmqHelper.GetChannel() != nil {
+			queue, err = a.rmqHelper.GetChannel().QueueInspect(a.config.QueueName)
 			if err == nil {
-				for {
-					select {
-					case <-stopCh:
-						close(workerQueue)
-						wg.Wait()
-						logger.Info("Shutting down...")
-						return nil
-					case msg, ok := <-msgs:
-						if !ok {
+				msgs, err = a.ConsumeMessages(&queue, logger)
+				if err == nil {
+					for {
+						select {
+						case <-stopCh:
 							close(workerQueue)
 							wg.Wait()
-							return amqp.ErrClosed
+							logger.Info("Shutting down...")
+							return nil
+						case msg, ok := <-msgs:
+							if !ok {
+								close(workerQueue)
+								wg.Wait()
+								return amqp.ErrClosed
+							}
+							workerQueue <- msg
 						}
-						workerQueue <- msg
-						prevError = nil
 					}
 				}
 			}
+		} else {
+			err = amqp.ErrClosed
 		}
 		if err != nil {
-			if prevError == nil || err.Error() != prevError.Error() {
-				logger.Error(err)
-				logger.Info("Recreating RabbitMQ Connection and Channel")
-			}
-			a.rmqHelper.CloseRabbitMQConnections()
+			logger.Error(err)
+			logger.Info("Recreating RabbitMQ Connection and Channel")
 		}
-		prevError = err
+		time.Sleep(time.Second)
 	}
 }
 
