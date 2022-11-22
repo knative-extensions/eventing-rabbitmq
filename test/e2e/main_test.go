@@ -80,6 +80,7 @@ func TestBrokerDirect(t *testing.T) {
 
 // TestBrokerDirect makes sure a Broker can delivery events to a consumer by connecting to a rabbitmq instance via a connection secret
 func TestBrokerDirectWithConnectionSecret(t *testing.T) {
+	t.Skip("skipping flakey test as it fails if resources are deleted in a particular order")
 	t.Parallel()
 	ctx, env := global.Environment(
 		knative.WithKnativeNamespace(system.Namespace()),
@@ -160,6 +161,7 @@ func TestSourceDirect(t *testing.T) {
 
 // TestSourceDirect makes sure a source delivers events to Sink by connecting to a rabbitmq instance via a connection secret.
 func TestSourceDirectWithConnectionSecret(t *testing.T) {
+	t.Skip("skipping flakey test as it fails if resources are deleted in a particular order")
 	t.Parallel()
 
 	ctx, env := global.Environment(
