@@ -36,7 +36,7 @@ type RabbitMQConnectionsHandlerInterface interface {
 }
 
 type RabbitMQConnectionInterface interface {
-	NotifyClose(chan *amqp.Error) chan *amqp.Error
+	NotifyClose(chan *amqp091.Error) chan *amqp091.Error
 	Close() error
 	IsClosed() bool
 }
@@ -48,12 +48,12 @@ type RabbitMQConnectionWrapperInterface interface {
 
 type RabbitMQChannelInterface interface {
 	IsClosed() bool
-	NotifyClose(chan *amqp.Error) chan *amqp.Error
+	NotifyClose(chan *amqp091.Error) chan *amqp091.Error
 	Qos(int, int, bool) error
 	Confirm(bool) error
-	Consume(string, string, bool, bool, bool, bool, amqp.Table) (<-chan amqp.Delivery, error)
-	PublishWithDeferredConfirm(string, string, bool, bool, amqp.Publishing) (*amqp.DeferredConfirmation, error)
-	QueueInspect(string) (amqp.Queue, error)
+	Consume(string, string, bool, bool, bool, bool, amqp091.Table) (<-chan amqp091.Delivery, error)
+	PublishWithDeferredConfirm(string, string, bool, bool, amqp091.Publishing) (*amqp091.DeferredConfirmation, error)
+	QueueInspect(string) (amqp091.Queue, error)
 }
 
 type RabbitMQHelper struct {
@@ -74,7 +74,7 @@ func NewConnection(conn interface{}) *RabbitMQConnection {
 }
 
 func (r *RabbitMQConnection) ChannelWrapper() (RabbitMQChannelInterface, error) {
-	if c, ok := r.connection.(*amqp.Connection); ok {
+	if c, ok := r.connection.(*amqp091.Connection); ok {
 		return c.Channel()
 	} else if ci, ok := r.connection.(RabbitMQConnectionWrapperInterface); ok {
 		return ci.ChannelWrapper()
@@ -82,7 +82,7 @@ func (r *RabbitMQConnection) ChannelWrapper() (RabbitMQChannelInterface, error) 
 	return nil, errors.New("wrong typed connection arg")
 }
 
-func (r *RabbitMQConnection) NotifyClose(c chan *amqp.Error) chan *amqp.Error {
+func (r *RabbitMQConnection) NotifyClose(c chan *amqp091.Error) chan *amqp091.Error {
 	if ci, ok := r.connection.(RabbitMQConnectionInterface); ok {
 		return ci.NotifyClose(c)
 	}
@@ -186,7 +186,7 @@ func (r *RabbitMQHelper) CreateChannel() (RabbitMQChannelInterface, error) {
 	var err error
 	// Create the channel
 	if r.Connection == nil || r.Connection.IsClosed() {
-		return nil, amqp.ErrClosed
+		return nil, amqp091.ErrClosed
 	} else {
 		if channel, err = r.Connection.ChannelWrapper(); err != nil {
 			return nil, fmt.Errorf("failed to create RabbitMQ channel, error: %w", err)
@@ -236,7 +236,7 @@ func ChannelConfirm(connection RabbitMQConnectionInterface, channel RabbitMQChan
 
 func DialWrapper(url string) (RabbitMQConnectionWrapperInterface, error) {
 	var rmqConn *RabbitMQConnection
-	conn, err := amqp.Dial(url)
+	conn, err := amqp091.Dial(url)
 	if err == nil {
 		rmqConn = NewConnection(conn)
 	}
