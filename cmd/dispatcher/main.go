@@ -105,7 +105,6 @@ func main() {
 				return
 			}
 			logger.Error(err)
-			logger.Info("Recreating RabbitMQ Connection and Channel")
 			time.Sleep(time.Second)
 		}
 	}

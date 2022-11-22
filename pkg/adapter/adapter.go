@@ -105,7 +105,7 @@ func (a *Adapter) start(stopCh <-chan struct{}) error {
 
 func (a *Adapter) ConsumeMessages(queue *amqp.Queue, logger *zap.SugaredLogger) (<-chan amqp.Delivery, error) {
 	if channel := a.rmqHelper.GetChannel(); channel != nil {
-		msgs, err := a.rmqHelper.GetChannel().Consume(
+		msgs, err := channel.Consume(
 			queue.Name,
 			"",
 			false,
@@ -185,9 +185,8 @@ func (a *Adapter) PollForMessages(stopCh <-chan struct{}) error {
 		}
 		if err != nil {
 			logger.Error(err)
-			logger.Info("Recreating RabbitMQ Connection and Channel")
+			time.Sleep(time.Second)
 		}
-		time.Sleep(time.Second)
 	}
 }
 
