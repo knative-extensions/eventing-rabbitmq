@@ -28,12 +28,13 @@ import (
 
 func Test_ValidSetupRabbitMQ(t *testing.T) {
 	logger := zap.NewNop().Sugar()
+	ctx, cancelFunc := context.WithCancel(context.Background())
 	rabbitMQHelper := NewRabbitMQHelper(100, logger).(*RabbitMQHelper)
-	rabbitMQHelper.SetupRabbitMQConnectionAndChannel(context.Background(), "amqp://localhost:5672/%2f", ConfigTest, ValidDial)
+	rabbitMQHelper.SetupRabbitMQConnectionAndChannel(ctx, "amqp://localhost:5672/%2f", ConfigTest, ValidDial)
 	if rabbitMQHelper.Connection == nil || rabbitMQHelper.Channel == nil {
 		t.Errorf("rabbitMQHelper connection and channel should be set %s %s", rabbitMQHelper.Connection, rabbitMQHelper.Channel)
 	}
-	rabbitMQHelper.CloseRabbitMQConnections()
+	cancelFunc()
 }
 
 func Test_InvalidSetupRabbitMQ(t *testing.T) {
