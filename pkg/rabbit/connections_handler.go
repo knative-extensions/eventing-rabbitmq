@@ -118,13 +118,18 @@ func (r *RabbitMQHelper) SetupRabbitMQConnectionAndChannel(
 	configFunction func(RabbitMQConnectionInterface, RabbitMQChannelInterface) error,
 	dialFunc func(string) (RabbitMQConnectionWrapperInterface, error)) {
 	var err error
+	wait := true
+	if r.firstSetup {
+		wait = false
+		r.logger.Info("Creating and Configuring RabbitMQ Connection and Channel")
+	} else {
+		r.logger.Info("Recreating and Configuring RabbitMQ Connection and Channel")
+	}
 	for {
-		// Wait one cycle duration always except the first time
-		if !r.firstSetup {
+		if wait {
 			time.Sleep(time.Millisecond * r.cycleDuration)
 		} else {
-			r.logger.Info("Creating and Configuring RabbitMQ Connection and Channel")
-			r.firstSetup = false
+			wait = true
 		}
 		// create the connection if needed
 		if r.Connection == nil || r.Connection.IsClosed() {
@@ -148,6 +153,7 @@ func (r *RabbitMQHelper) SetupRabbitMQConnectionAndChannel(
 	}
 	// watch for any connection unexpected closures
 	if r.firstSetup {
+		r.firstSetup = false
 		go r.WatchRabbitMQConnections(ctx, rabbitMQURL, configFunction, dialFunc)
 	}
 }
