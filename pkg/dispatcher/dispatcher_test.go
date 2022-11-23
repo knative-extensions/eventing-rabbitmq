@@ -138,6 +138,20 @@ func TestDispatcher_getStatus(t *testing.T) {
 	}
 }
 
+func TestDispatcher_finishConsuming(t *testing.T) {
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	workerQueue := make(chan amqp.Delivery)
+	go func() {
+		time.Sleep(time.Millisecond * 100)
+		finishConsuming(wg, workerQueue)
+	}()
+	wg.Done()
+	if _, ok := <-workerQueue; ok {
+		t.Error("channel should be closed by the finishConsuming function")
+	}
+}
+
 type handlerFunc func(http.ResponseWriter, *http.Request)
 type fakeHandler struct {
 	body   []byte
