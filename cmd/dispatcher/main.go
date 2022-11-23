@@ -98,7 +98,7 @@ func main() {
 
 	var err error
 	rmqHelper := rabbit.NewRabbitMQConnectionHandler(1000, logger)
-	rmqHelper.SetupRabbitMQConnectionAndChannel(ctx, env.RabbitURL, rabbit.ChannelQoS, rabbit.DialWrapper)
+	rmqHelper.Setup(ctx, env.RabbitURL, rabbit.ChannelQoS, rabbit.DialWrapper)
 	for {
 		if err = d.ConsumeFromQueue(ctx, rmqHelper.GetConnection(), rmqHelper.GetChannel(), env.QueueName); err != nil {
 			if errors.Is(err, context.Canceled) {

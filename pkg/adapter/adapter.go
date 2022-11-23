@@ -98,7 +98,7 @@ func (a *Adapter) start(stopCh <-chan struct{}) error {
 
 	if a.rmqHelper == nil {
 		a.rmqHelper = rabbit.NewRabbitMQConnectionHandler(1000, logger)
-		a.rmqHelper.SetupRabbitMQConnectionAndChannel(a.context, rabbit.VHostHandler(a.config.RabbitURL, a.config.Vhost), rabbit.ChannelQoS, rabbit.DialWrapper)
+		a.rmqHelper.Setup(a.context, rabbit.VHostHandler(a.config.RabbitURL, a.config.Vhost), rabbit.ChannelQoS, rabbit.DialWrapper)
 	}
 	return a.PollForMessages(stopCh)
 }

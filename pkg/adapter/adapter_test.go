@@ -246,7 +246,7 @@ func TestAdapter_PollForMessages(t *testing.T) {
 		reporter:  statsReporter,
 		rmqHelper: rabbit.NewRabbitMQConnectionHandler(500, zap.NewNop().Sugar()),
 	}
-	a.rmqHelper.SetupRabbitMQConnectionAndChannel(ctx, "", nil, rabbit.ValidDial)
+	a.rmqHelper.Setup(ctx, "", nil, rabbit.ValidDial)
 
 	go func() {
 		time.Sleep(500)

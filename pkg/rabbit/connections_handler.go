@@ -31,7 +31,7 @@ import (
 type RabbitMQConnectionsHandlerInterface interface {
 	GetConnection() RabbitMQConnectionInterface
 	GetChannel() RabbitMQChannelInterface
-	SetupRabbitMQConnectionAndChannel(context.Context, string, func(RabbitMQConnectionInterface, RabbitMQChannelInterface) error, func(string) (RabbitMQConnectionWrapperInterface, error))
+	Setup(context.Context, string, func(RabbitMQConnectionInterface, RabbitMQChannelInterface) error, func(string) (RabbitMQConnectionWrapperInterface, error))
 }
 
 type RabbitMQConnectionInterface interface {
@@ -112,25 +112,26 @@ func NewRabbitMQConnectionHandler(cycleDuration time.Duration, logger *zap.Sugar
 	}
 }
 
-func (r *RabbitMQConnectionHandler) SetupRabbitMQConnectionAndChannel(
+func (r *RabbitMQConnectionHandler) Setup(
+	ctx context.Context,
+	rabbitMQURL string,
+	configFunction func(RabbitMQConnectionInterface, RabbitMQChannelInterface) error,
+	dialFunc func(string) (RabbitMQConnectionWrapperInterface, error)) {
+	r.createConnectionAndChannel(ctx, rabbitMQURL, configFunction, dialFunc)
+	// watch for any connection unexpected closures
+	if r.firstSetup {
+		r.firstSetup = false
+		go r.watchRabbitMQConnections(ctx, rabbitMQURL, configFunction, dialFunc)
+	}
+}
+
+func (r *RabbitMQConnectionHandler) createConnectionAndChannel(
 	ctx context.Context,
 	rabbitMQURL string,
 	configFunction func(RabbitMQConnectionInterface, RabbitMQChannelInterface) error,
 	dialFunc func(string) (RabbitMQConnectionWrapperInterface, error)) {
 	var err error
-	wait := true
-	r.mu.Lock()
-	if r.firstSetup {
-		wait = false
-	}
-	r.mu.Unlock()
-	r.logger.Info("Creating and Configuring RabbitMQ Connection and Channel")
 	for {
-		if wait {
-			time.Sleep(time.Millisecond * r.cycleDuration)
-		} else {
-			wait = true
-		}
 		// create the connection
 		r.Connection, err = r.createConnection(rabbitMQURL, dialFunc)
 		// create the channel
@@ -148,13 +149,6 @@ func (r *RabbitMQConnectionHandler) SetupRabbitMQConnectionAndChannel(
 		r.logger.Error(err)
 		r.closeRabbitMQConnections()
 	}
-	// watch for any connection unexpected closures
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	if r.firstSetup {
-		r.firstSetup = false
-		go r.watchRabbitMQConnections(ctx, rabbitMQURL, configFunction, dialFunc)
-	}
 }
 
 func (r *RabbitMQConnectionHandler) watchRabbitMQConnections(
@@ -162,17 +156,17 @@ func (r *RabbitMQConnectionHandler) watchRabbitMQConnections(
 	rabbitMQURL string,
 	configFunction func(RabbitMQConnectionInterface, RabbitMQChannelInterface) error,
 	dialFunc func(string) (RabbitMQConnectionWrapperInterface, error)) {
-	defer r.closeRabbitMQConnections()
 	for {
 		select {
 		case <-ctx.Done():
 			r.logger.Info("stopped watching for rabbitmq connections")
+			r.closeRabbitMQConnections()
 			return
 		case <-r.GetConnection().NotifyClose(make(chan *amqp091.Error)):
 		case <-r.GetChannel().NotifyClose(make(chan *amqp091.Error)):
 		}
 		r.closeRabbitMQConnections()
-		r.SetupRabbitMQConnectionAndChannel(ctx, rabbitMQURL, configFunction, dialFunc)
+		r.createConnectionAndChannel(ctx, rabbitMQURL, configFunction, dialFunc)
 	}
 }
 
@@ -217,6 +211,8 @@ func (r *RabbitMQConnectionHandler) closeRabbitMQConnections() {
 			r.logger.Error(err)
 		}
 	}
+	// wait to prevent rabbitmq server from been spammed
+	time.Sleep(time.Second)
 }
 
 func (r *RabbitMQConnectionHandler) GetConnection() RabbitMQConnectionInterface {
