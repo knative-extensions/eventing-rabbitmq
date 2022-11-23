@@ -58,7 +58,7 @@ type Dispatcher struct {
 
 // ConsumeFromQueue consumes messages from the given message channel and queue.
 // When the context is cancelled a context.Canceled error is returned.
-func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel rabbit.RabbitMQChannelInterface, queueName string) error {
+func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, conn rabbit.RabbitMQConnectionInterface, channel rabbit.RabbitMQChannelInterface, queueName string) error {
 	if channel == nil {
 		return amqp.ErrClosed
 	}
@@ -104,14 +104,18 @@ func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel rabbit.Rabbit
 			}
 		}()
 	}
-
+	// get connections notify channel to watch for any unexpected disconnection
+	connNotifyChannel, chNotifyChannel := conn.NotifyClose(make(chan *amqp.Error)), channel.NotifyClose(make(chan *amqp.Error))
 	for {
 		select {
 		case <-ctx.Done():
 			logging.FromContext(ctx).Info("context done, stopping message consumers")
 			finishConsuming(wg, workerQueue)
 			return ctx.Err()
-		case <-channel.NotifyClose(make(chan *amqp.Error)):
+		case <-connNotifyChannel:
+			finishConsuming(wg, workerQueue)
+			return amqp.ErrClosed
+		case <-chNotifyChannel:
 			finishConsuming(wg, workerQueue)
 			return amqp.ErrClosed
 		case msg, ok := <-msgs:
