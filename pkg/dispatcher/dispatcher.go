@@ -109,19 +109,24 @@ func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, channel rabbit.Rabbit
 		select {
 		case <-ctx.Done():
 			logging.FromContext(ctx).Info("context done, stopping message consumers")
-			close(workerQueue)
-			wg.Wait()
+			finishConsuming(wg, workerQueue)
 			return ctx.Err()
+		case <-channel.NotifyClose(make(chan *amqp.Error)):
+			finishConsuming(wg, workerQueue)
+			return amqp.ErrClosed
 		case msg, ok := <-msgs:
 			if !ok {
-				logging.FromContext(ctx).Warn("message channel closed, stopping message consumers")
-				close(workerQueue)
-				wg.Wait()
+				finishConsuming(wg, workerQueue)
 				return amqp.ErrClosed
 			}
 			workerQueue <- msg
 		}
 	}
+}
+
+func finishConsuming(wg *sync.WaitGroup, workerQueue chan amqp.Delivery) {
+	close(workerQueue)
+	wg.Wait()
 }
 
 func getStatus(ctx context.Context, result protocol.Result) (int, bool) {

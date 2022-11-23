@@ -97,14 +97,14 @@ func (a *Adapter) start(stopCh <-chan struct{}) error {
 		zap.String("SinkURI", a.config.Sink))
 
 	if a.rmqHelper == nil {
-		a.rmqHelper = rabbit.NewRabbitMQHelper(1000, logger)
+		a.rmqHelper = rabbit.NewRabbitMQConnectionHandler(1000, logger)
 		a.rmqHelper.SetupRabbitMQConnectionAndChannel(a.context, rabbit.VHostHandler(a.config.RabbitURL, a.config.Vhost), rabbit.ChannelQoS, rabbit.DialWrapper)
 	}
 	return a.PollForMessages(stopCh)
 }
 
-func (a *Adapter) ConsumeMessages(queue *amqp.Queue, logger *zap.SugaredLogger) (<-chan amqp.Delivery, error) {
-	if channel := a.rmqHelper.GetChannel(); channel != nil {
+func (a *Adapter) ConsumeMessages(queue *amqp.Queue, channel rabbit.RabbitMQChannelInterface, logger *zap.SugaredLogger) (<-chan amqp.Delivery, error) {
+	if channel != nil {
 		msgs, err := channel.Consume(
 			queue.Name,
 			"",
@@ -157,11 +157,10 @@ func (a *Adapter) PollForMessages(stopCh <-chan struct{}) error {
 	}
 
 	for {
-		if a.rmqHelper.GetChannel() != nil {
-			queue, err = a.rmqHelper.GetChannel().QueueInspect(a.config.QueueName)
-			if err == nil {
-				msgs, err = a.ConsumeMessages(&queue, logger)
-				if err == nil {
+		if channel := a.rmqHelper.GetChannel(); channel != nil {
+			if queue, err = channel.QueueInspect(a.config.QueueName); err == nil {
+				if msgs, err = a.ConsumeMessages(&queue, channel, logger); err == nil {
+				loop:
 					for {
 						select {
 						case <-stopCh:
@@ -169,24 +168,23 @@ func (a *Adapter) PollForMessages(stopCh <-chan struct{}) error {
 							wg.Wait()
 							logger.Info("Shutting down...")
 							return nil
+						case <-channel.NotifyClose(make(chan *amqp.Error)):
+							break loop
 						case msg, ok := <-msgs:
 							if !ok {
-								close(workerQueue)
-								wg.Wait()
-								return amqp.ErrClosed
+								break loop
 							}
 							workerQueue <- msg
 						}
 					}
 				}
 			}
-		} else {
+		}
+		if err == nil {
 			err = amqp.ErrClosed
 		}
-		if err != nil {
-			logger.Error(err)
-			time.Sleep(time.Second)
-		}
+		logger.Error(err)
+		time.Sleep(time.Second)
 	}
 }
 
