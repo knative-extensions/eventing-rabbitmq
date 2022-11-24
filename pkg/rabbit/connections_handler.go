@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/rabbitmq/amqp091-go"
@@ -62,7 +61,6 @@ type RabbitMQConnectionHandler struct {
 	Channel       RabbitMQChannelInterface
 
 	logger *zap.SugaredLogger
-	mu     sync.Mutex
 }
 
 type RabbitMQConnection struct {
