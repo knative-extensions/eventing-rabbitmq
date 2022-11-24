@@ -22,14 +22,14 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-type RabbitMQConnectionMock struct{}
+type RabbitMQConnectionMock struct{ NotifyCloseChannel chan *amqp.Error }
 
 func (rm *RabbitMQConnectionMock) ChannelWrapper() (RabbitMQChannelInterface, error) {
 	return &RabbitMQChannelMock{NotifyCloseChannel: make(chan *amqp.Error)}, nil
 }
 
 func (rm *RabbitMQConnectionMock) IsClosed() bool {
-	return true
+	return false
 }
 
 func (rm *RabbitMQConnectionMock) Close() error {
@@ -37,7 +37,7 @@ func (rm *RabbitMQConnectionMock) Close() error {
 }
 
 func (rm *RabbitMQConnectionMock) NotifyClose(c chan *amqp.Error) chan *amqp.Error {
-	return c
+	return rm.NotifyCloseChannel
 }
 
 type RabbitMQBadConnectionMock struct{}
@@ -61,6 +61,10 @@ func (rm *RabbitMQBadConnectionMock) NotifyClose(c chan *amqp.Error) chan *amqp.
 type RabbitMQChannelMock struct {
 	NotifyCloseChannel chan *amqp.Error
 	ConsumeChannel     <-chan amqp.Delivery
+}
+
+func (rm *RabbitMQChannelMock) IsClosed() bool {
+	return false
 }
 
 func (rm *RabbitMQChannelMock) NotifyClose(c chan *amqp.Error) chan *amqp.Error {
@@ -90,22 +94,14 @@ func (rm *RabbitMQChannelMock) QueueInspect(string) (amqp.Queue, error) {
 	return amqp.Queue{}, nil
 }
 
-func ValidConnectionDial(url string) (RabbitMQConnectionInterface, error) {
+func BadConnectionDial(url string) (RabbitMQConnectionWrapperInterface, error) {
+	return nil, errors.New("connection error test")
+}
+
+func BadChannelDial(url string) (RabbitMQConnectionWrapperInterface, error) {
 	return NewConnection(&RabbitMQBadConnectionMock{}), nil
 }
 
-func ValidDial(url string) (RabbitMQConnectionInterface, error) {
-	return NewConnection(&RabbitMQConnectionMock{}), nil
-}
-
-func Watcher(testChannel chan bool, rabbitmqHelper RabbitMQHelper) {
-	testChannel <- true
-	for {
-		retry := rabbitmqHelper.WaitForRetrySignal()
-		if !retry {
-			close(testChannel)
-			break
-		}
-		testChannel <- retry
-	}
+func ValidDial(url string) (RabbitMQConnectionWrapperInterface, error) {
+	return NewConnection(&RabbitMQConnectionMock{NotifyCloseChannel: make(chan *amqp.Error)}), nil
 }

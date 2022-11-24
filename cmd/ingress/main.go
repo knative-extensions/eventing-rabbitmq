@@ -56,8 +56,7 @@ type envConfig struct {
 	BrokerURL    string `envconfig:"BROKER_URL" required:"true"`
 	ExchangeName string `envconfig:"EXCHANGE_NAME" required:"true"`
 
-	connection rabbit.RabbitMQConnectionInterface
-	channel    rabbit.RabbitMQChannelInterface
+	rmqHelper rabbit.RabbitMQConnectionsHandlerInterface
 
 	ContainerName   string `envconfig:"CONTAINER_NAME" default:"ingress"`
 	PodName         string `envconfig:"POD_NAME" default:"rabbitmq-broker-ingress"`
@@ -91,22 +90,8 @@ func main() {
 		logger.Errorw("failed to create the metrics exporter", zap.Error(err))
 	}
 
-	rmqHelper := rabbit.NewRabbitMQHelper(1, make(chan bool), rabbit.DialWrapper)
-	// Wait for RabbitMQ retry messages
-	defer rmqHelper.CleanupRabbitMQ(env.connection, logger)
-	go func() {
-		for {
-			env.connection, env.channel, err = rmqHelper.SetupRabbitMQ(env.BrokerURL, rabbit.ChannelConfirm, logger)
-			if err != nil {
-				logger.Errorf("error creating RabbitMQ connections: %s, waiting for a retry", err)
-			}
-			if retry := rmqHelper.WaitForRetrySignal(); !retry {
-				logger.Warn("stopped listenning for RabbitMQ resources retries")
-				break
-			}
-			logger.Warn("recreating RabbitMQ resources")
-		}
-	}()
+	env.rmqHelper = rabbit.NewRabbitMQConnectionHandler(1000, logger)
+	env.rmqHelper.Setup(ctx, env.BrokerURL, rabbit.ChannelConfirm, rabbit.DialWrapper)
 
 	env.reporter = ingress.NewStatsReporter(env.ContainerName, kmeta.ChildName(env.PodName, uuid.New().String()))
 	connectionArgs := kncloudevents.ConnectionArgs{
@@ -178,9 +163,10 @@ func (env *envConfig) ServeHTTP(writer http.ResponseWriter, request *http.Reques
 
 func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, time.Duration, error) {
 	tp, ts := (&tracecontext.HTTPFormat{}).SpanContextToHeaders(span.SpanContext())
-	if env.channel != nil {
+	channel := env.rmqHelper.GetChannel()
+	if channel != nil {
 		start := time.Now()
-		dc, err := env.channel.PublishWithDeferredConfirm(
+		dc, err := channel.PublishWithDeferredConfirm(
 			env.ExchangeName,
 			"",    // routing key
 			false, // mandatory
@@ -197,6 +183,5 @@ func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, tim
 		}
 		return http.StatusAccepted, dispatchTime, nil
 	}
-
 	return http.StatusInternalServerError, noDuration, errors.New("failed to publish message: RabbitMQ channel is nil")
 }

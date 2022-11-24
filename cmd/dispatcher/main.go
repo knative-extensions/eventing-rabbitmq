@@ -55,9 +55,6 @@ type envConfig struct {
 	ContainerName string `envconfig:"CONTAINER_NAME"`
 	PodName       string `envconfig:"POD_NAME"`
 	Namespace     string `envconfig:"NAMESPACE"`
-
-	connection rabbit.RabbitMQConnectionInterface
-	channel    rabbit.RabbitMQChannelInterface
 }
 
 func main() {
@@ -100,21 +97,15 @@ func main() {
 	}
 
 	var err error
-	rmqHelper := rabbit.NewRabbitMQHelper(1, make(chan bool), rabbit.DialWrapper)
-	defer rmqHelper.CleanupRabbitMQ(env.connection, logger)
+	rmqHelper := rabbit.NewRabbitMQConnectionHandler(1000, logger)
+	rmqHelper.Setup(ctx, env.RabbitURL, rabbit.ChannelQoS, rabbit.DialWrapper)
 	for {
-		env.connection, env.channel, err = rmqHelper.SetupRabbitMQ(env.RabbitURL, rabbit.ChannelQoS, logger)
-		if err != nil {
-			logger.Errorf("error creating RabbitMQ connections: %s, waiting for a retry", err)
-		} else if err := d.ConsumeFromQueue(ctx, env.channel, env.QueueName); err != nil {
+		if err = d.ConsumeFromQueue(ctx, rmqHelper.GetConnection(), rmqHelper.GetChannel(), env.QueueName); err != nil {
 			if errors.Is(err, context.Canceled) {
 				return
 			}
-		}
-		logger.Warn("recreating RabbitMQ resources")
-		if retry := rmqHelper.WaitForRetrySignal(); !retry {
-			logger.Warn("stopped listenning for RabbitMQ resources retries")
-			break
+			logger.Error(err)
+			time.Sleep(time.Second)
 		}
 	}
 }

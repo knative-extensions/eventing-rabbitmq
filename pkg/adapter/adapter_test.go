@@ -230,6 +230,7 @@ func sinkRejected(writer http.ResponseWriter, _ *http.Request) {
 }
 
 func TestAdapter_PollForMessages(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
 	statsReporter, _ := source.NewStatsReporter()
 	a := &Adapter{
 		config: &adapterConfig{
@@ -240,18 +241,17 @@ func TestAdapter_PollForMessages(t *testing.T) {
 			BackoffDelay:  "PT0.20S",
 			Retry:         1,
 		},
-		context:   context.TODO(),
+		context:   ctx,
 		logger:    zap.NewNop(),
 		reporter:  statsReporter,
-		rmqHelper: rabbit.NewRabbitMQHelper(1, make(chan bool), rabbit.ValidDial),
+		rmqHelper: rabbit.NewRabbitMQConnectionHandler(500, zap.NewNop().Sugar()),
 	}
+	a.rmqHelper.Setup(ctx, "", nil, rabbit.ValidDial)
 
 	go func() {
 		time.Sleep(500)
 		// Signal to the adapter to finish and do not retry
-		a.rmqHelper.SignalRetry(false)
-		// Wait for the adapter signal to finish any external retry cycle
-		a.rmqHelper.WaitForRetrySignal()
+		cancel()
 	}()
 	a.Start(a.context)
 }
