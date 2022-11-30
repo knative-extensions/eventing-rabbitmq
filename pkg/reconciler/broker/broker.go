@@ -89,8 +89,6 @@ type Reconciler struct {
 	// config accessor for observability/logging/tracing
 	configs      reconcilersource.ConfigAccessor
 	brokerConfig *brokerconfig.BrokerConfigService
-
-	rabbitmqVhost string
 }
 
 // Check that our Reconciler implements Interface
@@ -131,7 +129,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *eventingv1.Broker) pk
 		MarkExchangeFailed(&b.Status, "ExchangeCredentialsUnavailable", "Failed to get arguments for creating exchange: %s", err)
 		return err
 	}
-	r.rabbitmqVhost = args.RabbitMQVhost
 	return r.reconcileRabbitResources(ctx, b, args)
 }
 
@@ -185,7 +182,7 @@ func (r *Reconciler) reconcileService(ctx context.Context, svc *corev1.Service) 
 }
 
 // reconcileIngressDeploymentCRD reconciles the Ingress Deployment.
-func (r *Reconciler) reconcileIngressDeployment(ctx context.Context, b *eventingv1.Broker) error {
+func (r *Reconciler) reconcileIngressDeployment(ctx context.Context, b *eventingv1.Broker, rabbitmqVhost string) error {
 	clusterRef, err := r.brokerConfig.GetRabbitMQClusterRef(ctx, b)
 	if err != nil {
 		return err
@@ -204,7 +201,7 @@ func (r *Reconciler) reconcileIngressDeployment(ctx context.Context, b *eventing
 		RabbitMQSecretName:   rabbit.SecretName(b.Name, "broker"),
 		RabbitMQCASecretName: secretName,
 		BrokerUrlSecretKey:   rabbit.BrokerURLSecretKey,
-		RabbitMQVhost:        r.rabbitmqVhost,
+		RabbitMQVhost:        rabbitmqVhost,
 		Configs:              r.configs,
 		ResourceRequirements: resourceRequirements,
 	})
@@ -218,7 +215,7 @@ func (r *Reconciler) reconcileIngressService(ctx context.Context, b *eventingv1.
 }
 
 // reconcileDLXDispatcherDeployment reconciles Brokers DLX dispatcher deployment.
-func (r *Reconciler) reconcileDLXDispatcherDeployment(ctx context.Context, b *eventingv1.Broker, sub *apis.URL) error {
+func (r *Reconciler) reconcileDLXDispatcherDeployment(ctx context.Context, b *eventingv1.Broker, sub *apis.URL, rabbitmqVhost string) error {
 	// If there's a sub, then reconcile the deployment as usual.
 	if sub != nil {
 		clusterRef, err := r.brokerConfig.GetRabbitMQClusterRef(ctx, b)
@@ -240,7 +237,7 @@ func (r *Reconciler) reconcileDLXDispatcherDeployment(ctx context.Context, b *ev
 			Delivery:             b.Spec.Delivery,
 			RabbitMQSecretName:   rabbit.SecretName(b.Name, "broker"),
 			RabbitMQCASecretName: secretName,
-			RabbitMQVhost:        r.rabbitmqVhost,
+			RabbitMQVhost:        rabbitmqVhost,
 			QueueName:            naming.CreateBrokerDeadLetterQueueName(b),
 			BrokerUrlSecretKey:   rabbit.BrokerURLSecretKey,
 			Subscriber:           sub,
@@ -289,7 +286,12 @@ func (r *Reconciler) reconcileRabbitResources(ctx context.Context, b *eventingv1
 		MarkDeadLetterSinkNotConfigured(&b.Status)
 	}
 
-	return r.reconcileCommonIngressResources(ctx, rabbit.MakeSecret(args.Broker.Name, "broker", args.Namespace, args.RabbitMQURL.String(), args.Broker), b)
+	return r.reconcileCommonIngressResources(
+		ctx,
+		rabbit.MakeSecret(args.Broker.Name, "broker", args.Namespace, args.RabbitMQURL.String(), args.Broker),
+		b,
+		args.RabbitMQVhost,
+	)
 }
 
 func (r *Reconciler) reconcileDeadLetterResources(ctx context.Context, b *eventingv1.Broker, args *rabbit.ExchangeArgs) (error, bool) {
@@ -383,7 +385,7 @@ func (r *Reconciler) reconcileDeadLetterResources(ctx context.Context, b *eventi
 }
 
 // reconcileCommonIngressResources that are shared between implementations using CRDs or libraries.
-func (r *Reconciler) reconcileCommonIngressResources(ctx context.Context, s *corev1.Secret, b *eventingv1.Broker) error {
+func (r *Reconciler) reconcileCommonIngressResources(ctx context.Context, s *corev1.Secret, b *eventingv1.Broker, rabbitmqVhost string) error {
 	if err := rabbit.ReconcileSecret(ctx, r.secretLister, r.kubeClientSet, s); err != nil {
 		logging.FromContext(ctx).Errorw("Problem reconciling Secret", zap.Error(err))
 		MarkSecretFailed(&b.Status, "SecretFailure", "Failed to reconcile secret: %s", err)
@@ -391,7 +393,7 @@ func (r *Reconciler) reconcileCommonIngressResources(ctx context.Context, s *cor
 	}
 	MarkSecretReady(&b.Status)
 
-	if err := r.reconcileIngressDeployment(ctx, b); err != nil {
+	if err := r.reconcileIngressDeployment(ctx, b, rabbitmqVhost); err != nil {
 		logging.FromContext(ctx).Errorw("Problem reconciling ingress Deployment", zap.Error(err))
 		MarkIngressFailed(&b.Status, "DeploymentFailure", "Failed to reconcile deployment: %s", err)
 		return err
@@ -427,7 +429,7 @@ func (r *Reconciler) reconcileCommonIngressResources(ctx context.Context, s *cor
 
 	// Note that if we didn't actually resolve the URI above, as in it's left as nil it's ok to pass here
 	// it deals with it properly.
-	if err := r.reconcileDLXDispatcherDeployment(ctx, b, dlsURI); err != nil {
+	if err := r.reconcileDLXDispatcherDeployment(ctx, b, dlsURI, rabbitmqVhost); err != nil {
 		logging.FromContext(ctx).Error("Problem reconciling DLX dispatcher Deployment", zap.Error(err))
 		MarkDeadLetterSinkFailed(&b.Status, "DeploymentFailure", "%v", err)
 		return err

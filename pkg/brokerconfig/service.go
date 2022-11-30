@@ -128,7 +128,7 @@ func (r *BrokerConfigService) GetQueueType(ctx context.Context, b *eventingv1.Br
 
 func (r *BrokerConfigService) GetRabbitMQVhost(ctx context.Context, b *eventingv1.Broker) (string, error) {
 	if b.Spec.Config == nil {
-		return "", nil
+		return "", errors.New("broker.spec.config is not set")
 	}
 
 	if b.Spec.Config.Namespace == "" || b.Spec.Config.Name == "" {
