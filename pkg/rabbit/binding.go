@@ -35,7 +35,7 @@ type BindingArgs struct {
 	Namespace                string
 	Owner                    metav1.OwnerReference
 	RabbitmqClusterReference *rabbitv1beta1.RabbitmqClusterReference
-	Vhost                    string
+	RabbitMQVhost            string
 	Source                   string
 	Destination              string
 	Labels                   map[string]string
@@ -62,7 +62,7 @@ func NewBinding(args *BindingArgs) (*rabbitv1beta1.Binding, error) {
 			Labels:          args.Labels,
 		},
 		Spec: rabbitv1beta1.BindingSpec{
-			Vhost:           args.Vhost,
+			Vhost:           args.RabbitMQVhost,
 			Source:          args.Source,
 			Destination:     args.Destination,
 			DestinationType: "queue",

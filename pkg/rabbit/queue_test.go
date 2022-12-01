@@ -179,8 +179,9 @@ func TestNewQueue(t *testing.T) {
 		{
 			name: "creates a queue for source",
 			args: &rabbit.QueueArgs{
-				Name:      sourceName,
-				Namespace: namespace,
+				Name:          sourceName,
+				Namespace:     namespace,
+				RabbitMQVhost: "test",
 				RabbitmqClusterReference: &rabbitv1beta1.RabbitmqClusterReference{
 					ConnectionSecret: &v1.LocalObjectReference{
 						Name: connectionSecretName,

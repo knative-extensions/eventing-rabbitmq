@@ -84,6 +84,7 @@ const (
 	rabbitmqClusterURL        = "amqp://myusername:mypassword@rabbitmqsvc.test-namespace.svc.cluster.local:5672"
 	rabbitMQBrokerName        = "rabbitbrokerhere"
 	rabbitMQBrokerConfigName  = "rabbitbrokerconfig"
+	rabbitMQVhost             = "test-vhost"
 	ingressImage              = "ingressimage"
 
 	deadLetterSinkKind       = "Service"
@@ -244,7 +245,7 @@ func TestReconcile(t *testing.T) {
 						WithBrokerConfig(config),
 						WithInitBrokerConditions),
 					createSecretForRabbitmqCluster(),
-					createRabbitMQBrokerConfig(),
+					createRabbitMQBrokerConfig(""),
 				},
 				WantErr: true,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
@@ -268,7 +269,7 @@ func TestReconcile(t *testing.T) {
 						WithBrokerConfig(config),
 						WithInitBrokerConditions),
 					createRabbitMQClusterMissingServiceRef(),
-					createRabbitMQBrokerConfig(),
+					createRabbitMQBrokerConfig(""),
 				},
 				WantErr: true,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
@@ -291,8 +292,8 @@ func TestReconcile(t *testing.T) {
 						WithBrokerClass(brokerClass),
 						WithBrokerConfig(config),
 						WithInitBrokerConditions),
-					createRabbitMQCluster(),
-					createRabbitMQBrokerConfig(),
+					createRabbitMQCluster(""),
+					createRabbitMQBrokerConfig(""),
 				},
 				WantErr: true,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
@@ -316,8 +317,8 @@ func TestReconcile(t *testing.T) {
 						WithBrokerConfig(config),
 						WithInitBrokerConditions),
 					createSecretForRabbitmqClusterNoUser(),
-					createRabbitMQCluster(),
-					createRabbitMQBrokerConfig(),
+					createRabbitMQCluster(""),
+					createRabbitMQBrokerConfig(""),
 				},
 				WantErr: true,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
@@ -341,8 +342,8 @@ func TestReconcile(t *testing.T) {
 						WithBrokerConfig(config),
 						WithInitBrokerConditions),
 					createSecretForRabbitmqClusterNoPassword(),
-					createRabbitMQCluster(),
-					createRabbitMQBrokerConfig(),
+					createRabbitMQCluster(""),
+					createRabbitMQBrokerConfig(""),
 				},
 				WantErr: true,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
@@ -366,15 +367,15 @@ func TestReconcile(t *testing.T) {
 						WithBrokerConfig(config),
 						WithInitBrokerConditions),
 					createSecretForRabbitmqCluster(),
-					createRabbitMQCluster(),
-					createRabbitMQBrokerConfig(),
+					createRabbitMQCluster(""),
+					createRabbitMQBrokerConfig(""),
 				},
 				WithReactors: []clientgotesting.ReactionFunc{
 					InduceFailure("create", "exchanges"),
 				},
 				WantErr: true,
 				WantCreates: []runtime.Object{
-					createExchange(false),
+					createExchange(false, ""),
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: NewBroker(brokerName, testNS,
@@ -397,11 +398,11 @@ func TestReconcile(t *testing.T) {
 						WithBrokerConfig(config),
 						WithInitBrokerConditions),
 					createSecretForRabbitmqCluster(),
-					createRabbitMQCluster(),
-					createRabbitMQBrokerConfig(),
+					createRabbitMQCluster(""),
+					createRabbitMQBrokerConfig(""),
 				},
 				WantCreates: []runtime.Object{
-					createExchange(false),
+					createExchange(false, ""),
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: NewBroker(brokerName, testNS,
@@ -422,12 +423,12 @@ func TestReconcile(t *testing.T) {
 						WithBrokerConfig(config),
 						WithInitBrokerConditions),
 					createSecretForRabbitmqCluster(),
-					createRabbitMQCluster(),
-					createRabbitMQBrokerConfig(),
-					createReadyExchange(false),
+					createRabbitMQCluster(""),
+					createRabbitMQBrokerConfig(""),
+					createReadyExchange(false, ""),
 				},
 				WantCreates: []runtime.Object{
-					createExchange(true),
+					createExchange(true, ""),
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: NewBroker(brokerName, testNS,
@@ -449,12 +450,12 @@ func TestReconcile(t *testing.T) {
 						WithBrokerConfig(config),
 						WithInitBrokerConditions),
 					createSecretForRabbitmqCluster(),
-					createRabbitMQCluster(),
-					createRabbitMQBrokerConfig(),
-					createReadyExchange(false),
+					createRabbitMQCluster(""),
+					createRabbitMQBrokerConfig(""),
+					createReadyExchange(false, ""),
 				},
 				WantCreates: []runtime.Object{
-					createExchange(true),
+					createExchange(true, ""),
 				},
 				WithReactors: []clientgotesting.ReactionFunc{
 					InduceFailure("create", "exchanges"),
@@ -483,13 +484,13 @@ func TestReconcile(t *testing.T) {
 						WithInitBrokerConditions,
 						WithBrokerDelivery(delivery)),
 					createSecretForRabbitmqCluster(),
-					createRabbitMQCluster(),
-					createRabbitMQBrokerConfig(),
-					createReadyExchange(false),
-					createReadyExchange(true),
+					createRabbitMQCluster(""),
+					createRabbitMQBrokerConfig(""),
+					createReadyExchange(false, ""),
+					createReadyExchange(true, ""),
 				},
 				WantCreates: []runtime.Object{
-					createQueue(true, config),
+					createQueue(true, config, ""),
 				},
 				WithReactors: []clientgotesting.ReactionFunc{
 					InduceFailure("create", "queues"),
@@ -519,13 +520,13 @@ func TestReconcile(t *testing.T) {
 						WithInitBrokerConditions,
 						WithBrokerDelivery(delivery)),
 					createSecretForRabbitmqCluster(),
-					createRabbitMQCluster(),
-					createRabbitMQBrokerConfig(),
-					createReadyExchange(false),
-					createReadyExchange(true),
+					createRabbitMQCluster(""),
+					createRabbitMQBrokerConfig(""),
+					createReadyExchange(false, ""),
+					createReadyExchange(true, ""),
 				},
 				WantCreates: []runtime.Object{
-					createQueue(true, config),
+					createQueue(true, config, ""),
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: NewBroker(brokerName, testNS,
@@ -548,14 +549,14 @@ func TestReconcile(t *testing.T) {
 						WithInitBrokerConditions,
 						WithBrokerDelivery(delivery)),
 					createSecretForRabbitmqCluster(),
-					createRabbitMQCluster(),
-					createRabbitMQBrokerConfig(),
-					createReadyExchange(false),
-					createReadyExchange(true),
-					createReadyQueue(true, config),
+					createRabbitMQCluster(""),
+					createRabbitMQBrokerConfig(""),
+					createReadyExchange(false, ""),
+					createReadyExchange(true, ""),
+					createReadyQueue(true, config, ""),
 				},
 				WantCreates: []runtime.Object{
-					createBinding(true),
+					createBinding(true, ""),
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: NewBroker(brokerName, testNS,
@@ -579,14 +580,14 @@ func TestReconcile(t *testing.T) {
 						WithInitBrokerConditions,
 						WithBrokerDelivery(delivery)),
 					createSecretForRabbitmqCluster(),
-					createRabbitMQCluster(),
-					createRabbitMQBrokerConfig(),
-					createReadyExchange(false),
-					createReadyExchange(true),
-					createReadyQueue(true, config),
+					createRabbitMQCluster(""),
+					createRabbitMQBrokerConfig(""),
+					createReadyExchange(false, ""),
+					createReadyExchange(true, ""),
+					createReadyQueue(true, config, ""),
 				},
 				WantCreates: []runtime.Object{
-					createBinding(true),
+					createBinding(true, ""),
 				},
 				WithReactors: []clientgotesting.ReactionFunc{
 					InduceFailure("create", "bindings"),
@@ -617,15 +618,15 @@ func TestReconcile(t *testing.T) {
 						WithInitBrokerConditions,
 						WithBrokerDelivery(delivery)),
 					createSecretForRabbitmqCluster(),
-					createRabbitMQCluster(),
-					createRabbitMQBrokerConfig(),
-					createReadyExchange(false),
-					createReadyExchange(true),
-					createReadyQueue(true, config),
-					createReadyBinding(true),
+					createRabbitMQCluster(""),
+					createRabbitMQBrokerConfig(""),
+					createReadyExchange(false, ""),
+					createReadyExchange(true, ""),
+					createReadyQueue(true, config, ""),
+					createReadyBinding(true, ""),
 				},
 				WantCreates: []runtime.Object{
-					createPolicy(),
+					createPolicy(""),
 				},
 				WithReactors: []clientgotesting.ReactionFunc{
 					InduceFailure("create", "policies"),
@@ -656,15 +657,15 @@ func TestReconcile(t *testing.T) {
 						WithInitBrokerConditions,
 						WithBrokerDelivery(delivery)),
 					createSecretForRabbitmqCluster(),
-					createRabbitMQCluster(),
-					createRabbitMQBrokerConfig(),
-					createReadyExchange(false),
-					createReadyExchange(true),
-					createReadyQueue(true, config),
-					createReadyBinding(true),
+					createRabbitMQCluster(""),
+					createRabbitMQBrokerConfig(""),
+					createReadyExchange(false, ""),
+					createReadyExchange(true, ""),
+					createReadyQueue(true, config, ""),
+					createReadyBinding(true, ""),
 				},
 				WantCreates: []runtime.Object{
-					createPolicy(),
+					createPolicy(""),
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: NewBroker(brokerName, testNS,
@@ -687,10 +688,10 @@ func TestReconcile(t *testing.T) {
 						WithBrokerConfig(config),
 						WithInitBrokerConditions),
 					createSecretForRabbitmqCluster(),
-					createRabbitMQCluster(),
-					createRabbitMQBrokerConfig(),
-					createReadyExchange(false),
-					createReadyExchange(true),
+					createRabbitMQCluster(""),
+					createRabbitMQBrokerConfig(""),
+					createReadyExchange(false, ""),
+					createReadyExchange(true, ""),
 				},
 				WantCreates: []runtime.Object{
 					createBrokerSecretFromRabbitmqCluster(),
@@ -723,12 +724,12 @@ func TestReconcile(t *testing.T) {
 						WithBrokerConfig(config),
 						WithInitBrokerConditions),
 					createSecretForRabbitmqCluster(),
-					createRabbitMQCluster(),
-					createRabbitMQBrokerConfig(),
-					createReadyExchange(false),
-					createReadyExchange(true),
-					createReadyQueue(true, config),
-					createReadyBinding(true),
+					createRabbitMQCluster(""),
+					createRabbitMQBrokerConfig(""),
+					createReadyExchange(false, ""),
+					createReadyExchange(true, ""),
+					createReadyQueue(true, config, ""),
+					createReadyBinding(true, ""),
 					rt.NewEndpoints(ingressServiceName, testNS,
 						rt.WithEndpointsLabels(IngressLabels()),
 						rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
@@ -762,12 +763,12 @@ func TestReconcile(t *testing.T) {
 						WithBrokerConfig(config),
 						WithInitBrokerConditions),
 					createSecretForRabbitmqCluster(),
-					createRabbitMQCluster(),
-					createRabbitMQBrokerConfig(),
-					createReadyExchange(false),
-					createReadyExchange(true),
-					createReadyQueue(true, config),
-					createReadyBinding(true),
+					createRabbitMQCluster(""),
+					createRabbitMQBrokerConfig(""),
+					createReadyExchange(false, ""),
+					createReadyExchange(true, ""),
+					createReadyQueue(true, config, ""),
+					createReadyBinding(true, ""),
 					rt.NewEndpoints(ingressServiceName, testNS,
 						rt.WithEndpointsLabels(IngressLabels()),
 						rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
@@ -787,7 +788,7 @@ func TestReconcile(t *testing.T) {
 						WithSecretFailed("SecretFailure", `Failed to reconcile secret: inducing failure for create secrets`)),
 				}},
 				WantCreates: []runtime.Object{
-					createExchangeSecret(),
+					createExchangeSecret(""),
 				},
 				WantEvents: []string{
 					Eventf(corev1.EventTypeWarning, "InternalError", `inducing failure for create secrets`),
@@ -803,13 +804,13 @@ func TestReconcile(t *testing.T) {
 						WithBrokerConfig(config),
 						WithInitBrokerConditions),
 					createSecretForRabbitmqCluster(),
-					createRabbitMQCluster(),
-					createRabbitMQBrokerConfig(),
-					createReadyExchange(false),
-					createReadyExchange(true),
-					createReadyQueue(true, config),
-					createReadyBinding(true),
-					createReadyPolicy(),
+					createRabbitMQCluster(""),
+					createRabbitMQBrokerConfig(""),
+					createReadyExchange(false, ""),
+					createReadyExchange(true, ""),
+					createReadyQueue(true, config, ""),
+					createReadyBinding(true, ""),
+					createReadyPolicy(""),
 					rt.NewEndpoints(ingressServiceName, testNS,
 						rt.WithEndpointsLabels(IngressLabels()),
 						rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
@@ -830,7 +831,7 @@ func TestReconcile(t *testing.T) {
 						WithSecretFailed("SecretFailure", `Failed to reconcile secret: inducing failure for update secrets`)),
 				}},
 				WantUpdates: []clientgotesting.UpdateActionImpl{{
-					Object: createExchangeSecret(),
+					Object: createExchangeSecret(""),
 				}},
 				WantEvents: []string{
 					Eventf(corev1.EventTypeWarning, "InternalError", `inducing failure for update secrets`),
@@ -846,18 +847,18 @@ func TestReconcile(t *testing.T) {
 						WithBrokerConfig(config),
 						WithInitBrokerConditions),
 					createSecretForRabbitmqCluster(),
-					createRabbitMQCluster(),
-					createRabbitMQBrokerConfig(),
-					createReadyExchange(false),
-					createReadyExchange(true),
-					createReadyQueue(true, config),
-					createReadyBinding(true),
-					createReadyPolicy(),
+					createRabbitMQCluster(""),
+					createRabbitMQBrokerConfig(""),
+					createReadyExchange(false, ""),
+					createReadyExchange(true, ""),
+					createReadyQueue(true, config, ""),
+					createReadyBinding(true, ""),
+					createReadyPolicy(""),
 					rt.NewEndpoints(ingressServiceName, testNS,
 						rt.WithEndpointsLabels(IngressLabels()),
 						rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
 					createSecret(rabbitURL),
-					createExchangeSecret(),
+					createExchangeSecret(""),
 				},
 				WithReactors: []clientgotesting.ReactionFunc{
 					InduceFailure("create", "deployments"),
@@ -891,17 +892,17 @@ func TestReconcile(t *testing.T) {
 						WithBrokerConfig(config),
 						WithInitBrokerConditions),
 					createSecretForRabbitmqCluster(),
-					createRabbitMQCluster(),
-					createRabbitMQBrokerConfig(),
-					createReadyExchange(false),
-					createReadyExchange(true),
-					createReadyQueue(true, config),
-					createReadyBinding(true),
-					createReadyPolicy(),
+					createRabbitMQCluster(""),
+					createRabbitMQBrokerConfig(""),
+					createReadyExchange(false, ""),
+					createReadyExchange(true, ""),
+					createReadyQueue(true, config, ""),
+					createReadyBinding(true, ""),
+					createReadyPolicy(""),
 					rt.NewEndpoints(ingressServiceName, testNS,
 						rt.WithEndpointsLabels(IngressLabels()),
 						rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
-					createExchangeSecret(),
+					createExchangeSecret(""),
 					createDifferentIngressDeployment(),
 				},
 				WithReactors: []clientgotesting.ReactionFunc{
@@ -936,17 +937,17 @@ func TestReconcile(t *testing.T) {
 						WithBrokerConfig(config),
 						WithInitBrokerConditions),
 					createSecretForRabbitmqCluster(),
-					createRabbitMQCluster(),
-					createRabbitMQBrokerConfig(),
-					createReadyExchange(false),
-					createReadyExchange(true),
-					createReadyQueue(true, config),
-					createReadyBinding(true),
-					createReadyPolicy(),
+					createRabbitMQCluster(""),
+					createRabbitMQBrokerConfig(""),
+					createReadyExchange(false, ""),
+					createReadyExchange(true, ""),
+					createReadyQueue(true, config, ""),
+					createReadyBinding(true, ""),
+					createReadyPolicy(""),
 					rt.NewEndpoints(ingressServiceName, testNS,
 						rt.WithEndpointsLabels(IngressLabels()),
 						rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
-					createExchangeSecret(),
+					createExchangeSecret(""),
 					createIngressDeployment(),
 				},
 				WithReactors: []clientgotesting.ReactionFunc{
@@ -981,17 +982,17 @@ func TestReconcile(t *testing.T) {
 						WithBrokerConfig(config),
 						WithInitBrokerConditions),
 					createSecretForRabbitmqCluster(),
-					createRabbitMQCluster(),
-					createRabbitMQBrokerConfig(),
-					createReadyExchange(false),
-					createReadyExchange(true),
-					createReadyQueue(true, config),
-					createReadyBinding(true),
-					createReadyPolicy(),
+					createRabbitMQCluster(""),
+					createRabbitMQBrokerConfig(""),
+					createReadyExchange(false, ""),
+					createReadyExchange(true, ""),
+					createReadyQueue(true, config, ""),
+					createReadyBinding(true, ""),
+					createReadyPolicy(""),
 					rt.NewEndpoints(ingressServiceName, testNS,
 						rt.WithEndpointsLabels(IngressLabels()),
 						rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
-					createExchangeSecret(),
+					createExchangeSecret(""),
 					createIngressDeployment(),
 					createDifferentIngressService(),
 				},
@@ -1028,17 +1029,17 @@ func TestReconcile(t *testing.T) {
 						WithBrokerDelivery(delivery),
 						WithInitBrokerConditions),
 					createSecretForRabbitmqCluster(),
-					createRabbitMQCluster(),
-					createRabbitMQBrokerConfig(),
-					createReadyExchange(false),
-					createReadyExchange(true),
-					createReadyQueue(true, config),
-					createReadyBinding(true),
-					createReadyPolicy(),
+					createRabbitMQCluster(""),
+					createRabbitMQBrokerConfig(""),
+					createReadyExchange(false, ""),
+					createReadyExchange(true, ""),
+					createReadyQueue(true, config, ""),
+					createReadyBinding(true, ""),
+					createReadyPolicy(""),
 					rt.NewEndpoints(ingressServiceName, testNS,
 						rt.WithEndpointsLabels(IngressLabels()),
 						rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
-					createExchangeSecret(),
+					createExchangeSecret(""),
 					createIngressDeployment(),
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
@@ -1076,17 +1077,17 @@ func TestReconcile(t *testing.T) {
 						WithAnnotation(utils.MemoryRequestAnnotation, "500Mi"),
 						WithAnnotation(utils.MemoryLimitAnnotation, "1000Mi")),
 					createSecretForRabbitmqCluster(),
-					createRabbitMQCluster(),
-					createRabbitMQBrokerConfig(),
-					createReadyExchange(false),
-					createReadyExchange(true),
-					createReadyQueue(true, config),
-					createReadyBinding(true),
-					createReadyPolicy(),
+					createRabbitMQCluster(""),
+					createRabbitMQBrokerConfig(""),
+					createReadyExchange(false, ""),
+					createReadyExchange(true, ""),
+					createReadyQueue(true, config, ""),
+					createReadyBinding(true, ""),
+					createReadyPolicy(""),
 					rt.NewEndpoints(ingressServiceName, testNS,
 						rt.WithEndpointsLabels(IngressLabels()),
 						rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
-					createExchangeSecret(),
+					createExchangeSecret(""),
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: NewBroker(brokerName, testNS,
@@ -1146,17 +1147,17 @@ func TestReconcile(t *testing.T) {
 						WithBrokerDelivery(deliveryUnresolvableDeadLetterSink),
 						WithInitBrokerConditions),
 					createSecretForRabbitmqCluster(),
-					createRabbitMQCluster(),
-					createRabbitMQBrokerConfig(),
-					createReadyExchange(false),
-					createReadyExchange(true),
-					createReadyQueue(true, config),
-					createReadyBinding(true),
-					createReadyPolicy(),
+					createRabbitMQCluster(""),
+					createRabbitMQBrokerConfig(""),
+					createReadyExchange(false, ""),
+					createReadyExchange(true, ""),
+					createReadyQueue(true, config, ""),
+					createReadyBinding(true, ""),
+					createReadyPolicy(""),
 					rt.NewEndpoints(ingressServiceName, testNS,
 						rt.WithEndpointsLabels(IngressLabels()),
 						rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
-					createExchangeSecret(),
+					createExchangeSecret(""),
 					createIngressDeployment(),
 					createIngressService(),
 				},
@@ -1201,17 +1202,17 @@ func TestReconcile(t *testing.T) {
 				WithBrokerDelivery(delivery),
 				WithInitBrokerConditions),
 			createSecretForRabbitmqCluster(),
-			createRabbitMQCluster(),
-			createRabbitMQBrokerConfig(),
-			createReadyExchange(false),
-			createReadyExchange(true),
-			createReadyQueue(true, rabbitmqClusterConfigRefNoNS()),
-			createReadyBinding(true),
-			createReadyPolicy(),
+			createRabbitMQCluster(""),
+			createRabbitMQBrokerConfig(""),
+			createReadyExchange(false, ""),
+			createReadyExchange(true, ""),
+			createReadyQueue(true, rabbitmqClusterConfigRefNoNS(), ""),
+			createReadyBinding(true, ""),
+			createReadyPolicy(""),
 			rt.NewEndpoints(ingressServiceName, testNS,
 				rt.WithEndpointsLabels(IngressLabels()),
 				rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
-			createExchangeSecret(),
+			createExchangeSecret(""),
 			createIngressDeployment(),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
@@ -1232,6 +1233,51 @@ func TestReconcile(t *testing.T) {
 		WantCreates: []runtime.Object{
 			createIngressService(),
 			createDispatcherDeployment(),
+		},
+		WantErr: false,
+	}, {
+		Name: "Created broker in vhost",
+		Key:  testKey,
+		Objects: []runtime.Object{
+			NewBroker(brokerName, testNS,
+				WithBrokerUID(brokerUID),
+				WithBrokerClass(brokerClass),
+				WithBrokerConfig(rabbitmqBrokerConfigRef()),
+				WithDLXNotConfigured(),
+				WithDeadLetterSinkNotConfigured(),
+				WithDeadLetterSinkResolvedNotConfigured(),
+				WithInitBrokerConditions),
+			createSecretForRabbitmqCluster(),
+			createRabbitMQCluster(rabbitMQVhost),
+			createRabbitMQBrokerConfig(rabbitMQVhost),
+			createReadyExchange(false, rabbitMQVhost),
+			rt.NewEndpoints(ingressServiceName, testNS,
+				rt.WithEndpointsLabels(IngressLabels()),
+				rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
+			createExchangeSecret(rabbitMQVhost),
+			createIngressDeployment(),
+		},
+		WantUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: createExchangeSecret(""),
+		}, {
+			Object: createIngressDeployment(WithVhost),
+		}},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewBroker(brokerName, testNS,
+				WithBrokerUID(brokerUID),
+				WithBrokerClass(brokerClass),
+				WithInitBrokerConditions,
+				WithBrokerConfig(rabbitmqBrokerConfigRef()),
+				WithIngressAvailable(),
+				WithDLXNotConfigured(),
+				WithDeadLetterSinkNotConfigured(),
+				WithDeadLetterSinkResolvedNotConfigured(),
+				WithSecretReady(),
+				WithBrokerAddressURI(brokerAddress),
+				WithExchangeReady()),
+		}},
+		WantCreates: []runtime.Object{
+			createIngressService(),
 		},
 		WantErr: false,
 	}}...)
@@ -1308,8 +1354,12 @@ func createBrokerSecret(data string) *corev1.Secret {
 
 }
 
-func createExchangeSecret() *corev1.Secret {
-	return createBrokerSecret(rabbitmqClusterURL)
+func createExchangeSecret(vhost string) *corev1.Secret {
+	url := rabbitmqClusterURL
+	if vhost != "" {
+		url += "/" + vhost
+	}
+	return createBrokerSecret(url)
 }
 
 func createDifferentExchangeSecret() *corev1.Secret {
@@ -1412,6 +1462,10 @@ func createDifferentIngressDeployment() *appsv1.Deployment {
 	return resources.MakeIngressDeployment(args)
 }
 
+func WithVhost(args *resources.IngressArgs) {
+	args.RabbitMQVhost = rabbitMQVhost
+}
+
 func createIngressService() *corev1.Service {
 	return resources.MakeIngressService(&eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: testNS, UID: brokerUID}})
 }
@@ -1493,7 +1547,7 @@ func createDispatcherDeployment(opts ...func(*resources.DispatcherArgs)) *appsv1
 	return resources.MakeDispatcherDeployment(args)
 }
 
-func createExchange(dlx bool) *rabbitv1beta1.Exchange {
+func createExchange(dlx bool, vhost string) *rabbitv1beta1.Exchange {
 	broker := &eventingv1.Broker{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      brokerName,
@@ -1519,7 +1573,7 @@ func createExchange(dlx bool) *rabbitv1beta1.Exchange {
 		},
 		Spec: rabbitv1beta1.ExchangeSpec{
 			Name:       exchangeName,
-			Vhost:      "/",
+			Vhost:      vhost,
 			Type:       "headers",
 			Durable:    true,
 			AutoDelete: false,
@@ -1533,8 +1587,8 @@ func createExchange(dlx bool) *rabbitv1beta1.Exchange {
 	}
 }
 
-func createReadyExchange(dlx bool) *rabbitv1beta1.Exchange {
-	e := createExchange(dlx)
+func createReadyExchange(dlx bool, vhost string) *rabbitv1beta1.Exchange {
+	e := createExchange(dlx, vhost)
 	e.Status = rabbitv1beta1.ExchangeStatus{
 		Conditions: []rabbitv1beta1.Condition{
 			{
@@ -1545,7 +1599,7 @@ func createReadyExchange(dlx bool) *rabbitv1beta1.Exchange {
 	return e
 }
 
-func createQueue(dlx bool, kref *duckv1.KReference) *rabbitv1beta1.Queue {
+func createQueue(dlx bool, kref *duckv1.KReference, vhost string) *rabbitv1beta1.Queue {
 	queueType := v1alpha1.ClassicQueueType
 	if kref.Kind == "RabbitmqBrokerConfig" {
 		queueType = v1alpha1.QuorumQueueType
@@ -1575,7 +1629,7 @@ func createQueue(dlx bool, kref *duckv1.KReference) *rabbitv1beta1.Queue {
 		},
 		Spec: rabbitv1beta1.QueueSpec{
 			Name:       queueName,
-			Vhost:      "/",
+			Vhost:      vhost,
 			Durable:    true,
 			AutoDelete: false,
 			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
@@ -1587,8 +1641,8 @@ func createQueue(dlx bool, kref *duckv1.KReference) *rabbitv1beta1.Queue {
 	}
 }
 
-func createReadyQueue(dlx bool, kref *duckv1.KReference) *rabbitv1beta1.Queue {
-	q := createQueue(dlx, kref)
+func createReadyQueue(dlx bool, kref *duckv1.KReference, vhost string) *rabbitv1beta1.Queue {
+	q := createQueue(dlx, kref, vhost)
 	q.Status = rabbitv1beta1.QueueStatus{
 		Conditions: []rabbitv1beta1.Condition{
 			{
@@ -1599,7 +1653,7 @@ func createReadyQueue(dlx bool, kref *duckv1.KReference) *rabbitv1beta1.Queue {
 	return q
 }
 
-func createBinding(dlx bool) *rabbitv1beta1.Binding {
+func createBinding(dlx bool, vhost string) *rabbitv1beta1.Binding {
 	broker := &eventingv1.Broker{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      brokerName,
@@ -1624,7 +1678,7 @@ func createBinding(dlx bool) *rabbitv1beta1.Binding {
 			Labels: rabbit.Labels(broker, nil, nil),
 		},
 		Spec: rabbitv1beta1.BindingSpec{
-			Vhost:           "/",
+			Vhost:           vhost,
 			DestinationType: "queue",
 			Destination:     bindingName,
 			Source:          "b.test-namespace.test-broker.dlx.broker-test-uid",
@@ -1637,8 +1691,8 @@ func createBinding(dlx bool) *rabbitv1beta1.Binding {
 	}
 }
 
-func createReadyBinding(dlx bool) *rabbitv1beta1.Binding {
-	b := createBinding(dlx)
+func createReadyBinding(dlx bool, vhost string) *rabbitv1beta1.Binding {
+	b := createBinding(dlx, vhost)
 	b.Status = rabbitv1beta1.BindingStatus{
 		Conditions: []rabbitv1beta1.Condition{
 			{
@@ -1649,7 +1703,7 @@ func createReadyBinding(dlx bool) *rabbitv1beta1.Binding {
 	return b
 }
 
-func createPolicy() *rabbitv1beta1.Policy {
+func createPolicy(vhost string) *rabbitv1beta1.Policy {
 	broker := &eventingv1.Broker{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      brokerName,
@@ -1673,6 +1727,7 @@ func createPolicy() *rabbitv1beta1.Policy {
 		Spec: rabbitv1beta1.PolicySpec{
 			Name:       policyName,
 			Priority:   0,
+			Vhost:      vhost,
 			Pattern:    "broker-test-uid$",
 			ApplyTo:    "queues",
 			Definition: &runtime.RawExtension{Raw: []byte(fmt.Sprintf(`{"dead-letter-exchange": %q}`, dlxName))},
@@ -1684,8 +1739,8 @@ func createPolicy() *rabbitv1beta1.Policy {
 	}
 }
 
-func createReadyPolicy() *rabbitv1beta1.Policy {
-	p := createPolicy()
+func createReadyPolicy(vhost string) *rabbitv1beta1.Policy {
+	p := createPolicy(vhost)
 	p.Status = rabbitv1beta1.PolicyStatus{
 		Conditions: []rabbitv1beta1.Condition{
 			{
@@ -1696,7 +1751,7 @@ func createReadyPolicy() *rabbitv1beta1.Policy {
 	return p
 }
 
-func createRabbitMQBrokerConfig() *v1alpha1.RabbitmqBrokerConfig {
+func createRabbitMQBrokerConfig(vhost string) *v1alpha1.RabbitmqBrokerConfig {
 	return &v1alpha1.RabbitmqBrokerConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      rabbitMQBrokerConfigName,
@@ -1707,11 +1762,12 @@ func createRabbitMQBrokerConfig() *v1alpha1.RabbitmqBrokerConfig {
 				Name:      rabbitMQBrokerName,
 				Namespace: testNS,
 			},
+			Vhost: vhost,
 		},
 	}
 }
 
-func createRabbitMQCluster() *unstructured.Unstructured {
+func createRabbitMQCluster(vhost string) *unstructured.Unstructured {
 	labels := map[string]interface{}{
 		eventing.BrokerLabelKey:                 brokerName,
 		"eventing.knative.dev/brokerEverything": "true",
@@ -1731,6 +1787,10 @@ func createRabbitMQCluster() *unstructured.Unstructured {
 				"labels":            labels,
 				"annotations":       annotations,
 			},
+			"spec": map[string]interface{}{
+				"rabbitmq": map[string]interface{}{
+					"additionalConfig": fmt.Sprintf("default_vhost = %s", vhost),
+				}},
 			"status": map[string]interface{}{
 				"defaultUser": map[string]interface{}{
 					"secretReference": map[string]interface{}{

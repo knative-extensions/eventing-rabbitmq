@@ -83,6 +83,7 @@ const (
 	rabbitSecretName         = "test-broker-broker-rabbit"
 	rabbitMQBrokerName       = "rabbitbrokerhere"
 	rabbitMQBrokerConfigName = "rabbitbrokerconfig"
+	rabbitMQVhost            = "test-vhost"
 
 	triggerName       = "test-trigger"
 	triggerUID        = "test-trigger-uid"
@@ -258,13 +259,13 @@ func TestReconcile(t *testing.T) {
 					ReadyBroker(config),
 					triggerWithFilter(),
 					createSecret(rabbitURL),
-					createRabbitMQBrokerConfig(),
-					createRabbitMQCluster(),
-					markReady(createQueue(config, false)),
-					markReady(createBinding(true, false)),
+					createRabbitMQBrokerConfig(""),
+					createRabbitMQCluster(""),
+					markReady(createQueue(config, false, "")),
+					markReady(createBinding(true, false, "")),
 				},
 				WantCreates: []runtime.Object{
-					createDispatcherDeployment(false),
+					createDispatcherDeployment(false, ""),
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: triggerWithFilterReady(),
@@ -276,10 +277,10 @@ func TestReconcile(t *testing.T) {
 					ReadyBroker(config),
 					triggerWithResourceAnnotations(),
 					createSecret(rabbitURL),
-					createRabbitMQBrokerConfig(),
-					createRabbitMQCluster(),
-					markReady(createQueue(config, false)),
-					markReady(createBinding(true, false)),
+					createRabbitMQBrokerConfig(""),
+					createRabbitMQCluster(""),
+					markReady(createQueue(config, false, "")),
+					markReady(createBinding(true, false, "")),
 				},
 				WantCreates: []runtime.Object{
 					createDispatcherDeploymentWithResourceRequirements(false),
@@ -294,10 +295,10 @@ func TestReconcile(t *testing.T) {
 					ReadyBrokerWithDeliverySpec(config),
 					triggerWithFilter(),
 					createSecret(rabbitURL),
-					createRabbitMQBrokerConfig(),
-					createRabbitMQCluster(),
-					markReady(createQueue(config, false)),
-					markReady(createBinding(true, false)),
+					createRabbitMQBrokerConfig(""),
+					createRabbitMQCluster(""),
+					markReady(createQueue(config, false, "")),
+					markReady(createBinding(true, false, "")),
 				},
 				WantCreates: []runtime.Object{
 					createDispatcherDeploymentWithRetries(),
@@ -313,10 +314,10 @@ func TestReconcile(t *testing.T) {
 					ReadyBroker(config),
 					triggerWithDeliverySpec(),
 					createSecret(rabbitURL),
-					createRabbitMQBrokerConfig(),
-					createRabbitMQCluster(),
-					markReady(createQueue(config, false)),
-					markReady(createBinding(true, false)),
+					createRabbitMQBrokerConfig(""),
+					createRabbitMQCluster(""),
+					markReady(createQueue(config, false, "")),
+					markReady(createBinding(true, false, "")),
 				},
 				WantCreates: []runtime.Object{
 					createDispatcherDeploymentWithRetries(),
@@ -332,10 +333,10 @@ func TestReconcile(t *testing.T) {
 					ReadyBroker(config),
 					triggerWithFilter(),
 					createSecret(rabbitURL),
-					createRabbitMQBrokerConfig(),
+					createRabbitMQBrokerConfig(""),
 				},
 				WantCreates: []runtime.Object{
-					createQueue(config, false),
+					createQueue(config, false, ""),
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: triggerWithQueueNotReady(),
@@ -347,7 +348,7 @@ func TestReconcile(t *testing.T) {
 					ReadyBroker(config),
 					triggerWithFilter(),
 					createSecret(rabbitURL),
-					createRabbitMQBrokerConfig(),
+					createRabbitMQBrokerConfig(""),
 				},
 				WithReactors: []clientgotesting.ReactionFunc{
 					InduceFailure("create", "queues"),
@@ -357,7 +358,7 @@ func TestReconcile(t *testing.T) {
 					Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for create queues"),
 				},
 				WantCreates: []runtime.Object{
-					createQueue(config, false),
+					createQueue(config, false, ""),
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: triggerWithQueueCreateFailure(),
@@ -369,11 +370,11 @@ func TestReconcile(t *testing.T) {
 					ReadyBroker(config),
 					triggerWithFilter(),
 					createSecret(rabbitURL),
-					createRabbitMQBrokerConfig(),
-					markReady(createQueue(config, false)),
+					createRabbitMQBrokerConfig(""),
+					markReady(createQueue(config, false, "")),
 				},
 				WantCreates: []runtime.Object{
-					createBinding(true, false),
+					createBinding(true, false, ""),
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: triggerWithBindingNotReady(),
@@ -385,8 +386,8 @@ func TestReconcile(t *testing.T) {
 					ReadyBroker(config),
 					triggerWithFilter(),
 					createSecret(rabbitURL),
-					createRabbitMQBrokerConfig(),
-					markReady(createQueue(config, false)),
+					createRabbitMQBrokerConfig(""),
+					markReady(createQueue(config, false, "")),
 				},
 				WithReactors: []clientgotesting.ReactionFunc{
 					InduceFailure("create", "bindings"),
@@ -396,7 +397,7 @@ func TestReconcile(t *testing.T) {
 					Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for create bindings"),
 				},
 				WantCreates: []runtime.Object{
-					createBinding(true, false),
+					createBinding(true, false, ""),
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: triggerWithBindingCreateFailure(),
@@ -408,13 +409,13 @@ func TestReconcile(t *testing.T) {
 					ReadyBroker(config),
 					triggerWithFilter(),
 					createSecret(rabbitURL),
-					createRabbitMQBrokerConfig(),
-					createRabbitMQCluster(),
-					markReady(createQueue(config, false)),
-					markReady(createBinding(true, false)),
+					createRabbitMQBrokerConfig(""),
+					createRabbitMQCluster(""),
+					markReady(createQueue(config, false, "")),
+					markReady(createBinding(true, false, "")),
 				},
 				WantCreates: []runtime.Object{
-					createDispatcherDeployment(false),
+					createDispatcherDeployment(false, ""),
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: triggerWithFilterReady(),
@@ -425,17 +426,17 @@ func TestReconcile(t *testing.T) {
 				Objects: []runtime.Object{
 					ReadyBroker(config),
 					makeSubscriberAddressableAsUnstructured(),
-					markReady(createQueue(config, false)),
-					markReady(createBinding(false, false)),
+					markReady(createQueue(config, false, "")),
+					markReady(createBinding(false, false, "")),
 					NewTrigger(triggerName, testNS, brokerName,
 						WithTriggerUID(triggerUID),
 						WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS)),
 					createSecret(rabbitURL),
-					createRabbitMQBrokerConfig(),
-					createRabbitMQCluster(),
+					createRabbitMQBrokerConfig(""),
+					createRabbitMQCluster(""),
 				},
 				WantCreates: []runtime.Object{
-					createDispatcherDeployment(false),
+					createDispatcherDeployment(false, ""),
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: NewTrigger(triggerName, testNS, brokerName,
@@ -454,13 +455,13 @@ func TestReconcile(t *testing.T) {
 				Objects: []runtime.Object{
 					ReadyBroker(config),
 					makeSubscriberNotAddressableAsUnstructured(),
-					markReady(createQueue(config, false)),
-					markReady(createBinding(false, false)),
+					markReady(createQueue(config, false, "")),
+					markReady(createBinding(false, false, "")),
 					NewTrigger(triggerName, testNS, brokerName,
 						WithTriggerUID(triggerUID),
 						WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS)),
 					createSecret(rabbitURL),
-					createRabbitMQBrokerConfig(),
+					createRabbitMQBrokerConfig(""),
 				},
 				WantEvents: []string{
 					Eventf(corev1.EventTypeWarning, "InternalError", `address not set for &ObjectReference{Kind:Service,Namespace:test-namespace,Name:subscriber-name,UID:,APIVersion:serving.knative.dev/v1,ResourceVersion:,FieldPath:,}`),
@@ -485,10 +486,10 @@ func TestReconcile(t *testing.T) {
 						WithTriggerUID(triggerUID),
 						WithTriggerSubscriberURI(subscriberURI)),
 					createSecret(rabbitURL),
-					createRabbitMQBrokerConfig(),
-					createRabbitMQCluster(),
-					markReady(createQueue(config, false)),
-					markReady(createBinding(false, false)),
+					createRabbitMQBrokerConfig(""),
+					createRabbitMQCluster(""),
+					markReady(createQueue(config, false, "")),
+					markReady(createBinding(false, false, "")),
 				},
 				WithReactors: []clientgotesting.ReactionFunc{
 					InduceFailure("create", "deployments"),
@@ -498,7 +499,7 @@ func TestReconcile(t *testing.T) {
 				},
 				WantErr: true,
 				WantCreates: []runtime.Object{
-					createDispatcherDeployment(false),
+					createDispatcherDeployment(false, ""),
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: NewTrigger(triggerName, testNS, brokerName,
@@ -521,11 +522,11 @@ func TestReconcile(t *testing.T) {
 						WithTriggerUID(triggerUID),
 						WithTriggerSubscriberURI(subscriberURI)),
 					createSecret(rabbitURL),
-					createRabbitMQBrokerConfig(),
-					createRabbitMQCluster(),
+					createRabbitMQBrokerConfig(""),
+					createRabbitMQCluster(""),
 					createDifferentDispatcherDeployment(),
-					markReady(createQueue(config, false)),
-					markReady(createBinding(false, false)),
+					markReady(createQueue(config, false, "")),
+					markReady(createBinding(false, false, "")),
 				},
 				WithReactors: []clientgotesting.ReactionFunc{
 					InduceFailure("update", "deployments"),
@@ -535,7 +536,7 @@ func TestReconcile(t *testing.T) {
 				},
 				WantErr: true,
 				WantUpdates: []clientgotesting.UpdateActionImpl{{
-					Object: createDispatcherDeployment(false),
+					Object: createDispatcherDeployment(false, ""),
 				}},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: NewTrigger(triggerName, testNS, brokerName,
@@ -558,11 +559,11 @@ func TestReconcile(t *testing.T) {
 						WithTriggerUID(triggerUID),
 						WithTriggerSubscriberURI(subscriberURI)),
 					createSecret(rabbitURL),
-					createRabbitMQBrokerConfig(),
-					createRabbitMQCluster(),
-					markReady(createQueue(config, false)),
-					markReady(createBinding(false, false)),
-					createDispatcherDeployment(false),
+					createRabbitMQBrokerConfig(""),
+					createRabbitMQCluster(""),
+					markReady(createQueue(config, false, "")),
+					markReady(createBinding(false, false, "")),
+					createDispatcherDeployment(false, ""),
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: NewTrigger(triggerName, testNS, brokerName,
@@ -583,11 +584,11 @@ func TestReconcile(t *testing.T) {
 					ReadyBroker(config),
 					triggerWithFilter(),
 					createSecret(rabbitURL),
-					createRabbitMQBrokerConfig(),
-					createRabbitMQCluster(),
-					markReady(createQueue(config, false)),
-					markReady(createBinding(true, false)),
-					createDispatcherDeployment(false),
+					createRabbitMQBrokerConfig(""),
+					createRabbitMQCluster(""),
+					markReady(createQueue(config, false, "")),
+					markReady(createBinding(true, false, "")),
+					createDispatcherDeployment(false, ""),
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: triggerWithFilterReady(),
@@ -603,8 +604,8 @@ func TestReconcile(t *testing.T) {
 						WithInitTriggerConditions,
 						WithDependencyAnnotation(dependencyAnnotation),
 					),
-					markReady(createQueue(config, false)),
-					markReady(createBinding(false, false)),
+					markReady(createQueue(config, false, "")),
+					markReady(createBinding(false, false, "")),
 				},
 				WantEvents: []string{
 					Eventf(corev1.EventTypeWarning, "InternalError", "propagating dependency readiness: getting the dependency: pingsources.sources.knative.dev \"test-ping-source\" not found"),
@@ -634,9 +635,9 @@ func TestReconcile(t *testing.T) {
 						WithDependencyAnnotation(dependencyAnnotation),
 					),
 					createSecret(rabbitURL),
-					createRabbitMQBrokerConfig(),
-					markReady(createQueue(config, false)),
-					markReady(createBinding(false, false)),
+					createRabbitMQBrokerConfig(""),
+					markReady(createQueue(config, false, "")),
+					markReady(createBinding(false, false, "")),
 				},
 				WantErr: false,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
@@ -663,9 +664,9 @@ func TestReconcile(t *testing.T) {
 						WithDependencyAnnotation(dependencyAnnotation),
 					),
 					createSecret(rabbitURL),
-					createRabbitMQBrokerConfig(),
-					markReady(createQueue(config, false)),
-					markReady(createBinding(false, false)),
+					createRabbitMQBrokerConfig(""),
+					markReady(createQueue(config, false, "")),
+					markReady(createBinding(false, false, "")),
 				},
 				WantErr: false,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
@@ -692,9 +693,9 @@ func TestReconcile(t *testing.T) {
 						WithDependencyAnnotation(dependencyAnnotation),
 					),
 					createSecret(rabbitURL),
-					createRabbitMQBrokerConfig(),
-					markReady(createQueue(config, false)),
-					markReady(createBinding(false, false)),
+					createRabbitMQBrokerConfig(""),
+					markReady(createQueue(config, false, "")),
+					markReady(createBinding(false, false, "")),
 				},
 				WantErr: false,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
@@ -719,9 +720,9 @@ func TestReconcile(t *testing.T) {
 						WithDependencyAnnotation(malformedDependencyAnnotation),
 					),
 					createSecret(rabbitURL),
-					createRabbitMQBrokerConfig(),
-					markReady(createQueue(config, false)),
-					markReady(createBinding(false, false)),
+					createRabbitMQBrokerConfig(""),
+					markReady(createQueue(config, false, "")),
+					markReady(createBinding(false, false, "")),
 				},
 				WantErr: true,
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
@@ -750,14 +751,14 @@ func TestReconcile(t *testing.T) {
 						WithDependencyAnnotation(dependencyAnnotation),
 					),
 					createSecret(rabbitURL),
-					createRabbitMQBrokerConfig(),
-					createRabbitMQCluster(),
-					markReady(createQueue(config, false)),
-					markReady(createBinding(false, false)),
+					createRabbitMQBrokerConfig(""),
+					createRabbitMQCluster(""),
+					markReady(createQueue(config, false, "")),
+					markReady(createBinding(false, false, "")),
 				},
 				WantErr: false,
 				WantCreates: []runtime.Object{
-					createDispatcherDeployment(false),
+					createDispatcherDeployment(false, ""),
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: NewTrigger(triggerName, testNS, brokerName,
@@ -783,14 +784,14 @@ func TestReconcile(t *testing.T) {
 						WithTriggerUID(triggerUID),
 						WithTriggerSubscriberURI(subscriberURI)),
 					createSecret(rabbitURL),
-					createRabbitMQBrokerConfig(),
-					createRabbitMQCluster(),
-					markReady(createQueue(config, false)),
-					markReady(createBinding(false, false)),
+					createRabbitMQBrokerConfig(""),
+					createRabbitMQCluster(""),
+					markReady(createQueue(config, false, "")),
+					markReady(createBinding(false, false, "")),
 					createDispatcherDeploymentWithParallelism(),
 				},
 				WantUpdates: []clientgotesting.UpdateActionImpl{{
-					Object: createDispatcherDeployment(false),
+					Object: createDispatcherDeployment(false, ""),
 				}},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: NewTrigger(triggerName, testNS, brokerName,
@@ -812,18 +813,18 @@ func TestReconcile(t *testing.T) {
 					ReadyBroker(config),
 					triggerWithFilter(),
 					createSecret(rabbitURL),
-					createRabbitMQBrokerConfig(),
-					createRabbitMQCluster(),
-					markReady(createQueue(config, true)),
-					markReady(createBinding(true, false)),
-					markReady(createQueue(config, false)),
+					createRabbitMQBrokerConfig(""),
+					createRabbitMQCluster(""),
+					markReady(createQueue(config, true, "")),
+					markReady(createBinding(true, false, "")),
+					markReady(createQueue(config, false, "")),
 					markReady(createExchange()),
-					markReady(createBinding(true, true)),
-					createDispatcherDeployment(true),
+					markReady(createBinding(true, true, "")),
+					createDispatcherDeployment(true, ""),
 					markReady(createPolicy()),
 				},
 				WantCreates: []runtime.Object{
-					createDispatcherDeployment(false),
+					createDispatcherDeployment(false, ""),
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: triggerWithFilterReady(),
@@ -863,46 +864,86 @@ func TestReconcile(t *testing.T) {
 		}...)
 	}
 
-	table = append(table, TableTest{
-		{
-			Name: "Trigger ready with cluster reference with no namespace",
-			Key:  testKey,
-			Objects: []runtime.Object{
-				ReadyBroker(configWithRabbitMQBrokerConfigNoNS()),
-				makeReadyPingSource(),
-				NewTrigger(triggerName, testNS, brokerName,
-					WithTriggerUID(triggerUID),
-					WithTriggerSubscriberURI(subscriberURI),
-					WithInitTriggerConditions,
-					WithDependencyAnnotation(dependencyAnnotation),
-				),
-				createSecret(rabbitURL),
-				createRabbitMQBrokerConfig(),
-				createRabbitMQCluster(),
-				markReady(createQueue(configWithRabbitMQBrokerConfigNoNS(), false)),
-				markReady(createBinding(false, false)),
-			},
-			WantErr: false,
-			WantCreates: []runtime.Object{
-				createDispatcherDeployment(false),
-			},
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewTrigger(triggerName, testNS, brokerName,
-					WithTriggerUID(triggerUID),
-					WithTriggerSubscriberURI(subscriberURI),
-					// The first reconciliation will initialize the status conditions.
-					WithInitTriggerConditions,
-					WithDependencyAnnotation(dependencyAnnotation),
-					WithTriggerBrokerReady(),
-					WithTriggerDeadLetterSinkNotConfigured(),
-					WithTriggerSubscribed(),
-					WithTriggerStatusSubscriberURI(subscriberURI),
-					WithTriggerSubscriberResolvedSucceeded(),
-					WithTriggerDependencyReady(),
-				),
-			}},
+	table = append(table, TableTest{{
+		Name: "Trigger ready with cluster reference with no namespace",
+		Key:  testKey,
+		Objects: []runtime.Object{
+			ReadyBroker(configWithRabbitMQBrokerConfigNoNS()),
+			makeReadyPingSource(),
+			NewTrigger(triggerName, testNS, brokerName,
+				WithTriggerUID(triggerUID),
+				WithTriggerSubscriberURI(subscriberURI),
+				WithInitTriggerConditions,
+				WithDependencyAnnotation(dependencyAnnotation),
+			),
+			createSecret(rabbitURL),
+			createRabbitMQBrokerConfig(""),
+			createRabbitMQCluster(""),
+			markReady(createQueue(configWithRabbitMQBrokerConfigNoNS(), false, "")),
+			markReady(createBinding(false, false, "")),
 		},
-	}...)
+		WantErr: false,
+		WantCreates: []runtime.Object{
+			createDispatcherDeployment(false, ""),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewTrigger(triggerName, testNS, brokerName,
+				WithTriggerUID(triggerUID),
+				WithTriggerSubscriberURI(subscriberURI),
+				// The first reconciliation will initialize the status conditions.
+				WithInitTriggerConditions,
+				WithDependencyAnnotation(dependencyAnnotation),
+				WithTriggerBrokerReady(),
+				WithTriggerDeadLetterSinkNotConfigured(),
+				WithTriggerSubscribed(),
+				WithTriggerStatusSubscriberURI(subscriberURI),
+				WithTriggerSubscriberResolvedSucceeded(),
+				WithTriggerDependencyReady(),
+			),
+		}},
+	}, {
+		Name: "Trigger in vhost ready",
+		Key:  testKey,
+		Objects: []runtime.Object{
+			ReadyBroker(configWithRabbitMQBrokerConfig()),
+			makeReadyPingSource(),
+			NewTrigger(triggerName, testNS, brokerName,
+				WithTriggerUID(triggerUID),
+				WithTriggerSubscriberURI(subscriberURI),
+				WithInitTriggerConditions,
+				WithDependencyAnnotation(dependencyAnnotation),
+			),
+			createSecret(rabbitURL),
+			createRabbitMQBrokerConfig(rabbitMQVhost),
+			createRabbitMQCluster(rabbitMQVhost),
+			markReady(createQueue(configWithRabbitMQBrokerConfig(), false, "")),
+			markReady(createBinding(false, false, "")),
+		},
+		WantErr: false,
+		WantCreates: []runtime.Object{
+			createDispatcherDeployment(false, rabbitMQVhost),
+		},
+		WantUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: markReady(createQueue(configWithRabbitMQBrokerConfig(), false, rabbitMQVhost)),
+		}, {
+			Object: markReady(createBinding(false, false, rabbitMQVhost)),
+		}},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewTrigger(triggerName, testNS, brokerName,
+				WithTriggerUID(triggerUID),
+				WithTriggerSubscriberURI(subscriberURI),
+				// The first reconciliation will initialize the status conditions.
+				WithInitTriggerConditions,
+				WithDependencyAnnotation(dependencyAnnotation),
+				WithTriggerBrokerReady(),
+				WithTriggerDeadLetterSinkNotConfigured(),
+				WithTriggerSubscribed(),
+				WithTriggerStatusSubscriberURI(subscriberURI),
+				WithTriggerDependencyReady(),
+				WithTriggerSubscriberResolvedSucceeded(),
+			),
+		}},
+	}}...)
 
 	logger := logtesting.TestLogger(t)
 	table.Test(t, rtlisters.MakeFactory(func(ctx context.Context, listers *rtlisters.Listers, cmw configmap.Watcher) controller.Reconciler {
@@ -1197,7 +1238,7 @@ func createSecret(data string) *corev1.Secret {
 	}
 }
 
-func createRabbitMQBrokerConfig() *v1alpha1.RabbitmqBrokerConfig {
+func createRabbitMQBrokerConfig(vhost string) *v1alpha1.RabbitmqBrokerConfig {
 	return &v1alpha1.RabbitmqBrokerConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      rabbitMQBrokerConfigName,
@@ -1208,11 +1249,12 @@ func createRabbitMQBrokerConfig() *v1alpha1.RabbitmqBrokerConfig {
 				Name:      rabbitMQBrokerName,
 				Namespace: testNS,
 			},
+			Vhost: vhost,
 		},
 	}
 }
 
-func createDispatcherDeployment(dlq bool) *appsv1.Deployment {
+func createDispatcherDeployment(dlq bool, vhost string) *appsv1.Deployment {
 	args := &resources.DispatcherArgs{
 		Trigger: &eventingv1.Trigger{
 			ObjectMeta: metav1.ObjectMeta{
@@ -1226,6 +1268,7 @@ func createDispatcherDeployment(dlq bool) *appsv1.Deployment {
 		},
 		Image:              dispatcherImage,
 		RabbitMQSecretName: rabbitSecretName,
+		RabbitMQVHost:      vhost,
 		QueueName:          queueName,
 		BrokerUrlSecretKey: "brokerURL",
 		BrokerIngressURL:   brokerAddress,
@@ -1367,7 +1410,7 @@ func makeSubscriberNotAddressableAsUnstructured() *unstructured.Unstructured {
 	}
 }
 
-func createRabbitMQCluster() *unstructured.Unstructured {
+func createRabbitMQCluster(vhost string) *unstructured.Unstructured {
 	return &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": "rabbitmq.com/v1beta1",
@@ -1377,6 +1420,10 @@ func createRabbitMQCluster() *unstructured.Unstructured {
 				"namespace":         testNS,
 				"name":              rabbitMQBrokerName,
 			},
+			"spec": map[string]interface{}{
+				"rabbitmq": map[string]interface{}{
+					"additionalConfig": fmt.Sprintf("default_vhost = %s", vhost),
+				}},
 		},
 	}
 }
@@ -1428,7 +1475,7 @@ func createExchange() *rabbitv1beta1.Exchange {
 		},
 		Spec: rabbitv1beta1.ExchangeSpec{
 			Name:       dlxExchangeName,
-			Vhost:      "/",
+			Vhost:      "",
 			Type:       "headers",
 			Durable:    true,
 			AutoDelete: false,
@@ -1440,7 +1487,7 @@ func createExchange() *rabbitv1beta1.Exchange {
 	}
 }
 
-func createQueue(kref *duckv1.KReference, dlq bool) *rabbitv1beta1.Queue {
+func createQueue(kref *duckv1.KReference, dlq bool, vhost string) *rabbitv1beta1.Queue {
 	queueType := v1alpha1.ClassicQueueType
 	if kref.Kind == "RabbitmqBrokerConfig" {
 		queueType = v1alpha1.QuorumQueueType
@@ -1461,7 +1508,7 @@ func createQueue(kref *duckv1.KReference, dlq bool) *rabbitv1beta1.Queue {
 		},
 		Spec: rabbitv1beta1.QueueSpec{
 			Name:    queueName,
-			Vhost:   "/",
+			Vhost:   vhost,
 			Durable: true,
 			RabbitmqClusterReference: rabbitv1beta1.RabbitmqClusterReference{
 				Name:      rabbitMQBrokerName,
@@ -1479,7 +1526,7 @@ func createQueue(kref *duckv1.KReference, dlq bool) *rabbitv1beta1.Queue {
 	return q
 }
 
-func createBinding(withFilter bool, dlq bool) *rabbitv1beta1.Binding {
+func createBinding(withFilter bool, dlq bool, vhost string) *rabbitv1beta1.Binding {
 	bindingName := fmt.Sprintf("t.%s.%s.test-trigger-uid", testNS, triggerName)
 	if dlq {
 		bindingName = dlqBindingName
@@ -1499,7 +1546,7 @@ func createBinding(withFilter bool, dlq bool) *rabbitv1beta1.Binding {
 			Labels: labels,
 		},
 		Spec: rabbitv1beta1.BindingSpec{
-			Vhost:           "/",
+			Vhost:           vhost,
 			DestinationType: "queue",
 			Destination:     queueName,
 			Source:          "b.test-namespace.test-broker.broker-test-uid",

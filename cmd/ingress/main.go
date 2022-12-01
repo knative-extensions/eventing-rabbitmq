@@ -52,9 +52,10 @@ const (
 type envConfig struct {
 	utils.EnvConfig
 
-	Port         int    `envconfig:"PORT" default:"8080"`
-	BrokerURL    string `envconfig:"BROKER_URL" required:"true"`
-	ExchangeName string `envconfig:"EXCHANGE_NAME" required:"true"`
+	Port          int    `envconfig:"PORT" default:"8080"`
+	BrokerURL     string `envconfig:"BROKER_URL" required:"true"`
+	ExchangeName  string `envconfig:"EXCHANGE_NAME" required:"true"`
+	RabbitMQVhost string `envconfig:"RABBITMQ_VHOST" required:"false"`
 
 	rmqHelper rabbit.RabbitMQConnectionsHandlerInterface
 
@@ -91,7 +92,7 @@ func main() {
 	}
 
 	env.rmqHelper = rabbit.NewRabbitMQConnectionHandler(1000, logger)
-	env.rmqHelper.Setup(ctx, env.BrokerURL, rabbit.ChannelConfirm, rabbit.DialWrapper)
+	env.rmqHelper.Setup(ctx, rabbit.VHostHandler(env.BrokerURL, env.RabbitMQVhost), rabbit.ChannelConfirm, rabbit.DialWrapper)
 
 	env.reporter = ingress.NewStatsReporter(env.ContainerName, kmeta.ChildName(env.PodName, uuid.New().String()))
 	connectionArgs := kncloudevents.ConnectionArgs{

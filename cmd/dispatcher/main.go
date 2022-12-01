@@ -42,6 +42,7 @@ type envConfig struct {
 
 	QueueName        string `envconfig:"QUEUE_NAME" required:"true"`
 	RabbitURL        string `envconfig:"RABBIT_URL" required:"true"`
+	RabbitMQVhost    string `envconfig:"RABBITMQ_VHOST" required:"false"`
 	BrokerIngressURL string `envconfig:"BROKER_INGRESS_URL" required:"true"`
 	SubscriberURL    string `envconfig:"SUBSCRIBER" required:"true"`
 
@@ -98,7 +99,7 @@ func main() {
 
 	var err error
 	rmqHelper := rabbit.NewRabbitMQConnectionHandler(1000, logger)
-	rmqHelper.Setup(ctx, env.RabbitURL, rabbit.ChannelQoS, rabbit.DialWrapper)
+	rmqHelper.Setup(ctx, rabbit.VHostHandler(env.RabbitURL, env.RabbitMQVhost), rabbit.ChannelQoS, rabbit.DialWrapper)
 	for {
 		if err = d.ConsumeFromQueue(ctx, rmqHelper.GetConnection(), rmqHelper.GetChannel(), env.QueueName); err != nil {
 			if errors.Is(err, context.Canceled) {

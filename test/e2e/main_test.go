@@ -78,6 +78,21 @@ func TestBrokerDirect(t *testing.T) {
 	env.Finish()
 }
 
+// TestVhostBrokerDirect makes sure a Broker can delivery events to a consumer inside a rabbitmq vhost.
+func TestVhostBrokerDirect(t *testing.T) {
+	t.Parallel()
+	ctx, env := global.Environment(
+		knative.WithKnativeNamespace(system.Namespace()),
+		knative.WithLoggingConfig,
+		knative.WithTracingConfig,
+		k8s.WithEventListener,
+	)
+	env.Test(ctx, t, RabbitMQClusterVHost())
+	env.Test(ctx, t, RecorderFeature())
+	env.Test(ctx, t, DirectVhostTestBroker())
+	env.Finish()
+}
+
 // TestBrokerDirect makes sure a Broker can delivery events to a consumer by connecting to a rabbitmq instance via a connection secret
 func TestBrokerDirectWithConnectionSecret(t *testing.T) {
 	t.Parallel()

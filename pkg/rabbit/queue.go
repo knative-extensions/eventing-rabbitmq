@@ -31,6 +31,7 @@ import (
 type QueueArgs struct {
 	Name                     string
 	Namespace                string
+	RabbitMQVhost            string
 	QueueName                string
 	RabbitmqClusterReference *rabbitv1beta1.RabbitmqClusterReference
 	Owner                    metav1.OwnerReference
@@ -44,7 +45,6 @@ type QueueArgs struct {
 func NewQueue(args *QueueArgs) *rabbitv1beta1.Queue {
 	// queue configurations for broker and trigger
 	queueName := args.Name
-	vhost := "/"
 	queueType := eventingv1alpha1.QuorumQueueType
 	if args.QueueName != "" {
 		queueName = args.QueueName
@@ -56,7 +56,6 @@ func NewQueue(args *QueueArgs) *rabbitv1beta1.Queue {
 	// queue configurations for source
 	if args.Source != nil {
 		queueName = args.Source.Spec.RabbitmqResourcesConfig.QueueName
-		vhost = args.Source.Spec.RabbitmqResourcesConfig.Vhost
 	}
 
 	return &rabbitv1beta1.Queue{
@@ -68,7 +67,7 @@ func NewQueue(args *QueueArgs) *rabbitv1beta1.Queue {
 		},
 		Spec: rabbitv1beta1.QueueSpec{
 			Name:                     queueName,
-			Vhost:                    vhost,
+			Vhost:                    args.RabbitMQVhost,
 			Durable:                  true,
 			AutoDelete:               false,
 			RabbitmqClusterReference: *args.RabbitmqClusterReference,
@@ -87,6 +86,7 @@ func NewPolicy(args *QueueArgs) *rabbitv1beta1.Policy {
 		},
 		Spec: rabbitv1beta1.PolicySpec{
 			Name:                     args.Name,
+			Vhost:                    args.RabbitMQVhost,
 			Priority:                 1,
 			Pattern:                  fmt.Sprintf("^%s$", regexp.QuoteMeta(args.QueueName)),
 			ApplyTo:                  "queues",
@@ -107,6 +107,7 @@ func NewBrokerDLXPolicy(args *QueueArgs) *rabbitv1beta1.Policy {
 		},
 		Spec: rabbitv1beta1.PolicySpec{
 			Name:                     args.Name,
+			Vhost:                    args.RabbitMQVhost,
 			Priority:                 0, // lower priority then policies created for trigger queues to allow overwrite
 			Pattern:                  fmt.Sprintf("%s$", regexp.QuoteMeta(args.BrokerUID)),
 			ApplyTo:                  "queues",

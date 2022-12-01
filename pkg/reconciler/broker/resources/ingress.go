@@ -46,6 +46,7 @@ type IngressArgs struct {
 	RabbitMQSecretName   string
 	RabbitMQCASecretName string
 	BrokerUrlSecretKey   string
+	RabbitMQVhost        string
 	Configs              reconcilersource.ConfigAccessor
 	ResourceRequirements corev1.ResourceRequirements
 }
@@ -82,6 +83,9 @@ func MakeIngressDeployment(args *IngressArgs) *appsv1.Deployment {
 	}, {
 		Name:  "BROKER_NAMESPACE",
 		Value: args.Broker.Namespace,
+	}, {
+		Name:  "RABBITMQ_VHOST",
+		Value: args.RabbitMQVhost,
 	}}
 	if args.Configs != nil {
 		envs = append(envs, args.Configs.ToEnvVars()...)

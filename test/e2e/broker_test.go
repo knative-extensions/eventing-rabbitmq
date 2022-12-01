@@ -27,6 +27,7 @@ import (
 	brokere2e "knative.dev/eventing-rabbitmq/test/e2e/config/broker"
 	"knative.dev/eventing-rabbitmq/test/e2e/config/brokersecret"
 	"knative.dev/eventing-rabbitmq/test/e2e/config/brokertrigger"
+	"knative.dev/eventing-rabbitmq/test/e2e/config/brokertriggervhost"
 	"knative.dev/eventing-rabbitmq/test/e2e/config/dlq"
 	smokebrokere2e "knative.dev/eventing-rabbitmq/test/e2e/config/smoke/broker"
 	smokebrokertriggere2e "knative.dev/eventing-rabbitmq/test/e2e/config/smoke/brokertrigger"
@@ -81,6 +82,41 @@ func DirectTestBrokerConnectionSecret() *feature.Feature {
 	f := new(feature.Feature)
 
 	f.Setup("install test resources", brokersecret.Install(brokersecret.Topology{
+		Triggers: []duckv1.KReference{
+			{
+				Kind: "Service",
+				Name: "recorder",
+			},
+		},
+	}))
+	f.Setup("RabbitMQ broker goes ready", AllGoReady)
+
+	prober := eventshub.NewProber()
+	prober.SetTargetResource(brokerresources.GVR(), "testbroker")
+	prober.SenderFullEvents(5)
+	f.Setup("install source", prober.SenderInstall("source"))
+	f.Requirement("sender is finished", prober.SenderDone("source"))
+
+	f.Alpha("RabbitMQ broker").Must("goes ready", AllGoReady)
+	f.Alpha("RabbitMQ source").
+		Must("the recorder received all sent events within the time",
+			func(ctx context.Context, t feature.T) {
+				// TODO: Use constraint matching instead of just counting number of events.
+				eventshub.StoreFromContext(ctx, "recorder").AssertAtLeast(t, 5)
+			})
+	f.Teardown("Delete feature resources", f.DeleteResources)
+	return f
+}
+
+//
+// producer ---> rabbitmq --[vhost(broker)]--> trigger --> recorder
+//
+
+// DirectVhostTestBroker makes sure an RabbitMQ Broker is created on the desired vhost.
+func DirectVhostTestBroker() *feature.Feature {
+	f := new(feature.Feature)
+
+	f.Setup("install test resources", brokertriggervhost.Install(brokertriggervhost.Topology{
 		Triggers: []duckv1.KReference{
 			{
 				Kind: "Service",
