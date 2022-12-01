@@ -92,7 +92,7 @@ func main() {
 	}
 
 	env.rmqHelper = rabbit.NewRabbitMQConnectionHandler(1000, logger)
-	env.rmqHelper.Setup(ctx, env.BrokerURL, rabbit.ChannelConfirm, rabbit.DialWrapper)
+	env.rmqHelper.Setup(ctx, rabbit.VHostHandler(env.BrokerURL, env.RabbitMQVhost), rabbit.ChannelConfirm, rabbit.DialWrapper)
 
 	env.reporter = ingress.NewStatsReporter(env.ContainerName, kmeta.ChildName(env.PodName, uuid.New().String()))
 	connectionArgs := kncloudevents.ConnectionArgs{

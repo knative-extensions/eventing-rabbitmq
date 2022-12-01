@@ -139,7 +139,7 @@ func DirectVhostTestBroker() *feature.Feature {
 				// TODO: Use constraint matching instead of just counting number of events.
 				eventshub.StoreFromContext(ctx, "recorder").AssertAtLeast(t, 5)
 			})
-	f.Teardown("Delete feature resources", f.DeleteResources)
+	//f.Teardown("Delete feature resources", f.DeleteResources)
 	return f
 }
 
