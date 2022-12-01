@@ -90,7 +90,7 @@ func TestVhostBrokerDirect(t *testing.T) {
 	env.Test(ctx, t, RabbitMQClusterVHost())
 	env.Test(ctx, t, RecorderFeature())
 	env.Test(ctx, t, DirectVhostTestBroker())
-	//env.Finish()
+	env.Finish()
 }
 
 // TestBrokerDirect makes sure a Broker can delivery events to a consumer by connecting to a rabbitmq instance via a connection secret
