@@ -23,6 +23,7 @@ import (
 
 	"knative.dev/eventing/pkg/apis/eventing"
 	"knative.dev/eventing/pkg/apis/feature"
+	"knative.dev/eventing/pkg/client/injection/client"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/injection/sharedmain"
@@ -40,7 +41,7 @@ import (
 
 var ourTypes = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
 	v1.SchemeGroupVersion.WithKind("Broker"):                                                             &rabbitv1.RabbitBroker{},
-	v1.SchemeGroupVersion.WithKind("Trigger"):                                                            &v1.Trigger{},
+	v1.SchemeGroupVersion.WithKind("Trigger"):                                                            &rabbitv1.RabbitTrigger{},
 	schema.GroupVersion{Group: eventing.GroupName, Version: "v1alpha1"}.WithKind("RabbitmqBrokerConfig"): &rabbitv1.RabbitmqBrokerConfig{},
 }
 
@@ -59,9 +60,7 @@ func NewDefaultingAdmissionController(ctx context.Context, cmw configmap.Watcher
 		"/defaulting",
 
 		// The resources to default.
-		map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
-			schema.GroupVersion{Group: eventing.GroupName, Version: "v1alpha1"}.WithKind("RabbitmqBrokerConfig"): &rabbitv1.RabbitmqBrokerConfig{},
-		},
+		ourTypes,
 
 		// A function that infuses the context passed to Validate/SetDefaults with custom metadata.
 		ctxFunc,
@@ -75,16 +74,14 @@ func NewValidationAdmissionController(ctx context.Context, cmw configmap.Watcher
 	featureStore := feature.NewStore(logging.FromContext(ctx).Named("feature-config-store"))
 	featureStore.WatchConfigs(cmw)
 
+	c := client.Get(ctx)
 	// Decorate contexts with the current state of the config.
 	ctxFunc := func(ctx context.Context) context.Context {
+		// attach client that would get used by the Trigger validation.
+		ctx = context.WithValue(ctx, client.Key{}, c)
 		return featureStore.ToContext(ctx)
 	}
 
-	callbacks := map[schema.GroupVersionKind]validation.Callback{
-		v1.SchemeGroupVersion.WithKind("Broker"):               validation.NewCallback(rabbitv1.ValidateBroker, webhook.Create, webhook.Update),
-		v1.SchemeGroupVersion.WithKind("Trigger"):              validation.NewCallback(rabbitv1.ValidateTrigger(ctx), webhook.Create, webhook.Update),
-		v1.SchemeGroupVersion.WithKind("RabbitmqBrokerConfig"): validation.NewCallback(rabbitv1.ValidateRabbitmqBrokerConfig, webhook.Create, webhook.Update),
-	}
 	return validation.NewAdmissionController(ctx,
 
 		// Name of the resource webhook.
@@ -101,9 +98,6 @@ func NewValidationAdmissionController(ctx context.Context, cmw configmap.Watcher
 
 		// Whether to disallow unknown fields.
 		true,
-
-		// Extra validating callbacks to be applied to resources.
-		callbacks,
 	)
 }
 

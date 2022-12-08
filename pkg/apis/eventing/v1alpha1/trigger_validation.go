@@ -21,13 +21,13 @@ import (
 	"strconv"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"knative.dev/eventing-rabbitmq/pkg/utils"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
-	"knative.dev/eventing/pkg/client/clientset/versioned"
 	"knative.dev/eventing/pkg/client/injection/client"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/kmp"
+	"knative.dev/pkg/webhook/resourcesemantics"
 )
 
 const (
@@ -35,36 +35,33 @@ const (
 	parallelismAnnotation = "rabbitmq.eventing.knative.dev/parallelism"
 )
 
-func ValidateTrigger(ctx context.Context) func(context.Context, *unstructured.Unstructured) error {
-	c := client.Get(ctx)
-
-	return func(ctx context.Context, unstructured *unstructured.Unstructured) error {
-		return validate(ctx, unstructured, &RabbitTrigger{Client: c})
-	}
-}
-
-// +k8s:deepcopy-gen=false
 type RabbitTrigger struct {
-	eventingv1.Trigger
-	Client versioned.Interface
+	metav1.TypeMeta `json:",inline"`
+
+	// +optional
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec eventingv1.TriggerSpec `json:"spec,omitempty"`
+
+	// +optional
+	Status eventingv1.TriggerStatus `json:"status,omitempty"`
 }
 
-var _ apis.Validatable = (*RabbitTrigger)(nil)
+var _ resourcesemantics.GenericCRD = (*RabbitTrigger)(nil)
 
 func (t *RabbitTrigger) Validate(ctx context.Context) *apis.FieldError {
-	broker, err := t.Client.EventingV1().Brokers(t.Namespace).Get(ctx, t.Spec.Broker, metav1.GetOptions{})
-	if err != nil {
-		return nil
-	}
+	c := client.Get(ctx)
+	broker, _ := c.EventingV1().Brokers(t.Namespace).Get(ctx, t.Spec.Broker, metav1.GetOptions{})
 
-	bc, ok := broker.GetAnnotations()[eventingv1.BrokerClassAnnotationKey]
-	if !ok || bc != BrokerClass {
-		// Not my broker
-		return nil
+	if broker != nil {
+		bc, ok := broker.GetAnnotations()[eventingv1.BrokerClassAnnotationKey]
+		if !ok || bc != BrokerClass {
+			// Not my broker
+			return nil
+		}
 	}
 
 	// if parallelism is set, validate it
-	// if it isn't then the default value (1) is used
 	parallelism, ok := t.GetAnnotations()[parallelismAnnotation]
 	if ok {
 		parallelismInt, err := strconv.Atoi(parallelism)
@@ -104,3 +101,21 @@ func (t *RabbitTrigger) Validate(ctx context.Context) *apis.FieldError {
 
 	return nil
 }
+
+func (t *RabbitTrigger) DeepCopyObject() runtime.Object {
+	if t == nil {
+		return nil
+	}
+
+	out := &RabbitTrigger{
+		TypeMeta: t.TypeMeta,
+	}
+
+	t.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
+	t.Spec.DeepCopyInto(&out.Spec)
+	t.Status.DeepCopyInto(&out.Status)
+
+	return out
+}
+
+func (t *RabbitTrigger) SetDefaults(ctx context.Context) {}

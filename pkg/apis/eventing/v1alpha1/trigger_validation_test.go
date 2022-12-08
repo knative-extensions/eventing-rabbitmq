@@ -28,6 +28,7 @@ import (
 	"knative.dev/eventing-rabbitmq/pkg/utils"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	"knative.dev/eventing/pkg/client/clientset/versioned/fake"
+	"knative.dev/eventing/pkg/client/injection/client"
 	"knative.dev/pkg/apis"
 )
 
@@ -35,10 +36,11 @@ const parallelismAnnotation = "rabbitmq.eventing.knative.dev/parallelism"
 
 func TestTriggerValidate(t *testing.T) {
 	tests := []struct {
-		name string
-		trigger,
+		name     string
+		trigger  *v1.RabbitTrigger
 		original *v1.RabbitTrigger
-		err *apis.FieldError
+		err      *apis.FieldError
+		objects  []runtime.Object
 	}{
 		{
 			name:    "broker not found gets ignored",
@@ -48,61 +50,88 @@ func TestTriggerValidate(t *testing.T) {
 			name: "different broker class gets ignored",
 			trigger: trigger(
 				withBroker("foo"),
-				withClientObjects(&eventingv1.Broker{
+			),
+			objects: []runtime.Object{
+				&eventingv1.Broker{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:        "foo",
 						Annotations: map[string]string{eventingv1.BrokerClassAnnotationKey: "some-other-broker"},
 					},
-				})),
+				},
+			},
 		},
 		{
 			name:     "filters are immutable",
-			trigger:  trigger(withBroker("foo"), brokerExistsAndIsValid),
-			original: trigger(withBroker("foo"), brokerExistsAndIsValid, withFilters(filter("x", "y"))),
+			trigger:  trigger(withBroker("foo")),
+			original: trigger(withBroker("foo"), withFilters(filter("x", "y"))),
 			err: &apis.FieldError{
 				Message: "Immutable fields changed (-old +new)",
 				Paths:   []string{"spec", "filter"},
 				Details: "{*v1.TriggerFilter}:\n\t-: \"&{Attributes:map[x:y]}\"\n\t+: \"<nil>\"\n",
 			},
+			objects: []runtime.Object{
+				validBroker("foo"),
+			},
 		},
 		{
 			name:    "out of bounds parallelism count annotation",
-			trigger: trigger(withBroker("foo"), brokerExistsAndIsValid, withParallelism("0")),
+			trigger: trigger(withBroker("foo"), withParallelism("0")),
 			err:     apis.ErrOutOfBoundsValue(0, 1, 1000, parallelismAnnotation),
+			objects: []runtime.Object{
+				validBroker("foo"),
+			},
 		},
 		{
 			name:    "invalid parallelism count annotation",
-			trigger: trigger(withBroker("foo"), brokerExistsAndIsValid, withParallelism("notAnumber")),
+			trigger: trigger(withBroker("foo"), withParallelism("notAnumber")),
 			err: &apis.FieldError{
 				Message: "Failed to parse valid int from parallelismAnnotation",
 				Paths:   []string{"metadata", "annotations", parallelismAnnotation},
 				Details: `strconv.Atoi: parsing "notAnumber": invalid syntax`,
 			},
+			objects: []runtime.Object{
+				validBroker("foo"),
+			},
 		},
 		{
 			name:     "update parallelism count annotation",
-			trigger:  trigger(withBroker("foo"), brokerExistsAndIsValid, withParallelism("100")),
-			original: trigger(withBroker("foo"), brokerExistsAndIsValid),
+			trigger:  trigger(withBroker("foo"), withParallelism("100")),
+			original: trigger(withBroker("foo")),
+			objects: []runtime.Object{
+				validBroker("foo"),
+			},
 		},
 		{
 			name:    "valid Parallelisp count annotation",
-			trigger: trigger(withBroker("foo"), brokerExistsAndIsValid, withParallelism("100")),
+			trigger: trigger(withBroker("foo"), withParallelism("100")),
+			objects: []runtime.Object{
+				validBroker("foo"),
+			},
 		},
 		{
 			name:    "invalid resource annotations",
-			trigger: trigger(withBroker("foo"), brokerExistsAndIsValid, withAnnotation(utils.CPURequestAnnotation, "invalid")),
+			trigger: trigger(withBroker("foo"), withAnnotation(utils.CPURequestAnnotation, "invalid")),
 			err: &apis.FieldError{
 				Message: "Failed to parse quantity from rabbitmq.eventing.knative.dev/cpu-request",
 				Paths:   []string{"metadata", "annotations", "rabbitmq.eventing.knative.dev/cpu-request"},
 				Details: "quantities must match the regular expression '^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$'",
 			},
+			objects: []runtime.Object{
+				validBroker("foo"),
+			},
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := context.WithValue(context.Background(), client.Key{}, fake.NewSimpleClientset(tc.objects...))
 			if tc.original != nil {
-				ctx = apis.WithinUpdate(ctx, &tc.original.Trigger)
+				t := eventingv1.Trigger{
+					TypeMeta:   tc.original.TypeMeta,
+					ObjectMeta: tc.original.ObjectMeta,
+					Spec:       tc.original.Spec,
+					Status:     tc.original.Status,
+				}
+				ctx = apis.WithinUpdate(ctx, &t)
 			}
 
 			err := tc.trigger.Validate(ctx)
@@ -117,35 +146,12 @@ type triggerOpt func(*v1.RabbitTrigger)
 
 func trigger(opts ...triggerOpt) *v1.RabbitTrigger {
 	t := &v1.RabbitTrigger{
-		Trigger: eventingv1.Trigger{
-			Spec: eventingv1.TriggerSpec{},
-		},
-		Client: fake.NewSimpleClientset(),
+		Spec: eventingv1.TriggerSpec{},
 	}
 	for _, o := range opts {
 		o(t)
 	}
 	return t
-}
-func withClientObjects(objects ...runtime.Object) triggerOpt {
-	return func(t *v1.RabbitTrigger) {
-		t.Client = fake.NewSimpleClientset(objects...)
-	}
-}
-
-func withBroker(name string) triggerOpt {
-	return func(t *v1.RabbitTrigger) {
-		t.Spec.Broker = name
-	}
-}
-
-func brokerExistsAndIsValid(t *v1.RabbitTrigger) {
-	withClientObjects(&eventingv1.Broker{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        t.Spec.Broker,
-			Annotations: map[string]string{eventingv1.BrokerClassAnnotationKey: v1.BrokerClass},
-		},
-	})(t)
 }
 
 func filter(k, v string) []string {
@@ -183,5 +189,20 @@ func withAnnotation(key, value string) triggerOpt {
 		}
 
 		t.Annotations[key] = value
+	}
+}
+
+func withBroker(name string) triggerOpt {
+	return func(t *v1.RabbitTrigger) {
+		t.Spec.Broker = name
+	}
+}
+
+func validBroker(name string) *eventingv1.Broker {
+	return &eventingv1.Broker{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        name,
+			Annotations: map[string]string{eventingv1.BrokerClassAnnotationKey: v1.BrokerClass},
+		},
 	}
 }

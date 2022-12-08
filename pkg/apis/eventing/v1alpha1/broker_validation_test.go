@@ -22,7 +22,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"knative.dev/eventing-rabbitmq/pkg/utils"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	"knative.dev/pkg/apis"
@@ -43,7 +42,7 @@ func TestBrokerImmutableFields(t *testing.T) {
 			},
 		},
 	}
-	current := &RabbitBroker{eventingv1.Broker{
+	current := &RabbitBroker{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{"eventing.knative.dev/broker.class": "RabbitMQBroker"},
 		},
@@ -55,7 +54,7 @@ func TestBrokerImmutableFields(t *testing.T) {
 				APIVersion: "v1",
 			},
 		},
-	}}
+	}
 	currentRealBroker := &eventingv1.Broker{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{"eventing.knative.dev/broker.class": "RabbitMQBroker"},
@@ -143,22 +142,22 @@ func TestValidate(t *testing.T) {
 		b:    RabbitBroker{},
 	}, {
 		name: "empty annotation, again not our broker",
-		b: RabbitBroker{eventingv1.Broker{
+		b: RabbitBroker{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{"eventing.knative.dev/broker.class": ""},
 			},
-		}},
+		},
 	}, {
 		name: "empty, missing config",
-		b: RabbitBroker{eventingv1.Broker{
+		b: RabbitBroker{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{"eventing.knative.dev/broker.class": "RabbitMQBroker"},
 			},
-		}},
+		},
 		want: apis.ErrMissingField("spec.config"),
 	}, {
 		name: "valid config, just some other BrokerClass",
-		b: RabbitBroker{eventingv1.Broker{
+		b: RabbitBroker{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{"eventing.knative.dev/broker.class": "notourbrokerclass"},
 			},
@@ -170,10 +169,10 @@ func TestValidate(t *testing.T) {
 					APIVersion: "apiversion",
 				},
 			},
-		}},
+		},
 	}, {
 		name: "invalid config",
-		b: RabbitBroker{eventingv1.Broker{
+		b: RabbitBroker{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{"eventing.knative.dev/broker.class": "RabbitMQBroker"},
 			},
@@ -185,11 +184,11 @@ func TestValidate(t *testing.T) {
 					APIVersion: "apiversion",
 				},
 			},
-		}},
+		},
 		want: apis.ErrGeneric("Configuration not supported, only [kind: RabbitmqCluster, apiVersion: rabbitmq.com/v1beta1] or [kind: RabbitmqBrokerConfig, apiVersion: eventing.knative.dev/v1alpha1]").ViaField("spec").ViaField("config"),
 	}, {
 		name: "invalid config, no namespace",
-		b: RabbitBroker{eventingv1.Broker{
+		b: RabbitBroker{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{"eventing.knative.dev/broker.class": "RabbitMQBroker"},
 			},
@@ -200,11 +199,11 @@ func TestValidate(t *testing.T) {
 					APIVersion: "rabbitmq.com/v1beta1",
 				},
 			},
-		}},
+		},
 		want: apis.ErrMissingField("spec.config.namespace"),
 	}, {
 		name: "invalid config, missing name",
-		b: RabbitBroker{eventingv1.Broker{
+		b: RabbitBroker{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{"eventing.knative.dev/broker.class": "RabbitMQBroker"},
 			},
@@ -215,11 +214,11 @@ func TestValidate(t *testing.T) {
 					APIVersion: "rabbitmq.com/v1beta1",
 				},
 			},
-		}},
+		},
 		want: apis.ErrMissingField("spec.config.name"),
 	}, {
 		name: "invalid config, missing apiVersion",
-		b: RabbitBroker{eventingv1.Broker{
+		b: RabbitBroker{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{"eventing.knative.dev/broker.class": "RabbitMQBroker"},
 			},
@@ -230,11 +229,11 @@ func TestValidate(t *testing.T) {
 					Kind:      "RabbitmqCluster",
 				},
 			},
-		}},
+		},
 		want: apis.ErrMissingField("spec.config.apiVersion"),
 	}, {
 		name: "invalid config, missing kind",
-		b: RabbitBroker{eventingv1.Broker{
+		b: RabbitBroker{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{"eventing.knative.dev/broker.class": "RabbitMQBroker"},
 			},
@@ -245,11 +244,11 @@ func TestValidate(t *testing.T) {
 					APIVersion: "apiversion",
 				},
 			},
-		}},
+		},
 		want: apis.ErrMissingField("spec.config.kind"),
 	}, {
 		name: "valid config, rabbitmqcluster",
-		b: RabbitBroker{eventingv1.Broker{
+		b: RabbitBroker{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{"eventing.knative.dev/broker.class": "RabbitMQBroker"},
 			},
@@ -261,10 +260,10 @@ func TestValidate(t *testing.T) {
 					APIVersion: "rabbitmq.com/v1beta1",
 				},
 			},
-		}},
+		},
 	}, {
 		name: "valid config, rabbitmqBrokerConfig",
-		b: RabbitBroker{eventingv1.Broker{
+		b: RabbitBroker{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{"eventing.knative.dev/broker.class": "RabbitMQBroker"},
 			},
@@ -276,17 +275,17 @@ func TestValidate(t *testing.T) {
 					APIVersion: "eventing.knative.dev/v1alpha1",
 				},
 			},
-		}},
+		},
 	}, {
 		name: "invalid resource annotations",
-		b: RabbitBroker{eventingv1.Broker{
+		b: RabbitBroker{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{
 					"eventing.knative.dev/broker.class": "RabbitMQBroker",
 					utils.CPURequestAnnotation:          "invalid",
 				},
 			},
-		}},
+		},
 		want: &apis.FieldError{
 			Message: "Failed to parse quantity from rabbitmq.eventing.knative.dev/cpu-request",
 			Paths:   []string{"metadata", "annotations", "rabbitmq.eventing.knative.dev/cpu-request"},
@@ -300,123 +299,5 @@ func TestValidate(t *testing.T) {
 				t.Error("Broker.Validate (-want, +got) =", diff)
 			}
 		})
-	}
-}
-
-func TestValidateFunc(t *testing.T) {
-	tests := []struct {
-		name     string
-		b        *unstructured.Unstructured
-		original *eventingv1.Broker
-		want     *apis.FieldError
-	}{{
-		name: "not my broker class",
-		b:    createOtherBroker(),
-	}, {
-		name: "invalid config missing kind/apiversion",
-		b:    createRabbitMQBrokerInvalid(),
-		want: &apis.FieldError{
-			Message: "missing field(s)",
-			Paths:   []string{"spec.config.apiVersion", "spec.config.kind"},
-		},
-	}, {
-		name: "valid with RabbitmqCluster",
-		b:    createRabbitMQBrokerValidRabbitMQCluster(),
-	}}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			ctx := context.Background()
-			if test.original != nil {
-				ctx = apis.WithinUpdate(ctx, test.original)
-			}
-			got := ValidateBroker(ctx, test.b)
-			if test.want.Error() != "" && got == nil {
-				t.Errorf("Broker.Validate want: %q got nil", test.want.Error())
-			} else if test.want.Error() == "" && got != nil {
-				t.Errorf("Broker.Validate want: nil got %q", got)
-			} else if got != nil {
-				if diff := cmp.Diff(test.want.Error(), got.Error()); diff != "" {
-					t.Error("Broker.Validate (-want, +got) =", diff)
-				}
-			}
-		})
-	}
-}
-
-func createOtherBroker() *unstructured.Unstructured {
-	annotations := map[string]interface{}{
-		"eventing.knative.dev/broker.class": "NotRabbitMQBroker",
-	}
-
-	return &unstructured.Unstructured{
-		Object: map[string]interface{}{
-			"apiVersion": "eventing.knative.dev/v1",
-			"kind":       "Broker",
-			"metadata": map[string]interface{}{
-				"creationTimestamp": nil,
-				"namespace":         "namespace",
-				"name":              "broker",
-				"annotations":       annotations,
-			},
-			"spec": map[string]interface{}{
-				"config": map[string]interface{}{
-					"namespace": "namespace",
-					"name":      "name",
-				},
-			},
-		},
-	}
-}
-
-func createRabbitMQBrokerInvalid() *unstructured.Unstructured {
-	annotations := map[string]interface{}{
-		"eventing.knative.dev/broker.class": "RabbitMQBroker",
-	}
-
-	return &unstructured.Unstructured{
-		Object: map[string]interface{}{
-			"apiVersion": "eventing.knative.dev/v1",
-			"kind":       "Broker",
-			"metadata": map[string]interface{}{
-				"creationTimestamp": nil,
-				"namespace":         "namespace",
-				"name":              "broker",
-				"annotations":       annotations,
-			},
-			"spec": map[string]interface{}{
-				"config": map[string]interface{}{
-					"namespace": "namespace",
-					"name":      "name",
-				},
-			},
-		},
-	}
-}
-
-func createRabbitMQBrokerValidRabbitMQCluster() *unstructured.Unstructured {
-	annotations := map[string]interface{}{
-		"eventing.knative.dev/broker.class": "RabbitMQBroker",
-	}
-
-	return &unstructured.Unstructured{
-		Object: map[string]interface{}{
-			"apiVersion": "eventing.knative.dev/v1",
-			"kind":       "Broker",
-			"metadata": map[string]interface{}{
-				"creationTimestamp": nil,
-				"namespace":         "namespace",
-				"name":              "broker",
-				"annotations":       annotations,
-			},
-			"spec": map[string]interface{}{
-				"config": map[string]interface{}{
-					"namespace":  "namespace",
-					"name":       "name",
-					"kind":       "RabbitmqCluster",
-					"apiVersion": "rabbitmq.com/v1beta1",
-				},
-			},
-		},
 	}
 }
