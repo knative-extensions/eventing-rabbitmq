@@ -125,13 +125,7 @@ func TestTriggerValidate(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := context.WithValue(context.Background(), client.Key{}, fake.NewSimpleClientset(tc.objects...))
 			if tc.original != nil {
-				t := eventingv1.Trigger{
-					TypeMeta:   tc.original.TypeMeta,
-					ObjectMeta: tc.original.ObjectMeta,
-					Spec:       tc.original.Spec,
-					Status:     tc.original.Status,
-				}
-				ctx = apis.WithinUpdate(ctx, &t)
+				ctx = apis.WithinUpdate(ctx, tc.original)
 			}
 
 			err := tc.trigger.Validate(ctx)

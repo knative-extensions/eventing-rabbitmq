@@ -29,7 +29,7 @@ import (
 )
 
 func TestBrokerImmutableFields(t *testing.T) {
-	original := &eventingv1.Broker{
+	original := &RabbitBroker{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{"eventing.knative.dev/broker.class": "original"},
 		},
@@ -55,7 +55,7 @@ func TestBrokerImmutableFields(t *testing.T) {
 			},
 		},
 	}
-	currentRealBroker := &eventingv1.Broker{
+	currentRealBroker := &RabbitBroker{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{"eventing.knative.dev/broker.class": "RabbitMQBroker"},
 		},
@@ -68,7 +68,7 @@ func TestBrokerImmutableFields(t *testing.T) {
 			},
 		},
 	}
-	originalValid := &eventingv1.Broker{
+	originalValid := &RabbitBroker{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{"eventing.knative.dev/broker.class": "RabbitMQBroker"},
 		},
@@ -83,7 +83,7 @@ func TestBrokerImmutableFields(t *testing.T) {
 	}
 
 	tests := map[string]struct {
-		og      *eventingv1.Broker
+		og      *RabbitBroker
 		wantErr *apis.FieldError
 	}{
 		"nil original": {

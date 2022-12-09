@@ -35,6 +35,7 @@ const (
 	parallelismAnnotation = "rabbitmq.eventing.knative.dev/parallelism"
 )
 
+// +k8s:controller-gen=false
 type RabbitTrigger struct {
 	metav1.TypeMeta `json:",inline"`
 
@@ -83,7 +84,7 @@ func (t *RabbitTrigger) Validate(ctx context.Context) *apis.FieldError {
 	}
 
 	if apis.IsInUpdate(ctx) {
-		original := apis.GetBaseline(ctx).(*eventingv1.Trigger)
+		original := apis.GetBaseline(ctx).(*RabbitTrigger)
 		if diff, err := kmp.ShortDiff(original.Spec.Filter, t.Spec.Filter); err != nil {
 			return &apis.FieldError{
 				Message: "Failed to diff Trigger",

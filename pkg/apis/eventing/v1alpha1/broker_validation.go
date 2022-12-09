@@ -31,6 +31,7 @@ import (
 )
 
 // stub Broker in order to set up validations and defaults
+// +k8s:controller-gen=false
 type RabbitBroker struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
@@ -52,7 +53,7 @@ func (b *RabbitBroker) Validate(ctx context.Context) *apis.FieldError {
 	}
 
 	if apis.IsInUpdate(ctx) {
-		original := apis.GetBaseline(ctx).(*eventingv1.Broker)
+		original := apis.GetBaseline(ctx).(*RabbitBroker)
 		if original != nil {
 			// If the original is not my type or missing, complain
 			if origBc, ok := original.GetAnnotations()[eventingv1.BrokerClassAnnotationKey]; !ok || origBc != "RabbitMQBroker" {
