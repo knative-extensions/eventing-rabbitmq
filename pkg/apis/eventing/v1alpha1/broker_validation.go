@@ -21,7 +21,6 @@ import (
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 
 	"knative.dev/eventing-rabbitmq/pkg/utils"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
@@ -32,6 +31,7 @@ import (
 
 // stub Broker in order to set up validations and defaults
 // +k8s:controller-gen=false
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type RabbitBroker struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
@@ -127,19 +127,3 @@ func (b *RabbitBroker) Validate(ctx context.Context) *apis.FieldError {
 }
 
 func (t *RabbitBroker) SetDefaults(ctx context.Context) {}
-
-func (b *RabbitBroker) DeepCopyObject() runtime.Object {
-	if b == nil {
-		return nil
-	}
-
-	out := &RabbitBroker{
-		TypeMeta: b.TypeMeta,
-	}
-
-	b.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
-	b.Spec.DeepCopyInto(&out.Spec)
-	b.Status.DeepCopyInto(&out.Status)
-
-	return out
-}

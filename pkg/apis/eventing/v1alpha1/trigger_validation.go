@@ -21,7 +21,6 @@ import (
 	"strconv"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"knative.dev/eventing-rabbitmq/pkg/utils"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	"knative.dev/eventing/pkg/client/injection/client"
@@ -36,6 +35,7 @@ const (
 )
 
 // +k8s:controller-gen=false
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type RabbitTrigger struct {
 	metav1.TypeMeta `json:",inline"`
 
@@ -101,22 +101,6 @@ func (t *RabbitTrigger) Validate(ctx context.Context) *apis.FieldError {
 	}
 
 	return nil
-}
-
-func (t *RabbitTrigger) DeepCopyObject() runtime.Object {
-	if t == nil {
-		return nil
-	}
-
-	out := &RabbitTrigger{
-		TypeMeta: t.TypeMeta,
-	}
-
-	t.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
-	t.Spec.DeepCopyInto(&out.Spec)
-	t.Status.DeepCopyInto(&out.Status)
-
-	return out
 }
 
 func (t *RabbitTrigger) SetDefaults(ctx context.Context) {}
