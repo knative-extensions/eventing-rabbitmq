@@ -22,6 +22,7 @@ import (
 	"knative.dev/eventing/pkg/apis/duck"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	"knative.dev/pkg/apis"
+	v1 "knative.dev/pkg/apis/duck/v1"
 )
 
 const (
@@ -84,7 +85,12 @@ func MarkDLXNotConfigured(bs *eventingv1.BrokerStatus) {
 // SetAddress makes this Broker addressable by setting the URI. It also
 // sets the BrokerConditionAddressable to true.
 func SetAddress(bs *eventingv1.BrokerStatus, url *apis.URL) {
-	bs.Address.URL = url
+	if bs.AddressStatus.Address == nil {
+		bs.AddressStatus.Address = &v1.Addressable{}
+	}
+
+	bs.AddressStatus.Address.URL = url
+
 	if url != nil {
 		bs.GetConditionSet().Manage(bs).MarkTrue(BrokerConditionAddressable)
 	} else {
