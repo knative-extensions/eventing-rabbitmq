@@ -20,23 +20,30 @@ import (
 	"context"
 	"fmt"
 
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"knative.dev/eventing-rabbitmq/pkg/utils"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	"knative.dev/pkg/apis"
-	"knative.dev/pkg/apis/duck"
 	"knative.dev/pkg/kmp"
+	"knative.dev/pkg/webhook/resourcesemantics"
 )
 
-// +k8s:deepcopy-gen=false
+// stub Broker in order to set up validations and defaults
+// +k8s:controller-gen=false
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type RabbitBroker struct {
-	eventingv1.Broker
+	metav1.TypeMeta `json:",inline"`
+	// +optional
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec eventingv1.BrokerSpec `json:"spec,omitempty"`
+
+	// +optional
+	Status eventingv1.BrokerStatus `json:"status,omitempty"`
 }
 
-var (
-	_ apis.Validatable = (*RabbitBroker)(nil)
-)
+var _ resourcesemantics.GenericCRD = (*RabbitBroker)(nil)
 
 func (b *RabbitBroker) Validate(ctx context.Context) *apis.FieldError {
 	bc, ok := b.GetAnnotations()[eventingv1.BrokerClassAnnotationKey]
@@ -46,7 +53,7 @@ func (b *RabbitBroker) Validate(ctx context.Context) *apis.FieldError {
 	}
 
 	if apis.IsInUpdate(ctx) {
-		original := apis.GetBaseline(ctx).(*eventingv1.Broker)
+		original := apis.GetBaseline(ctx).(*RabbitBroker)
 		if original != nil {
 			// If the original is not my type or missing, complain
 			if origBc, ok := original.GetAnnotations()[eventingv1.BrokerClassAnnotationKey]; !ok || origBc != "RabbitMQBroker" {
@@ -119,20 +126,4 @@ func (b *RabbitBroker) Validate(ctx context.Context) *apis.FieldError {
 	return errs
 }
 
-func ValidateBroker(ctx context.Context, unstructured *unstructured.Unstructured) error {
-	return validate(ctx, unstructured, &RabbitBroker{})
-}
-
-func validate(ctx context.Context, unstructured *unstructured.Unstructured, t apis.Validatable) error {
-	if unstructured == nil {
-		return nil
-	}
-	if err := duck.FromUnstructured(unstructured, t); err != nil {
-		return err
-	}
-	err := t.Validate(ctx)
-	if err == nil {
-		return nil
-	}
-	return err
-}
+func (t *RabbitBroker) SetDefaults(ctx context.Context) {}

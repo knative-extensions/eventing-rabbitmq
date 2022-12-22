@@ -18,10 +18,8 @@ limitations under the License.
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/eventing-rabbitmq/third_party/pkg/apis/rabbitmq.com/v1beta1"
-	"knative.dev/pkg/apis"
 	"knative.dev/pkg/webhook/resourcesemantics"
 )
 
@@ -39,10 +37,7 @@ type RabbitmqBrokerConfig struct {
 	Spec RabbitmqBrokerConfigSpec `json:"spec,omitempty"`
 }
 
-var _ runtime.Object = (*RabbitmqBrokerConfig)(nil)
 var _ resourcesemantics.GenericCRD = (*RabbitmqBrokerConfig)(nil)
-var _ apis.Defaultable = (*RabbitmqBrokerConfig)(nil)
-var _ apis.Validatable = (*RabbitmqBrokerConfig)(nil)
 
 type QueueType string
 

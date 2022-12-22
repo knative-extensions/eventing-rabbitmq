@@ -19,10 +19,8 @@ package v1alpha1
 import (
 	"context"
 
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"knative.dev/eventing-rabbitmq/pkg/utils"
 	"knative.dev/pkg/apis"
-	"knative.dev/pkg/apis/duck"
 	"knative.dev/pkg/kmp"
 )
 
@@ -52,15 +50,4 @@ func (r *RabbitmqBrokerConfig) Validate(ctx context.Context) *apis.FieldError {
 	}
 
 	return nil
-}
-
-func ValidateRabbitmqBrokerConfig(ctx context.Context, unstructured *unstructured.Unstructured) error {
-	if unstructured == nil {
-		return nil
-	}
-	r := &RabbitmqBrokerConfig{}
-	if err := duck.FromUnstructured(unstructured, r); err != nil {
-		return err
-	}
-	return r.Validate(ctx)
 }
