@@ -3,8 +3,8 @@ module knative.dev/eventing-rabbitmq
 go 1.18
 
 require (
-	github.com/cloudevents/sdk-go/observability/opencensus/v2 v2.12.0
-	github.com/cloudevents/sdk-go/v2 v2.12.0
+	github.com/cloudevents/sdk-go/observability/opencensus/v2 v2.13.0
+	github.com/cloudevents/sdk-go/v2 v2.13.0
 	github.com/google/go-cmp v0.5.8
 	github.com/google/licenseclassifier v0.0.0-20210325184830-bb04aff29e72
 	github.com/influxdata/tdigest v0.0.1 // indirect
@@ -21,10 +21,10 @@ require (
 	k8s.io/client-go v0.25.4
 	k8s.io/code-generator v0.25.4
 	k8s.io/kube-openapi v0.0.0-20220803162953-67bda5d908f1
-	knative.dev/eventing v0.35.1-0.20230106130620-9e692b8d1d04
-	knative.dev/hack v0.0.0-20221209013717-b9801b4f5a4d
-	knative.dev/pkg v0.0.0-20230104193420-027482598489
-	knative.dev/reconciler-test v0.0.0-20221222133658-cf080d097e77
+	knative.dev/eventing v0.35.1-0.20230111115149-049f0049f8f0
+	knative.dev/hack v0.0.0-20230110013548-af8745e34e08
+	knative.dev/pkg v0.0.0-20230110144649-ecf386394194
+	knative.dev/reconciler-test v0.0.0-20230110131949-7f7a35e0744a
 	sigs.k8s.io/controller-runtime v0.11.2
 )
 
@@ -50,7 +50,7 @@ require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/cloudevents/conformance v0.2.0 // indirect
-	github.com/cloudevents/sdk-go/sql/v2 v2.0.0-20220930150014-52b12276cc4a // indirect
+	github.com/cloudevents/sdk-go/sql/v2 v2.13.0 // indirect
 	github.com/cncf/udpa/go v0.0.0-20210930031921-04548b0d99d4 // indirect
 	github.com/cncf/xds/go v0.0.0-20211130200136-a8f946100490 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
