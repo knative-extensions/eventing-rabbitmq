@@ -17,11 +17,11 @@ kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
   labels:
-    eventing.knative.dev/release: "v20230205-8b7551cc5"
+    eventing.knative.dev/release: "v20230208-491198665"
     eventing.knative.dev/source: "true"
     duck.knative.dev/source: "true"
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20230205-8b7551cc5"
+    app.kubernetes.io/version: "20230208-491198665"
     app.kubernetes.io/name: knative-eventing
   annotations:
     # TODO add schemas and descriptions
@@ -263,10 +263,10 @@ kind: CustomResourceDefinition
 metadata:
   name: brokers.eventing.knative.dev
   labels:
-    eventing.knative.dev/release: "v20230205-8b7551cc5"
+    eventing.knative.dev/release: "v20230208-491198665"
     knative.dev/crd-install: "true"
     duck.knative.dev/addressable: "true"
-    app.kubernetes.io/version: "20230205-8b7551cc5"
+    app.kubernetes.io/version: "20230208-491198665"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: eventing.knative.dev
@@ -400,6 +400,10 @@ spec:
         - name: Reason
           type: string
           jsonPath: ".status.conditions[?(@.type==\"Ready\")].reason"
+        - name: Class
+          type: string
+          priority: 1
+          jsonPath: '.metadata.annotations.eventing\.knative\.dev/broker\.class'
   names:
     kind: Broker
     plural: brokers
@@ -430,11 +434,11 @@ kind: CustomResourceDefinition
 metadata:
   name: channels.messaging.knative.dev
   labels:
-    eventing.knative.dev/release: "v20230205-8b7551cc5"
+    eventing.knative.dev/release: "v20230208-491198665"
     knative.dev/crd-install: "true"
     messaging.knative.dev/subscribable: "true"
     duck.knative.dev/addressable: "true"
-    app.kubernetes.io/version: "20230205-8b7551cc5"
+    app.kubernetes.io/version: "20230208-491198665"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: messaging.knative.dev
@@ -705,11 +709,11 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   labels:
-    eventing.knative.dev/release: "v20230205-8b7551cc5"
+    eventing.knative.dev/release: "v20230208-491198665"
     eventing.knative.dev/source: "true"
     duck.knative.dev/source: "true"
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20230205-8b7551cc5"
+    app.kubernetes.io/version: "20230208-491198665"
     app.kubernetes.io/name: knative-eventing
   name: containersources.sources.knative.dev
 spec:
@@ -859,9 +863,9 @@ kind: CustomResourceDefinition
 metadata:
   name: eventtypes.eventing.knative.dev
   labels:
-    eventing.knative.dev/release: "v20230205-8b7551cc5"
+    eventing.knative.dev/release: "v20230208-491198665"
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20230205-8b7551cc5"
+    app.kubernetes.io/version: "20230208-491198665"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: eventing.knative.dev
@@ -988,10 +992,10 @@ kind: CustomResourceDefinition
 metadata:
   name: parallels.flows.knative.dev
   labels:
-    eventing.knative.dev/release: "v20230205-8b7551cc5"
+    eventing.knative.dev/release: "v20230208-491198665"
     knative.dev/crd-install: "true"
     duck.knative.dev/addressable: "true"
-    app.kubernetes.io/version: "20230205-8b7551cc5"
+    app.kubernetes.io/version: "20230208-491198665"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: flows.knative.dev
@@ -1243,11 +1247,11 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   labels:
-    eventing.knative.dev/release: "v20230205-8b7551cc5"
+    eventing.knative.dev/release: "v20230208-491198665"
     eventing.knative.dev/source: "true"
     duck.knative.dev/source: "true"
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20230205-8b7551cc5"
+    app.kubernetes.io/version: "20230208-491198665"
     app.kubernetes.io/name: knative-eventing
   annotations:
     # TODO add schemas and descriptions
@@ -1434,10 +1438,10 @@ kind: CustomResourceDefinition
 metadata:
   name: sequences.flows.knative.dev
   labels:
-    eventing.knative.dev/release: "v20230205-8b7551cc5"
+    eventing.knative.dev/release: "v20230208-491198665"
     knative.dev/crd-install: "true"
     duck.knative.dev/addressable: "true"
-    app.kubernetes.io/version: "20230205-8b7551cc5"
+    app.kubernetes.io/version: "20230208-491198665"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: flows.knative.dev
@@ -1754,12 +1758,12 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   labels:
-    eventing.knative.dev/release: "v20230205-8b7551cc5"
+    eventing.knative.dev/release: "v20230208-491198665"
     eventing.knative.dev/source: "true"
     duck.knative.dev/source: "true"
     duck.knative.dev/binding: "true"
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20230205-8b7551cc5"
+    app.kubernetes.io/version: "20230208-491198665"
     app.kubernetes.io/name: knative-eventing
   name: sinkbindings.sources.knative.dev
 spec:
@@ -1946,9 +1950,9 @@ kind: CustomResourceDefinition
 metadata:
   name: subscriptions.messaging.knative.dev
   labels:
-    eventing.knative.dev/release: "v20230205-8b7551cc5"
+    eventing.knative.dev/release: "v20230208-491198665"
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20230205-8b7551cc5"
+    app.kubernetes.io/version: "20230208-491198665"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: messaging.knative.dev
@@ -2158,9 +2162,9 @@ kind: CustomResourceDefinition
 metadata:
   name: triggers.eventing.knative.dev
   labels:
-    eventing.knative.dev/release: "v20230205-8b7551cc5"
+    eventing.knative.dev/release: "v20230208-491198665"
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20230205-8b7551cc5"
+    app.kubernetes.io/version: "20230208-491198665"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: eventing.knative.dev
