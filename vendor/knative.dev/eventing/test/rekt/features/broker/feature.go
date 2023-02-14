@@ -32,30 +32,15 @@ import (
 	"knative.dev/eventing/test/rekt/resources/channel"
 	"knative.dev/eventing/test/rekt/resources/subscription"
 	"knative.dev/eventing/test/rekt/resources/trigger"
-	v1 "knative.dev/pkg/apis/duck/v1"
+	eventingduckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/ptr"
 
 	"knative.dev/reconciler-test/pkg/eventshub"
 	eventasssert "knative.dev/reconciler-test/pkg/eventshub/assert"
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/manifest"
-	"knative.dev/reconciler-test/pkg/resources/service"
+	"knative.dev/reconciler-test/resources/svc"
 )
-
-func BrokerWorkFlowWithTransformation() *feature.FeatureSet {
-	createSubscriberFn := func(ref *v1.KReference, uri string) manifest.CfgFn {
-		return subscription.WithSubscriber(ref, uri)
-	}
-	fs := &feature.FeatureSet{
-		Name: "Knative Broker - Transformation - Channel flow and Trigger event flow",
-
-		Features: []*feature.Feature{
-			brokerChannelFlowWithTransformation(createSubscriberFn),
-			brokerEventTransformationForTrigger(),
-		},
-	}
-	return fs
-}
 
 /*
 BrokerChannelFlowWithTransformation tests the following topology:
@@ -75,7 +60,7 @@ Trigger2 logs all events,
 Trigger3 filters the transformed event and sends it to Channel.
 */
 
-func brokerChannelFlowWithTransformation(createSubscriberFn func(ref *v1.KReference, uri string) manifest.CfgFn) *feature.Feature {
+func BrokerChannelFlowWithTransformation(createSubscriberFn func(ref *eventingduckv1.KReference, uri string) manifest.CfgFn) *feature.Feature {
 	f := feature.NewFeatureNamed("Broker topology of transformation")
 
 	source := feature.MakeRandomK8sName("source")
@@ -136,7 +121,7 @@ func brokerChannelFlowWithTransformation(createSubscriberFn func(ref *v1.KRefere
 		trigger1,
 		brokerName,
 		trigger.WithFilter(filter1),
-		trigger.WithSubscriber(service.AsKReference(sink1), ""),
+		trigger.WithSubscriber(svc.AsKReference(sink1), ""),
 	))
 	f.Setup("trigger1 goes ready", trigger.IsReady(trigger1))
 	// Install the trigger2 point to Broker to filter all the events
@@ -144,7 +129,7 @@ func brokerChannelFlowWithTransformation(createSubscriberFn func(ref *v1.KRefere
 		trigger2,
 		brokerName,
 		trigger.WithFilter(filter2),
-		trigger.WithSubscriber(service.AsKReference(sink2), ""),
+		trigger.WithSubscriber(svc.AsKReference(sink2), ""),
 	))
 	f.Setup("trigger2 goes ready", trigger.IsReady(trigger2))
 
@@ -156,7 +141,7 @@ func brokerChannelFlowWithTransformation(createSubscriberFn func(ref *v1.KRefere
 	sub := feature.MakeRandomK8sName("subscription")
 	f.Setup("install subscription", subscription.Install(sub,
 		subscription.WithChannel(channel.AsRef(channelName)),
-		createSubscriberFn(service.AsKReference(sink3), ""),
+		createSubscriberFn(svc.AsKReference(sink3), ""),
 	))
 	f.Setup("subscription is ready", subscription.IsReady(sub))
 	f.Setup("channel is ready", channel.IsReady(channelName))
@@ -206,117 +191,6 @@ func brokerChannelFlowWithTransformation(createSubscriberFn func(ref *v1.KRefere
 	return f
 }
 
-/*
-BrokerEventTransformationForTrigger tests the following scenario:
-
-	            5                 4
-	      ------------- ----------------------
-	      |           | |                    |
-	1     v	 2     | v        3           |
-
-EventSource ---> Broker ---> Trigger1 -------> Sink1(Transformation)
-
-	|
-	| 6                   7
-	|-------> Trigger2 -------> Sink2(Logger)
-
-Note: the number denotes the sequence of the event that flows in this test case.
-*/
-func brokerEventTransformationForTrigger() *feature.Feature {
-	f := feature.NewFeatureNamed("Broker event transformation for trigger")
-
-	source := feature.MakeRandomK8sName("source")
-	sink1 := feature.MakeRandomK8sName("sink1")
-	sink2 := feature.MakeRandomK8sName("sink2")
-
-	trigger1 := feature.MakeRandomK8sName("trigger1")
-	trigger2 := feature.MakeRandomK8sName("trigger2")
-
-	// Construct original cloudevent message
-	eventType := "type1"
-	eventSource := "http://source1.com"
-	eventBody := `{"msg":"e2e-brokerchannel-body"}`
-	// Construct cloudevent message after transformation
-	transformedEventType := "type2"
-	transformedEventSource := "http://source2.com"
-	transformedBody := `{"msg":"transformed body"}`
-
-	// Construct eventToSend
-	eventToSend := cloudevents.NewEvent()
-	eventToSend.SetID(uuid.New().String())
-	eventToSend.SetType(eventType)
-	eventToSend.SetSource(eventSource)
-	eventToSend.SetData(cloudevents.ApplicationJSON, []byte(eventBody))
-
-	//Install the broker
-	brokerName := feature.MakeRandomK8sName("broker")
-	f.Setup("install broker", broker.Install(brokerName, broker.WithEnvConfig()...))
-	f.Setup("broker is ready", broker.IsReady(brokerName))
-	f.Setup("broker is addressable", broker.IsAddressable(brokerName))
-
-	f.Setup("install sink1", eventshub.Install(sink1,
-		eventshub.ReplyWithTransformedEvent(transformedEventType, transformedEventSource, transformedBody),
-		eventshub.StartReceiver),
-	)
-	f.Setup("install sink2", eventshub.Install(sink2, eventshub.StartReceiver))
-
-	// filter1 filters the original events
-	filter1 := eventingv1.TriggerFilterAttributes{
-		"type":   eventType,
-		"source": eventSource,
-	}
-	// filter2 filters events after transformation
-	filter2 := eventingv1.TriggerFilterAttributes{
-		"type":   transformedEventType,
-		"source": transformedEventSource,
-	}
-
-	// Install the trigger1 point to Broker and transform the original events to new events
-	f.Setup("install trigger1", trigger.Install(
-		trigger1,
-		brokerName,
-		trigger.WithFilter(filter1),
-		trigger.WithSubscriber(service.AsKReference(sink1), ""),
-	))
-	f.Setup("trigger1 goes ready", trigger.IsReady(trigger1))
-	// Install the trigger2 point to Broker to filter all the events
-	f.Setup("install trigger2", trigger.Install(
-		trigger2,
-		brokerName,
-		trigger.WithFilter(filter2),
-		trigger.WithSubscriber(service.AsKReference(sink2), ""),
-	))
-	f.Setup("trigger2 goes ready", trigger.IsReady(trigger2))
-
-	f.Requirement("install source", eventshub.Install(
-		source,
-		eventshub.StartSenderToResource(broker.GVR(), brokerName),
-		eventshub.InputEvent(eventToSend),
-	))
-
-	eventMatcher := eventasssert.MatchEvent(
-		test.HasSource(eventSource),
-		test.HasType(eventType),
-		test.HasData([]byte(eventBody)),
-	)
-	transformEventMatcher := eventasssert.MatchEvent(
-		test.HasSource(transformedEventSource),
-		test.HasType(transformedEventType),
-		test.HasData([]byte(transformedBody)),
-	)
-
-	f.Stable("Trigger2 has filtered all transformed events").
-		Must("delivers original events",
-			eventasssert.OnStore(sink2).Match(transformEventMatcher).AtLeast(1))
-
-	f.Stable("Trigger2 has no original events").
-		Must("delivers original events",
-			eventasssert.OnStore(sink2).Match(eventMatcher).Not())
-
-	return f
-
-}
-
 func BrokerPreferHeaderCheck() *feature.Feature {
 	f := feature.NewFeatureNamed("Broker PreferHeader Check")
 
@@ -342,7 +216,7 @@ func BrokerPreferHeaderCheck() *feature.Feature {
 	f.Setup("install sink", eventshub.Install(sink, eventshub.StartReceiver))
 
 	// Point the Trigger subscriber to the sink svc.
-	cfg := []manifest.CfgFn{trigger.WithSubscriber(service.AsKReference(sink), "")}
+	cfg := []manifest.CfgFn{trigger.WithSubscriber(svc.AsKReference(sink), "")}
 
 	// Install the trigger
 	f.Setup("install trigger", trigger.Install(via, brokerName, cfg...))
@@ -403,7 +277,7 @@ func brokerRedeliveryFibonacci(retryNum int32) *feature.Feature {
 	f.Setup("install sink", eventshub.Install(sink, eventshub.StartReceiver))
 
 	// Point the Trigger subscriber to the sink svc.
-	cfg := []manifest.CfgFn{trigger.WithSubscriber(service.AsKReference(sink), "")}
+	cfg := []manifest.CfgFn{trigger.WithSubscriber(svc.AsKReference(sink), "")}
 
 	// Install the trigger
 	f.Setup("install trigger", trigger.Install(via, brokerName, cfg...))
@@ -458,7 +332,7 @@ func brokerRedeliveryDropN(retryNum int32, dropNum uint) *feature.Feature {
 	f.Setup("install sink", eventshub.Install(sink, eventshub.StartReceiver))
 
 	// Point the Trigger subscriber to the sink svc.
-	cfg := []manifest.CfgFn{trigger.WithSubscriber(service.AsKReference(sink), "")}
+	cfg := []manifest.CfgFn{trigger.WithSubscriber(svc.AsKReference(sink), "")}
 
 	// Install the trigger
 	f.Setup("install trigger", trigger.Install(via, brokerName, cfg...))
@@ -527,7 +401,7 @@ func brokerSubscriberUnreachable() *feature.Feature {
 		triggerName,
 		brokerName,
 		trigger.WithSubscriber(nil, "http://fake.svc.cluster.local"),
-		trigger.WithDeadLetterSink(service.AsKReference(sink), ""),
+		trigger.WithDeadLetterSink(svc.AsKReference(sink), ""),
 	))
 	f.Setup("trigger goes ready", trigger.IsReady(triggerName))
 
@@ -582,8 +456,8 @@ func brokerSubscriberErrorNodata() *feature.Feature {
 	f.Setup("install trigger", trigger.Install(
 		triggerName,
 		brokerName,
-		trigger.WithSubscriber(service.AsKReference(failer), ""),
-		trigger.WithDeadLetterSink(service.AsKReference(sink), ""),
+		trigger.WithSubscriber(svc.AsKReference(failer), ""),
+		trigger.WithDeadLetterSink(svc.AsKReference(sink), ""),
 	))
 	f.Setup("trigger goes ready", trigger.IsReady(triggerName))
 
@@ -596,7 +470,7 @@ func brokerSubscriberErrorNodata() *feature.Feature {
 	f.Assert("Receives dls extensions without errordata", assertEnhancedWithKnativeErrorExtensions(
 		sink,
 		func(ctx context.Context) test.EventMatcher {
-			failerAddress, _ := service.Address(ctx, failer)
+			failerAddress, _ := svc.Address(ctx, failer)
 			return test.HasExtension("knativeerrordest", failerAddress.String())
 		},
 		func(ctx context.Context) test.EventMatcher {
@@ -644,8 +518,8 @@ func brokerSubscriberErrorWithdata() *feature.Feature {
 	f.Setup("install trigger", trigger.Install(
 		triggerName,
 		brokerName,
-		trigger.WithSubscriber(service.AsKReference(failer), ""),
-		trigger.WithDeadLetterSink(service.AsKReference(sink), ""),
+		trigger.WithSubscriber(svc.AsKReference(failer), ""),
+		trigger.WithDeadLetterSink(svc.AsKReference(sink), ""),
 	))
 	f.Setup("trigger goes ready", trigger.IsReady(triggerName))
 
@@ -658,7 +532,7 @@ func brokerSubscriberErrorWithdata() *feature.Feature {
 	f.Assert("Receives dls extensions with errordata", assertEnhancedWithKnativeErrorExtensions(
 		sink,
 		func(ctx context.Context) test.EventMatcher {
-			failerAddress, _ := service.Address(ctx, failer)
+			failerAddress, _ := svc.Address(ctx, failer)
 			return test.HasExtension("knativeerrordest", failerAddress.String())
 		},
 		func(ctx context.Context) test.EventMatcher {
@@ -726,7 +600,7 @@ func brokerSubscriberLongMessage() *feature.Feature {
 	f.Setup("install trigger", trigger.Install(
 		triggerName,
 		brokerName,
-		trigger.WithSubscriber(service.AsKReference(sink), ""),
+		trigger.WithSubscriber(svc.AsKReference(sink), ""),
 	))
 	f.Setup("trigger goes ready", trigger.IsReady(triggerName))
 
