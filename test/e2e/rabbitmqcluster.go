@@ -96,20 +96,40 @@ func RabbitMQClusterConnectionSecretVhost(ctx context.Context, t feature.T) {
 	namespace := environment.FromContext(ctx).Namespace()
 	secretName := "rabbitmqc-default-user" // created by default by the rabbitmq cluster operator
 
-	if err := patchConnectionSecret(ctx, namespace, secretName); err != nil {
+	if err := patchConnectionSecret(ctx, namespace, secretName, "guest", "guest"); err != nil {
 		t.Fatalf("failed to patch k8s Secret '%s' from namespace '%s' : %v", secretName, namespace, err)
 	}
 	log.Printf("Successfully patched Secret '%s' from namespace '%s' with RabbitMQ uri", secretName, namespace)
 }
 
-func patchConnectionSecret(ctx context.Context, namespace string, secretName string) error {
-	secret, err := kubeClient.Get(ctx).CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
-	if err != nil {
-		return err
+func RabbitMQClusterConnectionSecretUri(ctx context.Context, t feature.T) {
+	namespace := environment.FromContext(ctx).Namespace()
+	secretName := "rabbitmqc-default-user" // created by default by the rabbitmq cluster operator
+
+	if err := patchConnectionSecret(ctx, namespace, secretName, "", ""); err != nil {
+		t.Fatalf("failed to patch k8s Secret '%s' from namespace '%s' : %v", secretName, namespace, err)
 	}
+	log.Printf("Successfully patched Secret '%s' from namespace '%s' with RabbitMQ uri", secretName, namespace)
+}
+
+func patchConnectionSecret(ctx context.Context, namespace string, secretName string, username string, password string) error {
+	var secret *corev1.Secret
+	var err error
+	err = wait.PollImmediate(interval, timeout, func() (bool, error) {
+		secret, err = kubeClient.Get(ctx).CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+		return true, nil
+	})
+
 	secret.Data["uri"] = []byte(fmt.Sprintf("rabbitmqc.%s:15672", namespace))
-	secret.Data["username"] = []byte("guest")
-	secret.Data["password"] = []byte("guest")
+	if username != "" {
+		secret.Data["username"] = []byte(username)
+	}
+	if password != "" {
+		secret.Data["password"] = []byte(password)
+	}
 	if _, err = kubeClient.Get(ctx).CoreV1().Secrets(namespace).Update(ctx, secret, metav1.UpdateOptions{}); err != nil {
 		return err
 	}
@@ -189,19 +209,4 @@ func getConditions(ctx context.Context, namespace string) ([]apis.Condition, err
 	obj.ResourceVersion = gvr.Version
 	obj.APIVersion = gvr.GroupVersion().String()
 	return obj.Status.GetConditions(), nil
-}
-
-func RabbitMQClusterConnectionSecretUri(ctx context.Context, t feature.T) {
-	namespace := environment.FromContext(ctx).Namespace()
-	secretName := "rabbitmqc-default-user" // created by default by the rabbitmq cluster operator
-
-	secret, err := kubeClient.Get(ctx).CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
-	if err != nil {
-		t.Fatalf("failed to get k8s Secret '%s' from namespace '%s' : %v", secretName, namespace, err)
-	}
-	secret.Data["uri"] = []byte(fmt.Sprintf("rabbitmqc.%s:15672", namespace))
-	if _, err = kubeClient.Get(ctx).CoreV1().Secrets(namespace).Update(ctx, secret, metav1.UpdateOptions{}); err != nil {
-		t.Fatalf("failed updating k8s Secret '%s' from namespace '%s' : %v", secretName, namespace, err)
-	}
-	log.Printf("Successfully patched Secret '%s' from namespace '%s' with RabbitMQ uri", secretName, namespace)
 }
