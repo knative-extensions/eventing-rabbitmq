@@ -118,7 +118,11 @@ func patchConnectionSecret(ctx context.Context, namespace string, secretName str
 	err = wait.PollImmediate(interval, timeout, func() (bool, error) {
 		secret, err = kubeClient.Get(ctx).CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
 		if err != nil {
-			return false, err
+			if apierrors.IsNotFound(err) {
+				log.Println(namespace, secretName, "not found", err)
+				// keep polling
+				return false, nil
+			}
 		}
 		return true, nil
 	})
