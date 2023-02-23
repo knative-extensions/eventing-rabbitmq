@@ -123,6 +123,7 @@ func patchConnectionSecret(ctx context.Context, namespace string, secretName str
 				// keep polling
 				return false, nil
 			}
+			return false, err
 		}
 		return true, nil
 	})
