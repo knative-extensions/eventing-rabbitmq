@@ -23,13 +23,18 @@ import (
 	"sync"
 
 	"knative.dev/pkg/logging"
+
 	"knative.dev/reconciler-test/pkg/images/ko"
 )
 
 var (
-	// CurrentImageProducer is the function that will be used to produce the
-	// container images. By default, it is ko.Publish, but can be overridden.
-	CurrentImageProducer = ImageProducer(ko.Publish)
+	// defaultImageProducer is the function that will be used to produce the
+	// container images by default.
+	//
+	// To use a different image producer pass a different ImageProducer
+	// when creating an Environment through GlobalEnvironment
+	// see WithImageProducer.
+	defaultImageProducer = ImageProducer(ko.Publish)
 
 	// produceImagesLock is used to ensure that ProduceImages is only called
 	// once at the time.
@@ -41,6 +46,8 @@ var (
 const parallelQueueSize = 1_000
 
 // ImageProducer is a function that will be used to produce the container images.
+//
+// pack is a Go main package reference like `knative.dev/reconciler-test/cmd/eventshub`.
 type ImageProducer func(ctx context.Context, pack string) (string, error)
 
 // RegisterPackage registers an interest in producing an image based on the
@@ -79,18 +86,21 @@ func ProduceImages(ctx context.Context) (map[string]string, error) {
 	rk := registeredPackagesKey{}
 	ik := imageStoreKey{}
 	store := ik.get(ctx)
+
+	ip := GetImageProducer(ctx)
+
 	for _, pack := range rk.packages(ctx) {
 		koPack := fmt.Sprintf("ko://%s", pack)
 		if store.refs[koPack] != "" {
 			continue
 		}
-		image, err := CurrentImageProducer(ctx, pack)
+		image, err := ip(ctx, pack)
 		if err != nil {
 			return nil, err
 		}
 		store.refs[koPack] = strings.TrimSpace(image)
 	}
-	return store.refs, nil
+	return store.copyRefs(), nil
 }
 
 func initializeImageStores(ctx context.Context) context.Context {
@@ -160,4 +170,38 @@ func (k imageStoreKey) get(ctx context.Context) *imageStore {
 
 type imageStore struct {
 	refs map[string]string
+}
+
+func (is imageStore) copyRefs() map[string]string {
+	refs := make(map[string]string, len(is.refs))
+	for k, v := range is.refs {
+		refs[k] = v
+	}
+	return refs
+}
+
+// imageProducerKey is the key for the ImageProducer context value.
+type imageProducerKey struct{}
+
+// WithImageProducer allows using a different ImageProducer
+// when creating an Environment through GlobalEnvironment.
+// Example usage:
+// GlobalEnvironment.Environment(WithImageProducer(file.ImageProducer("images.yaml")))
+func WithImageProducer(producer ImageProducer) EnvOpts {
+	return func(ctx context.Context, env Environment) (context.Context, error) {
+		return withImageProducer(ctx, producer), nil
+	}
+}
+
+func withImageProducer(ctx context.Context, producer ImageProducer) context.Context {
+	return context.WithValue(ctx, imageProducerKey{}, producer)
+}
+
+// GetImageProducer extracts an ImageProducer from the given context.
+func GetImageProducer(ctx context.Context) ImageProducer {
+	p := ctx.Value(imageProducerKey{})
+	if p == nil {
+		return defaultImageProducer
+	}
+	return p.(ImageProducer)
 }
