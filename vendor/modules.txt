@@ -1324,10 +1324,10 @@ knative.dev/eventing/test/test_images/event-sender
 knative.dev/eventing/test/test_images/heartbeats
 knative.dev/eventing/test/test_images/performance
 knative.dev/eventing/test/test_images/print
-# knative.dev/hack v0.0.0-20230228173453-3de51aff69a3
+# knative.dev/hack v0.0.0-20230410142639-359d58534ae2
 ## explicit; go 1.18
 knative.dev/hack
-# knative.dev/pkg v0.0.0-20230309013522-c5dd1d1264ba
+# knative.dev/pkg v0.0.0-20230404101938-ee73c9355c9d
 ## explicit; go 1.18
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
@@ -1434,7 +1434,7 @@ knative.dev/pkg/webhook/json
 knative.dev/pkg/webhook/resourcesemantics
 knative.dev/pkg/webhook/resourcesemantics/defaulting
 knative.dev/pkg/webhook/resourcesemantics/validation
-# knative.dev/reconciler-test v0.0.0-20230307080119-d52257e4e606
+# knative.dev/reconciler-test v0.0.0-20230406171220-089a08c99e58
 ## explicit; go 1.18
 knative.dev/reconciler-test/cmd/eventshub
 knative.dev/reconciler-test/pkg/environment
