@@ -226,7 +226,7 @@ func TestReconcile(t *testing.T) {
 	for configName, config := range brokerConfigs {
 		table = append(table, TableTest{
 			{
-				Name: fmt.Sprintf("%s: Broker is being deleted", config),
+				Name: fmt.Sprintf("%s: Broker is being deleted", config.Name),
 				Key:  testKey,
 				Objects: []runtime.Object{
 					NewBroker(brokerName, testNS,

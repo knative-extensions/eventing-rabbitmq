@@ -22,9 +22,9 @@ require (
 	k8s.io/code-generator v0.25.4
 	k8s.io/kube-openapi v0.0.0-20220803162953-67bda5d908f1
 	knative.dev/eventing v0.36.7
-	knative.dev/hack v0.0.0-20230228173453-3de51aff69a3
-	knative.dev/pkg v0.0.0-20230309013522-c5dd1d1264ba
-	knative.dev/reconciler-test v0.0.0-20230307080119-d52257e4e606
+	knative.dev/hack v0.0.0-20230330174700-1421f120c36b
+	knative.dev/pkg v0.0.0-20230404101938-ee73c9355c9d
+	knative.dev/reconciler-test v0.0.0-20230404121838-9e0512fe7beb
 	sigs.k8s.io/controller-runtime v0.11.2
 )
 
