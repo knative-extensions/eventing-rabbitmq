@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Knative Authors
+Copyright 2018 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -26,28 +26,36 @@ import (
 	"strconv"
 	"time"
 
-	cloudevents "github.com/cloudevents/sdk-go/v2"
-	"github.com/kelseyhightower/envconfig"
-	"go.opencensus.io/plugin/ochttp"
+	"go.uber.org/zap"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
-	"knative.dev/pkg/tracing/propagation/tracecontextb3"
+	"knative.dev/pkg/tracing"
+	"knative.dev/pkg/tracing/config"
+
+	"github.com/cloudevents/sdk-go/observability/opencensus/v2/client"
+	cloudevents "github.com/cloudevents/sdk-go/v2"
+	"github.com/cloudevents/sdk-go/v2/protocol/http"
+	"github.com/kelseyhightower/envconfig"
 )
 
 type Heartbeat struct {
 	Sequence int    `json:"id"`
-	Msg      string `json:"msg"`
+	Label    string `json:"label"`
 }
 
 var (
-	sink      string
-	msg       string
-	periodStr string
+	eventSource string
+	eventType   string
+	sink        string
+	label       string
+	periodStr   string
 )
 
 func init() {
+	flag.StringVar(&eventSource, "eventSource", "", "the event-source (CloudEvents)")
+	flag.StringVar(&eventType, "eventType", "dev.knative.eventing.samples.heartbeat", "the event-type (CloudEvents)")
 	flag.StringVar(&sink, "sink", "", "the host url to heartbeat to")
-	flag.StringVar(&msg, "msg", "", "the data message")
-	flag.StringVar(&periodStr, "period", "5", "the number of seconds between heartbeats")
+	flag.StringVar(&label, "label", "", "a special label")
+	flag.StringVar(&periodStr, "period", "5s", "the duration between heartbeats. Supported formats: Go (https://pkg.go.dev/time#ParseDuration), integers (interpreted as seconds)")
 }
 
 type envConfig struct {
@@ -63,7 +71,11 @@ type envConfig struct {
 	// Namespace this pod exists in.
 	Namespace string `envconfig:"POD_NAMESPACE" required:"true"`
 
+	// Whether to run continuously or exit.
 	OneShot bool `envconfig:"ONE_SHOT" default:"false"`
+
+	// JSON configuration for tracing
+	TracingConfig string `envconfig:"K_CONFIG_TRACING"`
 }
 
 func main() {
@@ -90,41 +102,51 @@ func main() {
 		ceOverrides = &overrides
 	}
 
-	p, err := cloudevents.NewHTTP(
-		cloudevents.WithTarget(sink),
-		cloudevents.WithRoundTripper(&ochttp.Transport{
-			Propagation: tracecontextb3.TraceContextEgress,
-		}))
+	conf, err := config.JSONToTracingConfig(env.TracingConfig)
 	if err != nil {
-		log.Fatalf("failed to create protocol: %s", err.Error())
+		log.Printf("Failed to read tracing config, using the no-op default: %v", err)
 	}
-
-	c, err := cloudevents.NewClient(p, cloudevents.WithUUIDs(), cloudevents.WithTimeNow())
+	tracer, err := tracing.SetupPublishingWithStaticConfig(zap.L().Sugar(), "", conf)
+	if err != nil {
+		log.Fatalf("Failed to initialize tracing: %v", err)
+	}
+	defer tracer.Shutdown(context.Background())
+	c, err := client.NewClientHTTP([]http.Option{cloudevents.WithTarget(sink)}, nil)
 	if err != nil {
 		log.Fatalf("failed to create client: %s", err.Error())
 	}
 
+	// default to 5s if unset, try to parse as a duration, then as an int
 	var period time.Duration
-	if p, err := strconv.Atoi(periodStr); err != nil {
-		period = time.Duration(5) * time.Second
-	} else {
+	if periodStr == "" {
+		period = 5 * time.Second
+	} else if p, err := time.ParseDuration(periodStr); err == nil {
+		period = p
+	} else if p, err := strconv.Atoi(periodStr); err == nil {
 		period = time.Duration(p) * time.Second
+	} else {
+		log.Fatalf("Invalid period interval provided: %q", periodStr)
 	}
 
-	source := fmt.Sprintf("https://knative.dev/eventing/test/heartbeats/#%s/%s", env.Namespace, env.Name)
-	log.Printf("Heartbeats Source: %s", source)
+	if eventSource == "" {
+		eventSource = fmt.Sprintf("https://knative.dev/eventing-contrib/cmd/heartbeats/#%s/%s", env.Namespace, env.Name)
+		log.Printf("Heartbeats Source: %s", eventSource)
+	}
 
+	if len(label) > 0 && label[0] == '"' {
+		label, _ = strconv.Unquote(label)
+	}
 	hb := &Heartbeat{
 		Sequence: 0,
-		Msg:      msg,
+		Label:    label,
 	}
 	ticker := time.NewTicker(period)
 	for {
 		hb.Sequence++
 
-		event := cloudevents.NewEvent()
-		event.SetType("dev.knative.eventing.samples.heartbeat")
-		event.SetSource(source)
+		event := cloudevents.NewEvent("1.0")
+		event.SetType(eventType)
+		event.SetSource(eventSource)
 		event.SetExtension("the", 42)
 		event.SetExtension("heart", "yes")
 		event.SetExtension("beats", true)
@@ -136,12 +158,12 @@ func main() {
 		}
 
 		if err := event.SetData(cloudevents.ApplicationJSON, hb); err != nil {
-			log.Fatalf("failed to set cloudevents data: %s", err.Error())
+			log.Printf("failed to set cloudevents data: %s", err.Error())
 		}
 
 		log.Printf("sending cloudevent to %s", sink)
-		if result := c.Send(context.Background(), event); !cloudevents.IsACK(result) {
-			log.Printf("failed to send cloudevent: %s", result.Error())
+		if res := c.Send(context.Background(), event); !cloudevents.IsACK(res) {
+			log.Printf("failed to send cloudevent: %v", res)
 		}
 
 		if env.OneShot {

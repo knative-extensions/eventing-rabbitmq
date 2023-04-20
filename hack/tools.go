@@ -35,7 +35,7 @@ import (
 	_ "knative.dev/pkg/hack"
 
 	// Test images from eventing
-	- "knative.dev/eventing/cmd/heartbeats"
+	_ "knative.dev/eventing/cmd/heartbeats"
 	_ "knative.dev/eventing/test/test_images/event-library"
 	_ "knative.dev/eventing/test/test_images/event-sender"
 	_ "knative.dev/eventing/test/test_images/performance"
