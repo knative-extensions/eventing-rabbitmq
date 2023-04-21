@@ -1223,6 +1223,7 @@ k8s.io/utils/strings/slices
 k8s.io/utils/trace
 # knative.dev/eventing v0.36.7
 ## explicit; go 1.18
+knative.dev/eventing/cmd/heartbeats
 knative.dev/eventing/pkg/adapter/v2
 knative.dev/eventing/pkg/adapter/v2/util/crstatusevent
 knative.dev/eventing/pkg/apis/config
@@ -1321,7 +1322,6 @@ knative.dev/eventing/test/test_images
 knative.dev/eventing/test/test_images/event-flaker
 knative.dev/eventing/test/test_images/event-library
 knative.dev/eventing/test/test_images/event-sender
-knative.dev/eventing/test/test_images/heartbeats
 knative.dev/eventing/test/test_images/performance
 knative.dev/eventing/test/test_images/print
 # knative.dev/hack v0.0.0-20230417170854-f591fea109b3
