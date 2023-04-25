@@ -36,7 +36,6 @@ import (
 
 	// Test images from eventing
 	_ "knative.dev/eventing/cmd/heartbeats"
-	_ "knative.dev/eventing/test/test_images/event-library"
 	_ "knative.dev/eventing/test/test_images/event-sender"
 	_ "knative.dev/eventing/test/test_images/performance"
 	_ "knative.dev/eventing/test/test_images/print"
@@ -49,9 +48,6 @@ import (
 
 	// eventshub is a cloudevents sender/receiver utility for e2e testing.
 	_ "knative.dev/reconciler-test/cmd/eventshub"
-
-	// For conformance tests, this needs to be imported.
-	_ "knative.dev/eventing/test/test_images/event-flaker"
 
 	// For performance testing, this needs to be imported
 	_ "knative.dev/pkg/test/mako/stub-sidecar"
