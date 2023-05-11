@@ -407,7 +407,7 @@ func (r *Reconciler) reconcileCommonIngressResources(ctx context.Context, s *cor
 	}
 	PropagateIngressAvailability(&b.Status, ingressEndpoints)
 
-	SetAddress(&b.Status, &apis.URL{
+	b.Status.SetAddress(&apis.URL{
 		Scheme: "http",
 		Host:   network.GetServiceHostname(ingressEndpoints.GetName(), ingressEndpoints.GetNamespace()),
 	})
