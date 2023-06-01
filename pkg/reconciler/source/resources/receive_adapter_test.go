@@ -26,6 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1alpha12 "knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
+	"knative.dev/pkg/apis"
 	"knative.dev/pkg/ptr"
 )
 
@@ -38,6 +39,7 @@ func TestMakeReceiveAdapter(t *testing.T) {
 	var retry int32 = 5
 	parallelism := 10
 	backoffDelay := "PT0.1S"
+	url, _ := apis.ParseURL("sink-uri")
 
 	for _, tt := range []struct {
 		name          string
@@ -82,7 +84,7 @@ func TestMakeReceiveAdapter(t *testing.T) {
 					"test-key1": "test-value1",
 					"test-key2": "test-value2",
 				},
-				SinkURI:              "sink-uri",
+				SinkURI:              url,
 				RabbitMQSecretName:   secretName,
 				RabbitMQCASecretName: "rabbitmq-ca-secret",
 				BrokerUrlSecretKey:   brokerURLKey,

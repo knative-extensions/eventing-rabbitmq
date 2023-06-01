@@ -27,7 +27,7 @@ import (
 
 	"knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
-	"knative.dev/knative.dev/pkg/apis"
+	"knative.dev/pkg/apis"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/ptr"
 )
@@ -77,11 +77,11 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 		},
 		{
 			Name:  "SINK_URI",
-			Value: args.SinkURI,
+			Value: args.SinkURI.String(),
 		},
 		{
 			Name:  "K_SINK",
-			Value: args.SinkURI,
+			Value: args.SinkURI.String(),
 		},
 		{
 			Name:  "NAME",

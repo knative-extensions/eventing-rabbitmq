@@ -34,11 +34,14 @@ import (
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	"knative.dev/eventing/pkg/adapter/v2"
 	v1 "knative.dev/eventing/pkg/apis/duck/v1"
+	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/eventing/pkg/metrics/source"
-	"knative.dev/knative.dev/pkg/apis"
+	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/logging"
 )
+
+var serverTestName = "test-name"
 
 type handlerFunc func(http.ResponseWriter, *http.Request)
 
@@ -122,23 +125,31 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 			}
 			sinkServer := httptest.NewServer(h)
 			defer sinkServer.Close()
-
-			s, err := apis.ParseURL(sinkServer.URL)
+			s, err := kncloudevents.NewHTTPMessageSenderWithTarget(sinkServer.URL)
 			if err != nil {
 				t.Fatal(err)
 			}
 
+			target, err := apis.ParseURL(sinkServer.URL)
+			if err != nil {
+				t.Fatal(err)
+			}
+			sink := duckv1.Addressable{
+				Name: &serverTestName,
+				URL:  target,
+			}
 			statsReporter, _ := source.NewStatsReporter()
 			config := adapterConfig{}
 			if tc.retry > 0 {
 				config = adapterConfig{Retry: tc.retry, BackoffPolicy: string(v1.BackoffPolicyLinear), BackoffDelay: "PT0.1S"}
 			}
 			a := &Adapter{
-				config:   &config,
-				context:  context.TODO(),
-				sink:     s,
-				logger:   zap.NewNop(),
-				reporter: statsReporter,
+				config:            &config,
+				context:           context.TODO(),
+				sink:              sink,
+				httpMessageSender: s,
+				logger:            zap.NewNop(),
+				reporter:          statsReporter,
 			}
 
 			data, err := json.Marshal(tc.data)
@@ -268,7 +279,6 @@ func TestAdapter_NewEnvConfig(t *testing.T) {
 func TestAdapter_NewAdapter(t *testing.T) {
 	ctx := context.TODO()
 	env := NewEnvConfig()
-	serverTestName := "test-name"
 	h := &fakeHandler{
 		handlers: []handlerFunc{sinkAccepted},
 	}
@@ -276,22 +286,27 @@ func TestAdapter_NewAdapter(t *testing.T) {
 	sinkServer := httptest.NewServer(h)
 	defer sinkServer.Close()
 
-	s, err := apis.ParseURL(sinkServer.URL)
+	s, err := kncloudevents.NewHTTPMessageSenderWithTarget(sinkServer.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	statsReporter, _ := source.NewStatsReporter()
-	a := NewAdapter(ctx, env, duckv1.Addressable{
+	target, err := apis.ParseURL(sinkServer.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sink := duckv1.Addressable{
 		Name: &serverTestName,
-		URL:  s,
-	}, statsReporter)
+		URL:  target,
+	}
+	statsReporter, _ := source.NewStatsReporter()
+	a := NewAdapter(ctx, env, sink, statsReporter)
 	cmpA := &Adapter{
-		config:   env.(*adapterConfig),
-		sink:     s,
-		reporter: statsReporter,
-		logger:   logging.FromContext(ctx).Desugar(),
-		context:  ctx,
+		config:            env.(*adapterConfig),
+		sink:              sink,
+		httpMessageSender: s,
+		reporter:          statsReporter,
+		logger:            logging.FromContext(ctx).Desugar(),
+		context:           ctx,
 	}
 
 	if a == cmpA {

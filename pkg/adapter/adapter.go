@@ -58,12 +58,13 @@ func NewEnvConfig() adapter.EnvConfigAccessor {
 }
 
 type Adapter struct {
-	config    *adapterConfig
-	sink      duckv1.Addressable
-	reporter  source.StatsReporter
-	logger    *zap.Logger
-	context   context.Context
-	rmqHelper rabbit.RabbitMQConnectionsHandlerInterface
+	config            *adapterConfig
+	sink              duckv1.Addressable
+	httpMessageSender *kncloudevents.HTTPMessageSender
+	reporter          source.StatsReporter
+	logger            *zap.Logger
+	context           context.Context
+	rmqHelper         rabbit.RabbitMQConnectionsHandlerInterface
 }
 
 var _ adapter.MessageAdapter = (*Adapter)(nil)
@@ -76,12 +77,17 @@ var (
 func NewAdapter(ctx context.Context, processed adapter.EnvConfigAccessor, sink duckv1.Addressable, reporter source.StatsReporter) adapter.MessageAdapter {
 	logger := logging.FromContext(ctx).Desugar()
 	config := processed.(*adapterConfig)
+	httpMessageSender, err := kncloudevents.NewHTTPMessageSenderWithTarget(sink.URL.String())
+	if err != nil {
+		logger.Sugar().Fatalf("Couldn't start message sender, %w", err)
+	}
 	return &Adapter{
-		config:   config,
-		sink:     sink,
-		reporter: reporter,
-		logger:   logger,
-		context:  ctx,
+		config:            config,
+		sink:              sink,
+		httpMessageSender: httpMessageSender,
+		reporter:          reporter,
+		logger:            logger,
+		context:           ctx,
 	}
 }
 
@@ -213,7 +219,7 @@ func (a *Adapter) processMessages(wg *sync.WaitGroup, queue <-chan amqp.Delivery
 }
 
 func (a *Adapter) postMessage(msg *amqp.Delivery) error {
-	a.logger.Info("target: " + a.httpMessageSender.URL.String())
+	a.logger.Info("target: " + a.httpMessageSender.Target)
 	req, err := a.httpMessageSender.NewCloudEventRequest(a.context)
 	if err != nil {
 		return err
