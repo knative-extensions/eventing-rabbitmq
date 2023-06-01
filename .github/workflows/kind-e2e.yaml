@@ -26,8 +26,9 @@ jobs:
           - k8s-version: v1.25.9
             kind-image-sha: sha256:c08d6c52820aa42e533b70bce0c2901183326d86dcdcbedecc9343681db45161
             use-eventing-latest: ''
+            knative-version: 1.8.0
           - k8s-version: v1.25.9
-            knative-version: 1.8.1
+            knative-version: 1.9.0
             use-eventing-latest: 'true'
             kind-image-sha: sha256:c08d6c52820aa42e533b70bce0c2901183326d86dcdcbedecc9343681db45161
 
