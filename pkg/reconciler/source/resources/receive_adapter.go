@@ -27,6 +27,7 @@ import (
 
 	"knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
+	"knative.dev/pkg/apis"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/ptr"
 )
@@ -35,7 +36,7 @@ type ReceiveAdapterArgs struct {
 	Image                string
 	Source               *v1alpha1.RabbitmqSource
 	Labels               map[string]string
-	SinkURI              string
+	SinkURI              *apis.URL
 	MetricsConfig        string
 	LoggingConfig        string
 	RabbitMQSecretName   string
@@ -76,11 +77,11 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 		},
 		{
 			Name:  "SINK_URI",
-			Value: args.SinkURI,
+			Value: args.SinkURI.String(),
 		},
 		{
 			Name:  "K_SINK",
-			Value: args.SinkURI,
+			Value: args.SinkURI.String(),
 		},
 		{
 			Name:  "NAME",

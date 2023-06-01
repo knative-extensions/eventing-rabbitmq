@@ -131,7 +131,7 @@ releases-envsubst:
 
 KUBECTL_RELEASES := https://github.com/kubernetes/kubernetes/tags
 # Keep this in sync with KIND_K8S_VERSION
-KUBECTL_VERSION := 1.24.0
+KUBECTL_VERSION := 1.25.0
 KUBECTL_BIN := kubectl-$(KUBECTL_VERSION)-$(platform)-amd64
 KUBECTL_URL := https://storage.googleapis.com/kubernetes-release/release/v$(KUBECTL_VERSION)/bin/$(platform)/amd64/kubectl
 KUBECTL := $(LOCAL_BIN)/$(KUBECTL_BIN)
@@ -282,11 +282,11 @@ KO_DOCKER_REPO := kind.local
 envrc::
 	@echo 'export KO_DOCKER_REPO="$(KO_DOCKER_REPO)"'
 export KO_DOCKER_REPO
-MIN_SUPPORTED_K8S_VERSION := 1.24.0
+MIN_SUPPORTED_K8S_VERSION := 1.25.0
 KIND_K8S_VERSION ?= $(MIN_SUPPORTED_K8S_VERSION)
 export KIND_K8S_VERSION
 # Find the corresponding version digest in https://github.com/kubernetes-sigs/kind/releases
-KIND_K8S_DIGEST ?= sha256:577c630ce8e509131eab1aea12c022190978dd2f745aac5eb1fe65c0807eb315
+KIND_K8S_DIGEST ?= sha256:c08d6c52820aa42e533b70bce0c2901183326d86dcdcbedecc9343681db45161
 export KIND_K8S_DIGEST
 
 .PHONY: kind-cluster
