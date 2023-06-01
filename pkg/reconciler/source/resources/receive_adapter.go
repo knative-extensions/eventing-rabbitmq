@@ -27,6 +27,7 @@ import (
 
 	"knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
+	"knative.dev/knative.dev/pkg/apis"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/ptr"
 )
@@ -35,7 +36,7 @@ type ReceiveAdapterArgs struct {
 	Image                string
 	Source               *v1alpha1.RabbitmqSource
 	Labels               map[string]string
-	SinkURI              string
+	SinkURI              *apis.URL
 	MetricsConfig        string
 	LoggingConfig        string
 	RabbitMQSecretName   string

@@ -33,6 +33,7 @@ import (
 	v1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/eventing/pkg/metrics/source"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/logging"
 )
 
@@ -57,12 +58,12 @@ func NewEnvConfig() adapter.EnvConfigAccessor {
 }
 
 type Adapter struct {
-	config            *adapterConfig
-	httpMessageSender *kncloudevents.HTTPMessageSender
-	reporter          source.StatsReporter
-	logger            *zap.Logger
-	context           context.Context
-	rmqHelper         rabbit.RabbitMQConnectionsHandlerInterface
+	config    *adapterConfig
+	sink      duckv1.Addressable
+	reporter  source.StatsReporter
+	logger    *zap.Logger
+	context   context.Context
+	rmqHelper rabbit.RabbitMQConnectionsHandlerInterface
 }
 
 var _ adapter.MessageAdapter = (*Adapter)(nil)
@@ -72,15 +73,15 @@ var (
 	retriesInt32 int32 = 0
 )
 
-func NewAdapter(ctx context.Context, processed adapter.EnvConfigAccessor, httpMessageSender *kncloudevents.HTTPMessageSender, reporter source.StatsReporter) adapter.MessageAdapter {
+func NewAdapter(ctx context.Context, processed adapter.EnvConfigAccessor, sink duckv1.Addressable, reporter source.StatsReporter) adapter.MessageAdapter {
 	logger := logging.FromContext(ctx).Desugar()
 	config := processed.(*adapterConfig)
 	return &Adapter{
-		config:            config,
-		httpMessageSender: httpMessageSender,
-		reporter:          reporter,
-		logger:            logger,
-		context:           ctx,
+		config:   config,
+		sink:     sink,
+		reporter: reporter,
+		logger:   logger,
+		context:  ctx,
 	}
 }
 
@@ -212,7 +213,7 @@ func (a *Adapter) processMessages(wg *sync.WaitGroup, queue <-chan amqp.Delivery
 }
 
 func (a *Adapter) postMessage(msg *amqp.Delivery) error {
-	a.logger.Info("target: " + a.httpMessageSender.Target)
+	a.logger.Info("target: " + a.httpMessageSender.URL.String())
 	req, err := a.httpMessageSender.NewCloudEventRequest(a.context)
 	if err != nil {
 		return err

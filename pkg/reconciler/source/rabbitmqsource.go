@@ -229,7 +229,7 @@ func (r *Reconciler) createReceiveAdapter(ctx context.Context, src *v1alpha1.Rab
 		Image:                r.receiveAdapterImage,
 		Source:               src,
 		Labels:               resources.GetLabels(src.Name),
-		SinkURI:              sinkURI.String(),
+		SinkURI:              sinkURI,
 		MetricsConfig:        metricsConfig,
 		LoggingConfig:        loggingConfig,
 		RabbitMQSecretName:   rabbit.SecretName(src.Name, "source"),
