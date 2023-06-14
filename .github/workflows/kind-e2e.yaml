@@ -2,12 +2,11 @@ name: KinD e2e tests
 
 on:
   push:
-    branches: [ 'main', 'release-*' ]
+    branches: ['main', 'release-*']
   pull_request:
-    branches: [ 'main', 'release-*' ]
+    branches: ['main', 'release-*']
 
 jobs:
-
   ko-resolve:
     name: e2e tests
     runs-on: ubuntu-latest
@@ -15,126 +14,128 @@ jobs:
       fail-fast: false # Keep running if one leg fails.
       matrix:
         k8s-version:
-        - v1.24.7
+          - v1.25.9
         knative-version:
-        - 1.8.0
+          - 1.8.0
+          - 1.9.0
 
         # Map between K8s and KinD versions.
         # This is attempting to make it a bit clearer what's being tested.
         # See: https://github.com/kubernetes-sigs/kind/releases/tag/v0.16.0
         include:
-        - k8s-version: v1.24.7
-          kind-image-sha: sha256:577c630ce8e509131eab1aea12c022190978dd2f745aac5eb1fe65c0807eb315
-          use-eventing-latest: ""
-        - k8s-version: v1.24.7
-          knative-version: 1.8.1
-          use-eventing-latest: "true"
-          kind-image-sha: sha256:577c630ce8e509131eab1aea12c022190978dd2f745aac5eb1fe65c0807eb315
+          - k8s-version: v1.25.9
+            kind-image-sha: sha256:c08d6c52820aa42e533b70bce0c2901183326d86dcdcbedecc9343681db45161
+            use-eventing-latest: ''
+            knative-version: 1.8.0
+          - k8s-version: v1.25.9
+            knative-version: 1.9.0
+            use-eventing-latest: 'true'
+            kind-image-sha: sha256:c08d6c52820aa42e533b70bce0c2901183326d86dcdcbedecc9343681db45161
 
     steps:
-    - name: Defaults
-      run: |
-        if [[ "${{ secrets.SLACK_WEBHOOK }}" != "" ]]; then
-          echo "SLACK_WEBHOOK=exists" >> $GITHUB_ENV
-        fi
+      - name: Defaults
+        run: |
+          if [[ "${{ secrets.SLACK_WEBHOOK }}" != "" ]]; then
+            echo "SLACK_WEBHOOK=exists" >> $GITHUB_ENV
+          fi
 
-    - name: Set up Go
-      uses: actions/setup-go@v3
-      with:
-        go-version: 1.18.x
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.20.x
 
-    - name: Check out code
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
+      - name: Check out code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-    - name: Merge upstream
-      if: github.event_name == 'pull_request'
-      run: |
-        if ! git config user.name > /dev/null; then
-          git config user.name "John Doe"
-        fi
-        if ! git config user.email > /dev/null; then
-          git config user.email "johndoe@localhost"
-        fi
-        git remote add upstream https://github.com/${{ github.repository }}.git
-        git fetch upstream ${{ github.base_ref }}
-        git pull --no-rebase --no-commit upstream ${{ github.base_ref }}
-      shell: bash
+      - name: Merge upstream
+        if: github.event_name == 'pull_request'
+        run: |
+          if ! git config user.name > /dev/null; then
+            git config user.name "John Doe"
+          fi
+          if ! git config user.email > /dev/null; then
+            git config user.email "johndoe@localhost"
+          fi
+          git remote add upstream https://github.com/${{ github.repository }}.git
+          git fetch upstream ${{ github.base_ref }}
+          git pull --no-rebase --no-commit upstream ${{ github.base_ref }}
+        shell: bash
 
-    - name: Setup a local KIND Cluster with everything that is needed to run tests
-      run: |
-        make install \
-          KIND_K8S_VERSION=${{ matrix.k8s-version }} \
-          KIND_K8S_DIGEST=${{ matrix.kind-image-sha }} \
-          KNATIVE_VERSION=${{ matrix.knative-version }} \
-          USE_LATEST_EVENTING=${{ matrix.use-eventing-latest }}
+      - name: Setup a local KIND Cluster with everything that is needed to run tests
+        run: |
+          make install \
+            KIND_K8S_VERSION=${{ matrix.k8s-version }} \
+            KIND_K8S_DIGEST=${{ matrix.kind-image-sha }} \
+            KNATIVE_VERSION=${{ matrix.knative-version }} \
+            USE_LATEST_EVENTING=${{ matrix.use-eventing-latest }}
 
-    - name: Run ko publish e2e Tests
-      run: |
-        make test-e2e-publish
+      - name: Run ko publish e2e Tests
+        run: |
+          make test-e2e-publish
 
-    # Run only Broker specific tests due to large resource requirements of rabbitmqcluster
-    - name: Run Broker e2e Tests
-      run: |
-        make test-e2e-broker
+      # Run only Broker specific tests due to large resource requirements of rabbitmqcluster
+      - name: Run Broker e2e Tests
+        run: |
+          make test-e2e-broker
 
-    # Run source test
-    - name: Run source e2e Tests
-      run: |
-        make test-e2e-source
+      # Run source test
+      - name: Run source e2e Tests
+        run: |
+          make test-e2e-source
 
-    - name: Gather Failure Data
-      if: ${{ failure() }}
-      run: |
-        set -x
+      - name: Gather Failure Data
+        if: ${{ failure() }}
+        run: |
+          set -x
 
-        echo "===================== Brokers =============================="
-        kubectl get broker --all-namespaces=true -oyaml
+          echo "===================== Brokers =============================="
+          kubectl get broker --all-namespaces=true -oyaml
 
-        echo "===================== Triggers ============================="
-        kubectl get trigger --all-namespaces=true -oyaml
+          echo "===================== Triggers ============================="
+          kubectl get trigger --all-namespaces=true -oyaml
 
-        echo "===================== RabbitMQClusters ====================="
-        kubectl get RabbitMQCluster --all-namespaces=true -oyaml
+          echo "===================== RabbitMQClusters ====================="
+          kubectl get RabbitMQCluster --all-namespaces=true -oyaml
 
-        echo "===================== RabbitMQ Exchanges ====================="
-        kubectl get exchange.rabbitmq.com --all-namespaces=true -oyaml
+          echo "===================== RabbitMQ Exchanges ====================="
+          kubectl get exchange.rabbitmq.com --all-namespaces=true -oyaml
 
-        echo "===================== RabbitMQ Queues ====================="
-        kubectl get queue.rabbitmq.com --all-namespaces=true -oyaml
+          echo "===================== RabbitMQ Queues ====================="
+          kubectl get queue.rabbitmq.com --all-namespaces=true -oyaml
 
-        echo "===================== RabbitMQ Bindings ====================="
-        kubectl get binding.rabbitmq.com --all-namespaces=true -oyaml
+          echo "===================== RabbitMQ Bindings ====================="
+          kubectl get binding.rabbitmq.com --all-namespaces=true -oyaml
 
-        echo "===================== K8s Events ==========================="
-        kubectl get events --all-namespaces=true -oyaml
+          echo "===================== K8s Events ==========================="
+          kubectl get events --all-namespaces=true -oyaml
 
-        echo "===================== Pod Logs ============================="
-        namespaces=(knative-eventing rabbitmq-system)
-        for namespace in ${namespaces[@]}; do
-          for pod in $(kubectl get pod -n $namespace | awk '{print $1}'); do
-            for container in $(kubectl get pod "${pod}" -n $namespace -ojsonpath='{.spec.containers[*].name}'); do
-              echo "Namespace, Pod, Container: ${namespace}, ${pod}, ${container}"
-              kubectl logs -n $namespace "${pod}" -c "${container}" || true
-              echo "----------------------------------------------------------"
-              echo "Namespace, Pod, Container (Previous instance): ${namespace}, ${pod}, ${container}"
-              kubectl logs -p -n $namespace "${pod}" -c "${container}" || true
-              echo "============================================================"
+          echo "===================== Pod Logs ============================="
+          namespaces=(knative-eventing rabbitmq-system)
+          for namespace in ${namespaces[@]}; do
+            for pod in $(kubectl get pod -n $namespace | awk '{print $1}'); do
+              for container in $(kubectl get pod "${pod}" -n $namespace -ojsonpath='{.spec.containers[*].name}'); do
+                echo "Namespace, Pod, Container: ${namespace}, ${pod}, ${container}"
+                kubectl logs -n $namespace "${pod}" -c "${container}" || true
+                echo "----------------------------------------------------------"
+                echo "Namespace, Pod, Container (Previous instance): ${namespace}, ${pod}, ${container}"
+                kubectl logs -p -n $namespace "${pod}" -c "${container}" || true
+                echo "============================================================"
+              done
             done
           done
-        done
 
-    - name: Post failure notice to Slack
-      # Note: using env.SLACK_WEBHOOK here because secrets are not allowed in the if block.
-      if: ${{ env.SLACK_WEBHOOK != '' && failure() && github.event_name != 'pull_request' }}
-      uses: rtCamp/action-slack-notify@v2.1.0
-      env:
-        SLACK_ICON: http://github.com/knative.png?size=48
-        SLACK_USERNAME: github-actions
-        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-        SLACK_CHANNEL: 'eventing-delivery'
-        MSG_MINIMAL: 'true'
-        SLACK_TITLE: Periodic e2e for RabbitMQ on kind on (${{ matrix.k8s-version }}, ${{ matrix.eventing-version }}) failed.
-        SLACK_MESSAGE: |
-          For detailed logs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      - name: Post failure notice to Slack
+        # Note: using env.SLACK_WEBHOOK here because secrets are not allowed in the if block.
+        if: ${{ env.SLACK_WEBHOOK != '' && failure() && github.event_name != 'pull_request' }}
+        uses: rtCamp/action-slack-notify@v2.1.0
+        env:
+          SLACK_ICON: http://github.com/knative.png?size=48
+          SLACK_USERNAME: github-actions
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_CHANNEL: 'eventing-delivery'
+          MSG_MINIMAL: 'true'
+          SLACK_TITLE: Periodic e2e for RabbitMQ on kind on (${{ matrix.k8s-version }}, ${{ matrix.knative-version }}) failed.
+          SLACK_MESSAGE: |
+            For detailed logs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}

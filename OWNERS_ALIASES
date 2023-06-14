@@ -2,9 +2,6 @@
 # Do not modify this file, instead modify peribolos/knative-sandbox.yaml
 
 aliases:
-  async-component-approvers:
-  - AngeloDanducci
-  - maximilien
   client-wg-leads:
   - dsimansk
   - navidshaikh
@@ -13,13 +10,6 @@ aliases:
   - dsimansk
   - navidshaikh
   - rhuss
-  container-freezer-approvers:
-  - psschwei
-  control-protocol-approvers:
-  - eric-sap
-  - lionelvillard
-  - matzew
-  - travis-minke-sap
   discovery-approvers:
   - lberk
   docs-wg-leads:
@@ -171,7 +161,6 @@ aliases:
   - csantanapr
   - dprotaso
   - dsimansk
-  - evankanderson
   - itsmurugappan
   - knative-automation
   - knative-prow-releaser-robot
@@ -236,28 +225,28 @@ aliases:
   - kvmware
   - psschwei
   - upodroid
-  scaling-group-approvers:
-  - jwcesign
   security-guard-approvers:
   - davidhadas
   - maximilien
   - psschwei
   - rhuss
   security-wg-leads:
+  - davidhadas
   - evankanderson
   security-writers:
+  - davidhadas
   - evankanderson
   serving-approvers:
   - nak3
+  - skonto
   serving-reviewers:
   - KauzClay
-  - carlisia
-  - izabelacg
   - jsanin-vmw
   - kauana
-  - pradnyavmw
+  - kvmware
   - retocode
   - skonto
+  - xtreme-vikram-yadav
   serving-triage:
   - KauzClay
   - retocode
@@ -269,6 +258,7 @@ aliases:
   - dprotaso
   - nak3
   - psschwei
+  - skonto
   steering-committee:
   - csantanapr
   - itsmurugappan
@@ -278,7 +268,7 @@ aliases:
   technical-oversight-committee:
   - dprotaso
   - dsimansk
-  - evankanderson
+  - kvmware
   - psschwei
   - zroubalik
   ux-wg-leads:

@@ -33,6 +33,7 @@ import (
 	v1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/eventing/pkg/metrics/source"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/logging"
 )
 
@@ -58,6 +59,7 @@ func NewEnvConfig() adapter.EnvConfigAccessor {
 
 type Adapter struct {
 	config            *adapterConfig
+	sink              duckv1.Addressable
 	httpMessageSender *kncloudevents.HTTPMessageSender
 	reporter          source.StatsReporter
 	logger            *zap.Logger
@@ -72,11 +74,16 @@ var (
 	retriesInt32 int32 = 0
 )
 
-func NewAdapter(ctx context.Context, processed adapter.EnvConfigAccessor, httpMessageSender *kncloudevents.HTTPMessageSender, reporter source.StatsReporter) adapter.MessageAdapter {
+func NewAdapter(ctx context.Context, processed adapter.EnvConfigAccessor, sink duckv1.Addressable, reporter source.StatsReporter) adapter.MessageAdapter {
 	logger := logging.FromContext(ctx).Desugar()
 	config := processed.(*adapterConfig)
+	httpMessageSender, err := kncloudevents.NewHTTPMessageSenderWithTarget(sink.URL.String())
+	if err != nil {
+		logger.Sugar().Fatalf("Couldn't start message sender, %w", err)
+	}
 	return &Adapter{
 		config:            config,
+		sink:              sink,
 		httpMessageSender: httpMessageSender,
 		reporter:          reporter,
 		logger:            logger,

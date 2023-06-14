@@ -36,8 +36,12 @@ import (
 	v1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/eventing/pkg/metrics/source"
+	"knative.dev/pkg/apis"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/logging"
 )
+
+var serverTestName = "test-name"
 
 type handlerFunc func(http.ResponseWriter, *http.Request)
 
@@ -121,12 +125,19 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 			}
 			sinkServer := httptest.NewServer(h)
 			defer sinkServer.Close()
-
 			s, err := kncloudevents.NewHTTPMessageSenderWithTarget(sinkServer.URL)
 			if err != nil {
 				t.Fatal(err)
 			}
 
+			target, err := apis.ParseURL(sinkServer.URL)
+			if err != nil {
+				t.Fatal(err)
+			}
+			sink := duckv1.Addressable{
+				Name: &serverTestName,
+				URL:  target,
+			}
 			statsReporter, _ := source.NewStatsReporter()
 			config := adapterConfig{}
 			if tc.retry > 0 {
@@ -135,6 +146,7 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 			a := &Adapter{
 				config:            &config,
 				context:           context.TODO(),
+				sink:              sink,
 				httpMessageSender: s,
 				logger:            zap.NewNop(),
 				reporter:          statsReporter,
@@ -278,11 +290,19 @@ func TestAdapter_NewAdapter(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	target, err := apis.ParseURL(sinkServer.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sink := duckv1.Addressable{
+		Name: &serverTestName,
+		URL:  target,
+	}
 	statsReporter, _ := source.NewStatsReporter()
-	a := NewAdapter(ctx, env, s, statsReporter)
+	a := NewAdapter(ctx, env, sink, statsReporter)
 	cmpA := &Adapter{
 		config:            env.(*adapterConfig),
+		sink:              sink,
 		httpMessageSender: s,
 		reporter:          statsReporter,
 		logger:            logging.FromContext(ctx).Desugar(),
