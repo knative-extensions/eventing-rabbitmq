@@ -264,8 +264,8 @@ github.com/prometheus/procfs/internal/util
 ## explicit; go 1.13
 github.com/prometheus/statsd_exporter/pkg/mapper
 github.com/prometheus/statsd_exporter/pkg/mapper/fsm
-# github.com/rabbitmq/amqp091-go v1.3.0
-## explicit; go 1.15
+# github.com/rabbitmq/amqp091-go v1.8.1
+## explicit; go 1.16
 github.com/rabbitmq/amqp091-go
 # github.com/rabbitmq/cluster-operator v1.13.1
 ## explicit; go 1.17
