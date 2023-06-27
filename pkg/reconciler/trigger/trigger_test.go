@@ -76,6 +76,7 @@ import (
 const (
 	systemNS    = "knative-testing"
 	testNS      = "test-namespace"
+	otherNS     = "other-namespace"
 	brokerClass = "RabbitMQBroker"
 	brokerName  = "test-broker"
 	brokerUID   = "broker-test-uid"
@@ -431,6 +432,64 @@ func TestReconcile(t *testing.T) {
 					NewTrigger(triggerName, testNS, brokerName,
 						WithTriggerUID(triggerUID),
 						WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS)),
+					createSecret(rabbitURL),
+					createRabbitMQBrokerConfig(""),
+					createRabbitMQCluster(""),
+				},
+				WantCreates: []runtime.Object{
+					createDispatcherDeployment(false, ""),
+				},
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+					Object: NewTrigger(triggerName, testNS, brokerName,
+						WithTriggerUID(triggerUID),
+						WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS),
+						WithTriggerBrokerReady(),
+						WithTriggerDeadLetterSinkNotConfigured(),
+						WithTriggerDependencyReady(),
+						WithTriggerSubscribed(),
+						WithTriggerSubscriberResolvedSucceeded(),
+						WithTriggerStatusSubscriberURI(subscriberURI)),
+				}},
+			}, {
+				Name: fmt.Sprintf("%s: Creates everything with ref subscriber different ns", name),
+				Key:  testKey,
+				Objects: []runtime.Object{
+					ReadyBroker(config),
+					makeSubscriberAddressableAsUnstructuredWithNamespace(otherNS),
+					markReady(createQueue(config, false, "")),
+					markReady(createBinding(false, false, "")),
+					NewTrigger(triggerName, testNS, brokerName,
+						WithTriggerUID(triggerUID),
+						WithTriggerSubscriberRef(subscriberGVK, subscriberName, otherNS)),
+					createSecret(rabbitURL),
+					createRabbitMQBrokerConfig(""),
+					createRabbitMQCluster(""),
+				},
+				WantCreates: []runtime.Object{
+					createDispatcherDeployment(false, ""),
+				},
+				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+					Object: NewTrigger(triggerName, testNS, brokerName,
+						WithTriggerUID(triggerUID),
+						WithTriggerSubscriberRef(subscriberGVK, subscriberName, otherNS),
+						WithTriggerBrokerReady(),
+						WithTriggerDeadLetterSinkNotConfigured(),
+						WithTriggerDependencyReady(),
+						WithTriggerSubscribed(),
+						WithTriggerSubscriberResolvedSucceeded(),
+						WithTriggerStatusSubscriberURI(subscriberURI)),
+				}},
+			}, {
+				Name: fmt.Sprintf("%s: Creates everything with ref subscriber no ns provided", name),
+				Key:  testKey,
+				Objects: []runtime.Object{
+					ReadyBroker(config),
+					makeSubscriberAddressableAsUnstructured(),
+					markReady(createQueue(config, false, "")),
+					markReady(createBinding(false, false, "")),
+					NewTrigger(triggerName, testNS, brokerName,
+						WithTriggerUID(triggerUID),
+						WithTriggerSubscriberRef(subscriberGVK, subscriberName, "")),
 					createSecret(rabbitURL),
 					createRabbitMQBrokerConfig(""),
 					createRabbitMQCluster(""),
@@ -1386,6 +1445,24 @@ func makeSubscriberAddressableAsUnstructured() *unstructured.Unstructured {
 			"kind":       subscriberKind,
 			"metadata": map[string]interface{}{
 				"namespace": testNS,
+				"name":      subscriberName,
+			},
+			"status": map[string]interface{}{
+				"address": map[string]interface{}{
+					"url": subscriberURI,
+				},
+			},
+		},
+	}
+}
+
+func makeSubscriberAddressableAsUnstructuredWithNamespace(ns string) *unstructured.Unstructured {
+	return &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": subscriberAPIVersion,
+			"kind":       subscriberKind,
+			"metadata": map[string]interface{}{
+				"namespace": ns,
 				"name":      subscriberName,
 			},
 			"status": map[string]interface{}{
