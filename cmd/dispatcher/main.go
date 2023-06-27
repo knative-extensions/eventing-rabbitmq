@@ -88,14 +88,15 @@ func main() {
 
 	reporter := dispatcherstats.NewStatsReporter(env.ContainerName, kmeta.ChildName(env.PodName, uuid.New().String()), env.Namespace)
 	d := &dispatcher.Dispatcher{
-		BrokerIngressURL: env.BrokerIngressURL,
-		SubscriberURL:    env.SubscriberURL,
-		MaxRetries:       env.Retry,
-		BackoffDelay:     backoffDelay,
-		Timeout:          env.Timeout,
-		BackoffPolicy:    backoffPolicy,
-		WorkerCount:      env.Parallelism,
-		Reporter:         reporter,
+		BrokerIngressURL:  env.BrokerIngressURL,
+		SubscriberURL:     env.SubscriberURL,
+		SubscriberCACerts: env.SubscriberCACerts,
+		MaxRetries:        env.Retry,
+		BackoffDelay:      backoffDelay,
+		Timeout:           env.Timeout,
+		BackoffPolicy:     backoffPolicy,
+		WorkerCount:       env.Parallelism,
+		Reporter:          reporter,
 	}
 
 	var err error

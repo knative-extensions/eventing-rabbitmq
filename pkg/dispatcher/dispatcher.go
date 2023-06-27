@@ -48,7 +48,7 @@ const (
 type Dispatcher struct {
 	BrokerIngressURL  string
 	SubscriberURL     string
-	SubscriberCaCerts string
+	SubscriberCACerts string
 	MaxRetries        int
 	BackoffDelay      time.Duration
 	Timeout           time.Duration
