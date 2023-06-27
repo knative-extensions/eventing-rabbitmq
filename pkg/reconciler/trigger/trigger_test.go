@@ -538,7 +538,7 @@ func TestReconcile(t *testing.T) {
 						WithTriggerBrokerReady(),
 						WithTriggerDeadLetterSinkNotConfigured(),
 						WithTriggerDependencyReady(),
-						WithTriggerSubscriberResolvedFailed("Unable to get the Subscriber's URI", `address not set for Kind = Service, Namespace = test-namespace, Name = subscriber-name, APIVersion = serving.knative.dev/v1, Group = , Address = `)),
+						WithTriggerSubscriberResolvedFailed("Unable to get the Subscriber's Addressable", `address not set for Kind = Service, Namespace = test-namespace, Name = subscriber-name, APIVersion = serving.knative.dev/v1, Group = , Address = `)),
 				}},
 			}, {
 				Name: fmt.Sprintf("%s: Deployment creation fails", name),

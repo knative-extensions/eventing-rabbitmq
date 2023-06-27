@@ -130,6 +130,7 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 			name: "with subscriber CACerts",
 			args: dispatcherArgs(withSubscriberCACerts()),
 			want: deployment(
+				withEnv(corev1.EnvVar{Name: "PARALLELISM", Value: "1"}),
 				withEnv(corev1.EnvVar{Name: "SUBSCRIBER_CACERTS", Value: testCACert}),
 				withDefaultResourceRequirements()),
 		},
@@ -352,7 +353,7 @@ func withVhost() func(*DispatcherArgs) {
 
 func withSubscriberCACerts() func(*DispatcherArgs) {
 	return func(args *DispatcherArgs) {
-		args.Trigger.Status.SubscriberCACerts = &testCACert
+		args.Subscriber.CACerts = &testCACert
 	}
 }
 

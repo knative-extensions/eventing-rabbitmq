@@ -1175,7 +1175,7 @@ func TestReconcile(t *testing.T) {
 						WithDLXReady(),
 						WithDeadLetterSinkReady(),
 						WithDeadLetterSinkResolvedFailed(
-							"Unable to get the DeadLetterSink's URI",
+							"Unable to get the DeadLetterSink's Addressable",
 							fmt.Sprintf(`failed to get object %s/%s: services "%s" not found`, testNS, deadLetterSinkName, deadLetterSinkName),
 						),
 						WithSecretReady(),
