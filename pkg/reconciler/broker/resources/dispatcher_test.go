@@ -46,11 +46,12 @@ const (
 )
 
 func TestMakeDispatcherDeployment(t *testing.T) {
-	var TrueValue = true
+	TrueValue := true
+	cacert := "test.cacert"
 	sURL := apis.HTTP("function.example.com")
 	sAddressable := &duckv1.Addressable{
-		URL: sURL,
-		// CACerts: , still to be implemented
+		URL:     sURL,
+		CACerts: &cacert,
 	}
 	bURL := apis.HTTP("broker.example.com")
 	broker := &eventingv1.Broker{
@@ -186,6 +187,9 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 						}, {
 							Name:  "RABBITMQ_VHOST",
 							Value: "test-vhost",
+						}, {
+							Name:  "SUBSCRIBER_CACERTS",
+							Value: "test.cacert",
 						}},
 						Ports: []corev1.ContainerPort{{
 							Name:          "http-metrics",
