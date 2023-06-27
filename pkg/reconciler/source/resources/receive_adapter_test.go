@@ -198,10 +198,6 @@ func TestMakeReceiveAdapter(t *testing.T) {
 											Value: "true",
 										},
 										{
-											Name:  "SINK_URI",
-											Value: "sink-uri",
-										},
-										{
 											Name:  "K_SINK",
 											Value: "sink-uri",
 										},

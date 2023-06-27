@@ -76,10 +76,6 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 			Value: strconv.FormatBool(args.Source.Spec.RabbitmqResourcesConfig.Predeclared),
 		},
 		{
-			Name:  "SINK_URI",
-			Value: args.SinkURI.String(),
-		},
-		{
 			Name:  "K_SINK",
 			Value: args.SinkURI.String(),
 		},
