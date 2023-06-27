@@ -152,6 +152,10 @@ func (ts *TriggerStatus) MarkSubscriberResolvedUnknown(reason, messageFormat str
 	triggerCondSet.Manage(ts).MarkUnknown(TriggerConditionSubscriberResolved, reason, messageFormat, messageA...)
 }
 
+func (ts *TriggerStatus) MarkDeadLetterSinkResolvedSucceeded() {
+	triggerCondSet.Manage(ts).MarkTrue(TriggerConditionDeadLetterSinkResolved)
+}
+
 func (ts *TriggerStatus) MarkDeadLetterSinkNotConfigured() {
 	triggerCondSet.Manage(ts).MarkTrueWithReason(TriggerConditionDeadLetterSinkResolved, "DeadLetterSinkNotConfigured", "No dead letter sink is configured.")
 }
