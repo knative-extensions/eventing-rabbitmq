@@ -269,14 +269,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 	logging.FromContext(ctx).Info("Reconciled rabbitmq binding", zap.Any("binding", binding))
 	t.Status.MarkDependencySucceeded()
 
-	if t.Spec.Subscriber.Ref != nil {
-		// To call URIFromDestination(dest apisv1alpha1.Destination, parent interface{}), dest.Ref must have a Namespace
-		if t.Spec.Subscriber.Ref.Namespace == "" {
-			// We will use the Namespace of Trigger as the Namespace of dest.Ref if one is not provided
-			t.Spec.Subscriber.Ref.Namespace = t.GetNamespace()
-		}
-	}
-
 	subscriberURI, err := r.uriResolver.URIFromDestinationV1(ctx, t.Spec.Subscriber, t)
 	if err != nil {
 		logging.FromContext(ctx).Error("Unable to get the Subscriber's URI", zap.Error(err))
