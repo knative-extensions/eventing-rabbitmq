@@ -195,16 +195,16 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 			t.Status.MarkDependencyFailed("BindingFailure", "DLQ Binding %q is not ready", dlqBinding.Name)
 			return nil
 		}
-		deadLetterSinkURI, err := r.uriResolver.URIFromDestinationV1(ctx, *t.Spec.Delivery.DeadLetterSink, t)
+		deadLetterSinkAddressable, err := r.uriResolver.AddressableFromDestinationV1(ctx, *t.Spec.Delivery.DeadLetterSink, t)
 		if err != nil {
-			logging.FromContext(ctx).Error("Unable to get the DeadLetterSink URI", zap.Error(err))
-			t.Status.MarkDeadLetterSinkResolvedFailed("Unable to get the DeadLetterSink URI", "%v", err)
+			logging.FromContext(ctx).Error("Unable to get the DeadLetterSink Addressalbe", zap.Error(err))
+			t.Status.MarkDeadLetterSinkResolvedFailed("Unable to get the DeadLetterSink Addressalbe", "%v", err)
 			t.Status.DeadLetterSinkURI = nil
 			return err
 		}
 		t.Status.MarkDeadLetterSinkResolvedSucceeded()
-		t.Status.DeadLetterSinkURI = deadLetterSinkURI
-		_, err = r.reconcileDispatcherDeployment(ctx, t, deadLetterSinkURI, t.Spec.Delivery, true, rabbitmqVhost)
+		t.Status.DeadLetterSinkURI = deadLetterSinkAddressable.URL
+		_, err = r.reconcileDispatcherDeployment(ctx, t, deadLetterSinkAddressable, t.Spec.Delivery, true, rabbitmqVhost)
 		if err != nil {
 			logging.FromContext(ctx).Error("Problem reconciling DLX dispatcher Deployment", zap.Error(err))
 			t.Status.MarkDependencyFailed("DeploymentFailure", "%v", err)
@@ -269,14 +269,14 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 	logging.FromContext(ctx).Info("Reconciled rabbitmq binding", zap.Any("binding", binding))
 	t.Status.MarkDependencySucceeded()
 
-	subscriberURI, err := r.uriResolver.URIFromDestinationV1(ctx, t.Spec.Subscriber, t)
+	subscriberAddressable, err := r.uriResolver.AddressableFromDestinationV1(ctx, t.Spec.Subscriber, t)
 	if err != nil {
-		logging.FromContext(ctx).Error("Unable to get the Subscriber's URI", zap.Error(err))
-		t.Status.MarkSubscriberResolvedFailed("Unable to get the Subscriber's URI", "%v", err)
+		logging.FromContext(ctx).Error("Unable to get the Subscriber's Addressable", zap.Error(err))
+		t.Status.MarkSubscriberResolvedFailed("Unable to get the Subscriber's Addressable", "%v", err)
 		t.Status.SubscriberURI = nil
 		return err
 	}
-	t.Status.SubscriberURI = subscriberURI
+	t.Status.SubscriberURI = subscriberAddressable.URL
 	t.Status.MarkSubscriberResolvedSucceeded()
 
 	// TODO no Subscription
@@ -294,7 +294,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		delivery = broker.Spec.Delivery
 	}
 
-	_, err = r.reconcileDispatcherDeployment(ctx, t, subscriberURI, delivery, false, rabbitmqVhost)
+	_, err = r.reconcileDispatcherDeployment(ctx, t, subscriberAddressable, delivery, false, rabbitmqVhost)
 	if err != nil {
 		logging.FromContext(ctx).Error("Problem reconciling dispatcher Deployment", zap.Error(err))
 		t.Status.MarkDependencyFailed("DeploymentFailure", "%v", err)
@@ -378,7 +378,7 @@ func (r *Reconciler) deleteDeployment(ctx context.Context, namespace, name strin
 func (r *Reconciler) reconcileDispatcherDeployment(
 	ctx context.Context,
 	t *eventingv1.Trigger,
-	sub *apis.URL,
+	subscriberAddressable *duckv1.Addressable,
 	delivery *eventingduckv1.DeliverySpec,
 	dlq bool,
 	rabbitmqVhost string) (*v1.Deployment, error) {
@@ -419,7 +419,7 @@ func (r *Reconciler) reconcileDispatcherDeployment(
 		QueueName:            queueName,
 		BrokerUrlSecretKey:   rabbit.BrokerURLSecretKey,
 		BrokerIngressURL:     b.Status.Address.URL,
-		Subscriber:           sub,
+		Subscriber:           subscriberAddressable,
 		DLX:                  dlq,
 		Delivery:             delivery,
 		Configs:              r.configs,

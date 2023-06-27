@@ -27,6 +27,7 @@ import (
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	"knative.dev/pkg/apis"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/ptr"
 	"knative.dev/pkg/system"
 	_ "knative.dev/pkg/system/testing"
@@ -44,7 +45,10 @@ const (
 	subscriberURL    = "http://function.example.com"
 )
 
-var exponentialBackoff = eventingduckv1.BackoffPolicyExponential
+var (
+	exponentialBackoff = eventingduckv1.BackoffPolicyExponential
+	testCACert         = "test.cacert"
+)
 
 func TestMakeDispatcherDeployment(t *testing.T) {
 	tests := []struct {
@@ -122,6 +126,12 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 					},
 				}),
 			),
+		}, {
+			name: "with subscriber CACerts",
+			args: dispatcherArgs(withSubscriberCACerts()),
+			want: deployment(
+				withEnv(corev1.EnvVar{Name: "SUBSCRIBER_CACERTS", Value: testCACert}),
+				withDefaultResourceRequirements()),
 		},
 	}
 	for _, tt := range tests {
@@ -265,6 +275,10 @@ func deploymentNamed(name string) func(*appsv1.Deployment) {
 func dispatcherArgs(opts ...func(*DispatcherArgs)) *DispatcherArgs {
 	ingressURL := apis.HTTP("broker.example.com")
 	sURL := apis.HTTP("function.example.com")
+	sAddressable := &duckv1.Addressable{
+		URL: sURL,
+		// CACerts: , still to be implemented
+	}
 	trigger := &eventingv1.Trigger{
 		ObjectMeta: metav1.ObjectMeta{Name: triggerName, Namespace: ns},
 		Spec:       eventingv1.TriggerSpec{Broker: brokerName},
@@ -277,7 +291,7 @@ func dispatcherArgs(opts ...func(*DispatcherArgs)) *DispatcherArgs {
 		QueueName:            queueName,
 		BrokerUrlSecretKey:   brokerURLKey,
 		BrokerIngressURL:     ingressURL,
-		Subscriber:           sURL,
+		Subscriber:           sAddressable,
 	}
 	for _, o := range opts {
 		o(args)
@@ -333,6 +347,12 @@ func withDefaultResourceRequirements() func(*appsv1.Deployment) {
 func withVhost() func(*DispatcherArgs) {
 	return func(args *DispatcherArgs) {
 		args.RabbitMQVHost = "test-vhost"
+	}
+}
+
+func withSubscriberCACerts() func(*DispatcherArgs) {
+	return func(args *DispatcherArgs) {
+		args.Trigger.Status.SubscriberCACerts = &testCACert
 	}
 }
 

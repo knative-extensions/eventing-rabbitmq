@@ -40,11 +40,12 @@ import (
 type envConfig struct {
 	utils.EnvConfig
 
-	QueueName        string `envconfig:"QUEUE_NAME" required:"true"`
-	RabbitURL        string `envconfig:"RABBIT_URL" required:"true"`
-	RabbitMQVhost    string `envconfig:"RABBITMQ_VHOST" required:"false"`
-	BrokerIngressURL string `envconfig:"BROKER_INGRESS_URL" required:"true"`
-	SubscriberURL    string `envconfig:"SUBSCRIBER" required:"true"`
+	QueueName         string `envconfig:"QUEUE_NAME" required:"true"`
+	RabbitURL         string `envconfig:"RABBIT_URL" required:"true"`
+	RabbitMQVhost     string `envconfig:"RABBITMQ_VHOST" required:"false"`
+	BrokerIngressURL  string `envconfig:"BROKER_INGRESS_URL" required:"true"`
+	SubscriberURL     string `envconfig:"SUBSCRIBER" required:"true"`
+	SubscriberCACerts string `envconfig:"SUBSCRIBER_CACERTS" required:"true"`
 
 	// Number of concurrent messages in flight
 	Parallelism   int           `envconfig:"PARALLELISM" default:"1" required:"false"`

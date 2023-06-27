@@ -29,6 +29,7 @@ import (
 	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	reconcilersource "knative.dev/eventing/pkg/reconciler/source"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/kmeta"
@@ -53,7 +54,7 @@ type DispatcherArgs struct {
 	QueueName            string
 	BrokerUrlSecretKey   string
 	BrokerIngressURL     *apis.URL
-	Subscriber           *apis.URL
+	Subscriber           *duckv1.Addressable
 	Configs              reconcilersource.ConfigAccessor
 	ResourceRequirements corev1.ResourceRequirements
 }
@@ -83,7 +84,7 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 		Value: args.QueueName,
 	}, {
 		Name:  "SUBSCRIBER",
-		Value: args.Subscriber.String(),
+		Value: args.Subscriber.URL.String(),
 	}, {
 		// Do not requeue failed events
 		Name:  "REQUEUE",
@@ -140,6 +141,13 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 			corev1.EnvVar{
 				Name:  "RABBITMQ_VHOST",
 				Value: args.RabbitMQVhost,
+			})
+	}
+	if args.Subscriber.CACerts != nil {
+		envs = append(envs,
+			corev1.EnvVar{
+				Name:  "SUBSCRIBER_CACERTS",
+				Value: *args.Subscriber.CACerts,
 			})
 	}
 	// Default requirements only if none of the requirements are set through annotations
