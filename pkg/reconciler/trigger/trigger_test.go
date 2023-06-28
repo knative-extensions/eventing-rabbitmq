@@ -149,6 +149,10 @@ var (
 		Host:   "example.com",
 		Path:   "/subscriber/",
 	}
+	subscriberAddressable = &duckv1.Addressable{
+		URL: subscriberAddress,
+		// CACerts: , still to be implemented
+	}
 )
 
 func init() {
@@ -534,7 +538,7 @@ func TestReconcile(t *testing.T) {
 						WithTriggerBrokerReady(),
 						WithTriggerDeadLetterSinkNotConfigured(),
 						WithTriggerDependencyReady(),
-						WithTriggerSubscriberResolvedFailed("Unable to get the Subscriber's URI", `address not set for Kind = Service, Namespace = test-namespace, Name = subscriber-name, APIVersion = serving.knative.dev/v1, Group = , Address = `)),
+						WithTriggerSubscriberResolvedFailed("Unable to get the Subscriber's Addressable", `address not set for Kind = Service, Namespace = test-namespace, Name = subscriber-name, APIVersion = serving.knative.dev/v1, Group = , Address = `)),
 				}},
 			}, {
 				Name: fmt.Sprintf("%s: Deployment creation fails", name),
@@ -1331,7 +1335,7 @@ func createDispatcherDeployment(dlq bool, vhost string) *appsv1.Deployment {
 		QueueName:          queueName,
 		BrokerUrlSecretKey: "brokerURL",
 		BrokerIngressURL:   brokerAddress,
-		Subscriber:         subscriberAddress,
+		Subscriber:         subscriberAddressable,
 		DLX:                dlq,
 	}
 	return resources.MakeDispatcherDeployment(args)
@@ -1354,7 +1358,7 @@ func createDispatcherDeploymentWithResourceRequirements(dlq bool) *appsv1.Deploy
 		QueueName:          queueName,
 		BrokerUrlSecretKey: "brokerURL",
 		BrokerIngressURL:   brokerAddress,
-		Subscriber:         subscriberAddress,
+		Subscriber:         subscriberAddressable,
 		DLX:                dlq,
 		ResourceRequirements: corev1.ResourceRequirements{
 			Requests: corev1.ResourceList{
@@ -1385,7 +1389,7 @@ func createDispatcherDeploymentWithRetries() *appsv1.Deployment {
 		QueueName:          queueName,
 		BrokerUrlSecretKey: "brokerURL",
 		BrokerIngressURL:   brokerAddress,
-		Subscriber:         subscriberAddress,
+		Subscriber:         subscriberAddressable,
 		Delivery:           &eventingduckv1.DeliverySpec{},
 	}
 	return resources.MakeDispatcherDeployment(args)
@@ -1408,7 +1412,7 @@ func createDifferentDispatcherDeployment() *appsv1.Deployment {
 		QueueName:          queueName,
 		BrokerUrlSecretKey: "brokerURL",
 		BrokerIngressURL:   brokerAddress,
-		Subscriber:         subscriberAddress,
+		Subscriber:         subscriberAddressable,
 	}
 	return resources.MakeDispatcherDeployment(args)
 }
@@ -1433,7 +1437,7 @@ func createDispatcherDeploymentWithParallelism() *appsv1.Deployment {
 		QueueName:          queueName,
 		BrokerUrlSecretKey: "brokerURL",
 		BrokerIngressURL:   brokerAddress,
-		Subscriber:         subscriberAddress,
+		Subscriber:         subscriberAddressable,
 	}
 	return resources.MakeDispatcherDeployment(args)
 }

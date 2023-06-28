@@ -177,9 +177,9 @@ func WithDeadLetterSinkNotConfigured() BrokerOption {
 	}
 }
 
-func WithDeadLetterSinkResolvedSucceeded(uri *apis.URL) BrokerOption {
+func WithDeadLetterSinkResolvedSucceeded(addr *duckv1.Addressable) BrokerOption {
 	return func(b *v1.Broker) {
-		b.Status.MarkDeadLetterSinkResolvedSucceeded(uri)
+		b.Status.MarkDeadLetterSinkResolvedSucceeded(eventingduckv1.NewDeliveryStatusFromAddressable(addr))
 	}
 }
 

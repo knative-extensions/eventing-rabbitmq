@@ -27,6 +27,7 @@ import (
 	v1 "knative.dev/eventing/pkg/apis/duck/v1"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	"knative.dev/pkg/apis"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/ptr"
 	"knative.dev/pkg/system"
 
@@ -45,8 +46,13 @@ const (
 )
 
 func TestMakeDispatcherDeployment(t *testing.T) {
-	var TrueValue = true
+	TrueValue := true
+	cacert := "test.cacert"
 	sURL := apis.HTTP("function.example.com")
+	sAddressable := &duckv1.Addressable{
+		URL:     sURL,
+		CACerts: &cacert,
+	}
 	bURL := apis.HTTP("broker.example.com")
 	broker := &eventingv1.Broker{
 		ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: ns},
@@ -60,7 +66,7 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 		RabbitMQCASecretName: "rabbitmq-ca-secret",
 		QueueName:            queueName,
 		BrokerUrlSecretKey:   brokerURLKey,
-		Subscriber:           sURL,
+		Subscriber:           sAddressable,
 		BrokerIngressURL:     bURL,
 		Delivery: &v1.DeliverySpec{
 			Retry:         ptr.Int32(10),
@@ -181,6 +187,9 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 						}, {
 							Name:  "RABBITMQ_VHOST",
 							Value: "test-vhost",
+						}, {
+							Name:  "SUBSCRIBER_CACERTS",
+							Value: "test.cacert",
 						}},
 						Ports: []corev1.ContainerPort{{
 							Name:          "http-metrics",

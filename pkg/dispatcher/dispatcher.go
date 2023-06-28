@@ -46,14 +46,15 @@ const (
 )
 
 type Dispatcher struct {
-	BrokerIngressURL string
-	SubscriberURL    string
-	MaxRetries       int
-	BackoffDelay     time.Duration
-	Timeout          time.Duration
-	BackoffPolicy    eventingduckv1.BackoffPolicyType
-	WorkerCount      int
-	Reporter         dispatcher.StatsReporter
+	BrokerIngressURL  string
+	SubscriberURL     string
+	SubscriberCACerts string
+	MaxRetries        int
+	BackoffDelay      time.Duration
+	Timeout           time.Duration
+	BackoffPolicy     eventingduckv1.BackoffPolicyType
+	WorkerCount       int
+	Reporter          dispatcher.StatsReporter
 }
 
 // ConsumeFromQueue consumes messages from the given message channel and queue.

@@ -49,9 +49,10 @@ import (
 	eventinglisters "knative.dev/eventing/pkg/client/listers/eventing/v1"
 	reconcilersource "knative.dev/eventing/pkg/reconciler/source"
 
-	apisduck "knative.dev/pkg/apis/duck"
-
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/eventing/pkg/duck"
+	apisduck "knative.dev/pkg/apis/duck"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/resolver"
 )
@@ -215,7 +216,7 @@ func (r *Reconciler) reconcileIngressService(ctx context.Context, b *eventingv1.
 }
 
 // reconcileDLXDispatcherDeployment reconciles Brokers DLX dispatcher deployment.
-func (r *Reconciler) reconcileDLXDispatcherDeployment(ctx context.Context, b *eventingv1.Broker, sub *apis.URL, rabbitmqVhost string) error {
+func (r *Reconciler) reconcileDLXDispatcherDeployment(ctx context.Context, b *eventingv1.Broker, sub *duckv1.Addressable, rabbitmqVhost string) error {
 	// If there's a sub, then reconcile the deployment as usual.
 	if sub != nil {
 		clusterRef, err := r.brokerConfig.GetRabbitMQClusterRef(ctx, b)
@@ -414,22 +415,22 @@ func (r *Reconciler) reconcileCommonIngressResources(ctx context.Context, s *cor
 
 	// If there's a Dead Letter Sink, then create a dispatcher for it. Note that this is for
 	// the whole broker, unlike for the Trigger, where we create one dispatcher per Trigger.
-	var dlsURI *apis.URL
+	var dlsAddressable *duckv1.Addressable
 	if deadLetterEnabled(b) {
-		dlsURI, err = r.uriResolver.URIFromDestinationV1(ctx, *b.Spec.Delivery.DeadLetterSink, b)
+		dlsAddressable, err = r.uriResolver.AddressableFromDestinationV1(ctx, *b.Spec.Delivery.DeadLetterSink, b)
 		if err != nil {
-			logging.FromContext(ctx).Error("Unable to get the DeadLetterSink URI", zap.Error(err))
-			b.Status.MarkDeadLetterSinkResolvedFailed("Unable to get the DeadLetterSink's URI", "%v", err)
+			logging.FromContext(ctx).Error("Unable to get the DeadLetterSink Addressable", zap.Error(err))
+			b.Status.MarkDeadLetterSinkResolvedFailed("Unable to get the DeadLetterSink's Addressable", "%v", err)
 			return err
 		}
-		b.Status.MarkDeadLetterSinkResolvedSucceeded(dlsURI)
+		b.Status.MarkDeadLetterSinkResolvedSucceeded(eventingduckv1.NewDeliveryStatusFromAddressable(dlsAddressable))
 	} else {
 		b.Status.MarkDeadLetterSinkNotConfigured()
 	}
 
 	// Note that if we didn't actually resolve the URI above, as in it's left as nil it's ok to pass here
 	// it deals with it properly.
-	if err := r.reconcileDLXDispatcherDeployment(ctx, b, dlsURI, rabbitmqVhost); err != nil {
+	if err := r.reconcileDLXDispatcherDeployment(ctx, b, dlsAddressable, rabbitmqVhost); err != nil {
 		logging.FromContext(ctx).Error("Problem reconciling DLX dispatcher Deployment", zap.Error(err))
 		MarkDeadLetterSinkFailed(&b.Status, "DeploymentFailure", "%v", err)
 		return err

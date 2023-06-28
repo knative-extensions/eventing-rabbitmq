@@ -109,7 +109,10 @@ var (
 		Host:   "example.com",
 		Path:   "/subscriber/",
 	}
-
+	DLSAddressable = &duckv1.Addressable{
+		URL: deadLetterSinkAddress,
+		// CACerts: , still to be implemented
+	}
 	five         = int32(5)
 	policy       = eventingduckv1.BackoffPolicyExponential
 	backoffDelay = "PT30S"
@@ -1052,7 +1055,7 @@ func TestReconcile(t *testing.T) {
 						WithIngressAvailable(),
 						WithDLXReady(),
 						WithDeadLetterSinkReady(),
-						WithDeadLetterSinkResolvedSucceeded(delivery.DeadLetterSink.URI),
+						WithDeadLetterSinkResolvedSucceeded(AddressableFromDestination(delivery.DeadLetterSink)),
 						WithSecretReady(),
 						WithBrokerAddressURI(brokerAddress),
 						WithExchangeReady()),
@@ -1099,7 +1102,7 @@ func TestReconcile(t *testing.T) {
 						WithIngressAvailable(),
 						WithDLXReady(),
 						WithDeadLetterSinkReady(),
-						WithDeadLetterSinkResolvedSucceeded(delivery.DeadLetterSink.URI),
+						WithDeadLetterSinkResolvedSucceeded(AddressableFromDestination(delivery.DeadLetterSink)),
 						WithSecretReady(),
 						WithBrokerAddressURI(brokerAddress),
 						WithAnnotation(utils.CPURequestAnnotation, "500m"),
@@ -1172,7 +1175,7 @@ func TestReconcile(t *testing.T) {
 						WithDLXReady(),
 						WithDeadLetterSinkReady(),
 						WithDeadLetterSinkResolvedFailed(
-							"Unable to get the DeadLetterSink's URI",
+							"Unable to get the DeadLetterSink's Addressable",
 							fmt.Sprintf(`failed to get object %s/%s: services "%s" not found`, testNS, deadLetterSinkName, deadLetterSinkName),
 						),
 						WithSecretReady(),
@@ -1225,7 +1228,7 @@ func TestReconcile(t *testing.T) {
 				WithIngressAvailable(),
 				WithDLXReady(),
 				WithDeadLetterSinkReady(),
-				WithDeadLetterSinkResolvedSucceeded(delivery.DeadLetterSink.URI),
+				WithDeadLetterSinkResolvedSucceeded(AddressableFromDestination(delivery.DeadLetterSink)),
 				WithSecretReady(),
 				WithBrokerAddressURI(brokerAddress),
 				WithExchangeReady()),
@@ -1539,7 +1542,7 @@ func createDispatcherDeployment(opts ...func(*resources.DispatcherArgs)) *appsv1
 		QueueName:          "b.test-namespace.test-broker.dlq.broker-test-uid",
 		BrokerUrlSecretKey: "brokerURL",
 		BrokerIngressURL:   brokerAddress,
-		Subscriber:         deadLetterSinkAddress,
+		Subscriber:         DLSAddressable,
 	}
 	for _, o := range opts {
 		o(args)
@@ -1878,5 +1881,12 @@ func getBrokerArguments() *runtime.RawExtension {
 	}
 	return &runtime.RawExtension{
 		Raw: argumentsJson,
+	}
+}
+
+func AddressableFromDestination(dest *duckv1.Destination) *duckv1.Addressable {
+	return &duckv1.Addressable{
+		URL:     dest.URI,
+		CACerts: dest.CACerts,
 	}
 }

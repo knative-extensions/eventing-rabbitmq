@@ -40,11 +40,12 @@ import (
 type envConfig struct {
 	utils.EnvConfig
 
-	QueueName        string `envconfig:"QUEUE_NAME" required:"true"`
-	RabbitURL        string `envconfig:"RABBIT_URL" required:"true"`
-	RabbitMQVhost    string `envconfig:"RABBITMQ_VHOST" required:"false"`
-	BrokerIngressURL string `envconfig:"BROKER_INGRESS_URL" required:"true"`
-	SubscriberURL    string `envconfig:"SUBSCRIBER" required:"true"`
+	QueueName         string `envconfig:"QUEUE_NAME" required:"true"`
+	RabbitURL         string `envconfig:"RABBIT_URL" required:"true"`
+	RabbitMQVhost     string `envconfig:"RABBITMQ_VHOST" required:"false"`
+	BrokerIngressURL  string `envconfig:"BROKER_INGRESS_URL" required:"true"`
+	SubscriberURL     string `envconfig:"SUBSCRIBER" required:"true"`
+	SubscriberCACerts string `envconfig:"SUBSCRIBER_CACERTS" required:"false"`
 
 	// Number of concurrent messages in flight
 	Parallelism   int           `envconfig:"PARALLELISM" default:"1" required:"false"`
@@ -87,14 +88,15 @@ func main() {
 
 	reporter := dispatcherstats.NewStatsReporter(env.ContainerName, kmeta.ChildName(env.PodName, uuid.New().String()), env.Namespace)
 	d := &dispatcher.Dispatcher{
-		BrokerIngressURL: env.BrokerIngressURL,
-		SubscriberURL:    env.SubscriberURL,
-		MaxRetries:       env.Retry,
-		BackoffDelay:     backoffDelay,
-		Timeout:          env.Timeout,
-		BackoffPolicy:    backoffPolicy,
-		WorkerCount:      env.Parallelism,
-		Reporter:         reporter,
+		BrokerIngressURL:  env.BrokerIngressURL,
+		SubscriberURL:     env.SubscriberURL,
+		SubscriberCACerts: env.SubscriberCACerts,
+		MaxRetries:        env.Retry,
+		BackoffDelay:      backoffDelay,
+		Timeout:           env.Timeout,
+		BackoffPolicy:     backoffPolicy,
+		WorkerCount:       env.Parallelism,
+		Reporter:          reporter,
 	}
 
 	var err error
