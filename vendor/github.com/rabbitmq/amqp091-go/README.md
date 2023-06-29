@@ -1,6 +1,8 @@
 # Go RabbitMQ Client Library
 
+[![amqp091-go](https://github.com/rabbitmq/amqp091-go/actions/workflows/tests.yml/badge.svg)](https://github.com/rabbitmq/amqp091-go/actions/workflows/tests.yml)
 [![Go Reference](https://pkg.go.dev/badge/github.com/rabbitmq/amqp091-go.svg)](https://pkg.go.dev/github.com/rabbitmq/amqp091-go)
+[![Go Report Card](https://goreportcard.com/badge/github.com/rabbitmq/amqp091-go)](https://goreportcard.com/report/github.com/rabbitmq/amqp091-go)
 
 This is a Go AMQP 0.9.1 client maintained by the [RabbitMQ core team](https://github.com/rabbitmq).
 It was [originally developed by Sean Treadway](https://github.com/streadway/amqp).
@@ -34,9 +36,6 @@ This client uses the same 2-clause BSD license as the original project.
 ## Project Maturity
 
 This project is based on a mature Go client that's been around for over a decade.
-
-We expect this client to undergo moderate breaking public API changes in 2021.
-Major and minor versions will be updated accordingly.
 
 
 ## Supported Go Versions
@@ -72,26 +71,26 @@ Things not intended to be supported.
       topology declaration so that reconnection is trivial and encapsulated in
       the caller's application code.
   * AMQP Protocol negotiation for forward or backward compatibility.
-    * 0.9.1 is stable and widely deployed.  Versions 0.10 and 1.0 are divergent
-      specifications that change the semantics and wire format of the protocol.
-      We will accept patches for other protocol support but have no plans for
-      implementation ourselves.
+    * 0.9.1 is stable and widely deployed.  AMQP 1.0 is a divergent
+      specification (a different protocol) and belongs to a different library.
   * Anything other than PLAIN and EXTERNAL authentication mechanisms.
     * Keeping the mechanisms interface modular makes it possible to extend
       outside of this package.  If other mechanisms prove to be popular, then
       we would accept patches to include them in this package.
+  * Support for [`basic.return` and `basic.ack` frame ordering](https://www.rabbitmq.com/confirms.html#when-publishes-are-confirmed).
+    This client uses Go channels for certain protocol events and ordering between
+    events sent to two different channels generally cannot be guaranteed.
 
 ## Usage
 
-See the 'examples' subdirectory for simple producers and consumers executables.
+See the [_examples](_examples) subdirectory for simple producers and consumers executables.
 If you have a use-case in mind which isn't well-represented by the examples,
 please file an issue.
 
 ## Documentation
 
  * [Godoc API reference](http://godoc.org/github.com/rabbitmq/amqp091-go)
- * [RabbitMQ tutorials in Go](https://github.com/rabbitmq/rabbitmq-tutorials/tree/master/go) currently use a different client.
-    They will be switched to use this client eventually
+ * [RabbitMQ tutorials in Go](https://github.com/rabbitmq/rabbitmq-tutorials/tree/master/go)
 
 ## Contributing
 
@@ -99,12 +98,8 @@ Pull requests are very much welcomed.  Create your pull request on a non-main
 branch, make sure a test or example is included that covers your change, and
 your commits represent coherent changes that include a reason for the change.
 
-To run the integration tests, make sure you have RabbitMQ running on any host,
-export the environment variable `AMQP_URL=amqp://host/` and run `go test -tags
-integration`.  TravisCI will also run the integration tests.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for more information.
 
 ## License
 
-BSD 2 clause - see LICENSE for more details.
-
-
+BSD 2 clause, see LICENSE for more details.

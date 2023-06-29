@@ -10,7 +10,7 @@ require (
 	github.com/influxdata/tdigest v0.0.1 // indirect
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/pkg/errors v0.9.1
-	github.com/rabbitmq/amqp091-go v1.3.0
+	github.com/rabbitmq/amqp091-go v1.8.1
 	github.com/rabbitmq/cluster-operator v1.13.1
 	github.com/rabbitmq/messaging-topology-operator v1.6.0
 	go.opencensus.io v0.23.0
