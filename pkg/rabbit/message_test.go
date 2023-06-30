@@ -375,15 +375,33 @@ func TestProtocol_NewMessageFromDelivery(t *testing.T) {
 		},
 		want: &Message{Headers: make(map[string][]byte)},
 	}, {
-		name:    "set content type header",
+		name:    "set empty message",
+		headers: map[string][]byte{},
+		delivery: &amqp.Delivery{
+			MessageId: msgId,
+			Timestamp: msgTime,
+		},
+		want: &Message{Headers: make(map[string][]byte)},
+	}, {
+		name:    "set traceparent header",
 		headers: map[string][]byte{"content-type": []byte(testContentType)},
 		delivery: &amqp.Delivery{
 			MessageId:   msgId,
 			Timestamp:   msgTime,
 			ContentType: testContentType,
-			Headers:     amqp.Table{},
+			Headers:     amqp.Table{traceparent: "test-traceparent", tracestate: "test-tracestate"},
 		},
 		want: &Message{Headers: make(map[string][]byte), ContentType: testContentType},
+	}, {
+		name:    "set extension header",
+		headers: map[string][]byte{"content-type": []byte(testContentType)},
+		delivery: &amqp.Delivery{
+			MessageId:   msgId,
+			Timestamp:   msgTime,
+			ContentType: testContentType,
+			Headers:     amqp.Table{"ce-extension": "test extension"},
+		},
+		want: &Message{Headers: map[string][]byte{"ce-extension": []byte("test extension")}, ContentType: testContentType},
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
 			tt := tt
