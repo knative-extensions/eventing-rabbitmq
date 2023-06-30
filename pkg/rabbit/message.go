@@ -154,21 +154,22 @@ func (m *Message) ReadBinary(ctx context.Context, encoder binding.BinaryWriter) 
 			// avoid converting any RabbitMQ related headers to the CloudEvent
 		} else if !strings.HasPrefix(k, "x-") {
 			attr := m.version.Attribute(prefix + k)
-			if err == nil {
-				if attr != nil {
-					err = encoder.SetAttribute(attr, string(v))
-				} else {
-					err = encoder.SetExtension(k, string(v))
-				}
+			if attr != nil {
+				err = encoder.SetAttribute(attr, string(v))
+			} else {
+				err = encoder.SetExtension(k, string(v))
 			}
-		}
-
-		if !contentTypeSet && err == nil {
-			err = encoder.SetAttribute(m.version.AttributeFromKind(spec.DataContentType), m.ContentType)
 		}
 		if err != nil {
 			return
 		}
+	}
+
+	if !contentTypeSet {
+		err = encoder.SetAttribute(m.version.AttributeFromKind(spec.DataContentType), m.ContentType)
+	}
+	if err != nil {
+		return
 	}
 
 	if m.Value != nil {
