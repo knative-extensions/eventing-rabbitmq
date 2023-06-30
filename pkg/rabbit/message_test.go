@@ -98,6 +98,15 @@ func TestProtocol_MsgReadBinary(t *testing.T) {
 			"id":           []byte(msgId),
 			"ext":          []byte("test extension"),
 		},
+	}, {
+		name:    "binary event with body",
+		version: specs.Version("1.0"),
+		body:    []byte("hey I'm a test!"),
+		headers: map[string][]byte{
+			"content-type": []byte(testContentType),
+			"id":           []byte(msgId),
+			"body":         []byte("Hey I'm a test body!"),
+		},
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
 			tt := tt
