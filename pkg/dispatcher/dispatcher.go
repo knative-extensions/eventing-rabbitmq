@@ -49,6 +49,7 @@ type Dispatcher struct {
 	BrokerIngressURL  string
 	SubscriberURL     string
 	SubscriberCACerts string
+	DeadLetterSinkURL string
 	MaxRetries        int
 	BackoffDelay      time.Duration
 	Timeout           time.Duration
@@ -152,6 +153,8 @@ func getStatus(ctx context.Context, result protocol.Result) (int, bool) {
 
 func (d *Dispatcher) dispatch(ctx context.Context, msg amqp.Delivery, ceClient cloudevents.Client) {
 	start := time.Now()
+	subscriberURL := d.SubscriberURL
+
 	msgBinding := rabbit.NewMessageFromDelivery(ComponentName, "", "", &msg)
 	event, err := binding.ToEvent(cloudevents.WithEncodingBinary(ctx), msgBinding)
 	if err != nil {
@@ -160,20 +163,25 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg amqp.Delivery, ceClient c
 		if err != nil {
 			logging.FromContext(ctx).Warn("failed to NACK event: ", err)
 		}
-		return
-	}
 
-	ctx, span := readSpan(ctx, msg)
-	defer span.End()
-	if span.IsRecordingEvents() {
-		span.AddAttributes(client.EventTraceAttributes(event)...)
-	}
+		event.SetExtension("knativeerrordest", d.SubscriberURL)
 
-	ctx = cloudevents.ContextWithTarget(ctx, d.SubscriberURL)
-	if d.BackoffPolicy == eventingduckv1.BackoffPolicyLinear {
-		ctx = cloudevents.ContextWithRetriesLinearBackoff(ctx, d.BackoffDelay, d.MaxRetries)
+		subscriberURL = d.DeadLetterSinkURL
+
+		ctx = cloudevents.ContextWithTarget(ctx, subscriberURL)
 	} else {
-		ctx = cloudevents.ContextWithRetriesExponentialBackoff(ctx, d.BackoffDelay, d.MaxRetries)
+		ctx, span := readSpan(ctx, msg)
+		defer span.End()
+		if span.IsRecordingEvents() {
+			span.AddAttributes(client.EventTraceAttributes(event)...)
+		}
+
+		ctx = cloudevents.ContextWithTarget(ctx, d.SubscriberURL)
+		if d.BackoffPolicy == eventingduckv1.BackoffPolicyLinear {
+			ctx = cloudevents.ContextWithRetriesLinearBackoff(ctx, d.BackoffDelay, d.MaxRetries)
+		} else {
+			ctx = cloudevents.ContextWithRetriesExponentialBackoff(ctx, d.BackoffDelay, d.MaxRetries)
+		}
 	}
 
 	response, result := ceClient.Request(ctx, *event)
@@ -186,7 +194,7 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg amqp.Delivery, ceClient c
 	}
 
 	if !isSuccess {
-		logging.FromContext(ctx).Warnf("Failed to deliver to %q", d.SubscriberURL)
+		logging.FromContext(ctx).Warnf("Failed to deliver to %q", subscriberURL)
 		if err := msg.Nack(false, false); err != nil {
 			logging.FromContext(ctx).Warn("failed to NACK event: ", err)
 		}
