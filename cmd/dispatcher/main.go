@@ -46,6 +46,7 @@ type envConfig struct {
 	BrokerIngressURL  string `envconfig:"BROKER_INGRESS_URL" required:"true"`
 	SubscriberURL     string `envconfig:"SUBSCRIBER" required:"true"`
 	SubscriberCACerts string `envconfig:"SUBSCRIBER_CACERTS" required:"false"`
+	DeadLetterSinkURL string `envconfig:"DEAD_LETTER_SINK_URL" required:"false"`
 
 	// Number of concurrent messages in flight
 	Parallelism   int           `envconfig:"PARALLELISM" default:"1" required:"false"`
@@ -91,6 +92,7 @@ func main() {
 		BrokerIngressURL:  env.BrokerIngressURL,
 		SubscriberURL:     env.SubscriberURL,
 		SubscriberCACerts: env.SubscriberCACerts,
+		DeadLetterSinkURL: env.DeadLetterSinkURL,
 		MaxRetries:        env.Retry,
 		BackoffDelay:      backoffDelay,
 		Timeout:           env.Timeout,
