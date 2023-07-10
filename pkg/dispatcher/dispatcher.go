@@ -192,14 +192,12 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg amqp.Delivery, ceClient c
 		args := &dispatcher.ReportArgs{EventType: event.Type()}
 		if err = d.Reporter.ReportEventCount(args, statusCode); err != nil {
 			logging.FromContext(ctx).Errorf("Something happened: %v", err)
-
-			msg.Headers["knativeerrordest"] = d.SubscriberURL
-			msg.Headers["knativeerrorcode"] = statusCode
 		}
 	}
 
 	if !isSuccess {
 		logging.FromContext(ctx).Warnf("Failed to deliver to %q", d.SubscriberURL)
+		msg.Headers["knativeerrordest"] = d.SubscriberURL
 		if err = msg.Nack(false, true); err != nil {
 			logging.FromContext(ctx).Warn("failed to NACK event: ", err)
 		}
