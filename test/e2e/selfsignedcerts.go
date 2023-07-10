@@ -35,6 +35,7 @@ import (
 const (
 	topologyOperatorDeploymentName = "messaging-topology-operator"
 	volName                        = "eventing-rabbitmq-e2e-ca"
+	rabbitmqNamespace              = "rabbitmq-system"
 )
 
 func SetupSelfSignedCerts() *feature.Feature {
@@ -58,28 +59,12 @@ func PatchTopologyOperatorDeployment(ctx context.Context, t feature.T) {
 	var err error
 	namespace := environment.FromContext(ctx).Namespace()
 	secretName := namespace + "-rabbitmq-ca"
-	err = wait.PollImmediate(interval, timeout, func() (bool, error) {
-		deployment, err = kubeClient.Get(ctx).AppsV1().Deployments("rabbitmq-system").Get(ctx, topologyOperatorDeploymentName, metav1.GetOptions{})
-		if err != nil {
-			if apierrors.IsNotFound(err) {
-				t.Log(namespace, topologyOperatorDeploymentName, "not found", err)
-				// keep polling
-				return false, nil
-			}
-			return false, err
-		}
-		if deployment.Status.AvailableReplicas != deployment.Status.UpdatedReplicas {
-			t.Log(namespace, topologyOperatorDeploymentName, "not ready", err)
-			return false, nil
-		}
-		return true, nil
-	})
-	if err != nil {
+	if err = TopologyOperatorDeploymentUpdated(ctx, t); err != nil {
 		t.Fatal(err)
 	}
 
-	err = wait.PollImmediate(interval, timeout, func() (bool, error) {
-		_, err = kubeClient.Get(ctx).CoreV1().Secrets("rabbitmq-system").Get(ctx, secretName, metav1.GetOptions{})
+	if err = wait.PollImmediate(interval, timeout, func() (bool, error) {
+		_, err = kubeClient.Get(ctx).CoreV1().Secrets(rabbitmqNamespace).Get(ctx, secretName, metav1.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				t.Log(namespace, secretName, "not found", err)
@@ -89,8 +74,7 @@ func PatchTopologyOperatorDeployment(ctx context.Context, t feature.T) {
 			return false, err
 		}
 		return true, nil
-	})
-	if err != nil {
+	}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -138,14 +122,14 @@ func PatchTopologyOperatorDeployment(ctx context.Context, t feature.T) {
 		}
 	}
 
-	if _, err = kubeClient.Get(ctx).AppsV1().Deployments("rabbitmq-system").Update(ctx, deployment, metav1.UpdateOptions{}); err != nil {
+	if _, err = kubeClient.Get(ctx).AppsV1().Deployments(rabbitmqNamespace).Update(ctx, deployment, metav1.UpdateOptions{}); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TopologyOperatorDeploymentReady(ctx context.Context, t feature.T) {
 	err := wait.PollImmediate(interval, timeout, func() (bool, error) {
-		deployment, err := kubeClient.Get(ctx).AppsV1().Deployments("rabbitmq-system").Get(ctx, topologyOperatorDeploymentName, metav1.GetOptions{})
+		deployment, err := kubeClient.Get(ctx).AppsV1().Deployments(rabbitmqNamespace).Get(ctx, topologyOperatorDeploymentName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
@@ -158,8 +142,27 @@ func TopologyOperatorDeploymentReady(ctx context.Context, t feature.T) {
 	}
 }
 
+func TopologyOperatorDeploymentUpdated(ctx context.Context, t feature.T) error {
+	return wait.PollImmediate(interval, timeout, func() (bool, error) {
+		deployment, err := kubeClient.Get(ctx).AppsV1().Deployments(rabbitmqNamespace).Get(ctx, topologyOperatorDeploymentName, metav1.GetOptions{})
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				t.Log(rabbitmqNamespace, topologyOperatorDeploymentName, "not found", err)
+				// keep polling
+				return false, nil
+			}
+			return false, err
+		}
+		if deployment.Status.AvailableReplicas != deployment.Status.UpdatedReplicas {
+			t.Log(rabbitmqNamespace, topologyOperatorDeploymentName, "not ready", err)
+			return false, nil
+		}
+		return true, nil
+	})
+}
+
 func CleanUpTopologyOperatorVolumes(ctx context.Context, t feature.T) {
-	deployment, err := kubeClient.Get(ctx).AppsV1().Deployments("rabbitmq-system").Get(ctx, topologyOperatorDeploymentName, metav1.GetOptions{})
+	deployment, err := kubeClient.Get(ctx).AppsV1().Deployments(rabbitmqNamespace).Get(ctx, topologyOperatorDeploymentName, metav1.GetOptions{})
 	if err != nil {
 		t.Error(err)
 	}
@@ -183,11 +186,15 @@ func CleanUpTopologyOperatorVolumes(ctx context.Context, t feature.T) {
 		}
 	}
 
-	if _, err = kubeClient.Get(ctx).AppsV1().Deployments("rabbitmq-system").Update(ctx, deployment, metav1.UpdateOptions{}); err != nil {
+	if _, err = kubeClient.Get(ctx).AppsV1().Deployments(rabbitmqNamespace).Update(ctx, deployment, metav1.UpdateOptions{}); err != nil {
 		t.Error(err)
+	}
+
+	if err = TopologyOperatorDeploymentUpdated(ctx, t); err != nil {
+		t.Fatal(err)
 	}
 
 	// Attempt to delete the ca secret
 	namespace := environment.FromContext(ctx).Namespace()
-	_ = kubeClient.Get(ctx).CoreV1().Secrets("rabbitmq-system").Delete(ctx, fmt.Sprintf("%s-%s", namespace, rabbitmq.CA_SECRET_NAME), metav1.DeleteOptions{})
+	_ = kubeClient.Get(ctx).CoreV1().Secrets(rabbitmqNamespace).Delete(ctx, fmt.Sprintf("%s-%s", namespace, rabbitmq.CA_SECRET_NAME), metav1.DeleteOptions{})
 }
