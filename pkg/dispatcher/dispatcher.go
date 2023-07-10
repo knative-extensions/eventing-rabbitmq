@@ -49,7 +49,6 @@ type Dispatcher struct {
 	BrokerIngressURL  string
 	SubscriberURL     string
 	SubscriberCACerts string
-	DeadLetterSinkURL string
 	MaxRetries        int
 	BackoffDelay      time.Duration
 	Timeout           time.Duration
@@ -154,6 +153,8 @@ func getStatus(ctx context.Context, result protocol.Result) (int, bool) {
 func (d *Dispatcher) dispatch(ctx context.Context, msg amqp.Delivery, ceClient cloudevents.Client) {
 	start := time.Now()
 
+	requeue := false
+
 	msgBinding := rabbit.NewMessageFromDelivery(ComponentName, "", "", &msg)
 	event, err := binding.ToEvent(cloudevents.WithEncodingBinary(ctx), msgBinding)
 	if err != nil {
@@ -167,7 +168,8 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg amqp.Delivery, ceClient c
 
 			return
 		} else {
-			event.SetExtension("knativeerrordest", d.DeadLetterSinkURL)
+			requeue = true
+			event.SetExtension("knativeerrordest", d.SubscriberURL)
 		}
 	}
 
@@ -191,13 +193,14 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg amqp.Delivery, ceClient c
 		if err = d.Reporter.ReportEventCount(args, statusCode); err != nil {
 			logging.FromContext(ctx).Errorf("Something happened: %v", err)
 
+			requeue = true
 			event.SetExtension("knativeerrorcode", statusCode)
 		}
 	}
 
 	if !isSuccess {
 		logging.FromContext(ctx).Warnf("Failed to deliver to %q", d.SubscriberURL)
-		if err = msg.Nack(false, false); err != nil {
+		if err = msg.Nack(false, requeue); err != nil {
 			logging.FromContext(ctx).Warn("failed to NACK event: ", err)
 		}
 		return
@@ -209,9 +212,10 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg amqp.Delivery, ceClient c
 		if !isSuccess {
 			logging.FromContext(ctx).Warnf("Failed to deliver to %q", d.BrokerIngressURL)
 
+			requeue = true
 			event.SetExtension("knativeerrordata", result)
 
-			err = msg.Nack(false, false) // not multiple
+			err = msg.Nack(false, requeue) // not multiple
 			if err != nil {
 				logging.FromContext(ctx).Warn("failed to NACK event: ", err)
 			}
