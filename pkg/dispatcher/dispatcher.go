@@ -159,7 +159,7 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg amqp.Delivery, ceClient c
 		}
 		return
 	}
-	
+
 	msgBinding := rabbit.NewMessageFromDelivery(ComponentName, "", "", &msg)
 	event, err := binding.ToEvent(cloudevents.WithEncodingBinary(ctx), msgBinding)
 	if err != nil {
