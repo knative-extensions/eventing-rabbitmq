@@ -74,7 +74,6 @@ func TestBrokerDirect(t *testing.T) {
 	)
 	env.Test(ctx, t, RabbitMQCluster())
 	env.Test(ctx, t, RecorderFeature())
-	env.Test(ctx, t, InstallDirectRabbitMQBroker())
 	env.Test(ctx, t, DirectTestBroker())
 	env.Finish()
 }
@@ -90,7 +89,6 @@ func TestVhostBrokerDirect(t *testing.T) {
 	)
 	env.Test(ctx, t, RabbitMQClusterVHost())
 	env.Test(ctx, t, RecorderFeature())
-	env.Test(ctx, t, InstallDirectVHostRabbitMQBroker())
 	env.Test(ctx, t, DirectVhostTestBroker())
 	env.Finish()
 }
@@ -106,7 +104,6 @@ func TestBrokerDirectWithConnectionSecret(t *testing.T) {
 	)
 	env.Test(ctx, t, RabbitMQClusterWithConnectionSecretUri())
 	env.Test(ctx, t, RecorderFeature())
-	env.Test(ctx, t, InstallDirectRabbitMQBroker())
 	env.Test(ctx, t, DirectTestBrokerConnectionSecret())
 	env.Finish()
 }
@@ -122,7 +119,6 @@ func TestBrokerDirectSelfSignedCerts(t *testing.T) {
 	env.Test(ctx, t, SetupSelfSignedCerts())
 	env.Test(ctx, t, RabbitMQClusterWithTLS())
 	env.Test(ctx, t, RecorderFeature())
-	env.Test(ctx, t, InstallDirectRabbitMQBroker())
 	env.Test(ctx, t, DirectTestBroker())
 	env.Test(ctx, t, CleanupSelfSignedCerts())
 	env.Finish()
@@ -139,7 +135,6 @@ func TestBrokerDLQ(t *testing.T) {
 	)
 	env.Test(ctx, t, RabbitMQCluster())
 	env.Test(ctx, t, RecorderFeature())
-	env.Test(ctx, t, InstallRabbitMQBrokerDLQ())
 	env.Test(ctx, t, BrokerDLQTest())
 	env.Finish()
 }
