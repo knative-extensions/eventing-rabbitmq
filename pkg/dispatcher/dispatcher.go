@@ -152,25 +152,25 @@ func getStatus(ctx context.Context, result protocol.Result) (int, bool) {
 
 func (d *Dispatcher) dispatch(ctx context.Context, msg amqp.Delivery, ceClient cloudevents.Client) {
 	start := time.Now()
-
-	requeue := false
-
+	if _, ok := msg.Headers["knativeerrordest"]; !ok {
+		err := msg.Nack(false, false)
+		if err != nil {
+			logging.FromContext(ctx).Warn("failed to NACK event: ", err)
+		}
+		return
+	}
+	
 	msgBinding := rabbit.NewMessageFromDelivery(ComponentName, "", "", &msg)
 	event, err := binding.ToEvent(cloudevents.WithEncodingBinary(ctx), msgBinding)
 	if err != nil {
-		extensions := event.Extensions()
-		if _, ok := extensions["knativeerrordest"]; ok {
-			logging.FromContext(ctx).Warn("failed creating event from delivery, err (NACK-ing and not re-queueing): ", err)
-			err = msg.Nack(false, false)
-			if err != nil {
-				logging.FromContext(ctx).Warn("failed to NACK event: ", err)
-			}
+		logging.FromContext(ctx).Warn("failed parsing event, setting knativeerrordest header and NACK-ing and re-queueing: ", err)
 
-			return
-		} else {
-			requeue = true
-			event.SetExtension("knativeerrordest", d.SubscriberURL)
+		msg.Headers["knativeerrordest"] = d.SubscriberURL
+		err = msg.Nack(false, true)
+		if err != nil {
+			logging.FromContext(ctx).Warn("failed to NACK event: ", err)
 		}
+		return
 	}
 
 	ctx, span := readSpan(ctx, msg)
@@ -193,14 +193,14 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg amqp.Delivery, ceClient c
 		if err = d.Reporter.ReportEventCount(args, statusCode); err != nil {
 			logging.FromContext(ctx).Errorf("Something happened: %v", err)
 
-			requeue = true
-			event.SetExtension("knativeerrorcode", statusCode)
+			msg.Headers["knativeerrordest"] = d.SubscriberURL
+			msg.Headers["knativeerrorcode"] = statusCode
 		}
 	}
 
 	if !isSuccess {
 		logging.FromContext(ctx).Warnf("Failed to deliver to %q", d.SubscriberURL)
-		if err = msg.Nack(false, requeue); err != nil {
+		if err = msg.Nack(false, true); err != nil {
 			logging.FromContext(ctx).Warn("failed to NACK event: ", err)
 		}
 		return
@@ -212,10 +212,11 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg amqp.Delivery, ceClient c
 		if !isSuccess {
 			logging.FromContext(ctx).Warnf("Failed to deliver to %q", d.BrokerIngressURL)
 
-			requeue = true
-			event.SetExtension("knativeerrordata", result)
+			msg.Headers["knativeerrordest"] = d.SubscriberURL
+			msg.Headers["knativeerrorcode"] = statusCode
+			msg.Headers["knativeerrordata"] = result
 
-			err = msg.Nack(false, requeue) // not multiple
+			err = msg.Nack(false, true) // not multiple
 			if err != nil {
 				logging.FromContext(ctx).Warn("failed to NACK event: ", err)
 			}
