@@ -59,7 +59,8 @@ func PatchTopologyOperatorDeployment(ctx context.Context, t feature.T) {
 	var err error
 	namespace := environment.FromContext(ctx).Namespace()
 	secretName := namespace + "-rabbitmq-ca"
-	if err = TopologyOperatorDeploymentUpdated(ctx, t); err != nil {
+	deployment, err = TopologyOperatorDeploymentUpdated(ctx, t)
+	if err != nil {
 		t.Fatal(err)
 	}
 
@@ -142,9 +143,11 @@ func TopologyOperatorDeploymentReady(ctx context.Context, t feature.T) {
 	}
 }
 
-func TopologyOperatorDeploymentUpdated(ctx context.Context, t feature.T) error {
-	return wait.PollImmediate(interval, timeout, func() (bool, error) {
-		deployment, err := kubeClient.Get(ctx).AppsV1().Deployments(rabbitmqNamespace).Get(ctx, topologyOperatorDeploymentName, metav1.GetOptions{})
+func TopologyOperatorDeploymentUpdated(ctx context.Context, t feature.T) (*appsv1.Deployment, error) {
+	var deployment *appsv1.Deployment
+	var err error
+	err = wait.PollImmediate(interval, timeout, func() (bool, error) {
+		deployment, err = kubeClient.Get(ctx).AppsV1().Deployments(rabbitmqNamespace).Get(ctx, topologyOperatorDeploymentName, metav1.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				t.Log(rabbitmqNamespace, topologyOperatorDeploymentName, "not found", err)
@@ -154,11 +157,12 @@ func TopologyOperatorDeploymentUpdated(ctx context.Context, t feature.T) error {
 			return false, err
 		}
 		if deployment.Status.AvailableReplicas != deployment.Status.UpdatedReplicas {
-			t.Log(rabbitmqNamespace, topologyOperatorDeploymentName, "not ready", err)
+			t.Log(rabbitmqNamespace, topologyOperatorDeploymentName, "not ready")
 			return false, nil
 		}
 		return true, nil
 	})
+	return deployment, err
 }
 
 func CleanUpTopologyOperatorVolumes(ctx context.Context, t feature.T) {
@@ -188,10 +192,6 @@ func CleanUpTopologyOperatorVolumes(ctx context.Context, t feature.T) {
 
 	if _, err = kubeClient.Get(ctx).AppsV1().Deployments(rabbitmqNamespace).Update(ctx, deployment, metav1.UpdateOptions{}); err != nil {
 		t.Error(err)
-	}
-
-	if err = TopologyOperatorDeploymentUpdated(ctx, t); err != nil {
-		t.Fatal(err)
 	}
 
 	// Attempt to delete the ca secret

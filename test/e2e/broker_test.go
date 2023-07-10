@@ -43,51 +43,6 @@ import (
 	_ "knative.dev/pkg/system/testing"
 )
 
-func InstallDirectRabbitMQBroker() *feature.Feature {
-	f := new(feature.Feature)
-
-	f.Setup("install a rabbitmq broker", f.Setup("install test broker", brokertrigger.Install(brokertrigger.Topology{
-		Triggers: []duckv1.KReference{
-			{
-				Kind: "Service",
-				Name: "recorder",
-			},
-		},
-	})))
-	f.Requirement("RabbitMQ Broker goes ready", AllGoReady)
-	return f
-}
-
-func InstallDirectVHostRabbitMQBroker() *feature.Feature {
-	f := new(feature.Feature)
-
-	f.Setup("install a rabbitmq broker", f.Setup("install test broker", brokertriggervhost.Install(brokertriggervhost.Topology{
-		Triggers: []duckv1.KReference{
-			{
-				Kind: "Service",
-				Name: "recorder",
-			},
-		},
-	})))
-	f.Requirement("RabbitMQ Broker goes ready", AllGoReady)
-	return f
-}
-
-func InstallRabbitMQBrokerSecret() *feature.Feature {
-	f := new(feature.Feature)
-
-	f.Setup("install a rabbitmq broker", f.Setup("install test broker", brokersecret.Install(brokersecret.Topology{
-		Triggers: []duckv1.KReference{
-			{
-				Kind: "Service",
-				Name: "recorder",
-			},
-		},
-	})))
-	f.Requirement("RabbitMQ Broker goes ready", AllGoReady)
-	return f
-}
-
 //
 // producer ---> broker --[trigger]--> recorder
 //
@@ -95,10 +50,19 @@ func InstallRabbitMQBrokerSecret() *feature.Feature {
 // DirectTestBrokerImpl makes sure an RabbitMQ Broker delivers events to a single consumer.
 func DirectTestBroker() *feature.Feature {
 	f := new(feature.Feature)
-
 	prober := eventshub.NewProber()
 	prober.SetTargetResource(brokerresources.GVR(), "testbroker")
 	prober.SenderFullEvents(5)
+
+	f.Setup("install test resources", brokertrigger.Install(brokertrigger.Topology{
+		Triggers: []duckv1.KReference{
+			{
+				Kind: "Service",
+				Name: "recorder",
+			},
+		},
+	}))
+	f.Setup("RabbitMQ broker goes ready", AllGoReady)
 	f.Setup("install source", prober.SenderInstall("source"))
 	f.Requirement("sender is finished", prober.SenderDone("source"))
 
@@ -114,13 +78,21 @@ func DirectTestBroker() *feature.Feature {
 
 func DirectTestBrokerConnectionSecret() *feature.Feature {
 	f := new(feature.Feature)
-
-	f.Setup("RabbitMQ broker goes ready", AllGoReady)
-
 	prober := eventshub.NewProber()
 	prober.SetTargetResource(brokerresources.GVR(), "testbroker")
 	prober.SenderFullEvents(5)
+
+	f.Setup("install test resources", brokersecret.Install(brokersecret.Topology{
+		Triggers: []duckv1.KReference{
+			{
+				Kind: "Service",
+				Name: "recorder",
+			},
+		},
+	}))
+	f.Setup("RabbitMQ broker goes ready", AllGoReady)
 	f.Setup("install source", prober.SenderInstall("source"))
+
 	f.Requirement("sender is finished", prober.SenderDone("source"))
 
 	f.Alpha("RabbitMQ source").
@@ -140,11 +112,21 @@ func DirectTestBrokerConnectionSecret() *feature.Feature {
 // DirectVhostTestBroker makes sure an RabbitMQ Broker is created on the desired vhost.
 func DirectVhostTestBroker() *feature.Feature {
 	f := new(feature.Feature)
-
 	prober := eventshub.NewProber()
 	prober.SetTargetResource(brokerresources.GVR(), "testbroker")
 	prober.SenderFullEvents(5)
+
+	f.Setup("install test resources", brokertriggervhost.Install(brokertriggervhost.Topology{
+		Triggers: []duckv1.KReference{
+			{
+				Kind: "Service",
+				Name: "recorder",
+			},
+		},
+	}))
+	f.Setup("RabbitMQ broker goes ready", AllGoReady)
 	f.Setup("install source", prober.SenderInstall("source"))
+
 	f.Requirement("sender is finished", prober.SenderDone("source"))
 
 	f.Alpha("RabbitMQ source").
@@ -165,6 +147,9 @@ func DirectVhostTestBroker() *feature.Feature {
 // dispatching the second.
 func BrokerConcurrentDispatcherTest() *feature.Feature {
 	f := new(feature.Feature)
+	prober := eventshub.NewProber()
+	prober.SetTargetResource(brokerresources.GVR(), "testbroker")
+	prober.SenderFullEvents(2)
 
 	f.Setup("install test resources", brokertrigger.Install(brokertrigger.Topology{
 		Parallelism: 10,
@@ -173,13 +158,9 @@ func BrokerConcurrentDispatcherTest() *feature.Feature {
 			Name: "recorder",
 		}},
 	}))
-
 	f.Setup("RabbitMQ broker goes ready", AllGoReady)
-
-	prober := eventshub.NewProber()
-	prober.SetTargetResource(brokerresources.GVR(), "testbroker")
-	prober.SenderFullEvents(2)
 	f.Setup("install source", prober.SenderInstall("source"))
+
 	f.Requirement("sender is finished", prober.SenderDone("source"))
 
 	f.Assert("the dispatcher sends events concurrently", func(ctx context.Context, t feature.T) {
@@ -203,14 +184,14 @@ func BrokerConcurrentDispatcherTest() *feature.Feature {
 // BrokerDLQTestImpl makes sure an RabbitMQ Broker delivers events to a DLQ.
 func BrokerDLQTest() *feature.Feature {
 	f := new(feature.Feature)
-
-	f.Setup("dlq works", dlq.Install())
-	f.Setup("RabbitMQ broker goes ready", AllGoReady)
-
 	prober := eventshub.NewProber()
 	prober.SetTargetResource(brokerresources.GVR(), "testbroker")
 	prober.SenderFullEvents(5)
+
+	f.Setup("dlq works", dlq.Install())
+	f.Setup("RabbitMQ broker goes ready", AllGoReady)
 	f.Setup("install source", prober.SenderInstall("source"))
+
 	f.Requirement("sender is finished", prober.SenderDone("source"))
 
 	f.Alpha("RabbitMQ source").
