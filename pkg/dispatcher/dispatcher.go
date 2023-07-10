@@ -198,6 +198,7 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg amqp.Delivery, ceClient c
 	if !isSuccess {
 		logging.FromContext(ctx).Warnf("Failed to deliver to %q", d.SubscriberURL)
 		msg.Headers["knativeerrordest"] = d.SubscriberURL
+		msg.Headers["knativeerrorcode"] = statusCode
 		if err = msg.Nack(false, true); err != nil {
 			logging.FromContext(ctx).Warn("failed to NACK event: ", err)
 		}
