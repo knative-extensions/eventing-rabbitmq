@@ -170,13 +170,6 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 					Value: timeout.DurationApprox().String(),
 				})
 		}
-		if args.Delivery.DeadLetterSink != nil {
-			dispatcher.Env = append(dispatcher.Env,
-				corev1.EnvVar{
-					Name:  "DEAD_LETTER_SINK_URL",
-					Value: args.Delivery.DeadLetterSink.URI.String(),
-				})
-		}
 	}
 	if parallelism, ok := args.Trigger.ObjectMeta.Annotations[ParallelismAnnotation]; ok {
 		dispatcher.Env = append(dispatcher.Env,
