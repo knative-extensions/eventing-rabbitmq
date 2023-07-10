@@ -88,7 +88,7 @@ func RabbitMQClusterVHost() *feature.Feature {
 	cfgFns := rabbitmq.WithEnvConfig()
 	cfgFns = append(cfgFns, rabbitmq.WithVHost("test-vhost"))
 
-	f.Setup("install a rabbitmqcluster with a default vhost and user permissions to it", rabbitmq.Install(rabbitmq.WithEnvConfig()...))
+	f.Setup("install a rabbitmqcluster with a default vhost and user permissions to it", rabbitmq.Install(cfgFns...))
 	f.Requirement("RabbitMQCluster goes ready", RabbitMQClusterReady)
 	f.Requirement("Add credentials to default user secret", RabbitMQClusterConnectionSecretVhost)
 	return f

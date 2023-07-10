@@ -20,7 +20,9 @@ import (
 	"context"
 	"fmt"
 
+	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"knative.dev/eventing-rabbitmq/test/e2e/config/certsecret"
@@ -52,8 +54,42 @@ func CleanupSelfSignedCerts() *feature.Feature {
 }
 
 func PatchTopologyOperatorDeployment(ctx context.Context, t feature.T) {
+	var deployment *appsv1.Deployment
+	var err error
 	namespace := environment.FromContext(ctx).Namespace()
-	deployment, err := kubeClient.Get(ctx).AppsV1().Deployments("rabbitmq-system").Get(ctx, topologyOperatorDeploymentName, metav1.GetOptions{})
+	secretName := namespace + "-rabbitmq-ca"
+	err = wait.PollImmediate(interval, timeout, func() (bool, error) {
+		deployment, err = kubeClient.Get(ctx).AppsV1().Deployments("rabbitmq-system").Get(ctx, topologyOperatorDeploymentName, metav1.GetOptions{})
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				t.Log(namespace, topologyOperatorDeploymentName, "not found", err)
+				// keep polling
+				return false, nil
+			}
+			return false, err
+		}
+		if deployment.Status.AvailableReplicas != deployment.Status.UpdatedReplicas {
+			t.Log(namespace, topologyOperatorDeploymentName, "not ready", err)
+			return false, nil
+		}
+		return true, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = wait.PollImmediate(interval, timeout, func() (bool, error) {
+		_, err = kubeClient.Get(ctx).CoreV1().Secrets("rabbitmq-system").Get(ctx, secretName, metav1.GetOptions{})
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				t.Log(namespace, secretName, "not found", err)
+				// keep polling
+				return false, nil
+			}
+			return false, err
+		}
+		return true, nil
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,7 +99,7 @@ func PatchTopologyOperatorDeployment(ctx context.Context, t feature.T) {
 		Name: volName,
 		VolumeSource: v1.VolumeSource{
 			Secret: &v1.SecretVolumeSource{
-				SecretName: fmt.Sprintf("%s-rabbitmq-ca", namespace),
+				SecretName: secretName,
 			},
 		},
 	}
