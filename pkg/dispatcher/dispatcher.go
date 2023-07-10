@@ -153,59 +153,64 @@ func getStatus(ctx context.Context, result protocol.Result) (int, bool) {
 
 func (d *Dispatcher) dispatch(ctx context.Context, msg amqp.Delivery, ceClient cloudevents.Client) {
 	start := time.Now()
-	subscriberURL := d.SubscriberURL
 
 	msgBinding := rabbit.NewMessageFromDelivery(ComponentName, "", "", &msg)
 	event, err := binding.ToEvent(cloudevents.WithEncodingBinary(ctx), msgBinding)
 	if err != nil {
-		logging.FromContext(ctx).Warn("failed creating event from delivery, err (NACK-ing and not re-queueing): ", err)
-		err = msg.Nack(false, false)
-		if err != nil {
-			logging.FromContext(ctx).Warn("failed to NACK event: ", err)
-		}
+		extensions := event.Extensions()
+		if _, ok := extensions["knativeerrordest"]; ok {
+			logging.FromContext(ctx).Warn("failed creating event from delivery, err (NACK-ing and not re-queueing): ", err)
+			err = msg.Nack(false, false)
+			if err != nil {
+				logging.FromContext(ctx).Warn("failed to NACK event: ", err)
+			}
 
-		event.SetExtension("knativeerrordest", d.SubscriberURL)
-
-		subscriberURL = d.DeadLetterSinkURL
-
-		ctx = cloudevents.ContextWithTarget(ctx, subscriberURL)
-	} else {
-		ctx, span := readSpan(ctx, msg)
-		defer span.End()
-		if span.IsRecordingEvents() {
-			span.AddAttributes(client.EventTraceAttributes(event)...)
-		}
-
-		ctx = cloudevents.ContextWithTarget(ctx, d.SubscriberURL)
-		if d.BackoffPolicy == eventingduckv1.BackoffPolicyLinear {
-			ctx = cloudevents.ContextWithRetriesLinearBackoff(ctx, d.BackoffDelay, d.MaxRetries)
+			return
 		} else {
-			ctx = cloudevents.ContextWithRetriesExponentialBackoff(ctx, d.BackoffDelay, d.MaxRetries)
+			event.SetExtension("knativeerrordest", d.DeadLetterSinkURL)
 		}
+	}
+
+	ctx, span := readSpan(ctx, msg)
+	defer span.End()
+	if span.IsRecordingEvents() {
+		span.AddAttributes(client.EventTraceAttributes(event)...)
+	}
+
+	ctx = cloudevents.ContextWithTarget(ctx, d.SubscriberURL)
+	if d.BackoffPolicy == eventingduckv1.BackoffPolicyLinear {
+		ctx = cloudevents.ContextWithRetriesLinearBackoff(ctx, d.BackoffDelay, d.MaxRetries)
+	} else {
+		ctx = cloudevents.ContextWithRetriesExponentialBackoff(ctx, d.BackoffDelay, d.MaxRetries)
 	}
 
 	response, result := ceClient.Request(ctx, *event)
 	statusCode, isSuccess := getStatus(ctx, result)
 	if statusCode != -1 {
 		args := &dispatcher.ReportArgs{EventType: event.Type()}
-		if err := d.Reporter.ReportEventCount(args, statusCode); err != nil {
+		if err = d.Reporter.ReportEventCount(args, statusCode); err != nil {
 			logging.FromContext(ctx).Errorf("Something happened: %v", err)
+
+			event.SetExtension("knativeerrorcode", statusCode)
 		}
 	}
 
 	if !isSuccess {
-		logging.FromContext(ctx).Warnf("Failed to deliver to %q", subscriberURL)
-		if err := msg.Nack(false, false); err != nil {
+		logging.FromContext(ctx).Warnf("Failed to deliver to %q", d.SubscriberURL)
+		if err = msg.Nack(false, false); err != nil {
 			logging.FromContext(ctx).Warn("failed to NACK event: ", err)
 		}
 		return
 	} else if response != nil {
 		logging.FromContext(ctx).Infof("Sending an event: %+v", response)
 		ctx = cloudevents.ContextWithTarget(ctx, d.BrokerIngressURL)
-		result := ceClient.Send(ctx, *response)
-		_, isSuccess := getStatus(ctx, result)
+		result = ceClient.Send(ctx, *response)
+		_, isSuccess = getStatus(ctx, result)
 		if !isSuccess {
 			logging.FromContext(ctx).Warnf("Failed to deliver to %q", d.BrokerIngressURL)
+
+			event.SetExtension("knativeerrordata", result)
+
 			err = msg.Nack(false, false) // not multiple
 			if err != nil {
 				logging.FromContext(ctx).Warn("failed to NACK event: ", err)
