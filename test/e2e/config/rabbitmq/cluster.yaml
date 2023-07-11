@@ -40,11 +40,11 @@ spec:
   replicas: 1
   resources:
     limits:
-      cpu: "650m"
-      memory: "800Mi"
+      cpu: "500m"
+      memory: "600Mi"
     requests:
-      cpu: "650m"
-      memory: "800Mi"
+      cpu: "500m"
+      memory: "600Mi"
   {{ if .caSecretName }}
   tls:
     caSecretName: {{ .caSecretName }}

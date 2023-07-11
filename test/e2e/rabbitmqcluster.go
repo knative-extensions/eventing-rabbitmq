@@ -66,7 +66,7 @@ func RabbitMQClusterWithConnectionSecretUri() *feature.Feature {
 	f := new(feature.Feature)
 
 	f.Setup("install a rabbitmqcluster", rabbitmq.Install(rabbitmq.WithEnvConfig()...))
-	f.Requirement("RabbitMQCluster goes ready", RabbitMQClusterReady)
+	f.Setup("RabbitMQCluster goes ready", RabbitMQClusterReady)
 	f.Requirement("Add uri to default user secret", RabbitMQClusterConnectionSecretUri)
 	return f
 }
@@ -89,7 +89,7 @@ func RabbitMQClusterVHost() *feature.Feature {
 	cfgFns = append(cfgFns, rabbitmq.WithVHost("test-vhost"))
 
 	f.Setup("install a rabbitmqcluster with a default vhost and user permissions to it", rabbitmq.Install(cfgFns...))
-	f.Requirement("RabbitMQCluster goes ready", RabbitMQClusterReady)
+	f.Setup("RabbitMQCluster goes ready", RabbitMQClusterReady)
 	f.Requirement("Add credentials to default user secret", RabbitMQClusterConnectionSecretVhost)
 	return f
 }

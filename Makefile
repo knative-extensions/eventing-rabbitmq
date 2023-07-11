@@ -383,7 +383,7 @@ test-e2e-source: | $(KUBECONFIG) ## Run Source end-to-end tests - assumes a K8S 
 	go test -v -race -count=1 -timeout=15m -tags=e2e ./test/e2e/... -run 'Test.*Source.*'
 
 .PHONY: test-e2e
-test-e2e: install ## Run all end-to-end tests - manages all dependencies, including K8S components
+test-e2e: ## Run all end-to-end tests - manages all dependencies, including K8S components
 	RABBITMQ_SERVER_IMAGE=$(RABBITMQ_SERVER_IMAGE) \
 	RABBITMQ_IMAGE_PULL_SECRET=$(RABBITMQ_IMAGE_PULL_SECRET) \
 	go test -v -race -count=1 -timeout=50m -tags=e2e ./test/e2e/...
