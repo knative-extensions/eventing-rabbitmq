@@ -209,7 +209,7 @@ func NamespacedBrokerTest(namespace string) *feature.Feature {
 	f := new(feature.Feature)
 
 	f.Setup("install Broker in different namespace", brokere2e.Install(namespace))
-	f.Requirement("Broker and all dependencies - Exchange, Queue & Binding -").Must("be ready", AllGoReady)
+	f.Requirement("Broker and all dependencies - Exchange, Queue & Binding - be ready", AllGoReady)
 	f.Teardown("delete Broker namespace and all objects", brokere2e.Uninstall(namespace))
 	return f
 }
@@ -219,7 +219,7 @@ func SmokeTestBrokerTrigger() *feature.Feature {
 	f := new(feature.Feature)
 
 	f.Setup("install a broker", smokebrokertriggere2e.Install())
-	f.Requirement("RabbitMQ broker").Must("goes ready", AllGoReady)
+	f.Requirement("RabbitMQ broker goes ready", AllGoReady)
 	f.Teardown("Delete feature resources", f.DeleteResources)
 	return f
 }
@@ -229,7 +229,7 @@ func SmokeTestBroker() *feature.Feature {
 	f := new(feature.Feature)
 
 	f.Setup("install a broker", smokebrokere2e.Install())
-	f.Requirement("RabbitMQ broker").Must("goes ready", AllGoReady)
+	f.Requirement("RabbitMQ broker goes ready", AllGoReady)
 	f.Teardown("Delete feature resources", f.DeleteResources)
 	return f
 }
