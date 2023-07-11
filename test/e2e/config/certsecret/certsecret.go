@@ -31,14 +31,25 @@ import (
 	"net"
 	"time"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
+
 	"knative.dev/eventing-rabbitmq/test/e2e/config/rabbitmq"
 	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/manifest"
+
+	kubeClient "knative.dev/pkg/client/injection/kube/client"
 )
 
 //go:embed "*.yaml"
 var yamls embed.FS
+
+const (
+	interval = 1 * time.Second
+	timeout  = 5 * time.Minute
+)
 
 // Install will generate a CA and sign a new certificate with it. It will then populate the values into secrets in the yaml file.
 func Install(ctx context.Context, t feature.T) {
@@ -53,6 +64,23 @@ func Install(ctx context.Context, t feature.T) {
 
 	if _, err := manifest.InstallYamlFS(ctx, yamls, args); err != nil {
 		t.Fatal(err)
+	}
+
+	for _, secretName := range []string{rabbitmq.TLS_SECRET_NAME, rabbitmq.CA_SECRET_NAME} {
+		if err = wait.PollImmediate(interval, timeout, func() (bool, error) {
+			_, err = kubeClient.Get(ctx).CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
+			if err != nil {
+				if apierrors.IsNotFound(err) {
+					t.Log(namespace, secretName, "not found", err)
+					// keep polling
+					return false, nil
+				}
+				return false, err
+			}
+			return true, nil
+		}); err != nil {
+			t.Fatal(err)
+		}
 	}
 }
 
