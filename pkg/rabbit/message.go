@@ -164,10 +164,6 @@ func (m *Message) ReadBinary(ctx context.Context, encoder binding.BinaryWriter) 
 		}
 	}
 
-	if err != nil {
-		return
-	}
-
 	if m.Value != nil {
 		err = encoder.SetData(bytes.NewBuffer(m.Value))
 	}

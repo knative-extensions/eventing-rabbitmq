@@ -49,7 +49,7 @@ else
 OPEN := xdg-open
 endif
 
-GCLOUD_SDK_VERSION := 436.0.0
+GCLOUD_SDK_VERSION := 437.0.1
 GCLOUD_BIN := gcloud-$(GCLOUD_SDK_VERSION)-$(PLATFORM)-x86_64
 GCLOUD := $(LOCAL_BIN)/$(GCLOUD_BIN)
 GCLOUD_SDK_FILE := google-cloud-sdk-$(GCLOUD_SDK_VERSION)-$(PLATFORM)-x86_64.tar.gz
@@ -313,7 +313,7 @@ install-rabbitmq-cluster-operator: | $(KUBECONFIG) $(KUBECTL) ## Install RabbitM
 # https://github.com/jetstack/cert-manager/releases
 # ⚠️  You may want to keep this in sync with RABBITMQ_TOPOLOGY_OPERATOR_VERSION
 # In other words, don't upgrade cert-manager to a version that was released AFTER RABBITMQ_TOPOLOGY_OPERATOR_VERSION
-CERT_MANAGER_VERSION ?= 1.11.3
+CERT_MANAGER_VERSION ?= 1.12.2
 .PHONY: install-cert-manager
 install-cert-manager: | $(KUBECONFIG) $(KUBECTL) ## Install Cert Manager - dependency of RabbitMQ Topology Operator
 	$(KUBECTL) $(K_CMD) --filename \
@@ -321,7 +321,7 @@ install-cert-manager: | $(KUBECONFIG) $(KUBECTL) ## Install Cert Manager - depen
 	$(KUBECTL) wait --for=condition=available deploy/cert-manager-webhook --timeout=60s --namespace $(CERT_MANAGER_NAMESPACE)
 
 # https://github.com/rabbitmq/messaging-topology-operator/releases
-RABBITMQ_TOPOLOGY_OPERATOR_VERSION ?= 1.11.0
+RABBITMQ_TOPOLOGY_OPERATOR_VERSION ?= 1.12.0
 .PHONY: install-rabbitmq-topology-operator
 install-rabbitmq-topology-operator: | install-cert-manager $(KUBECTL) ## Install RabbitMQ Topology Operator
 	$(KUBECTL) $(K_CMD) --filename \
@@ -383,7 +383,7 @@ test-e2e-source: | $(KUBECONFIG) ## Run Source end-to-end tests - assumes a K8S 
 	go test -v -race -count=1 -timeout=15m -tags=e2e ./test/e2e/... -run 'Test.*Source.*'
 
 .PHONY: test-e2e
-test-e2e: install ## Run all end-to-end tests - manages all dependencies, including K8S components
+test-e2e: ## Run all end-to-end tests - manages all dependencies, including K8S components
 	RABBITMQ_SERVER_IMAGE=$(RABBITMQ_SERVER_IMAGE) \
 	RABBITMQ_IMAGE_PULL_SECRET=$(RABBITMQ_IMAGE_PULL_SECRET) \
 	go test -v -race -count=1 -timeout=50m -tags=e2e ./test/e2e/...

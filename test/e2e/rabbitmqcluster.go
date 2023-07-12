@@ -39,7 +39,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 
 	"knative.dev/eventing-rabbitmq/test/e2e/config/rabbitmq"
-	"knative.dev/eventing-rabbitmq/test/e2e/config/rabbitmqvhost"
 	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"
 )
@@ -67,7 +66,7 @@ func RabbitMQClusterWithConnectionSecretUri() *feature.Feature {
 	f := new(feature.Feature)
 
 	f.Setup("install a rabbitmqcluster", rabbitmq.Install(rabbitmq.WithEnvConfig()...))
-	f.Requirement("RabbitMQCluster goes ready", RabbitMQClusterReady)
+	f.Setup("RabbitMQCluster goes ready", RabbitMQClusterReady)
 	f.Requirement("Add uri to default user secret", RabbitMQClusterConnectionSecretUri)
 	return f
 }
@@ -86,8 +85,11 @@ func RabbitMQClusterWithTLS() *feature.Feature {
 func RabbitMQClusterVHost() *feature.Feature {
 	f := new(feature.Feature)
 
-	f.Setup("install a rabbitmqcluster with a default vhost and user permissions to it", rabbitmqvhost.Install(rabbitmqvhost.WithEnvConfig()...))
-	f.Requirement("RabbitMQCluster goes ready", RabbitMQClusterReady)
+	cfgFns := rabbitmq.WithEnvConfig()
+	cfgFns = append(cfgFns, rabbitmq.WithVHost("test-vhost"))
+
+	f.Setup("install a rabbitmqcluster with a default vhost and user permissions to it", rabbitmq.Install(cfgFns...))
+	f.Setup("RabbitMQCluster goes ready", RabbitMQClusterReady)
 	f.Requirement("Add credentials to default user secret", RabbitMQClusterConnectionSecretVhost)
 	return f
 }

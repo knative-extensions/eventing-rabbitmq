@@ -93,3 +93,9 @@ func Install(opts ...manifest.CfgFn) feature.StepFn {
 		}
 	}
 }
+
+func WithVHost(vhost string) manifest.CfgFn {
+	return func(cfg map[string]interface{}) {
+		cfg["vHost"] = vhost
+	}
+}
