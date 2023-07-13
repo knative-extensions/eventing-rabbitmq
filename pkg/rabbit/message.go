@@ -38,6 +38,7 @@ import (
 
 const (
 	prefix            = "ce-"
+	rmqHeaderPrefix   = "x-"
 	contentTypeHeader = "content-type"
 	specversionHeader = "specversion"
 	traceparent       = "traceparent"
@@ -146,25 +147,17 @@ func (m *Message) ReadBinary(ctx context.Context, encoder binding.BinaryWriter) 
 	if m.version == nil {
 		return binding.ErrNotBinary
 	}
-	var contentTypeSet bool
 	for k, v := range m.Headers {
 		if k == contentTypeHeader {
-			contentTypeSet = true
 			err = encoder.SetAttribute(m.version.AttributeFromKind(spec.DataContentType), string(v))
 			// avoid converting any RabbitMQ related headers to the CloudEvent
-		} else if !strings.HasPrefix(k, "x-") {
+		} else if !strings.HasPrefix(k, rmqHeaderPrefix) {
 			attr := m.version.Attribute(prefix + k)
-			if err == nil {
-				if attr != nil {
-					err = encoder.SetAttribute(attr, string(v))
-				} else {
-					err = encoder.SetExtension(k, string(v))
-				}
+			if attr != nil {
+				err = encoder.SetAttribute(attr, string(v))
+			} else {
+				err = encoder.SetExtension(k, string(v))
 			}
-		}
-
-		if !contentTypeSet && err == nil {
-			err = encoder.SetAttribute(m.version.AttributeFromKind(spec.DataContentType), m.ContentType)
 		}
 		if err != nil {
 			return
@@ -243,8 +236,8 @@ func CloudEventToRabbitMQMessage(event *cloudevents.Event, tp, ts string) *amqp.
 		headers["dataschema"] = event.DataSchema()
 	}
 	if tp != "" {
-		headers["traceparent"] = tp
-		headers["tracestate"] = ts
+		headers[traceparent] = tp
+		headers[tracestate] = ts
 	}
 
 	for key, val := range event.Extensions() {

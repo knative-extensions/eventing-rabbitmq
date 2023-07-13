@@ -23,8 +23,13 @@ metadata:
     rabbitmq.com/topology-allowed-namespaces: "*"
 spec:
   rabbitmq:
+    {{ if .vHost }}
     additionalConfig: |
-      disk_free_limit.absolute = 50MB
+      default_vhost = test-vhost
+      default_user = guest
+      default_pass = guest
+      loopback_users = none
+    {{ end }}
   {{ if .rabbitmqServerImage }}
   image: {{ .rabbitmqServerImage }}
   {{ end }}
@@ -35,10 +40,10 @@ spec:
   replicas: 1
   resources:
     limits:
-      cpu: "400m"
+      cpu: "500m"
       memory: "600Mi"
     requests:
-      cpu: "400m"
+      cpu: "500m"
       memory: "600Mi"
   {{ if .caSecretName }}
   tls:
@@ -46,13 +51,3 @@ spec:
     secretName: {{ .tlsSecretName }}
     disableNonTLSListeners: true
   {{ end }}
-  override:
-    statefulSet:
-      spec:
-        template:
-          spec:
-            containers:
-            - name: rabbitmq
-              env:
-              - name: ERL_MAX_PORTS
-                value: "4096"

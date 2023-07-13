@@ -110,7 +110,6 @@ func TestBrokerDirectWithConnectionSecret(t *testing.T) {
 
 // TestBrokerDirectSelfSignedCerts makes sure a Broker can delivery events to a consumer while using a RabbitMQ instance with self-signed certificates.
 func TestBrokerDirectSelfSignedCerts(t *testing.T) {
-	t.Parallel()
 	ctx, env := global.Environment(
 		knative.WithKnativeNamespace(system.Namespace()),
 		knative.WithLoggingConfig,
@@ -121,23 +120,6 @@ func TestBrokerDirectSelfSignedCerts(t *testing.T) {
 	env.Test(ctx, t, RabbitMQClusterWithTLS())
 	env.Test(ctx, t, RecorderFeature())
 	env.Test(ctx, t, DirectTestBroker())
-	env.Test(ctx, t, CleanupSelfSignedCerts())
-	env.Finish()
-}
-
-// TestSourceDirectSelfSignedCerts makes sure a source delivers events to Sink while using a RabbitMQ instance with self-signed certificates.
-func TestSourceDirectSelfSignedCerts(t *testing.T) {
-	t.Parallel()
-	ctx, env := global.Environment(
-		knative.WithKnativeNamespace(system.Namespace()),
-		knative.WithLoggingConfig,
-		knative.WithTracingConfig,
-		k8s.WithEventListener,
-	)
-	env.Test(ctx, t, SetupSelfSignedCerts())
-	env.Test(ctx, t, RabbitMQClusterWithTLS())
-	env.Test(ctx, t, RecorderFeature())
-	env.Test(ctx, t, DirectSourceTestWithCerts())
 	env.Test(ctx, t, CleanupSelfSignedCerts())
 	env.Finish()
 }
@@ -154,6 +136,44 @@ func TestBrokerDLQ(t *testing.T) {
 	env.Test(ctx, t, RabbitMQCluster())
 	env.Test(ctx, t, RecorderFeature())
 	env.Test(ctx, t, BrokerDLQTest())
+	env.Finish()
+}
+
+func TestBrokerInDifferentNamespaceThanRabbitMQCluster(t *testing.T) {
+	t.Parallel()
+	ctx, env := global.Environment()
+	env.Test(ctx, t, RabbitMQCluster())
+	env.Test(ctx, t, NamespacedBrokerTest("broker-namespace"))
+	env.Finish()
+}
+
+func TestBrokerDispatcherConcurrency(t *testing.T) {
+	t.Parallel()
+	ctx, env := global.Environment(
+		knative.WithKnativeNamespace(system.Namespace()),
+		knative.WithLoggingConfig,
+		knative.WithTracingConfig,
+		k8s.WithEventListener,
+	)
+	env.Test(ctx, t, RabbitMQCluster())
+	env.Test(ctx, t, RecorderFeature(eventshub.ResponseWaitTime(3*time.Second)))
+	env.Test(ctx, t, BrokerConcurrentDispatcherTest())
+	env.Finish()
+}
+
+// TestSourceDirectSelfSignedCerts makes sure a source delivers events to Sink while using a RabbitMQ instance with self-signed certificates.
+func TestSourceDirectSelfSignedCerts(t *testing.T) {
+	ctx, env := global.Environment(
+		knative.WithKnativeNamespace(system.Namespace()),
+		knative.WithLoggingConfig,
+		knative.WithTracingConfig,
+		k8s.WithEventListener,
+	)
+	env.Test(ctx, t, SetupSelfSignedCerts())
+	env.Test(ctx, t, RabbitMQClusterWithTLS())
+	env.Test(ctx, t, RecorderFeature())
+	env.Test(ctx, t, DirectSourceTestWithCerts())
+	env.Test(ctx, t, CleanupSelfSignedCerts())
 	env.Finish()
 }
 
@@ -203,14 +223,6 @@ func TestSourceVhostSetup(t *testing.T) {
 	env.Finish()
 }
 
-func TestBrokerInDifferentNamespaceThanRabbitMQCluster(t *testing.T) {
-	t.Parallel()
-	ctx, env := global.Environment()
-	env.Test(ctx, t, RabbitMQCluster())
-	env.Test(ctx, t, NamespacedBrokerTest("broker-namespace"))
-	env.Finish()
-}
-
 func TestSourceAdapterConcurrency(t *testing.T) {
 	t.Parallel()
 	ctx, env := global.Environment(
@@ -221,19 +233,5 @@ func TestSourceAdapterConcurrency(t *testing.T) {
 	)
 	env.Test(ctx, t, RabbitMQCluster())
 	env.Test(ctx, t, SourceConcurrentReceiveAdapterProcessingTest())
-	env.Finish()
-}
-
-func TestBrokerDispatcherConcurrency(t *testing.T) {
-	t.Parallel()
-	ctx, env := global.Environment(
-		knative.WithKnativeNamespace(system.Namespace()),
-		knative.WithLoggingConfig,
-		knative.WithTracingConfig,
-		k8s.WithEventListener,
-	)
-	env.Test(ctx, t, RabbitMQCluster())
-	env.Test(ctx, t, RecorderFeature(eventshub.ResponseWaitTime(3*time.Second)))
-	env.Test(ctx, t, BrokerConcurrentDispatcherTest())
 	env.Finish()
 }
