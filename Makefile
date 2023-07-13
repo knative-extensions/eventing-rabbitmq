@@ -1,6 +1,7 @@
 ### CONFIG #
 #
 SHELL := bash # we want bash behaviour in all shell invocations
+
 PLATFORM := $(shell uname)
 platform := $(shell echo $(PLATFORM) | tr A-Z a-z)
 ifeq ($(PLATFORM),Darwin)
@@ -8,7 +9,13 @@ platform_alt = macOS
 else
 platform_alt = $(platform)
 endif
+
 ARCH := $(shell uname -m)
+ifeq ($(ARCH),x86_64)
+arch_alt = amd64
+else
+arch_alt = arm64
+endif
 
 # https://stackoverflow.com/questions/4842424/list-of-ansi-color-escape-sequences
 RED := \033[0;31m
@@ -50,9 +57,9 @@ OPEN := xdg-open
 endif
 
 GCLOUD_SDK_VERSION := 436.0.0
-GCLOUD_BIN := gcloud-$(GCLOUD_SDK_VERSION)-$(PLATFORM)-x86_64
+GCLOUD_BIN := gcloud-$(GCLOUD_SDK_VERSION)-$(PLATFORM)-$(ARCH)
 GCLOUD := $(LOCAL_BIN)/$(GCLOUD_BIN)
-GCLOUD_SDK_FILE := google-cloud-sdk-$(GCLOUD_SDK_VERSION)-$(PLATFORM)-x86_64.tar.gz
+GCLOUD_SDK_FILE := google-cloud-sdk-$(GCLOUD_SDK_VERSION)-$(PLATFORM)-$(ARCH).tar.gz
 GCLOUD_SDK_URL := https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/$(GCLOUD_SDK_FILE)
 GOOGLE_CLOUD_SDK_BIN := $(LOCAL_BIN)/google-cloud-sdk/bin
 PATH := $(GOOGLE_CLOUD_SDK_BIN):$(PATH)
@@ -78,7 +85,7 @@ releases-gcloud:
 
 KO_RELEASES := https://github.com/ko-build/ko/releases
 KO_VERSION := 0.14.1
-KO_BIN_DIR := $(LOCAL_BIN)/ko_$(KO_VERSION)_$(PLATFORM)_x86_64
+KO_BIN_DIR := $(LOCAL_BIN)/ko_$(KO_VERSION)_$(PLATFORM)_$(ARCH)
 KO_URL := $(KO_RELEASES)/download/v$(KO_VERSION)/$(notdir $(KO_BIN_DIR)).tar.gz
 KO := $(KO_BIN_DIR)/ko
 $(KO): | $(CURL) $(LOCAL_BIN)
@@ -96,8 +103,8 @@ releases-ko:
 
 KIND_RELEASES := https://github.com/kubernetes-sigs/kind/releases
 KIND_VERSION := 0.20.0
-KIND_URL := $(KIND_RELEASES)/download/v$(KIND_VERSION)/kind-$(platform)-amd64
-KIND := $(LOCAL_BIN)/kind_$(KIND_VERSION)_$(platform)_amd64
+KIND_URL := $(KIND_RELEASES)/download/v$(KIND_VERSION)/kind-$(platform)-$(arch_alt)
+KIND := $(LOCAL_BIN)/kind_$(KIND_VERSION)_$(platform)_$(arch_alt)
 $(KIND): | $(CURL) $(LOCAL_BIN)
 	$(CURL) --progress-bar --fail --location --output $(KIND) "$(KIND_URL)"
 	touch $(KIND)
@@ -114,8 +121,8 @@ releases-kind:
 # using this Go version instead: https://github.com/a8m/envsubst#docs
 ENVSUBST_RELEASES := https://github.com/a8m/envsubst/releases
 ENVSUBST_VERSION := 1.4.2
-ENVSUBST_URL := $(ENVSUBST_RELEASES)/download/v$(ENVSUBST_VERSION)/envsubst-$(PLATFORM)-x86_64
-ENVSUBST := $(LOCAL_BIN)/envsubst-$(ENVSUBST_VERSION)-$(PLATFORM)-x86_64
+ENVSUBST_URL := $(ENVSUBST_RELEASES)/download/v$(ENVSUBST_VERSION)/envsubst-$(PLATFORM)-$(ARCH)
+ENVSUBST := $(LOCAL_BIN)/envsubst-$(ENVSUBST_VERSION)-$(PLATFORM)-$(ARCH)
 # We want to fail if variables are not set or empty.
 ENVSUBST_SAFE := $(ENVSUBST) -no-unset -no-empty
 $(ENVSUBST): | $(CURL) $(LOCAL_BIN)
@@ -132,7 +139,7 @@ releases-envsubst:
 KUBECTL_RELEASES := https://github.com/kubernetes/kubernetes/tags
 # Keep this in sync with KIND_K8S_VERSION
 KUBECTL_VERSION := 1.25.9
-KUBECTL_BIN := kubectl-$(KUBECTL_VERSION)-$(platform)-amd64
+KUBECTL_BIN := kubectl-$(KUBECTL_VERSION)-$(platform)-$(arch_alt)
 KUBECTL_URL := https://storage.googleapis.com/kubernetes-release/release/v$(KUBECTL_VERSION)/bin/$(platform)/amd64/kubectl
 KUBECTL := $(LOCAL_BIN)/$(KUBECTL_BIN)
 $(KUBECTL): | $(CURL) $(LOCAL_BIN)
@@ -154,8 +161,8 @@ endif
 
 K9S_RELEASES := https://github.com/derailed/k9s/releases
 K9S_VERSION := 0.25.18
-K9S_BIN_DIR := $(LOCAL_BIN)/k9s-$(K9S_VERSION)-$(platform)-x86_64
-K9S_URL := $(K9S_RELEASES)/download/v$(K9S_VERSION)/k9s_$(platform)_x86_64.tar.gz
+K9S_BIN_DIR := $(LOCAL_BIN)/k9s-$(K9S_VERSION)-$(platform)-$(ARCH)
+K9S_URL := $(K9S_RELEASES)/download/v$(K9S_VERSION)/k9s_$(platform)_$(ARCH).tar.gz
 K9S := $(K9S_BIN_DIR)/k9s
 $(K9S): | $(CURL) $(LOCAL_BIN) $(KUBECTL)
 	$(CURL) --progress-bar --fail --location --output $(K9S_BIN_DIR).tar.gz "$(K9S_URL)"
@@ -174,7 +181,7 @@ k9s: | $(KUBECONFIG) $(K9S) ## Terminal ncurses UI for K8S
 
 GH_RELEASES := https://github.com/cli/cli/releases
 GH_VERSION := 2.31.0
-GH_DIR := $(LOCAL_BIN)/gh_$(GH_VERSION)_$(platform_alt)_amd64
+GH_DIR := $(LOCAL_BIN)/gh_$(GH_VERSION)_$(platform_alt)_$(arch_alt)
 GH_URL := $(GH_RELEASES)/download/v$(GH_VERSION)/$(notdir $(GH_DIR)).tar.gz
 GH := $(GH_DIR)/bin/gh
 $(GH): | $(CURL) $(LOCAL_BIN)
@@ -192,8 +199,8 @@ releases-gh:
 
 KN_RELEASES := https://github.com/knative/client/releases
 KN_VERSION := 1.10.0
-KN_BIN := kn-$(KN_VERSION)-$(platform)-amd64
-KN_URL := $(KN_RELEASES)/download/knative-v$(KN_VERSION)/kn-$(platform)-amd64
+KN_BIN := kn-$(KN_VERSION)-$(platform)-$(arch_alt)
+KN_URL := $(KN_RELEASES)/download/knative-v$(KN_VERSION)/kn-$(platform)-$(arch_alt)
 KN := $(LOCAL_BIN)/$(KN_BIN)
 $(KN): | $(CURL) $(LOCAL_BIN)
 	$(CURL) --progress-bar --fail --location --output $(KN) "$(KN_URL)"
@@ -359,10 +366,12 @@ install-knative-eventing: | $(KUBECONFIG) $(KUBECTL) ## Install Knative Eventing
 
 .PHONY: install
 install: | $(KUBECTL) $(KO) install-knative-eventing install-rabbitmq-cluster-operator install-rabbitmq-topology-operator ## Install local dev Knative Eventing RabbitMQ - manages all dependencies, including K8S components
-	$(KO) apply --filename config/broker
+	$(KO) apply --local --platform=linux/amd64,linux/arm64 --filename config/broker && \
+    ./test/copy_images.sh
 	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-broker-controller --timeout=60s --namespace $(EVENTING_NAMESPACE)
 	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-broker-webhook --timeout=60s --namespace $(EVENTING_NAMESPACE)
-	$(KO) apply --filename config/source
+	$(KO) apply --local --platform=linux/amd64,linux/arm64 --filename config/source && \
+    ./test/copy_images.sh
 	$(KUBECTL) wait --for=condition=available deploy/pingsource-mt-adapter --timeout=60s --namespace knative-eventing
 
 .PHONY: test-e2e-publish
