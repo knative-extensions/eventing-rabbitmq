@@ -152,7 +152,7 @@ func getStatus(ctx context.Context, result protocol.Result) (int, bool) {
 
 func (d *Dispatcher) dispatch(ctx context.Context, msg amqp.Delivery, ceClient cloudevents.Client) {
 	start := time.Now()
-	if _, ok := msg.Headers["knativeerrordest"]; !ok {
+	if _, ok := msg.Headers["knativeerrordest"]; ok {
 		err := msg.Nack(false, false)
 		if err != nil {
 			logging.FromContext(ctx).Warn("failed to NACK event: ", err)
