@@ -154,11 +154,14 @@ func getStatus(ctx context.Context, result protocol.Result) (int, bool) {
 func (d *Dispatcher) dispatch(ctx context.Context, msg amqp.Delivery, ceClient cloudevents.Client, channel rabbit.RabbitMQChannelInterface) {
 	start := time.Now()
 	if _, ok := msg.Headers["knativeerrordest"]; ok {
-		if err := msg.Ack(false); err != nil {
+		if err := msg.Nack(false, false); err != nil {
 			logging.FromContext(ctx).Warn("failed to Nack event: ", err)
 		}
 		return
 	}
+
+	ctx, span := readSpan(ctx, msg)
+	defer span.End()
 
 	msgBinding := rabbit.NewMessageFromDelivery(ComponentName, "", "", &msg)
 	event, err := binding.ToEvent(cloudevents.WithEncodingBinary(ctx), msgBinding)
@@ -168,11 +171,17 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg amqp.Delivery, ceClient c
 		if err = msg.Nack(false, false); err != nil {
 			logging.FromContext(ctx).Warn("failed to Nack event: ", err)
 		}
+
+		// Add headers as described here: https://knative.dev/docs/eventing/event-delivery/#configuring-channel-event-delivery
+		event.SetExtension("knativeerrordest", d.SubscriberURL)
+
+		if err = sendToRabbitMQ(channel, msg.Exchange, span, event); err != nil {
+			logging.FromContext(ctx).Warn("failed to send event: ", err)
+		}
+
 		return
 	}
-
-	ctx, span := readSpan(ctx, msg)
-	defer span.End()
+	
 	if span.IsRecordingEvents() {
 		span.AddAttributes(client.EventTraceAttributes(event)...)
 	}
@@ -217,7 +226,7 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg amqp.Delivery, ceClient c
 		_, isSuccess = getStatus(ctx, result)
 		if !isSuccess {
 			logging.FromContext(ctx).Warnf("Failed to deliver to %q", d.BrokerIngressURL)
-			
+
 			// We need to ack the original message.
 			if err = msg.Ack(false); err != nil {
 				logging.FromContext(ctx).Warn("failed to Ack event: ", err)
