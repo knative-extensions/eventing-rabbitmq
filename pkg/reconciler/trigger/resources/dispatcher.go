@@ -198,6 +198,13 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 				Value: *args.Subscriber.CACerts,
 			})
 	}
+	if args.DLX {
+		dispatcher.Env = append(dispatcher.Env,
+			corev1.EnvVar{
+				Name:  "DLX",
+				Value: "true",
+			})
+	}
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: args.Trigger.Namespace,

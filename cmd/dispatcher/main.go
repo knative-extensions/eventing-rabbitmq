@@ -46,6 +46,7 @@ type envConfig struct {
 	BrokerIngressURL  string `envconfig:"BROKER_INGRESS_URL" required:"true"`
 	SubscriberURL     string `envconfig:"SUBSCRIBER" required:"true"`
 	SubscriberCACerts string `envconfig:"SUBSCRIBER_CACERTS" required:"false"`
+	DLX               bool   `envconfig:"DLX" required:"false"`
 
 	// Number of concurrent messages in flight
 	Parallelism   int           `envconfig:"PARALLELISM" default:"1" required:"false"`
@@ -97,6 +98,7 @@ func main() {
 		BackoffPolicy:     backoffPolicy,
 		WorkerCount:       env.Parallelism,
 		Reporter:          reporter,
+		DLX:               env.DLX,
 	}
 
 	var err error
