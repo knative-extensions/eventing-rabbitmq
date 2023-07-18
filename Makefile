@@ -286,7 +286,7 @@ MIN_SUPPORTED_K8S_VERSION := 1.25.0
 KIND_K8S_VERSION ?= $(MIN_SUPPORTED_K8S_VERSION)
 export KIND_K8S_VERSION
 # Find the corresponding version digest in https://github.com/kubernetes-sigs/kind/releases
-KIND_K8S_DIGEST ?= sha256:c08d6c52820aa42e533b70bce0c2901183326d86dcdcbedecc9343681db45161
+KIND_K8S_DIGEST ?= sha256:227fa11ce74ea76a0474eeefb84cb75d8dad1b08638371ecf0e86259b35be0c8
 export KIND_K8S_DIGEST
 
 .PHONY: kind-cluster
