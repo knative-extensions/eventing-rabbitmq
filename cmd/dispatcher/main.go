@@ -103,7 +103,20 @@ func main() {
 
 	var err error
 	rmqHelper := rabbit.NewRabbitMQConnectionHandler(1000, logger)
-	rmqHelper.Setup(ctx, rabbit.VHostHandler(env.RabbitURL, env.RabbitMQVhost), rabbit.ChannelQoS, rabbit.DialWrapper)
+	rmqHelper.Setup(ctx, rabbit.VHostHandler(
+		env.RabbitURL,
+		env.RabbitMQVhost),
+		func(c rabbit.RabbitMQConnectionInterface, ch rabbit.RabbitMQChannelInterface) error {
+			if err := rabbit.ChannelQoS(c, ch); err != nil {
+				return err
+			}
+
+			if err := rabbit.ChannelConfirm(c, ch); err != nil {
+				return err
+			}
+			return nil
+		},
+		rabbit.DialWrapper)
 	for {
 		if err = d.ConsumeFromQueue(ctx, rmqHelper.GetConnection(), rmqHelper.GetChannel(), env.QueueName); err != nil {
 			if errors.Is(err, context.Canceled) {
