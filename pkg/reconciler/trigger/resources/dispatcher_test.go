@@ -84,6 +84,7 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 			want: deployment(
 				deploymentNamed("testtrigger-dlx-dispatcher"),
 				withEnv(corev1.EnvVar{Name: "PARALLELISM", Value: "1"}),
+				withEnv(corev1.EnvVar{Name: "DLX", Value: "true"}),
 				withEnv(corev1.EnvVar{Name: "POD_NAME", Value: "testtrigger-dlx-dispatcher"}),
 				withDefaultResourceRequirements(),
 			),
