@@ -245,6 +245,7 @@ func (r *Reconciler) reconcileDLXDispatcherDeployment(ctx context.Context, b *ev
 			BrokerIngressURL:     b.Status.Address.URL,
 			Configs:              r.configs,
 			ResourceRequirements: requirements,
+			DLX:                  true,
 		})
 		return r.reconcileDeployment(ctx, expected)
 	}
