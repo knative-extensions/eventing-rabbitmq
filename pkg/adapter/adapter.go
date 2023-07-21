@@ -58,13 +58,12 @@ func NewEnvConfig() adapter.EnvConfigAccessor {
 }
 
 type Adapter struct {
-	config            *adapterConfig
-	sink              duckv1.Addressable
-	httpMessageSender *kncloudevents.HTTPMessageSender
-	reporter          source.StatsReporter
-	logger            *zap.Logger
-	context           context.Context
-	rmqHelper         rabbit.RabbitMQConnectionsHandlerInterface
+	config    *adapterConfig
+	sink      duckv1.Addressable
+	reporter  source.StatsReporter
+	logger    *zap.Logger
+	context   context.Context
+	rmqHelper rabbit.RabbitMQConnectionsHandlerInterface
 }
 
 var _ adapter.MessageAdapter = (*Adapter)(nil)
@@ -77,17 +76,12 @@ var (
 func NewAdapter(ctx context.Context, processed adapter.EnvConfigAccessor, sink duckv1.Addressable, reporter source.StatsReporter) adapter.MessageAdapter {
 	logger := logging.FromContext(ctx).Desugar()
 	config := processed.(*adapterConfig)
-	httpMessageSender, err := kncloudevents.NewHTTPMessageSenderWithTarget(sink.URL.String())
-	if err != nil {
-		logger.Sugar().Fatalf("Couldn't start message sender, %w", err)
-	}
 	return &Adapter{
-		config:            config,
-		sink:              sink,
-		httpMessageSender: httpMessageSender,
-		reporter:          reporter,
-		logger:            logger,
-		context:           ctx,
+		config:   config,
+		sink:     sink,
+		reporter: reporter,
+		logger:   logger,
+		context:  ctx,
 	}
 }
 
@@ -219,8 +213,8 @@ func (a *Adapter) processMessages(wg *sync.WaitGroup, queue <-chan amqp.Delivery
 }
 
 func (a *Adapter) postMessage(msg *amqp.Delivery) error {
-	a.logger.Info("target: " + a.httpMessageSender.Target)
-	req, err := a.httpMessageSender.NewCloudEventRequest(a.context)
+	a.logger.Info("target: " + a.sink.URL.String())
+	req, err := kncloudevents.NewCloudEventRequest(a.context, a.sink)
 	if err != nil {
 		return err
 	}
@@ -231,14 +225,14 @@ func (a *Adapter) postMessage(msg *amqp.Delivery) error {
 		a.config.Namespace,
 		a.config.QueueName,
 		msg,
-		req,
+		req.Request,
 		a.logger)
 	if err != nil {
 		a.logger.Error("error writing event to http", zap.Error(err))
 		return err
 	}
 
-	res, err := a.httpMessageSender.SendWithRetries(req, retryConfig)
+	res, err := req.SendWithRetries(retryConfig)
 	if err != nil {
 		a.logger.Error("error while sending the message", zap.Error(err))
 		return err
