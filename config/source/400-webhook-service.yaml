@@ -13,10 +13,17 @@
 # limitations under the License.
 
 apiVersion: v1
-kind: Secret
+kind: Service
 metadata:
-  name: rabbitmq-webhook-certs
-  namespace: knative-sources
   labels:
     rabbitmq.eventing.knative.dev/release: devel
-# The data is populated at install time.
+    role: rabbitmq-source-webhook
+  name: rabbitmq-source-webhook
+  namespace: knative-sources
+spec:
+  ports:
+    - name: https-webhook
+      port: 443
+      targetPort: 8443
+  selector:
+    role: rabbitmq-source-webhook
