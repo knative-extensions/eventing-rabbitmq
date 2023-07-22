@@ -18,7 +18,9 @@ package dispatcher
 
 import (
 	"context"
+	v2 "github.com/cloudevents/sdk-go/v2"
 	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -56,7 +58,10 @@ func TestDispatcher_ConsumeFromQueue(t *testing.T) {
 		time.Sleep(1000)
 		cancelFunc()
 	}()
-	d.ConsumeFromQueue(ctx, &rabbit.RabbitMQConnectionMock{}, &rabbit.RabbitMQChannelMock{}, "")
+
+	if err := d.ConsumeFromQueue(ctx, &rabbit.RabbitMQConnectionMock{}, &rabbit.RabbitMQChannelMock{}, ""); err != nil {
+		t.Errorf("ConsumeFromQueue() error = %v", err)
+	}
 }
 
 func TestDispatcher_ReadSpan(t *testing.T) {
@@ -180,4 +185,145 @@ func (h *fakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func requestAccepted(writer http.ResponseWriter, req *http.Request) {
 	writer.WriteHeader(http.StatusOK)
+}
+
+type MockAcknowledger struct {
+}
+
+func (m MockAcknowledger) Ack(tag uint64, multiple bool) error {
+	return nil
+}
+func (m MockAcknowledger) Nack(tag uint64, multiple bool, requeue bool) error {
+	return nil
+}
+func (m MockAcknowledger) Reject(tag uint64, requeue bool) error {
+	return nil
+}
+
+func TestDispatcher_dispatch(t *testing.T) {
+	mockAcknowledger := MockAcknowledger{}
+
+	p, err := v2.NewHTTP(v2.WithGetHandlerFunc(requestAccepted))
+	if err != nil {
+		log.Fatalf("Failed to create protocol, %v", err)
+	}
+
+	c, err := v2.NewClient(p)
+	if err != nil {
+		log.Fatalf("Failed to create client, %v", err)
+	}
+
+	notifyCloseChannel := make(chan *amqp.Error)
+	consumeChannel := make(<-chan amqp.Delivery)
+	channel := rabbit.RabbitMQChannelMock{
+		NotifyCloseChannel: notifyCloseChannel,
+		ConsumeChannel:     consumeChannel,
+	}
+
+	go func() {
+		for {
+			select {
+			case consumer := <-consumeChannel:
+				log.Fatalf("%+v", consumer)
+			case notify := <-notifyCloseChannel:
+				log.Fatalf(notify.Error())
+			}
+		}
+	}()
+
+	type fields struct {
+		BrokerIngressURL  string
+		SubscriberURL     string
+		SubscriberCACerts string
+		MaxRetries        int
+		BackoffDelay      time.Duration
+		Timeout           time.Duration
+		BackoffPolicy     v1.BackoffPolicyType
+		WorkerCount       int
+		Reporter          dispatcherstats.StatsReporter
+		DLX               bool
+	}
+	type args struct {
+		ctx      context.Context
+		msg      amqp.Delivery
+		ceClient v2.Client
+		channel  rabbit.RabbitMQChannelInterface
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name:   "knativeerrordest is in header",
+			fields: fields{},
+			args: args{
+				ctx: context.TODO(),
+				msg: amqp.Delivery{
+					Acknowledger: mockAcknowledger,
+					ContentType:  "application/cloudevents+json",
+					Headers:      amqp.Table{"knativeerrordest": "some-destination"},
+				},
+				ceClient: c,
+				channel:  &channel,
+			},
+		},
+		{
+			name:   "invalid event",
+			fields: fields{},
+			args: args{
+				ctx: context.TODO(),
+				msg: amqp.Delivery{
+					Acknowledger: mockAcknowledger,
+					ContentType:  "application/cloudevents+json",
+					Headers:      amqp.Table{},
+				},
+				ceClient: nil,
+				channel:  nil,
+			},
+			wantErr: true,
+		},
+		{
+			name:   "valid event",
+			fields: fields{},
+			args: args{
+				ctx: context.TODO(),
+				msg: amqp.Delivery{
+					Acknowledger: mockAcknowledger,
+					ContentType:  "application/cloudevents+json",
+					Headers:      amqp.Table{},
+					Body:         []byte(`{"specversion":"1.0","source":"valid-event","id":"valid-id","type":"valid-type"}`),
+				},
+				ceClient: c,
+				channel:  &channel,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := &Dispatcher{
+				BrokerIngressURL:  tt.fields.BrokerIngressURL,
+				SubscriberURL:     tt.fields.SubscriberURL,
+				SubscriberCACerts: tt.fields.SubscriberCACerts,
+				MaxRetries:        tt.fields.MaxRetries,
+				BackoffDelay:      tt.fields.BackoffDelay,
+				Timeout:           tt.fields.Timeout,
+				BackoffPolicy:     tt.fields.BackoffPolicy,
+				WorkerCount:       tt.fields.WorkerCount,
+				Reporter:          tt.fields.Reporter,
+				DLX:               tt.fields.DLX,
+			}
+
+			if d.DLX {
+				if err = d.dispatchDLQ(tt.args.ctx, tt.args.msg, tt.args.ceClient); (err != nil) != tt.wantErr {
+					t.Errorf("dispatchDLQ() error = %v, wantErr %v", err, tt.wantErr)
+				}
+			} else {
+				if err = d.dispatch(tt.args.ctx, tt.args.msg, tt.args.ceClient, tt.args.channel); (err != nil) != tt.wantErr {
+					t.Errorf("dispatch() error = %v, wantErr %v", err, tt.wantErr)
+				}
+			}
+		})
+	}
 }
