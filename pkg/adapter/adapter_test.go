@@ -34,7 +34,6 @@ import (
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	"knative.dev/eventing/pkg/adapter/v2"
 	v1 "knative.dev/eventing/pkg/apis/duck/v1"
-	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/eventing/pkg/metrics/source"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -125,10 +124,6 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 			}
 			sinkServer := httptest.NewServer(h)
 			defer sinkServer.Close()
-			s, err := kncloudevents.NewHTTPMessageSenderWithTarget(sinkServer.URL)
-			if err != nil {
-				t.Fatal(err)
-			}
 
 			target, err := apis.ParseURL(sinkServer.URL)
 			if err != nil {
@@ -144,12 +139,11 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 				config = adapterConfig{Retry: tc.retry, BackoffPolicy: string(v1.BackoffPolicyLinear), BackoffDelay: "PT0.1S"}
 			}
 			a := &Adapter{
-				config:            &config,
-				context:           context.TODO(),
-				sink:              sink,
-				httpMessageSender: s,
-				logger:            zap.NewNop(),
-				reporter:          statsReporter,
+				config:   &config,
+				context:  context.TODO(),
+				sink:     sink,
+				logger:   zap.NewNop(),
+				reporter: statsReporter,
 			}
 
 			data, err := json.Marshal(tc.data)
@@ -286,10 +280,6 @@ func TestAdapter_NewAdapter(t *testing.T) {
 	sinkServer := httptest.NewServer(h)
 	defer sinkServer.Close()
 
-	s, err := kncloudevents.NewHTTPMessageSenderWithTarget(sinkServer.URL)
-	if err != nil {
-		t.Fatal(err)
-	}
 	target, err := apis.ParseURL(sinkServer.URL)
 	if err != nil {
 		t.Fatal(err)
@@ -301,12 +291,11 @@ func TestAdapter_NewAdapter(t *testing.T) {
 	statsReporter, _ := source.NewStatsReporter()
 	a := NewAdapter(ctx, env, sink, statsReporter)
 	cmpA := &Adapter{
-		config:            env.(*adapterConfig),
-		sink:              sink,
-		httpMessageSender: s,
-		reporter:          statsReporter,
-		logger:            logging.FromContext(ctx).Desugar(),
-		context:           ctx,
+		config:   env.(*adapterConfig),
+		sink:     sink,
+		reporter: statsReporter,
+		logger:   logging.FromContext(ctx).Desugar(),
+		context:  ctx,
 	}
 
 	if a == cmpA {
