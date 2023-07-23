@@ -19,6 +19,7 @@ package dispatcher
 import (
 	"context"
 	v2 "github.com/cloudevents/sdk-go/v2"
+	"github.com/cloudevents/sdk-go/v2/binding"
 	"io"
 	"log"
 	"net/http"
@@ -200,19 +201,22 @@ func (m MockAcknowledger) Reject(tag uint64, requeue bool) error {
 	return nil
 }
 
+type MockClient struct {
+	Request func(ctx context.Context, m binding.Message, transformers ...binding.Transformer) (binding.Message, error)
+}
+
+type MockStatsReporter struct {
+}
+
+func (m MockStatsReporter) ReportEventCount(args *dispatcherstats.ReportArgs, responseCode int) error {
+	return nil
+}
+
+func (m MockStatsReporter) ReportEventDispatchTime(args *dispatcherstats.ReportArgs, responseCode int, d time.Duration) error {
+	return nil
+}
+
 func TestDispatcher_dispatch(t *testing.T) {
-	mockAcknowledger := MockAcknowledger{}
-
-	p, err := v2.NewHTTP(v2.WithGetHandlerFunc(requestAccepted))
-	if err != nil {
-		log.Fatalf("Failed to create protocol, %v", err)
-	}
-
-	c, err := v2.NewClient(p)
-	if err != nil {
-		log.Fatalf("Failed to create client, %v", err)
-	}
-
 	notifyCloseChannel := make(chan *amqp.Error)
 	consumeChannel := make(<-chan amqp.Delivery)
 	channel := rabbit.RabbitMQChannelMock{
@@ -244,10 +248,10 @@ func TestDispatcher_dispatch(t *testing.T) {
 		DLX               bool
 	}
 	type args struct {
-		ctx      context.Context
-		msg      amqp.Delivery
-		ceClient v2.Client
-		channel  rabbit.RabbitMQChannelInterface
+		ctx     context.Context
+		msg     amqp.Delivery
+		client  MockClient
+		channel rabbit.RabbitMQChannelInterface
 	}
 	tests := []struct {
 		name    string
@@ -261,12 +265,12 @@ func TestDispatcher_dispatch(t *testing.T) {
 			args: args{
 				ctx: context.TODO(),
 				msg: amqp.Delivery{
-					Acknowledger: mockAcknowledger,
+					Acknowledger: &MockAcknowledger{},
 					ContentType:  "application/cloudevents+json",
 					Headers:      amqp.Table{"knativeerrordest": "some-destination"},
 				},
-				ceClient: c,
-				channel:  &channel,
+				client:  MockClient{},
+				channel: &channel,
 			},
 		},
 		{
@@ -275,28 +279,56 @@ func TestDispatcher_dispatch(t *testing.T) {
 			args: args{
 				ctx: context.TODO(),
 				msg: amqp.Delivery{
-					Acknowledger: mockAcknowledger,
+					Acknowledger: &MockAcknowledger{},
 					ContentType:  "application/cloudevents+json",
 					Headers:      amqp.Table{},
 				},
-				ceClient: nil,
-				channel:  nil,
+				client:  MockClient{},
+				channel: nil,
 			},
 			wantErr: true,
 		},
 		{
-			name:   "valid event",
-			fields: fields{},
+			name: "invalid request",
+			fields: fields{
+				Reporter: &MockStatsReporter{},
+			},
 			args: args{
 				ctx: context.TODO(),
 				msg: amqp.Delivery{
-					Acknowledger: mockAcknowledger,
+					Acknowledger: &MockAcknowledger{},
 					ContentType:  "application/cloudevents+json",
 					Headers:      amqp.Table{},
 					Body:         []byte(`{"specversion":"1.0","source":"valid-event","id":"valid-id","type":"valid-type"}`),
 				},
-				ceClient: c,
-				channel:  &channel,
+				client: MockClient{
+					Request: func(ctx context.Context, m binding.Message, transformers ...binding.Transformer) (binding.Message, error) {
+						return m, v2.NewHTTPRetriesResult(v2.NewHTTPResult(500, ""), 0, time.Now(), []protocol.Result{})
+					},
+				},
+				channel: &channel,
+			},
+			wantErr: true,
+		},
+		{
+			name: "valid event",
+			fields: fields{
+				Reporter: &MockStatsReporter{},
+			},
+			args: args{
+				ctx: context.TODO(),
+				msg: amqp.Delivery{
+					Acknowledger: &MockAcknowledger{},
+					ContentType:  "application/cloudevents+json",
+					Headers:      amqp.Table{},
+					Body:         []byte(`{"specversion":"1.0","source":"valid-event","id":"valid-id","type":"valid-type"}`),
+				},
+				client: MockClient{
+					Request: func(ctx context.Context, m binding.Message, transformers ...binding.Transformer) (binding.Message, error) {
+						return m, v2.NewHTTPRetriesResult(v2.NewHTTPResult(200, ""), 0, time.Now(), []protocol.Result{})
+					},
+				},
+				channel: &channel,
 			},
 		},
 	}
@@ -315,12 +347,17 @@ func TestDispatcher_dispatch(t *testing.T) {
 				DLX:               tt.fields.DLX,
 			}
 
+			client, err := v2.NewClient(tt.args.client)
+			if err != nil {
+				log.Fatalf("Failed to create protocol, %v", err)
+			}
+
 			if d.DLX {
-				if err = d.dispatchDLQ(tt.args.ctx, tt.args.msg, tt.args.ceClient); (err != nil) != tt.wantErr {
+				if err = d.dispatchDLQ(tt.args.ctx, tt.args.msg, client); (err != nil) != tt.wantErr {
 					t.Errorf("dispatchDLQ() error = %v, wantErr %v", err, tt.wantErr)
 				}
 			} else {
-				if err = d.dispatch(tt.args.ctx, tt.args.msg, tt.args.ceClient, tt.args.channel); (err != nil) != tt.wantErr {
+				if err = d.dispatch(tt.args.ctx, tt.args.msg, client, tt.args.channel); (err != nil) != tt.wantErr {
 					t.Errorf("dispatch() error = %v, wantErr %v", err, tt.wantErr)
 				}
 			}

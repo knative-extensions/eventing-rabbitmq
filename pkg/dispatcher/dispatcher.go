@@ -163,7 +163,7 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg amqp.Delivery, ceClient c
 		if err != nil {
 			logging.FromContext(ctx).Warn("failed to Nack event: ", err)
 		}
-		return fmt.Errorf("failed to Nack event: %s", err)
+		return nil
 	}
 
 	ctx, span := readSpan(ctx, msg)
