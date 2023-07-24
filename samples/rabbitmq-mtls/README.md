@@ -2,7 +2,7 @@
 
 ## Prerequisites and installation
 
-- Same as listed [here](../../docs/operator-based.md#prerequisites)
+- Same as listed [here](../../docs/prerequisites.md)
 - A working [RabbitMQ Cluster with TLS](https://www.rabbitmq.com/ssl.html)
 - The [RabbitMQ Topology Operator to trust the CA](https://www.rabbitmq.com/kubernetes/operator/tls-topology-operator.html)
 

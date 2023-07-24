@@ -2,7 +2,7 @@
 
 ## Prerequisites and installation
 
-- Same as listed [here](../../docs/operator-based.md#prerequisites)
+- Same as listed [here](../../docs/prerequisites.md)
 - A working RabbitMQ external instance exposed via an accessible IP/URL, an example on how to setup this can be found [here](./resources/rabbitmq-sample-deployment.yaml)
 
 ## Steps

@@ -2,7 +2,7 @@
 
 ## Prerequisites and installation
 
-Same as listed [here](../../docs/operator-based.md#prerequisites)
+Same as listed [here](../../docs/prerequisites.md)
 
 ## Steps
 

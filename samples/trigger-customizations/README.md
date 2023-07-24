@@ -2,7 +2,7 @@
 
 ## Prerequisites and installation
 
-- Follow instructions listed [here](../../../docs/operator-based.md#prerequisites)
+- Follow instructions listed [here](../../../docs/prerequisites.md)
 - Install [KO](https://github.com/google/ko). It is used to create the images that will be used in this demo
 - Set `KO_DOCKER_REPO` to an accessible container registry
 

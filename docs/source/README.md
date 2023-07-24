@@ -24,7 +24,7 @@ an existing RabbitMQ exchange, or create a new exchange if required.
 
 ### Install using the RabbitMQ Message Topology Operator and RabbitMQ Cluster Operator (Recommended)
 
-- Follow the [Broker's Prerequisites Section](../broker/README.md#prerequisites)
+- Follow the [Eventing RabbitMQ's Prerequisites Section](../prerequisites.md)
 
 - Before we can create the Knative Eventing Source, we first need to create a RabbitMQ Cluster:
 
