@@ -72,7 +72,7 @@ It demonstrates how failed events get sent to Dead Letter Sink while successfull
 - [event-display](https://github.com/knative/eventing/tree/main/cmd/event_display)
   which is a tool that logs the CloudEvent that it receives formatted nicely.
 
-- [RabbitMQ Broker](../../docs/broker.md)
+- [RabbitMQ Broker](../../docs/broker/README.md)
 
 ### Configuration
 
@@ -306,7 +306,7 @@ kubectl delete ns rabbitmq-mtls-sample
 
 ### Overview
 
-This demo will use a RabbitMQ Source to fetch messages from a RabbitMQ Exchange, convert them into [CloudEvents](https://cloudevents.io/) and send them to a [Sink](https://knative.dev/docs/eventing/sinks/#about-sinks). The complete list of the Source's config parameters are shown [here](../../docs/source.md)
+This demo will use a RabbitMQ Source to fetch messages from a RabbitMQ Exchange, convert them into [CloudEvents](https://cloudevents.io/) and send them to a [Sink](https://knative.dev/docs/eventing/sinks/#about-sinks). The complete list of the Source's config parameters are shown [here](../../docs/source/README.md)
 
 ### Components
 
@@ -315,7 +315,7 @@ This demo will use a RabbitMQ Source to fetch messages from a RabbitMQ Exchange,
 - [event-display](https://github.com/knative/eventing/tree/main/cmd/event_display)
   which is a tool that logs the CloudEvent that it receives formatted nicely.
 
-- [RabbitMQ Source](../../docs/source.md)
+- [RabbitMQ Source](../../docs/source/README.md)
 
 ### Configuration
 
