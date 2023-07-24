@@ -57,6 +57,7 @@ type Dispatcher struct {
 	WorkerCount       int
 	Reporter          dispatcher.StatsReporter
 	DLX               bool
+	DLXName           string
 }
 
 // ConsumeFromQueue consumes messages from the given message channel and queue.
@@ -158,13 +159,7 @@ func getStatus(ctx context.Context, result protocol.Result) (int, bool) {
 
 func (d *Dispatcher) dispatch(ctx context.Context, msg amqp.Delivery, ceClient cloudevents.Client, channel rabbit.RabbitMQChannelInterface) error {
 	start := time.Now()
-	if _, ok := msg.Headers["knativeerrordest"]; ok {
-		err := msg.Nack(false, false)
-		if err != nil {
-			logging.FromContext(ctx).Warn("failed to Nack event: ", err)
-		}
-		return nil
-	}
+	dlqExchange := d.DLXName
 
 	ctx, span := readSpan(ctx, msg)
 	defer span.End()
@@ -179,14 +174,13 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg amqp.Delivery, ceClient c
 
 			// Add headers as described here: https://knative.dev/docs/eventing/event-delivery/#configuring-channel-event-delivery
 			event.SetExtension("knativeerrordest", d.SubscriberURL)
-
-			if err = sendToRabbitMQ(channel, msg.Exchange, span, event); err != nil {
+			if err = sendToRabbitMQ(channel, dlqExchange, span, event); err != nil {
 				logging.FromContext(ctx).Warn("failed to send event: ", err)
 			}
 		}
 
-		if err = msg.Nack(false, false); err != nil {
-			logging.FromContext(ctx).Warn("failed to Nack event: ", err)
+		if err = msg.Ack(false); err != nil {
+			logging.FromContext(ctx).Warn("failed to Ack event: ", err)
 		}
 
 		return fmt.Errorf("failed parsing event: %s", err)
@@ -225,7 +219,7 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg amqp.Delivery, ceClient c
 		event.SetExtension("knativeerrorcode", statusCode)
 
 		// Queue the event into DLQ with the correct headers.
-		if err = sendToRabbitMQ(channel, msg.Exchange, span, event); err != nil {
+		if err = sendToRabbitMQ(channel, dlqExchange, span, event); err != nil {
 			logging.FromContext(ctx).Warn("failed to send event: ", err)
 		}
 		return fmt.Errorf("failed to deliver to %q", d.SubscriberURL)
@@ -248,7 +242,7 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg amqp.Delivery, ceClient c
 			event.SetExtension("knativeerrordata", result)
 
 			// Queue the event into DLQ with the correct headers.
-			if err = sendToRabbitMQ(channel, msg.Exchange, span, event); err != nil {
+			if err = sendToRabbitMQ(channel, dlqExchange, span, event); err != nil {
 				logging.FromContext(ctx).Warn("failed to send event: ", err)
 			}
 			return fmt.Errorf("failed to deliver to %q", d.BrokerIngressURL)
@@ -334,6 +328,11 @@ func (d *Dispatcher) dispatchDLQ(ctx context.Context, msg amqp.Delivery, ceClien
 }
 
 func sendToRabbitMQ(channel rabbit.RabbitMQChannelInterface, exchangeName string, span *trace.Span, event *cloudevents.Event) error {
+	// no dlq defined in the trigger nor the broker, return
+	if exchangeName == "" {
+		return nil
+	}
+
 	tp, ts := (&tracecontext.HTTPFormat{}).SpanContextToHeaders(span.SpanContext())
 	dc, err := channel.PublishWithDeferredConfirm(
 		exchangeName,
