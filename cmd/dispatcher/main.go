@@ -47,6 +47,7 @@ type envConfig struct {
 	SubscriberURL     string `envconfig:"SUBSCRIBER" required:"true"`
 	SubscriberCACerts string `envconfig:"SUBSCRIBER_CACERTS" required:"false"`
 	DLX               bool   `envconfig:"DLX" required:"false"`
+	DLXName           string `envconfig:"DLX_NAME" required:"false"`
 
 	// Number of concurrent messages in flight
 	Parallelism   int           `envconfig:"PARALLELISM" default:"1" required:"false"`
@@ -99,6 +100,7 @@ func main() {
 		WorkerCount:       env.Parallelism,
 		Reporter:          reporter,
 		DLX:               env.DLX,
+		DLXName:           env.DLXName,
 	}
 
 	var err error
