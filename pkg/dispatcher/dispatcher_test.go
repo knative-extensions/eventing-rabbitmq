@@ -202,7 +202,11 @@ func (m MockAcknowledger) Reject(tag uint64, requeue bool) error {
 }
 
 type MockClient struct {
-	Request func(ctx context.Context, m binding.Message, transformers ...binding.Transformer) (binding.Message, error)
+	request func(ctx context.Context, m binding.Message, transformers ...binding.Transformer) (binding.Message, error)
+}
+
+func (mock MockClient) Request(ctx context.Context, m binding.Message, transformers ...binding.Transformer) (binding.Message, error) {
+	return mock.request(ctx, m, transformers...)
 }
 
 type MockStatsReporter struct {
@@ -217,14 +221,14 @@ func (m MockStatsReporter) ReportEventDispatchTime(args *dispatcherstats.ReportA
 }
 
 func TestDispatcher_dispatch(t *testing.T) {
-	notifyCloseChannel := make(chan *amqp.Error)
-	consumeChannel := make(<-chan amqp.Delivery)
+	//notifyCloseChannel := make(chan *amqp.Error, 1)
+	//consumeChannel := make(chan amqp.Delivery, 1)
 	channel := rabbit.RabbitMQChannelMock{
-		NotifyCloseChannel: notifyCloseChannel,
-		ConsumeChannel:     consumeChannel,
+		//NotifyCloseChannel: notifyCloseChannel,
+		//ConsumeChannel:     consumeChannel,
 	}
 
-	go func() {
+	/*go func() {
 		for {
 			select {
 			case consumer := <-consumeChannel:
@@ -233,7 +237,7 @@ func TestDispatcher_dispatch(t *testing.T) {
 				log.Fatalf(notify.Error())
 			}
 		}
-	}()
+	}()*/
 
 	type fields struct {
 		BrokerIngressURL  string
@@ -302,7 +306,7 @@ func TestDispatcher_dispatch(t *testing.T) {
 					Body:         []byte(`{"specversion":"1.0","source":"valid-event","id":"valid-id","type":"valid-type"}`),
 				},
 				client: MockClient{
-					Request: func(ctx context.Context, m binding.Message, transformers ...binding.Transformer) (binding.Message, error) {
+					request: func(ctx context.Context, m binding.Message, transformers ...binding.Transformer) (binding.Message, error) {
 						return m, v2.NewHTTPRetriesResult(v2.NewHTTPResult(500, ""), 0, time.Now(), []protocol.Result{})
 					},
 				},
@@ -324,7 +328,7 @@ func TestDispatcher_dispatch(t *testing.T) {
 					Body:         []byte(`{"specversion":"1.0","source":"valid-event","id":"valid-id","type":"valid-type"}`),
 				},
 				client: MockClient{
-					Request: func(ctx context.Context, m binding.Message, transformers ...binding.Transformer) (binding.Message, error) {
+					request: func(ctx context.Context, m binding.Message, transformers ...binding.Transformer) (binding.Message, error) {
 						return m, v2.NewHTTPRetriesResult(v2.NewHTTPResult(200, ""), 0, time.Now(), []protocol.Result{})
 					},
 				},
