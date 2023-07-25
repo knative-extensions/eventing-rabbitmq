@@ -250,6 +250,7 @@ func TestDispatcher_dispatch(t *testing.T) {
 		WorkerCount       int
 		Reporter          dispatcherstats.StatsReporter
 		DLX               bool
+		DLXName           string
 	}
 	type args struct {
 		ctx     context.Context
@@ -296,6 +297,7 @@ func TestDispatcher_dispatch(t *testing.T) {
 			name: "invalid request",
 			fields: fields{
 				Reporter: &MockStatsReporter{},
+				DLXName:  "test",
 			},
 			args: args{
 				ctx: context.TODO(),
@@ -318,6 +320,7 @@ func TestDispatcher_dispatch(t *testing.T) {
 			name: "valid event",
 			fields: fields{
 				Reporter: &MockStatsReporter{},
+				DLXName:  "test",
 			},
 			args: args{
 				ctx: context.TODO(),
@@ -349,6 +352,7 @@ func TestDispatcher_dispatch(t *testing.T) {
 				WorkerCount:       tt.fields.WorkerCount,
 				Reporter:          tt.fields.Reporter,
 				DLX:               tt.fields.DLX,
+				DLXName:           tt.fields.DLXName,
 			}
 
 			client, err := v2.NewClient(tt.args.client)
