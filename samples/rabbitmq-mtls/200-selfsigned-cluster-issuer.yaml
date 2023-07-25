@@ -1,0 +1,40 @@
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-issuer
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: my-selfsigned-ca
+  namespace: rabbitmq-mtls-sample
+spec:
+  isCA: true
+  secretName: ca-secret
+  commonName: my-selfsigned-ca
+  subject:
+    localities:
+      - $$$$
+  dnsNames:
+    - rabbitmq.rabbitmq-mtls-sample.svc
+    - rabbitmq.rabbitmq-mtls-sample.svc.cluster.local
+  ipAddresses:
+    - 127.0.0.1
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: selfsigned-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: ca-issuer
+  namespace: cert-manager
+spec:
+  ca:
+    secretName: ca-secret

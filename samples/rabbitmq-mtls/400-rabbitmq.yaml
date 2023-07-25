@@ -4,23 +4,13 @@ kind: RabbitmqCluster
 metadata:
   name: rabbitmq
   namespace: rabbitmq-mtls-sample
+  annotations:
 spec:
   replicas: 1
   tls:
-    secretName: server-secret
     caSecretName: ca-secret
+    secretName: tls-secret
     disableNonTLSListeners: true
   rabbitmq:
     additionalConfig: |
       ssl_options.verify = verify_peer
-      ssl_options.fail_if_no_peer_cert = true
-  override:
-    statefulSet:
-      spec:
-        template:
-          spec:
-            containers:
-              - name: rabbitmq
-                env:
-                  - name: ERL_MAX_PORTS
-                    value: "4096"

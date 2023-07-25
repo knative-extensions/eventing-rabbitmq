@@ -6,6 +6,8 @@
 - A working [RabbitMQ Cluster with TLS](https://www.rabbitmq.com/ssl.html)
 - The [RabbitMQ Topology Operator to trust the CA](https://www.rabbitmq.com/kubernetes/operator/tls-topology-operator.html)
 
+_NOTE_: We currently don't support the `ssl_options.fail_if_no_peer_cert = true` option in the RabbitmqCluster aditional configuration.
+
 ## Steps
 
 ### Create a namespace
@@ -21,32 +23,73 @@ or
 kubectl create ns rabbitmq-mtls-sample
 ```
 
-### Update the RabbitMQ credentials Secret
-
-If you're not using the RabbitMQ Cluster Operator, you need to go through this step, ignore this otherwise
-This are the credentials from your external RabbitMQ instance
+### Create a SelfSigned ClusterIssuer and CA certificate using Cert Manager
 
 ```sh
-kubectl apply -f samples/rabbitmq-mtls-sample/200-secret.yaml
+kubectl apply -f samples/rabbitmq-mtls-sample/200-selfsigned-cluster-issuer.yaml
+```
+
+We'll need this secrets in the `rabbitmq-system` namespace:
+```sh
+kubectl get secret ca-secret --namespace=rabbitmq-mtls-sample -oyaml | grep -v '^\s*namespace:\s' | kubectl apply --namespace=rabbitmq-system -f -
+```
+
+Now let's create the certificate:
+```sh
+kubectl apply -f samples/rabbitmq-mtls-sample/300-certificate.yaml
+```
+
+### Create a RabbitMQ Cluster
+
+Create a RabbitMQ Cluster:
+
+```sh
+kubectl apply -f samples/quick-setup/400-rabbitmq.yaml
 ```
 or
-```sh
+```
 kubectl apply -f - << EOF
-apiVersion: v1
-kind: Secret
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
 metadata:
-  name: rabbitmq-secret-credentials
+  name: rabbitmq
   namespace: rabbitmq-mtls-sample
-# This is just a sample, don't use it this way in production
-stringData:
-  username: $EXTERNAL_RABBITMQ_USERNAME
-  password: $EXTERNAL_RABBITMQ_PASSWORD
-  uri: $EXTERNAL_RABBITMQ_URI:$HTTP_PORT # https://example.com:12345, example.com:12345, rabbitmqc.namespace:15672
-  port: $AMQP_PORT # 5672 default
+  annotations:
+spec:
+  replicas: 1
+  tls:
+    caSecretName: ca-secret
+    secretName: tls-secret
+    disableNonTLSListeners: true
+  rabbitmq:
+    additionalConfig: |
+      ssl_options.verify = verify_peer
 EOF
 ```
 
-After this two steps you are ready to the next steps:
+### Patch the RabbitMQ Topology Operator
+
+As explained here: [RabbitMQ Topology Operator to trust the CA](https://www.rabbitmq.com/kubernetes/operator/tls-topology-operator.html)
+
+TL;DR:
+```sh
+kubectl -n rabbitmq-system patch deployment messaging-topology-operator --patch "spec:
+  template:
+    spec:
+      containers:
+      - name: manager
+        volumeMounts:
+        - mountPath: /etc/ssl/certs/rabbitmq-ca.crt
+          name: rabbitmq-ca
+          subPath: ca.crt
+      volumes:
+      - name: rabbitmq-ca
+        secret:
+          defaultMode: 420
+          secretName: ca-secret"
+```
+
+After this steps you are ready to the next steps:
 - [Eventing RabbitMQ Broker Setup](#eventing-rabbitmq-broker-setup)
 - [Eventing RabbitMQ Source Setup](#eventing-rabbitmq-source-setup)
 
@@ -54,7 +97,7 @@ After this two steps you are ready to the next steps:
 
 ### Overview
 
-What this demo shows is how to connect to create a RabbitMQ Source that uses mTls for the communication with RabbitMQ instances.
+What this demo shows is how to connect to create a RabbitMQ Broker that uses mTls for the communication with RabbitMQ instances.
 It demonstrates how failed events get sent to Dead Letter Sink while successfully processed events do not.
 
 ### Components
@@ -300,6 +343,7 @@ Data,
 
 ```sh
 kubectl delete ns rabbitmq-mtls-sample
+kubectl delete secret ca-secret -n rabbitmq-system
 ```
 
 ## Eventing RabbitMQ Source Setup
@@ -415,4 +459,5 @@ Data,
 ```sh
 kubectl delete -f samples/rabbitmq-mtls-sample/source-files/200-source.yaml
 kubectl delete -f samples/rabbitmq-mtls-sample/
+kubectl delete secret ca-secret -n rabbitmq-system
 ```
