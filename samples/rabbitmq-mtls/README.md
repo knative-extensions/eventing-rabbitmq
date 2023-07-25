@@ -416,9 +416,8 @@ metadata:
 spec:
   rabbitmqClusterReference:
     namespace: rabbitmq-mtls-sample
-    connectionSecret: rabbitmq-secret-credentials
+    name: rabbitmq
   rabbitmqResourcesConfig:
-    predeclared: true
     exchangeName: "eventing-rabbitmq-source"
     queueName: "eventing-rabbitmq-source"
   sink:
