@@ -167,18 +167,7 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg amqp.Delivery, ceClient c
 	msgBinding := rabbit.NewMessageFromDelivery(ComponentName, "", "", &msg)
 	event, err := binding.ToEvent(cloudevents.WithEncodingBinary(ctx), msgBinding)
 	if err != nil {
-		if event == nil {
-			logging.FromContext(ctx).Error("failed parsing event: ", err)
-		} else {
-			logging.FromContext(ctx).Warn("failed parsing event, setting knativeerrordest header and NACK-ing and re-queueing: ", err)
-
-			// Add headers as described here: https://knative.dev/docs/eventing/event-delivery/#configuring-channel-event-delivery
-			event.SetExtension("knativeerrordest", d.SubscriberURL)
-			if err = sendToRabbitMQ(channel, dlqExchange, span, event); err != nil {
-				logging.FromContext(ctx).Warn("failed to send event: ", err)
-			}
-		}
-
+		logging.FromContext(ctx).Warn("failed parsing event: ", err)
 		if err = msg.Ack(false); err != nil {
 			logging.FromContext(ctx).Warn("failed to Ack event: ", err)
 		}
@@ -296,7 +285,7 @@ func (d *Dispatcher) dispatchDLQ(ctx context.Context, msg amqp.Delivery, ceClien
 	}
 
 	if !isSuccess {
-		logging.FromContext(ctx).Warnf("failed to deliver to %q", d.SubscriberURL)
+		logging.FromContext(ctx).Warnf("failed to deliver to %q %s", d.SubscriberURL, msg)
 		if err = msg.Ack(false); err != nil {
 			logging.FromContext(ctx).Warn("failed to Ack event: ", err)
 		}

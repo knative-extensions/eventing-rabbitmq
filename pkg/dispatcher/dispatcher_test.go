@@ -18,8 +18,6 @@ package dispatcher
 
 import (
 	"context"
-	v2 "github.com/cloudevents/sdk-go/v2"
-	"github.com/cloudevents/sdk-go/v2/binding"
 	"io"
 	"log"
 	"net/http"
@@ -27,6 +25,9 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	v2 "github.com/cloudevents/sdk-go/v2"
+	"github.com/cloudevents/sdk-go/v2/binding"
 
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
@@ -250,7 +251,6 @@ func TestDispatcher_dispatch(t *testing.T) {
 		WorkerCount       int
 		Reporter          dispatcherstats.StatsReporter
 		DLX               bool
-		DLXName           string
 	}
 	type args struct {
 		ctx     context.Context
@@ -264,20 +264,6 @@ func TestDispatcher_dispatch(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{
-			name:   "knativeerrordest is in header",
-			fields: fields{},
-			args: args{
-				ctx: context.TODO(),
-				msg: amqp.Delivery{
-					Acknowledger: &MockAcknowledger{},
-					ContentType:  "application/cloudevents+json",
-					Headers:      amqp.Table{"knativeerrordest": "some-destination"},
-				},
-				client:  MockClient{},
-				channel: &channel,
-			},
-		},
 		{
 			name:   "invalid event",
 			fields: fields{},
@@ -297,7 +283,6 @@ func TestDispatcher_dispatch(t *testing.T) {
 			name: "invalid request",
 			fields: fields{
 				Reporter: &MockStatsReporter{},
-				DLXName:  "test",
 			},
 			args: args{
 				ctx: context.TODO(),
@@ -320,7 +305,6 @@ func TestDispatcher_dispatch(t *testing.T) {
 			name: "valid event",
 			fields: fields{
 				Reporter: &MockStatsReporter{},
-				DLXName:  "test",
 			},
 			args: args{
 				ctx: context.TODO(),
@@ -352,7 +336,6 @@ func TestDispatcher_dispatch(t *testing.T) {
 				WorkerCount:       tt.fields.WorkerCount,
 				Reporter:          tt.fields.Reporter,
 				DLX:               tt.fields.DLX,
-				DLXName:           tt.fields.DLXName,
 			}
 
 			client, err := v2.NewClient(tt.args.client)
