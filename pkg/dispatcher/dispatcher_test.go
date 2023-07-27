@@ -222,23 +222,7 @@ func (m MockStatsReporter) ReportEventDispatchTime(args *dispatcherstats.ReportA
 }
 
 func TestDispatcher_dispatch(t *testing.T) {
-	//notifyCloseChannel := make(chan *amqp.Error, 1)
-	//consumeChannel := make(chan amqp.Delivery, 1)
-	channel := rabbit.RabbitMQChannelMock{
-		//NotifyCloseChannel: notifyCloseChannel,
-		//ConsumeChannel:     consumeChannel,
-	}
-
-	/*go func() {
-		for {
-			select {
-			case consumer := <-consumeChannel:
-				log.Fatalf("%+v", consumer)
-			case notify := <-notifyCloseChannel:
-				log.Fatalf(notify.Error())
-			}
-		}
-	}()*/
+	channel := rabbit.RabbitMQChannelMock{}
 
 	type fields struct {
 		BrokerIngressURL  string
@@ -302,9 +286,54 @@ func TestDispatcher_dispatch(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "invalid request dlq",
+			fields: fields{
+				Reporter: &MockStatsReporter{},
+				DLX:      true,
+			},
+			args: args{
+				ctx: context.TODO(),
+				msg: amqp.Delivery{
+					Acknowledger: &MockAcknowledger{},
+					ContentType:  "application/cloudevents+json",
+					Headers:      amqp.Table{},
+					Body:         []byte(`{"specversion":"1.0","source":"valid-event","id":"valid-id","type":"valid-type"}`),
+				},
+				client: MockClient{
+					request: func(ctx context.Context, m binding.Message, transformers ...binding.Transformer) (binding.Message, error) {
+						return m, v2.NewHTTPRetriesResult(v2.NewHTTPResult(500, ""), 0, time.Now(), []protocol.Result{})
+					},
+				},
+				channel: &channel,
+			},
+			wantErr: true,
+		},
+		{
 			name: "valid event",
 			fields: fields{
 				Reporter: &MockStatsReporter{},
+			},
+			args: args{
+				ctx: context.TODO(),
+				msg: amqp.Delivery{
+					Acknowledger: &MockAcknowledger{},
+					ContentType:  "application/cloudevents+json",
+					Headers:      amqp.Table{},
+					Body:         []byte(`{"specversion":"1.0","source":"valid-event","id":"valid-id","type":"valid-type"}`),
+				},
+				client: MockClient{
+					request: func(ctx context.Context, m binding.Message, transformers ...binding.Transformer) (binding.Message, error) {
+						return m, v2.NewHTTPRetriesResult(v2.NewHTTPResult(200, ""), 0, time.Now(), []protocol.Result{})
+					},
+				},
+				channel: &channel,
+			},
+		},
+		{
+			name: "valid event dlq",
+			fields: fields{
+				Reporter: &MockStatsReporter{},
+				DLX:      true,
 			},
 			args: args{
 				ctx: context.TODO(),
