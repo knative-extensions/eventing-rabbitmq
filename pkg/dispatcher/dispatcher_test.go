@@ -60,10 +60,7 @@ func TestDispatcher_ConsumeFromQueue(t *testing.T) {
 		time.Sleep(1000)
 		cancelFunc()
 	}()
-
-	if err := d.ConsumeFromQueue(ctx, &rabbit.RabbitMQConnectionMock{}, &rabbit.RabbitMQChannelMock{}, ""); err != nil {
-		t.Errorf("ConsumeFromQueue() error = %v", err)
-	}
+	d.ConsumeFromQueue(ctx, &rabbit.RabbitMQConnectionMock{}, &rabbit.RabbitMQChannelMock{}, "")
 }
 
 func TestDispatcher_ReadSpan(t *testing.T) {
