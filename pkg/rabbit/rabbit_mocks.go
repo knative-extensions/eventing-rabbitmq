@@ -61,6 +61,7 @@ func (rm *RabbitMQBadConnectionMock) NotifyClose(c chan *amqp.Error) chan *amqp.
 type RabbitMQChannelMock struct {
 	NotifyCloseChannel chan *amqp.Error
 	ConsumeChannel     <-chan amqp.Delivery
+	dc                 *amqp.DeferredConfirmation
 }
 
 func (rm *RabbitMQChannelMock) IsClosed() bool {
@@ -83,7 +84,7 @@ func (rm *RabbitMQChannelMock) Consume(a string, b string, c bool, d bool, e boo
 }
 
 func (rm *RabbitMQChannelMock) PublishWithDeferredConfirm(a string, b string, c bool, d bool, p amqp.Publishing) (*amqp.DeferredConfirmation, error) {
-	return &amqp.DeferredConfirmation{}, nil
+	return rm.dc, nil
 }
 
 func (rm *RabbitMQChannelMock) Confirm(a bool) error {
