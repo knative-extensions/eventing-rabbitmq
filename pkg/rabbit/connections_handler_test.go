@@ -62,6 +62,22 @@ func Test_InvalidSetupRabbitMQ(t *testing.T) {
 
 	rabbitMQHelper.Connection, _ = rabbitMQHelper.createConnection("amqp://localhost:5672/%2f", ValidDial)
 	rabbitMQHelper.Channel, _ = rabbitMQHelper.createChannel()
+	if rabbitMQHelper.Connection.IsClosed() {
+		t.Errorf("unexpected closed connection error")
+	}
+
+	if _, err := rabbitMQHelper.Channel.QueueInspect("test"); err != nil {
+		t.Errorf("unexpected queue inspect error")
+	}
+
+	if _, err := rabbitMQHelper.Channel.Consume("test", "test", true, true, true, true, amqp091.Table{}); err != nil {
+		t.Errorf("unexpected channel consume error")
+	}
+
+	if _, err := rabbitMQHelper.Channel.PublishWithDeferredConfirm("test", "test", true, true, amqp091.Publishing{}); err != nil {
+		t.Errorf("unexpected channel publish with deferred confirm error")
+	}
+
 	err = rabbitMQHelper.configConnectionAndChannel(InvalidConfigTest)
 	if err == nil || rabbitMQHelper.GetConnection() == nil || rabbitMQHelper.GetChannel() == nil {
 		t.Errorf("unexpected error == nil when setting up invalid config %s %s %s", rabbitMQHelper.GetConnection(), rabbitMQHelper.GetChannel(), err)
