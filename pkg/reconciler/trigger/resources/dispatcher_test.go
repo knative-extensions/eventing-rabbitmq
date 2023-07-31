@@ -88,6 +88,16 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 				withEnv(corev1.EnvVar{Name: "POD_NAME", Value: "testtrigger-dlx-dispatcher"}),
 				withDefaultResourceRequirements(),
 			),
+		}, {
+			name: "with dlx name",
+			args: dispatcherArgs(withDLXName("dlx-name")),
+			want: deployment(
+				deploymentNamed("testtrigger-dispatcher"),
+				withEnv(corev1.EnvVar{Name: "PARALLELISM", Value: "1"}),
+				withEnv(corev1.EnvVar{Name: "DLX_NAME", Value: "dlx-name"}),
+				withEnv(corev1.EnvVar{Name: "POD_NAME", Value: "testtrigger-dispatcher"}),
+				withDefaultResourceRequirements(),
+			),
 		},
 		{
 			name: "with parallelism",
@@ -309,6 +319,12 @@ func withDelivery(delivery *eventingduckv1.DeliverySpec) func(*DispatcherArgs) {
 
 func withDLX(args *DispatcherArgs) {
 	args.DLX = true
+}
+
+func withDLXName(name string) func(*DispatcherArgs) {
+	return func(args *DispatcherArgs) {
+		args.DLXName = name
+	}
 }
 
 func withParallelism(c string) func(*DispatcherArgs) {
