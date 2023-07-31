@@ -46,6 +46,8 @@ type envConfig struct {
 	BrokerIngressURL  string `envconfig:"BROKER_INGRESS_URL" required:"true"`
 	SubscriberURL     string `envconfig:"SUBSCRIBER" required:"true"`
 	SubscriberCACerts string `envconfig:"SUBSCRIBER_CACERTS" required:"false"`
+	DLX               bool   `envconfig:"DLX" required:"false"`
+	DLXName           string `envconfig:"DLX_NAME" required:"false"`
 
 	// Number of concurrent messages in flight
 	Parallelism   int           `envconfig:"PARALLELISM" default:"1" required:"false"`
@@ -97,11 +99,26 @@ func main() {
 		BackoffPolicy:     backoffPolicy,
 		WorkerCount:       env.Parallelism,
 		Reporter:          reporter,
+		DLX:               env.DLX,
+		DLXName:           env.DLXName,
 	}
 
 	var err error
 	rmqHelper := rabbit.NewRabbitMQConnectionHandler(1000, logger)
-	rmqHelper.Setup(ctx, rabbit.VHostHandler(env.RabbitURL, env.RabbitMQVhost), rabbit.ChannelQoS, rabbit.DialWrapper)
+	rmqHelper.Setup(ctx, rabbit.VHostHandler(
+		env.RabbitURL,
+		env.RabbitMQVhost),
+		func(c rabbit.RabbitMQConnectionInterface, ch rabbit.RabbitMQChannelInterface) error {
+			if err := rabbit.ChannelQoS(c, ch); err != nil {
+				return err
+			}
+
+			if err := rabbit.ChannelConfirm(c, ch); err != nil {
+				return err
+			}
+			return nil
+		},
+		rabbit.DialWrapper)
 	for {
 		if err = d.ConsumeFromQueue(ctx, rmqHelper.GetConnection(), rmqHelper.GetChannel(), env.QueueName); err != nil {
 			if errors.Is(err, context.Canceled) {

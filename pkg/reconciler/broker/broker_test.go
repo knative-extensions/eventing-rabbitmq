@@ -1543,6 +1543,7 @@ func createDispatcherDeployment(opts ...func(*resources.DispatcherArgs)) *appsv1
 		BrokerUrlSecretKey: "brokerURL",
 		BrokerIngressURL:   brokerAddress,
 		Subscriber:         DLSAddressable,
+		DLX:                true,
 	}
 	for _, o := range opts {
 		o(args)

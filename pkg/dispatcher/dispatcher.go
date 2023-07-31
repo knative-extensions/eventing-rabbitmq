@@ -18,6 +18,7 @@ package dispatcher
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -55,6 +56,8 @@ type Dispatcher struct {
 	BackoffPolicy     eventingduckv1.BackoffPolicyType
 	WorkerCount       int
 	Reporter          dispatcher.StatsReporter
+	DLX               bool
+	DLXName           string
 }
 
 // ConsumeFromQueue consumes messages from the given message channel and queue.
@@ -91,7 +94,7 @@ func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, conn rabbit.RabbitMQC
 	}
 
 	logging.FromContext(ctx).Info("rabbitmq receiver started, exit with CTRL+C")
-	logging.FromContext(ctx).Infow("Starting to process messages", zap.String("queue", queueName), zap.Int("workers", d.WorkerCount))
+	logging.FromContext(ctx).Infow("starting to process messages", zap.String("queue", queueName), zap.Int("workers", d.WorkerCount))
 
 	wg := &sync.WaitGroup{}
 	wg.Add(d.WorkerCount)
@@ -101,7 +104,11 @@ func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, conn rabbit.RabbitMQC
 		go func() {
 			defer wg.Done()
 			for msg := range workerQueue {
-				d.dispatch(ctx, msg, ceClient)
+				if d.DLX {
+					_ = d.dispatchDLQ(ctx, msg, ceClient)
+				} else {
+					_ = d.dispatch(ctx, msg, ceClient, channel)
+				}
 			}
 		}()
 	}
@@ -142,25 +149,117 @@ func getStatus(ctx context.Context, result protocol.Result) (int, bool) {
 			retry, _ := kncloudevents.SelectiveRetry(ctx, &http.Response{StatusCode: httpResult.StatusCode}, nil)
 			return httpResult.StatusCode, !retry
 		}
-		logging.FromContext(ctx).Warnf("Invalid result type, not HTTP Result: %v", retriesResult.Result)
+		logging.FromContext(ctx).Warnf("invalid result type, not HTTP Result: %v", retriesResult.Result)
 		return -1, false
 	}
 
-	logging.FromContext(ctx).Warnf("Invalid result type, not RetriesResult")
+	logging.FromContext(ctx).Warnf("invalid result type, not RetriesResult")
 	return -1, false
 }
 
-func (d *Dispatcher) dispatch(ctx context.Context, msg amqp.Delivery, ceClient cloudevents.Client) {
+func (d *Dispatcher) dispatch(ctx context.Context, msg amqp.Delivery, ceClient cloudevents.Client, channel rabbit.RabbitMQChannelInterface) error {
+	start := time.Now()
+	dlqExchange := d.DLXName
+
+	ctx, span := readSpan(ctx, msg)
+	defer span.End()
+
+	msgBinding := rabbit.NewMessageFromDelivery(ComponentName, "", "", &msg)
+	event, err := binding.ToEvent(cloudevents.WithEncodingBinary(ctx), msgBinding)
+	if err != nil {
+		logging.FromContext(ctx).Warn("failed parsing event: ", err)
+		if err = msg.Ack(false); err != nil {
+			logging.FromContext(ctx).Warn("failed to Ack event: ", err)
+		}
+
+		return fmt.Errorf("failed parsing event: %s", err)
+	}
+
+	if span.IsRecordingEvents() {
+		span.AddAttributes(client.EventTraceAttributes(event)...)
+	}
+
+	ctx = cloudevents.ContextWithTarget(ctx, d.SubscriberURL)
+	if d.BackoffPolicy == eventingduckv1.BackoffPolicyLinear {
+		ctx = cloudevents.ContextWithRetriesLinearBackoff(ctx, d.BackoffDelay, d.MaxRetries)
+	} else {
+		ctx = cloudevents.ContextWithRetriesExponentialBackoff(ctx, d.BackoffDelay, d.MaxRetries)
+	}
+
+	response, result := ceClient.Request(ctx, *event)
+	statusCode, isSuccess := getStatus(ctx, result)
+	if statusCode != -1 {
+		args := &dispatcher.ReportArgs{EventType: event.Type()}
+		if err = d.Reporter.ReportEventCount(args, statusCode); err != nil {
+			logging.FromContext(ctx).Errorf("something happened: %v", err)
+		}
+	}
+
+	if !isSuccess {
+		logging.FromContext(ctx).Warnf("failed to deliver to %q", d.SubscriberURL)
+
+		// We need to ack the original message.
+		if err = msg.Ack(false); err != nil {
+			logging.FromContext(ctx).Warn("failed to Ack event: ", err)
+		}
+
+		// Add headers as described here: https://knative.dev/docs/eventing/event-delivery/#configuring-channel-event-delivery
+		event.SetExtension("knativeerrordest", d.SubscriberURL)
+		event.SetExtension("knativeerrorcode", statusCode)
+
+		// Queue the event into DLQ with the correct headers.
+		if err = sendToRabbitMQ(channel, dlqExchange, span, event); err != nil {
+			logging.FromContext(ctx).Warn("failed to send event: ", err)
+		}
+		return fmt.Errorf("failed to deliver to %q", d.SubscriberURL)
+	} else if response != nil {
+		logging.FromContext(ctx).Infof("sending an event: %+v", response)
+		ctx = cloudevents.ContextWithTarget(ctx, d.BrokerIngressURL)
+		result = ceClient.Send(ctx, *response)
+		_, isSuccess = getStatus(ctx, result)
+		if !isSuccess {
+			logging.FromContext(ctx).Warnf("failed to deliver to %q", d.BrokerIngressURL)
+
+			// We need to ack the original message.
+			if err = msg.Ack(false); err != nil {
+				logging.FromContext(ctx).Warn("failed to Ack event: ", err)
+			}
+
+			// Add headers as described here: https://knative.dev/docs/eventing/event-delivery/#configuring-channel-event-delivery
+			event.SetExtension("knativeerrordest", d.SubscriberURL)
+			event.SetExtension("knativeerrorcode", statusCode)
+			event.SetExtension("knativeerrordata", result)
+
+			// Queue the event into DLQ with the correct headers.
+			if err = sendToRabbitMQ(channel, dlqExchange, span, event); err != nil {
+				logging.FromContext(ctx).Warn("failed to send event: ", err)
+			}
+			return fmt.Errorf("failed to deliver to %q", d.BrokerIngressURL)
+		}
+	}
+
+	if err = msg.Ack(false); err != nil {
+		logging.FromContext(ctx).Warn("failed to Ack event: ", err)
+	}
+	if statusCode != -1 {
+		args := &dispatcher.ReportArgs{EventType: event.Type()}
+		dispatchTime := time.Since(start)
+		_ = d.Reporter.ReportEventDispatchTime(args, statusCode, dispatchTime)
+	}
+	return nil
+}
+
+// Defaulting to Ack as this always hits the DLQ.
+func (d *Dispatcher) dispatchDLQ(ctx context.Context, msg amqp.Delivery, ceClient cloudevents.Client) error {
 	start := time.Now()
 	msgBinding := rabbit.NewMessageFromDelivery(ComponentName, "", "", &msg)
 	event, err := binding.ToEvent(cloudevents.WithEncodingBinary(ctx), msgBinding)
 	if err != nil {
-		logging.FromContext(ctx).Warn("failed creating event from delivery, err (NACK-ing and not re-queueing): ", err)
-		err = msg.Nack(false, false)
-		if err != nil {
-			logging.FromContext(ctx).Warn("failed to NACK event: ", err)
+		logging.FromContext(ctx).Warn("failed creating event from delivery, err: ", err)
+		if err = msg.Ack(false); err != nil {
+			logging.FromContext(ctx).Warn("failed to Ack event: ", err)
 		}
-		return
+		return fmt.Errorf("failed creating event from delivery, err: %s", err)
 	}
 
 	ctx, span := readSpan(ctx, msg)
@@ -180,41 +279,64 @@ func (d *Dispatcher) dispatch(ctx context.Context, msg amqp.Delivery, ceClient c
 	statusCode, isSuccess := getStatus(ctx, result)
 	if statusCode != -1 {
 		args := &dispatcher.ReportArgs{EventType: event.Type()}
-		if err := d.Reporter.ReportEventCount(args, statusCode); err != nil {
-			logging.FromContext(ctx).Errorf("Something happened: %v", err)
+		if err = d.Reporter.ReportEventCount(args, statusCode); err != nil {
+			logging.FromContext(ctx).Errorf("something happened: %v", err)
 		}
 	}
 
 	if !isSuccess {
-		logging.FromContext(ctx).Warnf("Failed to deliver to %q", d.SubscriberURL)
-		if err := msg.Nack(false, false); err != nil {
-			logging.FromContext(ctx).Warn("failed to NACK event: ", err)
+		logging.FromContext(ctx).Warnf("failed to deliver to %q %s", d.SubscriberURL, msg)
+		if err = msg.Ack(false); err != nil {
+			logging.FromContext(ctx).Warn("failed to Ack event: ", err)
 		}
-		return
+		return fmt.Errorf("failed to deliver to %q", d.SubscriberURL)
 	} else if response != nil {
 		logging.FromContext(ctx).Infof("Sending an event: %+v", response)
 		ctx = cloudevents.ContextWithTarget(ctx, d.BrokerIngressURL)
-		result := ceClient.Send(ctx, *response)
-		_, isSuccess := getStatus(ctx, result)
+		result = ceClient.Send(ctx, *response)
+		_, isSuccess = getStatus(ctx, result)
 		if !isSuccess {
-			logging.FromContext(ctx).Warnf("Failed to deliver to %q", d.BrokerIngressURL)
-			err = msg.Nack(false, false) // not multiple
-			if err != nil {
-				logging.FromContext(ctx).Warn("failed to NACK event: ", err)
+			logging.FromContext(ctx).Warnf("failed to deliver to %q", d.BrokerIngressURL)
+			if err = msg.Ack(false); err != nil {
+				logging.FromContext(ctx).Warn("failed to Ack event: ", err)
 			}
-			return
+			return fmt.Errorf("failed to deliver to %q", d.BrokerIngressURL)
 		}
 	}
 
 	err = msg.Ack(false)
 	if err != nil {
-		logging.FromContext(ctx).Warn("failed to ACK event: ", err)
+		logging.FromContext(ctx).Warn("failed to Ack event: ", err)
 	}
 	if statusCode != -1 {
 		args := &dispatcher.ReportArgs{EventType: event.Type()}
 		dispatchTime := time.Since(start)
 		_ = d.Reporter.ReportEventDispatchTime(args, statusCode, dispatchTime)
 	}
+	return nil
+}
+
+func sendToRabbitMQ(channel rabbit.RabbitMQChannelInterface, exchangeName string, span *trace.Span, event *cloudevents.Event) error {
+	// no dlq defined in the trigger nor the broker, return
+	if exchangeName == "" {
+		return nil
+	}
+
+	tp, ts := (&tracecontext.HTTPFormat{}).SpanContextToHeaders(span.SpanContext())
+	dc, err := channel.PublishWithDeferredConfirm(
+		exchangeName,
+		"",    // routing key
+		false, // mandatory
+		false, // immediate
+		*rabbit.CloudEventToRabbitMQMessage(event, tp, ts))
+	if err != nil {
+		return fmt.Errorf("failed to publish message: %w", err)
+	}
+
+	if ack := dc.Wait(); !ack {
+		return errors.New("failed to publish message: nacked")
+	}
+	return nil
 }
 
 func readSpan(ctx context.Context, msg amqp.Delivery) (context.Context, *trace.Span) {
