@@ -43,6 +43,7 @@ import (
 	triggerreconciler "knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1/trigger"
 	eventinglisters "knative.dev/eventing/pkg/client/listers/eventing/v1"
 	reconcilersource "knative.dev/eventing/pkg/reconciler/source"
+
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
@@ -204,7 +205,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		}
 		t.Status.MarkDeadLetterSinkResolvedSucceeded()
 		t.Status.DeadLetterSinkURI = deadLetterSinkAddressable.URL
-		_, err = r.reconcileDispatcherDeployment(ctx, t, deadLetterSinkAddressable, t.Spec.Delivery, true, rabbitmqVhost)
+		_, err = r.reconcileDispatcherDeployment(ctx, t, deadLetterSinkAddressable, t.Spec.Delivery, true, rabbitmqVhost, "")
 		if err != nil {
 			logging.FromContext(ctx).Error("Problem reconciling DLX dispatcher Deployment", zap.Error(err))
 			t.Status.MarkDependencyFailed("DeploymentFailure", "%v", err)
@@ -292,9 +293,10 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 	if delivery == nil {
 		// If trigger didn't but Broker did, use it instead.
 		delivery = broker.Spec.Delivery
+		dlxName = ptr.String(naming.BrokerExchangeName(broker, true))
 	}
 
-	_, err = r.reconcileDispatcherDeployment(ctx, t, subscriberAddressable, delivery, false, rabbitmqVhost)
+	_, err = r.reconcileDispatcherDeployment(ctx, t, subscriberAddressable, delivery, false, rabbitmqVhost, ptr.StringValue(dlxName))
 	if err != nil {
 		logging.FromContext(ctx).Error("Problem reconciling dispatcher Deployment", zap.Error(err))
 		t.Status.MarkDependencyFailed("DeploymentFailure", "%v", err)
@@ -381,7 +383,7 @@ func (r *Reconciler) reconcileDispatcherDeployment(
 	subscriberAddressable *duckv1.Addressable,
 	delivery *eventingduckv1.DeliverySpec,
 	dlq bool,
-	rabbitmqVhost string) (*v1.Deployment, error) {
+	rabbitmqVhost, dlxName string) (*v1.Deployment, error) {
 	rabbitmqSecret, err := r.getRabbitmqSecret(ctx, t)
 	if err != nil {
 		return nil, err
@@ -421,6 +423,7 @@ func (r *Reconciler) reconcileDispatcherDeployment(
 		BrokerIngressURL:     b.Status.Address.URL,
 		Subscriber:           subscriberAddressable,
 		DLX:                  dlq,
+		DLXName:              dlxName,
 		Delivery:             delivery,
 		Configs:              r.configs,
 		ResourceRequirements: resourceRequirements,

@@ -57,6 +57,7 @@ type DispatcherArgs struct {
 	BrokerIngressURL     *apis.URL
 	Subscriber           *duckv1.Addressable
 	DLX                  bool
+	DLXName              string
 	Configs              reconcilersource.ConfigAccessor
 	ResourceRequirements corev1.ResourceRequirements
 }
@@ -196,6 +197,20 @@ func MakeDispatcherDeployment(args *DispatcherArgs) *appsv1.Deployment {
 			corev1.EnvVar{
 				Name:  "SUBSCRIBER_CACERTS",
 				Value: *args.Subscriber.CACerts,
+			})
+	}
+	if args.DLX {
+		dispatcher.Env = append(dispatcher.Env,
+			corev1.EnvVar{
+				Name:  "DLX",
+				Value: "true",
+			})
+	}
+	if args.DLXName != "" {
+		dispatcher.Env = append(dispatcher.Env,
+			corev1.EnvVar{
+				Name:  "DLX_NAME",
+				Value: args.DLXName,
 			})
 	}
 	deployment := &appsv1.Deployment{

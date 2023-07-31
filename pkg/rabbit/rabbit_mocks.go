@@ -54,10 +54,6 @@ func (rm *RabbitMQBadConnectionMock) Close() error {
 	return nil
 }
 
-func (rm *RabbitMQBadConnectionMock) NotifyClose(c chan *amqp.Error) chan *amqp.Error {
-	return c
-}
-
 type RabbitMQChannelMock struct {
 	NotifyCloseChannel chan *amqp.Error
 	ConsumeChannel     <-chan amqp.Delivery

@@ -74,12 +74,13 @@ import (
 )
 
 const (
-	systemNS    = "knative-testing"
-	testNS      = "test-namespace"
-	otherNS     = "other-namespace"
-	brokerClass = "RabbitMQBroker"
-	brokerName  = "test-broker"
-	brokerUID   = "broker-test-uid"
+	systemNS      = "knative-testing"
+	testNS        = "test-namespace"
+	otherNS       = "other-namespace"
+	brokerClass   = "RabbitMQBroker"
+	brokerName    = "test-broker"
+	brokerUID     = "broker-test-uid"
+	brokerDLQName = "b.test-namespace.test-broker.dlx.broker-test-uid"
 
 	rabbitSecretName         = "test-broker-broker-rabbit"
 	rabbitMQBrokerName       = "rabbitbrokerhere"
@@ -270,7 +271,7 @@ func TestReconcile(t *testing.T) {
 					markReady(createBinding(true, false, "")),
 				},
 				WantCreates: []runtime.Object{
-					createDispatcherDeployment(false, ""),
+					createDispatcherDeployment(false, "", brokerDLQName),
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: triggerWithFilterReady(),
@@ -306,7 +307,7 @@ func TestReconcile(t *testing.T) {
 					markReady(createBinding(true, false, "")),
 				},
 				WantCreates: []runtime.Object{
-					createDispatcherDeploymentWithRetries(),
+					createDispatcherDeploymentWithRetries(brokerDLQName),
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: triggerWithFilterReady(),
@@ -325,7 +326,7 @@ func TestReconcile(t *testing.T) {
 					markReady(createBinding(true, false, "")),
 				},
 				WantCreates: []runtime.Object{
-					createDispatcherDeploymentWithRetries(),
+					createDispatcherDeploymentWithRetries(""),
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: triggerWithDeliverySpecReady(),
@@ -420,7 +421,7 @@ func TestReconcile(t *testing.T) {
 					markReady(createBinding(true, false, "")),
 				},
 				WantCreates: []runtime.Object{
-					createDispatcherDeployment(false, ""),
+					createDispatcherDeployment(false, "", brokerDLQName),
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: triggerWithFilterReady(),
@@ -441,7 +442,7 @@ func TestReconcile(t *testing.T) {
 					createRabbitMQCluster(""),
 				},
 				WantCreates: []runtime.Object{
-					createDispatcherDeployment(false, ""),
+					createDispatcherDeployment(false, "", brokerDLQName),
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: NewTrigger(triggerName, testNS, brokerName,
@@ -470,7 +471,7 @@ func TestReconcile(t *testing.T) {
 					createRabbitMQCluster(""),
 				},
 				WantCreates: []runtime.Object{
-					createDispatcherDeployment(false, ""),
+					createDispatcherDeployment(false, "", brokerDLQName),
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: NewTrigger(triggerName, testNS, brokerName,
@@ -499,7 +500,7 @@ func TestReconcile(t *testing.T) {
 					createRabbitMQCluster(""),
 				},
 				WantCreates: []runtime.Object{
-					createDispatcherDeployment(false, ""),
+					createDispatcherDeployment(false, "", brokerDLQName),
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: NewTrigger(triggerName, testNS, brokerName,
@@ -562,7 +563,7 @@ func TestReconcile(t *testing.T) {
 				},
 				WantErr: true,
 				WantCreates: []runtime.Object{
-					createDispatcherDeployment(false, ""),
+					createDispatcherDeployment(false, "", brokerDLQName),
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: NewTrigger(triggerName, testNS, brokerName,
@@ -599,7 +600,7 @@ func TestReconcile(t *testing.T) {
 				},
 				WantErr: true,
 				WantUpdates: []clientgotesting.UpdateActionImpl{{
-					Object: createDispatcherDeployment(false, ""),
+					Object: createDispatcherDeployment(false, "", brokerDLQName),
 				}},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: NewTrigger(triggerName, testNS, brokerName,
@@ -626,7 +627,7 @@ func TestReconcile(t *testing.T) {
 					createRabbitMQCluster(""),
 					markReady(createQueue(config, false, "")),
 					markReady(createBinding(false, false, "")),
-					createDispatcherDeployment(false, ""),
+					createDispatcherDeployment(false, "", brokerDLQName),
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: NewTrigger(triggerName, testNS, brokerName,
@@ -651,7 +652,7 @@ func TestReconcile(t *testing.T) {
 					createRabbitMQCluster(""),
 					markReady(createQueue(config, false, "")),
 					markReady(createBinding(true, false, "")),
-					createDispatcherDeployment(false, ""),
+					createDispatcherDeployment(false, "", brokerDLQName),
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: triggerWithFilterReady(),
@@ -821,7 +822,7 @@ func TestReconcile(t *testing.T) {
 				},
 				WantErr: false,
 				WantCreates: []runtime.Object{
-					createDispatcherDeployment(false, ""),
+					createDispatcherDeployment(false, "", brokerDLQName),
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: NewTrigger(triggerName, testNS, brokerName,
@@ -854,7 +855,7 @@ func TestReconcile(t *testing.T) {
 					createDispatcherDeploymentWithParallelism(),
 				},
 				WantUpdates: []clientgotesting.UpdateActionImpl{{
-					Object: createDispatcherDeployment(false, ""),
+					Object: createDispatcherDeployment(false, "", brokerDLQName),
 				}},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: NewTrigger(triggerName, testNS, brokerName,
@@ -883,11 +884,11 @@ func TestReconcile(t *testing.T) {
 					markReady(createQueue(config, false, "")),
 					markReady(createExchange()),
 					markReady(createBinding(true, true, "")),
-					createDispatcherDeployment(true, ""),
+					createDispatcherDeployment(true, "", brokerDLQName),
 					markReady(createPolicy()),
 				},
 				WantCreates: []runtime.Object{
-					createDispatcherDeployment(false, ""),
+					createDispatcherDeployment(false, "", brokerDLQName),
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 					Object: triggerWithFilterReady(),
@@ -947,7 +948,7 @@ func TestReconcile(t *testing.T) {
 		},
 		WantErr: false,
 		WantCreates: []runtime.Object{
-			createDispatcherDeployment(false, ""),
+			createDispatcherDeployment(false, "", brokerDLQName),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewTrigger(triggerName, testNS, brokerName,
@@ -984,7 +985,7 @@ func TestReconcile(t *testing.T) {
 		},
 		WantErr: false,
 		WantCreates: []runtime.Object{
-			createDispatcherDeployment(false, rabbitMQVhost),
+			createDispatcherDeployment(false, rabbitMQVhost, brokerDLQName),
 		},
 		WantUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: markReady(createQueue(configWithRabbitMQBrokerConfig(), false, rabbitMQVhost)),
@@ -1317,7 +1318,7 @@ func createRabbitMQBrokerConfig(vhost string) *v1alpha1.RabbitmqBrokerConfig {
 	}
 }
 
-func createDispatcherDeployment(dlq bool, vhost string) *appsv1.Deployment {
+func createDispatcherDeployment(dlq bool, vhost, dlxName string) *appsv1.Deployment {
 	args := &resources.DispatcherArgs{
 		Trigger: &eventingv1.Trigger{
 			ObjectMeta: metav1.ObjectMeta{
@@ -1337,6 +1338,7 @@ func createDispatcherDeployment(dlq bool, vhost string) *appsv1.Deployment {
 		BrokerIngressURL:   brokerAddress,
 		Subscriber:         subscriberAddressable,
 		DLX:                dlq,
+		DLXName:            dlxName,
 	}
 	return resources.MakeDispatcherDeployment(args)
 }
@@ -1360,6 +1362,7 @@ func createDispatcherDeploymentWithResourceRequirements(dlq bool) *appsv1.Deploy
 		BrokerIngressURL:   brokerAddress,
 		Subscriber:         subscriberAddressable,
 		DLX:                dlq,
+		DLXName:            brokerDLQName,
 		ResourceRequirements: corev1.ResourceRequirements{
 			Requests: corev1.ResourceList{
 				corev1.ResourceCPU:    resource.MustParse("500m"),
@@ -1372,7 +1375,7 @@ func createDispatcherDeploymentWithResourceRequirements(dlq bool) *appsv1.Deploy
 	return resources.MakeDispatcherDeployment(args)
 }
 
-func createDispatcherDeploymentWithRetries() *appsv1.Deployment {
+func createDispatcherDeploymentWithRetries(dlxName string) *appsv1.Deployment {
 	args := &resources.DispatcherArgs{
 		Trigger: &eventingv1.Trigger{
 			ObjectMeta: metav1.ObjectMeta{
@@ -1391,6 +1394,7 @@ func createDispatcherDeploymentWithRetries() *appsv1.Deployment {
 		BrokerIngressURL:   brokerAddress,
 		Subscriber:         subscriberAddressable,
 		Delivery:           &eventingduckv1.DeliverySpec{},
+		DLXName:            dlxName,
 	}
 	return resources.MakeDispatcherDeployment(args)
 }

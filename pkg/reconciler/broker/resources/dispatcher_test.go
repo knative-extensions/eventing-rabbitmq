@@ -73,6 +73,7 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 			BackoffDelay:  ptr.String("PT20S"),
 			BackoffPolicy: &linear,
 		},
+		DLX: true,
 	}
 
 	got := MakeDispatcherDeployment(args)
@@ -190,6 +191,9 @@ func TestMakeDispatcherDeployment(t *testing.T) {
 						}, {
 							Name:  "SUBSCRIBER_CACERTS",
 							Value: "test.cacert",
+						}, {
+							Name:  "DLX",
+							Value: "true",
 						}},
 						Ports: []corev1.ContainerPort{{
 							Name:          "http-metrics",
