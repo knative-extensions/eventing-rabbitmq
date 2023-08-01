@@ -5,16 +5,16 @@ SHELL := bash # we want bash behaviour in all shell invocations
 PLATFORM := $(shell uname)
 platform := $(shell echo $(PLATFORM) | tr A-Z a-z)
 ifeq ($(PLATFORM),Darwin)
-platform_alt = macOS
+	platform_alt = macOS
 else
-platform_alt = $(platform)
+	platform_alt = $(platform)
 endif
 
 ARCH := $(shell uname -m)
 ifeq ($(ARCH),x86_64)
-arch_alt = amd64
+	arch_alt = amd64
 else
-arch_alt = arm64
+	arch_alt = arm64
 endif
 
 # https://stackoverflow.com/questions/4842424/list-of-ansi-color-escape-sequences
@@ -51,9 +51,9 @@ envrc::
 ### DEPS #
 #
 ifeq ($(PLATFORM),Darwin)
-OPEN := open
+	OPEN := open
 else
-OPEN := xdg-open
+	OPEN := xdg-open
 endif
 
 GCLOUD_SDK_VERSION := 437.0.1
@@ -365,14 +365,23 @@ install-knative-eventing: | $(KUBECONFIG) $(KUBECTL) ## Install Knative Eventing
 	$(KUBECTL) wait --for=condition=available deploy/eventing-webhook --timeout=60s --namespace $(EVENTING_NAMESPACE)
 
 .PHONY: install
+ifeq ($(platform_alt)$(arch_alt),macOSarm64)
 install: | $(KUBECTL) $(KO) install-knative-eventing install-rabbitmq-cluster-operator install-rabbitmq-topology-operator ## Install local dev Knative Eventing RabbitMQ - manages all dependencies, including K8S components
-	$(KO) apply --local --platform=linux/amd64,linux/arm64 --filename config/broker && \
-    ./test/copy_images.sh
+	# When running on a Apple Silicon we need to build the correct image and push it to kind.
+	$(KO) apply --local --platform=linux/arm64 --filename config/broker && \
+	./test/copy_images.sh
 	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-broker-controller --timeout=60s --namespace $(EVENTING_NAMESPACE)
 	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-broker-webhook --timeout=60s --namespace $(EVENTING_NAMESPACE)
-	$(KO) apply --local --platform=linux/amd64,linux/arm64 --filename config/source && \
-    ./test/copy_images.sh
-	$(KUBECTL) wait --for=condition=available deploy/pingsource-mt-adapter --timeout=60s --namespace knative-eventing
+	$(KO) apply --local --platform=linux/arm64 --filename config/source && \
+	./test/copy_images.sh
+else
+install: | $(KUBECTL) $(KO) install-knative-eventing install-rabbitmq-cluster-operator install-rabbitmq-topology-operator ## Install local dev Knative Eventing RabbitMQ - manages all dependencies, including K8S components
+	$(KO) apply --filename config/broker
+	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-broker-controller --timeout=60s --namespace $(EVENTING_NAMESPACE)
+	$(KUBECTL) wait --for=condition=available deploy/rabbitmq-broker-webhook --timeout=60s --namespace $(EVENTING_NAMESPACE)
+	$(KO) apply --filename config/source
+	$(KUBECTL) wait --for=condition=available deploy/pingsource-mt-adapter --timeout=60s --namespace $(EVENTING_NAMESPACE)
+endif
 
 .PHONY: test-e2e-publish
 test-e2e-publish: | $(KUBECONFIG) ## Run TestKoPublish end-to-end tests  - assumes a K8S with all necessary components installed (Knative & RabbitMQ)
