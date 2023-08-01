@@ -11,7 +11,7 @@ components and running tests - everything done with `make`.
 ### Create environment
 
 ```
-make .envrc && . .envrc
+make .envrc && source .envrc
 ```
 
 Here we create our environment file containing patched `PATH`, various exports, etc.
