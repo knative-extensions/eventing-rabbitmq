@@ -214,33 +214,27 @@ func (a *Adapter) processMessages(wg *sync.WaitGroup, queue <-chan amqp.Delivery
 
 func (a *Adapter) postMessage(msg *amqp.Delivery) error {
 	a.logger.Info("target: " + a.sink.URL.String())
-	req, err := kncloudevents.NewCloudEventRequest(a.context, a.sink)
-	if err != nil {
-		return err
-	}
-
-	err = rabbit.ConvertMessageToHTTPRequest(
+	event, err := rabbit.ConvertDeliveryMessageToCloudevent(
 		a.context,
 		a.config.Name,
 		a.config.Namespace,
 		a.config.QueueName,
 		msg,
-		req.Request,
 		a.logger)
 	if err != nil {
-		a.logger.Error("error writing event to http", zap.Error(err))
+		a.logger.Error("error converting delivery message to event", zap.Error(err))
 		return err
 	}
 
-	res, err := req.SendWithRetries(retryConfig)
+	dispatchInfo, err := kncloudevents.SendEvent(a.context, *event, a.sink, kncloudevents.WithRetryConfig(retryConfig))
 	if err != nil {
 		a.logger.Error("error while sending the message", zap.Error(err))
 		return err
 	}
 
-	if res.StatusCode/100 != 2 {
-		a.logger.Error("unexpected status code", zap.Int("status code", res.StatusCode))
-		return fmt.Errorf("%d %s", res.StatusCode, nethttp.StatusText(res.StatusCode))
+	if dispatchInfo.ResponseCode/100 != 2 {
+		a.logger.Error("unexpected status code", zap.Int("status code", dispatchInfo.ResponseCode))
+		return fmt.Errorf("%d %s", dispatchInfo.ResponseCode, nethttp.StatusText(dispatchInfo.ResponseCode))
 	}
 
 	reportArgs := &source.ReportArgs{
@@ -249,6 +243,6 @@ func (a *Adapter) postMessage(msg *amqp.Delivery) error {
 		ResourceGroup: resourceGroup,
 	}
 
-	_ = a.reporter.ReportEventCount(reportArgs, res.StatusCode)
+	_ = a.reporter.ReportEventCount(reportArgs, dispatchInfo.ResponseCode)
 	return nil
 }
