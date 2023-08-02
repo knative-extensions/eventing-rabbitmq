@@ -100,7 +100,7 @@ func main() {
 		MaxIdleConnsPerHost: defaultMaxIdleConnectionsPerHost,
 	}
 	kncloudevents.ConfigureConnectionArgs(&connectionArgs)
-	receiver := kncloudevents.NewHTTPMessageReceiver(env.Port)
+	receiver := kncloudevents.NewHTTPEventReceiver(env.Port)
 	if err = receiver.StartListen(ctx, &env); err != nil {
 		logger.Fatalf("failed to start listen, %v", err)
 	}
