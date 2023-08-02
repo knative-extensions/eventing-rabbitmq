@@ -1,0 +1,16 @@
+# RabbitMQ cluster used by the Broker
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata:
+  name: rabbitmq
+  namespace: rabbitmq-mtls-sample
+  annotations:
+spec:
+  replicas: 1
+  tls:
+    caSecretName: ca-secret
+    secretName: tls-secret
+    disableNonTLSListeners: true
+  rabbitmq:
+    additionalConfig: |
+      ssl_options.verify = verify_peer

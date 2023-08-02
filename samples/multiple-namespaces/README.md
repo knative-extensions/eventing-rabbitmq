@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Same as listed [here](../../../docs/source.md#prerequisites)
+- Same as listed [here](../../docs/prerequisites.md)
 
 ## Overview
 

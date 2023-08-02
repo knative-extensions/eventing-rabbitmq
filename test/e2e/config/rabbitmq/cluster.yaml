@@ -30,6 +30,10 @@ spec:
       default_pass = guest
       loopback_users = none
     {{ end }}
+    {{ if .caSecretName }}
+    additionalConfig: |
+      ssl_options.verify = verify_peer
+    {{ end }}
   {{ if .rabbitmqServerImage }}
   image: {{ .rabbitmqServerImage }}
   {{ end }}
