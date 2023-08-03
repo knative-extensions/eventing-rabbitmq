@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	nethttp "net/http"
 	"strings"
 
 	"go.uber.org/zap"
@@ -30,7 +29,6 @@ import (
 	"github.com/cloudevents/sdk-go/v2/binding"
 	"github.com/cloudevents/sdk-go/v2/binding/format"
 	"github.com/cloudevents/sdk-go/v2/binding/spec"
-	"github.com/cloudevents/sdk-go/v2/protocol/http"
 	amqp "github.com/rabbitmq/amqp091-go"
 
 	"k8s.io/apimachinery/pkg/util/uuid"
@@ -61,12 +59,11 @@ type Message struct {
 var _ binding.Message = (*Message)(nil)
 var _ binding.MessageMetadataReader = (*Message)(nil)
 
-func ConvertMessageToHTTPRequest(
+func ConvertDeliveryMessageToCloudevent(
 	ctx context.Context,
 	sourceName, namespace, queueName string,
 	msg *amqp.Delivery,
-	req *nethttp.Request,
-	logger *zap.Logger) error {
+	logger *zap.Logger) (*cloudevents.Event, error) {
 	msgBinding := NewMessageFromDelivery(sourceName, namespace, queueName, msg)
 	defer func() {
 		err := msgBinding.Finish(nil)
@@ -74,18 +71,19 @@ func ConvertMessageToHTTPRequest(
 			logger.Error("Something went wrong while trying to finalizing the message", zap.Error(err))
 		}
 	}()
+
 	// if the msg is a cloudevent send it as it is to http
 	if msgBinding.ReadEncoding() != binding.EncodingUnknown {
-		return http.WriteRequest(cloudevents.WithEncodingBinary(ctx), msgBinding, req)
+		return binding.ToEvent(ctx, msgBinding)
 	}
 	// if the rabbitmq msg is not a cloudevent transform it into one
-	event := cloudevents.NewEvent()
-	err := ConvertToCloudEvent(&event, msg, namespace, sourceName, queueName)
+	event, err := ConvertToCloudEvent(msg, namespace, sourceName, queueName)
 	if err != nil {
 		logger.Error("Error converting RabbitMQ msg to CloudEvent", zap.Error(err))
-		return err
+		return nil, fmt.Errorf("failed to converting RabbitMQ msg to CloudEvent: %w", err)
 	}
-	return http.WriteRequest(cloudevents.WithEncodingBinary(ctx), binding.ToMessage(&event), req)
+
+	return event, nil
 }
 
 // NewMessageFromDelivery returns a binding.Message that holds the provided RabbitMQ Message.
@@ -193,26 +191,26 @@ func (m *Message) Finish(error) error {
 	return nil
 }
 
-func ConvertToCloudEvent(event *cloudevents.Event, msg *amqp.Delivery, namespace, sourceName, queueName string) error {
+func ConvertToCloudEvent(msg *amqp.Delivery, namespace, sourceName, queueName string) (*cloudevents.Event, error) {
+	event := cloudevents.NewEvent()
+
 	if msg.MessageId != "" {
 		event.SetID(msg.MessageId)
 	} else {
 		event.SetID(string(uuid.NewUUID()))
 	}
-	if event.Type() == "" {
-		event.SetType(sourcesv1alpha1.RabbitmqEventType)
-	}
-	if event.Source() == "" {
-		event.SetSource(sourcesv1alpha1.RabbitmqEventSource(namespace, sourceName, queueName))
-	}
 
+	event.SetType(sourcesv1alpha1.RabbitmqEventType)
+	event.SetSource(sourcesv1alpha1.RabbitmqEventSource(namespace, sourceName, queueName))
 	event.SetSubject(event.ID())
 	event.SetTime(msg.Timestamp)
+
 	err := event.SetData(msg.ContentType, msg.Body)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("failed to set event data: %w", err)
 	}
-	return nil
+
+	return &event, nil
 }
 
 func CloudEventToRabbitMQMessage(event *cloudevents.Event, tp, ts string) *amqp.Publishing {

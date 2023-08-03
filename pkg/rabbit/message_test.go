@@ -333,11 +333,10 @@ func TestProtocol_ConvertToCloudEvent(t *testing.T) {
 			tt := tt
 			t.Parallel()
 
-			event := cloudevents.NewEvent()
-			got := ConvertToCloudEvent(&event, tt.delivery, namespace, sourceName, queueName)
+			event, err := ConvertToCloudEvent(tt.delivery, namespace, sourceName, queueName)
 			event.SetTime(msgTime)
-			if got != tt.err {
-				t.Errorf("Unexpected error converting msg want:\n%v\ngot:\n%v", tt.err, got)
+			if err != tt.err {
+				t.Errorf("Unexpected error converting msg want:\n%v\ngot:\n%v", tt.err, err)
 			}
 
 			want := cloudevents.NewEvent()
