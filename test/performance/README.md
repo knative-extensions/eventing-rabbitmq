@@ -5,7 +5,7 @@
 - GKE 1.21 with autoscaling
 - kubectl 1.21
 - [ko v0.11.2](https://github.com/google/ko/releases/tag/v0.11.2) + [`KO_DOCKER_REPO`](https://github.com/knative/eventing/blob/main/DEVELOPMENT.md#setup-your-environment)
-- A git clone of [knative-sandbox/eventing-rabbitmq](https://github.com/knative-sandbox/eventing-rabbitmq)
+- A git clone of [knative-extensions/eventing-rabbitmq](https://github.com/knative-extensions/eventing-rabbitmq)
 
 
 ## Install Knative Serving
@@ -48,11 +48,11 @@ curl -sL https://github.com/jetstack/cert-manager/releases/download/v1.8.0/cert-
 kubectl apply --filename https://github.com/rabbitmq/messaging-topology-operator/releases/download/v1.6.0/messaging-topology-operator-with-certmanager.yaml
 
 
-# Installing Eventing RabbitMQ Broker ... https://github.com/knative-sandbox/eventing-rabbitmq/releases
-kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/download/knative-v1.5.0/rabbitmq-broker.yaml
+# Installing Eventing RabbitMQ Broker ... https://github.com/knative-extensions/eventing-rabbitmq/releases
+kubectl apply --filename https://github.com/knative-extensions/eventing-rabbitmq/releases/download/knative-v1.5.0/rabbitmq-broker.yaml
 
-# Installing Eventing RabbitMQ Source ... https://github.com/knative-sandbox/eventing-rabbitmq/releases
-kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/download/knative-v1.5.0/rabbitmq-source.yaml
+# Installing Eventing RabbitMQ Source ... https://github.com/knative-extensions/eventing-rabbitmq/releases
+kubectl apply --filename https://github.com/knative-extensions/eventing-rabbitmq/releases/download/knative-v1.5.0/rabbitmq-source.yaml
 ```
 
 ## Broker Benchmarks
@@ -60,7 +60,7 @@ kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/re
 In case you want to test the latest dev version of the eventing-rabbitmq Broker, follow these steps:
 
 ```sh
-git clone https://github.com/knative-sandbox/eventing-rabbitmq $GOPATH/src/knative.dev/eventing-rabbitmq
+git clone https://github.com/knative-extensions/eventing-rabbitmq $GOPATH/src/knative.dev/eventing-rabbitmq
 cd $GOPATH/src/knative-dev/eventing-rabbitmq
 ko apply --filename config/broker
 ```
@@ -70,7 +70,7 @@ ko apply --filename config/broker
 ```sh
 cd $GOPATH/src/knative.dev/eventing-rabbitmq
 # If this directory is missing, run:
-# git clone https://github.com/knative-sandbox/eventing-rabbitmq $GOPATH/src/knative.dev/eventing-rabbitmq
+# git clone https://github.com/knative-extensions/eventing-rabbitmq $GOPATH/src/knative.dev/eventing-rabbitmq
 export PARALLELISM=100
 envsubst < test/performance/source-setup/100-broker-perf-setup.yaml | ko apply --filename -
 kubectl wait --for=condition=AllReplicasReady=true rmq/rabbitmq-test-cluster --timeout=10m --namespace perf-eventing
@@ -119,7 +119,7 @@ kubectl delete --filename test/performance/broker-setup/100-broker-perf-setup.ya
 In case you want to test the latest dev version of the eventing-rabbitmq Source, follow these steps:
 
 ```sh
-git clone https://github.com/knative-sandbox/eventing-rabbitmq $GOPATH/src/knative.dev/eventing-rabbitmq
+git clone https://github.com/knative-extensions/eventing-rabbitmq $GOPATH/src/knative.dev/eventing-rabbitmq
 cd $GOPATH/src/knative-dev/eventing-rabbitmq
 ko apply --filename config/source
 ```
