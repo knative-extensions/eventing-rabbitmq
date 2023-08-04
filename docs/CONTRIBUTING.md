@@ -15,7 +15,7 @@ You need to install:
 - [`docker`](https://www.docker.com/)
 - [`Go`](https://golang.org/)
     - check
-      [go \<version\>](https://github.com/knative-sandbox/eventing-rabbitmq/blob/master/go.mod)
+      [go \<version\>](https://github.com/knative-extensions/eventing-rabbitmq/blob/master/go.mod)
       for the required Go version used in this project
 
 If a specific version of a requirement is not explicitly defined above, any version will work during development.
@@ -30,7 +30,7 @@ To check out this repository:
 ```shell
 git clone git@github.com:${YOUR_GITHUB_USERNAME}/eventing-rabbitmq.git
 cd eventing-rabbitmq
-git remote add upstream https://github.com/knative-sandbox/eventing-rabbitmq.git
+git remote add upstream https://github.com/knative-extensions/eventing-rabbitmq.git
 git remote set-url --push upstream no_push
 ```
 

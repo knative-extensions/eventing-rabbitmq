@@ -104,7 +104,7 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 	// Default requirements only if none of the requirements are set through annotations
 	if len(args.ResourceRequirements.Limits) == 0 && len(args.ResourceRequirements.Requests) == 0 {
 		// This resource requests and limits comes from performance testing 1500msgs/s with a parallelism of 1000
-		// more info in this issue: https://github.com/knative-sandbox/eventing-rabbitmq/issues/703
+		// more info in this issue: https://github.com/knative-extensions/eventing-rabbitmq/issues/703
 		args.ResourceRequirements = corev1.ResourceRequirements{
 			Requests: corev1.ResourceList{
 				corev1.ResourceCPU:    resource.MustParse("50m"),
@@ -172,7 +172,7 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 						ImagePullPolicy: "IfNotPresent",
 						Env:             env,
 						// This resource requests and limits comes from performance testing 1500msgs/s with a parallelism of 1000
-						// more info in this issue: https://github.com/knative-sandbox/eventing-rabbitmq/issues/703
+						// more info in this issue: https://github.com/knative-extensions/eventing-rabbitmq/issues/703
 						Resources: args.ResourceRequirements,
 						SecurityContext: &corev1.SecurityContext{
 							AllowPrivilegeEscalation: ptr.Bool(false),

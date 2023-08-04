@@ -1,7 +1,7 @@
 # Eventing RabbitMQ Source
 
 The RabbitMQ source translates messages on a RabbitMQ exchange to CloudEvents
-based on the [RabbitMQ Protocol Binding for CloudEvents Spec](https://github.com/knative-sandbox/eventing-rabbitmq/blob/main/cloudevents-protocol-spec/spec.md),
+based on the [RabbitMQ Protocol Binding for CloudEvents Spec](https://github.com/knative-extensions/eventing-rabbitmq/blob/main/cloudevents-protocol-spec/spec.md),
 which can then be used with Knative Eventing over HTTP. The source can bind to
 an existing RabbitMQ exchange, or create a new exchange if required.
 
@@ -50,16 +50,16 @@ EOF
 
 ## Installation
 
-You can install the latest released version of the [Knative RabbitMQ Source](https://github.com/knative-sandbox/eventing-rabbitmq/releases/):
+You can install the latest released version of the [Knative RabbitMQ Source](https://github.com/knative-extensions/eventing-rabbitmq/releases/):
 
 ```shell
-kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/latest/download/rabbitmq-source.yaml
+kubectl apply --filename https://github.com/knative-extensions/eventing-rabbitmq/releases/latest/download/rabbitmq-source.yaml
 ```
 
 If you wanted to install a specific version, e.g., v0.25.0, you can run:
 
 ```shell
-kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/download/v0.25.0/rabbitmq-source.yaml
+kubectl apply --filename https://github.com/knative-extensions/eventing-rabbitmq/releases/download/v0.25.0/rabbitmq-source.yaml
 ```
 
 You can install a nightly version:
@@ -260,7 +260,7 @@ Upgrade eventing-rabbitmq one minor version at a time while following any migrat
 Components and resources can be applied in a similar fashion to installation:
 
 ```shell
-kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/download/knative-v1.4.0/rabbitmq-source.yaml
+kubectl apply --filename https://github.com/knative-extensions/eventing-rabbitmq/releases/download/knative-v1.4.0/rabbitmq-source.yaml
 ```
 
 ## Uninstall
@@ -270,7 +270,7 @@ kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/re
 Use `kubectl delete --filename <installation-file>` to remove the components installed during [Installation](#installation). For example:
 
 ```shell
-kubectl delete --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/download/v0.25.0/rabbitmq-source.yaml
+kubectl delete --filename https://github.com/knative-extensions/eventing-rabbitmq/releases/download/v0.25.0/rabbitmq-source.yaml
 ```
 
 If `ko` was used to install, can also be used for uninstallation:

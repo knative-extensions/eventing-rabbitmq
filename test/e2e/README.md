@@ -4,7 +4,7 @@ The following assumes some knowledge on running Knative tests. If this is your f
 
 ## Debugging a Failed Test
 
-Each e2e test will run in its own namespace, and the tests clean themselves up when they finish. To keep test namespaces around, simply comment out the `env.Finish()` [line](https://github.com/knative-sandbox/eventing-rabbitmq/blob/main/test/e2e/main_test.go#L164) of the test you wish to focus on. Make sure you delete the namespaces when you're done.
+Each e2e test will run in its own namespace, and the tests clean themselves up when they finish. To keep test namespaces around, simply comment out the `env.Finish()` [line](https://github.com/knative-extensions/eventing-rabbitmq/blob/main/test/e2e/main_test.go#L164) of the test you wish to focus on. Make sure you delete the namespaces when you're done.
 
 ## Profiling RabbitMQ
 

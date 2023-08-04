@@ -19,16 +19,16 @@ RabbitMQ *is a Messaging Broker* - an intermediary for messaging. It gives your 
 
 ### Install Eventing RabbitMQ Broker
 
-Install the latest version of the [Operator based Knative RabbitMQ Broker](https://github.com/knative-sandbox/eventing-rabbitmq/releases/):
+Install the latest version of the [Operator based Knative RabbitMQ Broker](https://github.com/knative-extensions/eventing-rabbitmq/releases/):
 
 ```shell
-kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/latest/download/rabbitmq-broker.yaml
+kubectl apply --filename https://github.com/knative-extensions/eventing-rabbitmq/releases/latest/download/rabbitmq-broker.yaml
 ```
 
 Or install a specific version, e.g., v0.25.0, run:
 
 ```shell
-kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/download/v0.25.0/rabbitmq-broker.yaml
+kubectl apply --filename https://github.com/knative-extensions/eventing-rabbitmq/releases/download/v0.25.0/rabbitmq-broker.yaml
 ```
 
 Or install a nightly version:
@@ -51,7 +51,7 @@ Follow the [Broker-Trigger quick setup](../../samples/broker-trigger/quick-setup
 
 To get autoscaling (scale to zero as well as up from 0), you can also optionally
 install
-[KEDA based autoscaler](https://github.com/knative-sandbox/eventing-autoscaler-keda).
+[KEDA based autoscaler](https://github.com/knative-extensions/eventing-autoscaler-keda).
 
 ### Trigger Parallelism Count
 Trigger has a configurable annotation `rabbitmq.eventing.knative.dev/parallelism`. If set to `n`, the trigger will create `n` workers to consume messages off the queue and dispatch to the sink.
@@ -126,7 +126,7 @@ The following outlines some of the issues that users can encounter with eventing
    - Ensure RabbitMQ server is reachable.
    - Check resources created by Broker/Trigger such as Queues, Exchanges, Policies etc.
 
-For reference, the ingress and dispatcher pods' code can be found [here](../../cmd/ingress/main.go) and [here](../../cmd/dispatcher/main.go) respectively. If an undocumented issue is encountered, please open an issue [here](https://github.com/knative-sandbox/eventing-rabbitmq/issues/new/choose)
+For reference, the ingress and dispatcher pods' code can be found [here](../../cmd/ingress/main.go) and [here](../../cmd/dispatcher/main.go) respectively. If an undocumented issue is encountered, please open an issue [here](https://github.com/knative-extensions/eventing-rabbitmq/issues/new/choose)
 
 Consult the [RabbitMQ Troubleshooting Guide](https://www.rabbitmq.com/troubleshooting.html) for any RabbitMQ specific issues that may arise.
 
@@ -148,7 +148,7 @@ steps for upgrading Custom Resource Definitions (CRDs) and only upgrade one mino
 
 Upgrade eventing-rabbitmq by applying the newer version:
 ```shell
-kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/download/knative-v1.4.0/rabbitmq-broker.yaml
+kubectl apply --filename https://github.com/knative-extensions/eventing-rabbitmq/releases/download/knative-v1.4.0/rabbitmq-broker.yaml
 ```
 
 ## Uninstall
@@ -156,7 +156,7 @@ kubectl apply --filename https://github.com/knative-sandbox/eventing-rabbitmq/re
 Use `kubectl delete --filename <installation-file>` to remove the components installed during [Installation](#install-eventing-rabbitmq-broker). For example:
 
 ```shell
-kubectl delete --filename https://github.com/knative-sandbox/eventing-rabbitmq/releases/download/v0.25.0/rabbitmq-broker.yaml
+kubectl delete --filename https://github.com/knative-extensions/eventing-rabbitmq/releases/download/v0.25.0/rabbitmq-broker.yaml
 ```
 
 If `ko` was used to install, can also be used for uninstallation:
