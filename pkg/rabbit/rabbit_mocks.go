@@ -86,7 +86,7 @@ func (rm *RabbitMQChannelMock) Confirm(a bool) error {
 	return nil
 }
 
-func (rm *RabbitMQChannelMock) QueueInspect(string) (amqp.Queue, error) {
+func (rm *RabbitMQChannelMock) QueueDeclarePassive(name string, durable, autoDelete, exclusive, noWait bool, args amqp.Table) (amqp.Queue, error) {
 	return amqp.Queue{}, nil
 }
 

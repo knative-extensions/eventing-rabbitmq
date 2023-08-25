@@ -66,7 +66,7 @@ func Test_InvalidSetupRabbitMQ(t *testing.T) {
 		t.Errorf("unexpected closed connection error")
 	}
 
-	if _, err := rabbitMQHelper.Channel.QueueInspect("test"); err != nil {
+	if _, err := rabbitMQHelper.Channel.QueueDeclarePassive("test", true, true, true, true, amqp091.Table{}); err != nil {
 		t.Errorf("unexpected queue inspect error")
 	}
 
