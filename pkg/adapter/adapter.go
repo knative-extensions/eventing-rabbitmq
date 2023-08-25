@@ -159,7 +159,14 @@ func (a *Adapter) PollForMessages(stopCh <-chan struct{}) error {
 
 	for {
 		if channel := a.rmqHelper.GetChannel(); channel != nil {
-			if queue, err = channel.QueueInspect(a.config.QueueName); err == nil {
+			if queue, err = channel.QueueDeclarePassive(
+				a.config.QueueName,
+				true,
+				false,
+				false,
+				false,
+				amqp.Table{},
+			); err == nil {
 				connNotifyChannel, chNotifyChannel := a.rmqHelper.GetConnection().NotifyClose(make(chan *amqp.Error)), channel.NotifyClose(make(chan *amqp.Error))
 				if msgs, err = a.ConsumeMessages(&queue, channel, logger); err == nil {
 				loop:

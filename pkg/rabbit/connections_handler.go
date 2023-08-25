@@ -51,7 +51,7 @@ type RabbitMQChannelInterface interface {
 	Confirm(bool) error
 	Consume(string, string, bool, bool, bool, bool, amqp091.Table) (<-chan amqp091.Delivery, error)
 	PublishWithDeferredConfirm(string, string, bool, bool, amqp091.Publishing) (*amqp091.DeferredConfirmation, error)
-	QueueInspect(string) (amqp091.Queue, error)
+	QueueDeclarePassive(string, bool, bool, bool, bool, amqp091.Table) (amqp091.Queue, error)
 }
 
 type RabbitMQConnectionHandler struct {
