@@ -21,15 +21,15 @@ require (
 	k8s.io/client-go v0.26.5
 	k8s.io/code-generator v0.26.5
 	k8s.io/kube-openapi v0.0.0-20221012153701-172d655c2280
-	knative.dev/eventing v0.38.1-0.20230822134255-a2e2aa3d515d
+	knative.dev/eventing v0.38.1-0.20230831151434-10e25b91d471
 	knative.dev/hack v0.0.0-20230818155117-9cc05a31e8c0
-	knative.dev/pkg v0.0.0-20230821102121-81e4ee140363
-	knative.dev/reconciler-test v0.0.0-20230817080342-39774f133674
+	knative.dev/pkg v0.0.0-20230829134737-fcccb4e1a0a4
+	knative.dev/reconciler-test v0.0.0-20230901013135-51e7751247b7
 	sigs.k8s.io/controller-runtime v0.14.6
 )
 
 require (
-	github.com/google/uuid v1.3.0
+	github.com/google/uuid v1.3.1
 	github.com/rickb777/date v1.13.0
 	k8s.io/utils v0.0.0-20230505201702-9f6742963106
 )
@@ -82,7 +82,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/openzipkin/zipkin-go v0.4.1 // indirect
+	github.com/openzipkin/zipkin-go v0.4.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.16.0 // indirect
 	github.com/prometheus/client_model v0.4.0 // indirect
@@ -110,7 +110,7 @@ require (
 	golang.org/x/text v0.12.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.12.0 // indirect
-	gomodules.xyz/jsonpatch/v2 v2.3.0 // indirect
+	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	gonum.org/v1/gonum v0.0.0-20190331200053-3d26580ed485 // indirect
 	google.golang.org/api v0.138.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
