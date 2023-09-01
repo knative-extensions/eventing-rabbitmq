@@ -27,6 +27,8 @@ import (
 	"go.uber.org/zap"
 )
 
+const reconnectionTriesThreshold = 6
+
 type RabbitMQConnectionsHandlerInterface interface {
 	GetConnection() RabbitMQConnectionInterface
 	GetChannel() RabbitMQChannelInterface
@@ -56,6 +58,7 @@ type RabbitMQChannelInterface interface {
 
 type RabbitMQConnectionHandler struct {
 	firstSetup    bool
+	reconTries    int
 	cycleDuration time.Duration
 	Connection    RabbitMQConnectionWrapperInterface
 	Channel       RabbitMQChannelInterface
@@ -142,10 +145,16 @@ func (r *RabbitMQConnectionHandler) createConnectionAndChannel(
 		}
 		// setup completed successfully
 		if err == nil {
+			r.reconTries = 0
 			break
 		}
 		r.logger.Error(err)
 		r.closeRabbitMQConnections()
+
+		r.reconTries += 1
+		if r.reconTries > reconnectionTriesThreshold {
+			r.logger.Fatal("could not communicate to rabbitmq, restarting pods...")
+		}
 	}
 }
 
