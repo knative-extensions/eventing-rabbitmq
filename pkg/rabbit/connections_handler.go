@@ -27,8 +27,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const reconnectionTriesThreshold = 6
-
 type RabbitMQConnectionsHandlerInterface interface {
 	GetConnection() RabbitMQConnectionInterface
 	GetChannel() RabbitMQChannelInterface
@@ -57,11 +55,11 @@ type RabbitMQChannelInterface interface {
 }
 
 type RabbitMQConnectionHandler struct {
-	firstSetup    bool
-	reconTries    int
-	cycleDuration time.Duration
-	Connection    RabbitMQConnectionWrapperInterface
-	Channel       RabbitMQChannelInterface
+	firstSetup                              bool
+	reconnTries, reconnectionTriesThreshold int
+	cycleDuration                           time.Duration
+	Connection                              RabbitMQConnectionWrapperInterface
+	Channel                                 RabbitMQChannelInterface
 
 	logger *zap.SugaredLogger
 }
@@ -105,11 +103,12 @@ func (r *RabbitMQConnection) IsClosed() bool {
 	return true
 }
 
-func NewRabbitMQConnectionHandler(cycleDuration time.Duration, logger *zap.SugaredLogger) RabbitMQConnectionsHandlerInterface {
+func NewRabbitMQConnectionHandler(reconnectionTriesThreshold int, cycleDuration time.Duration, logger *zap.SugaredLogger) RabbitMQConnectionsHandlerInterface {
 	return &RabbitMQConnectionHandler{
-		firstSetup:    true,
-		cycleDuration: cycleDuration,
-		logger:        logger,
+		reconnectionTriesThreshold: reconnectionTriesThreshold,
+		firstSetup:                 true,
+		cycleDuration:              cycleDuration,
+		logger:                     logger,
 	}
 }
 
@@ -130,8 +129,7 @@ func (r *RabbitMQConnectionHandler) createConnectionAndChannel(
 	ctx context.Context,
 	rabbitMQURL string,
 	configFunction func(RabbitMQConnectionInterface, RabbitMQChannelInterface) error,
-	dialFunc func(string) (RabbitMQConnectionWrapperInterface, error)) {
-	var err error
+	dialFunc func(string) (RabbitMQConnectionWrapperInterface, error)) (err error) {
 	for {
 		// create the connection
 		r.Connection, err = r.createConnection(rabbitMQURL, dialFunc)
@@ -145,15 +143,16 @@ func (r *RabbitMQConnectionHandler) createConnectionAndChannel(
 		}
 		// setup completed successfully
 		if err == nil {
-			r.reconTries = 0
-			break
+			r.reconnTries = 0
+			return
 		}
 		r.logger.Error(err)
 		r.closeRabbitMQConnections()
 
-		r.reconTries += 1
-		if r.reconTries > reconnectionTriesThreshold {
-			r.logger.Fatal("could not communicate to rabbitmq, restarting pods...")
+		r.reconnTries += 1
+		if r.reconnTries > r.reconnectionTriesThreshold {
+			err = errors.New("could not communicate to rabbitmq, restarting pods...")
+			return
 		}
 	}
 }
@@ -173,7 +172,9 @@ func (r *RabbitMQConnectionHandler) watchRabbitMQConnections(
 		case <-r.GetChannel().NotifyClose(make(chan *amqp091.Error)):
 		}
 		r.closeRabbitMQConnections()
-		r.createConnectionAndChannel(ctx, rabbitMQURL, configFunction, dialFunc)
+		if err := r.createConnectionAndChannel(ctx, rabbitMQURL, configFunction, dialFunc); err != nil {
+			r.logger.Fatal(err)
+		}
 	}
 }
 
