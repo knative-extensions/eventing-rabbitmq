@@ -91,7 +91,7 @@ func main() {
 		logger.Errorw("failed to create the metrics exporter", zap.Error(err))
 	}
 
-	env.rmqHelper = rabbit.NewRabbitMQConnectionHandler(1000, logger)
+	env.rmqHelper = rabbit.NewRabbitMQConnectionHandler(5, 1000, logger)
 	env.rmqHelper.Setup(ctx, rabbit.VHostHandler(env.BrokerURL, env.RabbitMQVhost), rabbit.ChannelConfirm, rabbit.DialWrapper)
 
 	env.reporter = ingress.NewStatsReporter(env.ContainerName, kmeta.ChildName(env.PodName, uuid.New().String()))
