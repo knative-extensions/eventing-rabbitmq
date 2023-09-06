@@ -250,7 +250,7 @@ func TestAdapter_PollForMessages(t *testing.T) {
 		context:   ctx,
 		logger:    zap.NewNop(),
 		reporter:  statsReporter,
-		rmqHelper: rabbit.NewRabbitMQConnectionHandler(500, zap.NewNop().Sugar()),
+		rmqHelper: rabbit.NewRabbitMQConnectionHandler(5, 500, zap.NewNop().Sugar()),
 	}
 	a.rmqHelper.Setup(ctx, "", nil, rabbit.ValidDial)
 
