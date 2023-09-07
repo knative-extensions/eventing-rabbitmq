@@ -104,7 +104,7 @@ func main() {
 	}
 
 	var err error
-	rmqHelper := rabbit.NewRabbitMQConnectionHandler(1000, logger)
+	rmqHelper := rabbit.NewRabbitMQConnectionHandler(5, 1000, logger)
 	rmqHelper.Setup(ctx, rabbit.VHostHandler(
 		env.RabbitURL,
 		env.RabbitMQVhost),
