@@ -409,9 +409,12 @@ func (r *Reconciler) reconcileCommonIngressResources(ctx context.Context, s *cor
 	}
 	PropagateIngressAvailability(&b.Status, ingressEndpoints)
 
-	b.Status.SetAddress(&apis.URL{
-		Scheme: "http",
-		Host:   network.GetServiceHostname(ingressEndpoints.GetName(), ingressEndpoints.GetNamespace()),
+	b.Status.SetAddress(&duckv1.Addressable{
+		Name: pointer.String("http"),
+		URL: &apis.URL{
+			Scheme: "http",
+			Host:   network.GetServiceHostname(ingressEndpoints.GetName(), ingressEndpoints.GetNamespace()),
+		},
 	})
 
 	// If there's a Dead Letter Sink, then create a dispatcher for it. Note that this is for
