@@ -191,7 +191,7 @@ EOF
 Then create the Knative Serving Service which will receive any failed events.
 
 ```sh
-kubectl apply -f samples/rabbitmq-mtls/300-sink.yaml
+kubectl apply -f samples/rabbitmq-mtls/500-sink.yaml
 ```
 or
 ```sh
@@ -387,7 +387,7 @@ Messages from the `rabbitmq-perf-test`
 Then create the Knative Serving Service which will receive translated events.
 
 ```sh
-kubectl apply -f samples/rabbitmq-mtls/300-sink.yaml
+kubectl apply -f samples/rabbitmq-mtls/500-sink.yaml
 ```
 or
 ```sh
