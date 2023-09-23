@@ -39,6 +39,7 @@ metadata:
 stringData:
   username: $EXTERNAL_RABBITMQ_USERNAME
   password: $EXTERNAL_RABBITMQ_PASSWORD
+  caSecretName: $CA_SECRET_NAME
   uri: $EXTERNAL_RABBITMQ_URI:$HTTP_PORT # https://example.com:12345, example.com:12345, rabbitmqc.namespace:15672
   port: $AMQP_PORT # 5672 default
 EOF
@@ -99,6 +100,7 @@ metadata:
   name: default-config
   namespace: external-cluster-sample
 spec:
+  # vhost: you-rabbitmq-vhost
   rabbitmqClusterReference:
     namespace: external-cluster-sample
     name: rabbitmq-secret-credentials
@@ -379,6 +381,7 @@ spec:
     namespace: external-cluster-sample
     connectionSecret: rabbitmq-secret-credentials
   rabbitmqResourcesConfig:
+    # vhost: you-rabbitmq-vhost
     predeclared: true
     exchangeName: "eventing-rabbitmq-source"
     queueName: "eventing-rabbitmq-source"

@@ -107,6 +107,7 @@ metadata:
   name: default-config
   namespace: quick-setup-sample
 spec:
+  # vhost: you-rabbitmq-vhost
   rabbitmqClusterReference:
     name: rabbitmq
     namespace: quick-setup-sample
@@ -412,6 +413,7 @@ metadata:
   name: rabbitmq-source
   namespace: quick-setup-sample
 spec:
+  # vhost: you-rabbitmq-vhost
   rabbitmqClusterReference:
     name: rabbitmq
     namespace: quick-setup-sample

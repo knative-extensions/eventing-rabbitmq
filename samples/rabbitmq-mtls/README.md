@@ -148,6 +148,7 @@ metadata:
   name: default-config
   namespace: rabbitmq-mtls-sample
 spec:
+  # vhost: you-rabbitmq-vhost
   rabbitmqClusterReference:
     namespace: rabbitmq-mtls-sample
     name: rabbitmq-secret-credentials
@@ -423,6 +424,7 @@ spec:
     namespace: rabbitmq-mtls-sample
     name: rabbitmq
   rabbitmqResourcesConfig:
+    # vhost: you-rabbitmq-vhost
     exchangeName: "eventing-rabbitmq-source"
     queueName: "eventing-rabbitmq-source"
   sink:

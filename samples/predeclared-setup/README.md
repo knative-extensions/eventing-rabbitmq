@@ -153,6 +153,7 @@ spec:
     name: rabbitmq
     namespace: predeclared-setup-sample
   rabbitmqResourcesConfig:
+    # vhost: you-rabbitmq-vhost
     exchangeName: "eventing-rabbitmq-source"
     queueName: "eventing-rabbitmq-source"
   sink:

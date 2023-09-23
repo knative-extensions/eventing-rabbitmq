@@ -4,6 +4,7 @@ metadata:
   name: default-config
   namespace: trigger-customizations-sample
 spec:
+  # vhost: you-rabbitmq-vhost
   rabbitmqClusterReference:
     name: rabbitmq
     namespace: trigger-customizations-sample

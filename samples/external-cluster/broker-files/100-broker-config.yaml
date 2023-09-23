@@ -4,6 +4,7 @@ metadata:
   name: default-config
   namespace: external-cluster-sample
 spec:
+  # vhost: you-rabbitmq-vhost
   rabbitmqClusterReference:
     namespace: external-cluster-sample
     connectionSecret:
