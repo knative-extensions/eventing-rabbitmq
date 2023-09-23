@@ -16,7 +16,7 @@ Create a new namespace for the demo. All the commands are expected to be
 executed from the root of this repo.
 
 ```sh
-kubectl apply -f samples/rabbitmq-mtls-sample/100-namespace.yaml
+kubectl apply -f samples/rabbitmq-mtls/100-namespace.yaml
 ```
 or
 ```sh
@@ -26,17 +26,22 @@ kubectl create ns rabbitmq-mtls-sample
 ### Create a SelfSigned ClusterIssuer and CA certificate using Cert Manager
 
 ```sh
-kubectl apply -f samples/rabbitmq-mtls-sample/200-selfsigned-cluster-issuer.yaml
+kubectl apply -f samples/rabbitmq-mtls/200-selfsigned-issuer-and-cert.yaml
 ```
 
-We'll need this secrets in the `rabbitmq-system` namespace:
+We'll need this secrets in the `cert-manager` namespace for the `ClusterIssuer` to work:
+```sh
+kubectl get secret ca-secret --namespace=rabbitmq-mtls-sample -oyaml | grep -v '^\s*namespace:\s' | kubectl apply --namespace=cert-manager -f -
+```
+
+We'll need this secrets in the `rabbitmq-system` namespace too:
 ```sh
 kubectl get secret ca-secret --namespace=rabbitmq-mtls-sample -oyaml | grep -v '^\s*namespace:\s' | kubectl apply --namespace=rabbitmq-system -f -
 ```
 
 Now let's create the certificate:
 ```sh
-kubectl apply -f samples/rabbitmq-mtls-sample/300-certificate.yaml
+kubectl apply -f samples/rabbitmq-mtls/300-cluster-issuer-and-cert.yaml
 ```
 
 ### Create a RabbitMQ Cluster
@@ -44,7 +49,7 @@ kubectl apply -f samples/rabbitmq-mtls-sample/300-certificate.yaml
 Create a RabbitMQ Cluster:
 
 ```sh
-kubectl apply -f samples/quick-setup/400-rabbitmq.yaml
+kubectl apply -f samples/rabbitmq-mtls/400-rabbitmq.yaml
 ```
 or
 ```
@@ -69,7 +74,7 @@ EOF
 
 ### Patch the RabbitMQ Topology Operator
 
-As explained here: [RabbitMQ Topology Operator to trust the CA](https://www.rabbitmq.com/kubernetes/operator/tls-topology-operator.html)
+For the RabbitMQ Topology Operator to recognize the CA we need to patch it as explained here: [RabbitMQ Topology Operator to trust the CA](https://www.rabbitmq.com/kubernetes/operator/tls-topology-operator.html)
 
 TL;DR:
 ```sh
@@ -132,7 +137,7 @@ Demo creates a `Trigger` that wires `PingSource` events to go to the `failer`.
 ### Create the RabbitMQ Broker Config
 
 ```sh
-kubectl apply -f samples/rabbitmq-mtls-sample/broker-files/100-broker-config.yaml
+kubectl apply -f samples/rabbitmq-mtls/broker-files/100-broker-config.yaml
 ```
 or
 ```sh
@@ -153,7 +158,7 @@ EOF
 ### Create the RabbitMQ Broker
 
 ```sh
-kubectl apply -f samples/rabbitmq-mtls-sample/broker-files/200-broker.yaml
+kubectl apply -f samples/rabbitmq-mtls/broker-files/200-broker.yaml
 ```
 or
 ```sh
@@ -186,7 +191,7 @@ EOF
 Then create the Knative Serving Service which will receive any failed events.
 
 ```sh
-kubectl apply -f samples/rabbitmq-mtls-sample/300-sink.yaml
+kubectl apply -f samples/rabbitmq-mtls/300-sink.yaml
 ```
 or
 ```sh
@@ -216,7 +221,7 @@ default   http://default-broker-ingress.rabbitmq-mtls-sample.svc.cluster.local  
 ### Create the Ping Sources
 
 ```sh
-kubectl apply -f samples/rabbitmq-mtls-sample/broker-files/300-ping-sources.yaml
+kubectl apply -f samples/rabbitmq-mtls/broker-files/300-ping-sources.yaml
 ```
 or
 ```sh
@@ -260,7 +265,7 @@ EOF
 ### Create Trigger
 
 ```sh
-kubectl apply -f samples/rabbitmq-mtls-sample/broker-files/400-trigger.yaml
+kubectl apply -f samples/rabbitmq-mtls/broker-files/400-trigger.yaml
 ```
 or
 ```sh
@@ -292,7 +297,7 @@ EOF
 ### Create Failer
 
 ```sh
-kubectl apply -f samples/rabbitmq-mtls-sample/broker-files/500-failer.yaml
+kubectl apply -f samples/rabbitmq-mtls/broker-files/500-failer.yaml
 ```
 or
 ```sh
@@ -372,7 +377,7 @@ Demo creates a `Source` to read messages from the `eventing-rabbitmq-source` `Ex
 This will create a Kubernetes Deployment which sends events to the RabbitMQ Cluster Exchange
 
 ```sh
-kubectl apply -f samples/rabbitmq-mtls-sample/source-files/100-perf-test.yaml
+kubectl apply -f samples/rabbitmq-mtls/source-files/100-perf-test.yaml
 ```
 
 Messages from the `rabbitmq-perf-test`
@@ -382,7 +387,7 @@ Messages from the `rabbitmq-perf-test`
 Then create the Knative Serving Service which will receive translated events.
 
 ```sh
-kubectl apply -f samples/rabbitmq-mtls-sample/300-sink.yaml
+kubectl apply -f samples/rabbitmq-mtls/300-sink.yaml
 ```
 or
 ```sh
@@ -403,7 +408,7 @@ EOF
 ### Create the RabbitMQ Source
 
 ```sh
-kubectl apply -f samples/rabbitmq-mtls-sample/source-files/200-source.yaml
+kubectl apply -f samples/rabbitmq-mtls/source-files/200-source.yaml
 ```
 or
 ```sh
@@ -456,7 +461,7 @@ Data,
 ### Cleanup
 
 ```sh
-kubectl delete -f samples/rabbitmq-mtls-sample/source-files/200-source.yaml
-kubectl delete -f samples/rabbitmq-mtls-sample/
+kubectl delete -f samples/rabbitmq-mtls/source-files/200-source.yaml
+kubectl delete -f samples/rabbitmq-mtls/
 kubectl delete secret ca-secret -n rabbitmq-system
 ```
