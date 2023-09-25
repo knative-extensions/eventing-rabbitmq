@@ -13,4 +13,4 @@ spec:
     disableNonTLSListeners: true
   rabbitmq:
     additionalConfig: |
-      default_vhost = test-vhost
+      ssl_options.verify = verify_peer
