@@ -20,18 +20,36 @@ metadata:
     eventing.knative.dev/source: "true"
     duck.knative.dev/source: "true"
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20230918-ef994bef0"
+    app.kubernetes.io/version: "20230924-b704ab14b"
     app.kubernetes.io/name: knative-eventing
   annotations:
-    # TODO add schemas and descriptions
+    # TODO add schemas
     registry.knative.dev/eventTypes: |
       [
-        { "type": "dev.knative.apiserver.resource.add" },
-        { "type": "dev.knative.apiserver.resource.delete" },
-        { "type": "dev.knative.apiserver.resource.update" },
-        { "type": "dev.knative.apiserver.ref.add" },
-        { "type": "dev.knative.apiserver.ref.delete" },
-        { "type": "dev.knative.apiserver.ref.update" }
+        {
+          "type": "dev.knative.apiserver.resource.add",
+          "description": "CloudEvent type used for add operations when in Resource mode"
+        },
+        {
+          "type": "dev.knative.apiserver.resource.delete",
+          "description": "CloudEvent type used for delete operations when in Resource mode"
+        },
+        {
+          "type": "dev.knative.apiserver.resource.update",
+          "description": "CloudEvent type used for update operations when in Resource mode"
+        },
+        {
+          "type": "dev.knative.apiserver.ref.add",
+          "description": "CloudEvent type used for add operations when in Reference mode"
+        },
+        {
+          "type": "dev.knative.apiserver.ref.delete",
+          "description": "CloudEvent type used for delete operations when in Reference mode"
+        },
+        {
+          "type": "dev.knative.apiserver.ref.update",
+          "description": "CloudEvent type used for update operations when in Reference mode"
+        }
       ]
   name: apiserversources.sources.knative.dev
 spec:
@@ -270,7 +288,7 @@ metadata:
   labels:
     knative.dev/crd-install: "true"
     duck.knative.dev/addressable: "true"
-    app.kubernetes.io/version: "20230918-ef994bef0"
+    app.kubernetes.io/version: "20230924-b704ab14b"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: eventing.knative.dev
@@ -470,7 +488,7 @@ metadata:
     knative.dev/crd-install: "true"
     messaging.knative.dev/subscribable: "true"
     duck.knative.dev/addressable: "true"
-    app.kubernetes.io/version: "20230918-ef994bef0"
+    app.kubernetes.io/version: "20230924-b704ab14b"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: messaging.knative.dev
@@ -780,7 +798,7 @@ metadata:
     eventing.knative.dev/source: "true"
     duck.knative.dev/source: "true"
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20230918-ef994bef0"
+    app.kubernetes.io/version: "20230924-b704ab14b"
     app.kubernetes.io/name: knative-eventing
   name: containersources.sources.knative.dev
 spec:
@@ -937,7 +955,7 @@ metadata:
   name: eventtypes.eventing.knative.dev
   labels:
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20230918-ef994bef0"
+    app.kubernetes.io/version: "20230924-b704ab14b"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: eventing.knative.dev
@@ -1098,7 +1116,7 @@ metadata:
   labels:
     knative.dev/crd-install: "true"
     duck.knative.dev/addressable: "true"
-    app.kubernetes.io/version: "20230918-ef994bef0"
+    app.kubernetes.io/version: "20230924-b704ab14b"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: flows.knative.dev
@@ -1380,13 +1398,16 @@ metadata:
     eventing.knative.dev/source: "true"
     duck.knative.dev/source: "true"
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20230918-ef994bef0"
+    app.kubernetes.io/version: "20230924-b704ab14b"
     app.kubernetes.io/name: knative-eventing
   annotations:
-    # TODO add schemas and descriptions
+    # TODO add schema
     registry.knative.dev/eventTypes: |
       [
-        { "type": "dev.knative.sources.ping" }
+        {
+          "type": "dev.knative.sources.ping",
+          "description": "CloudEvent type for fixed payloads on a specified cron schedule"
+        }
       ]
   name: pingsources.sources.knative.dev
 spec:
@@ -1575,7 +1596,7 @@ metadata:
   labels:
     knative.dev/crd-install: "true"
     duck.knative.dev/addressable: "true"
-    app.kubernetes.io/version: "20230918-ef994bef0"
+    app.kubernetes.io/version: "20230924-b704ab14b"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: flows.knative.dev
@@ -1929,7 +1950,7 @@ metadata:
     duck.knative.dev/source: "true"
     duck.knative.dev/binding: "true"
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20230918-ef994bef0"
+    app.kubernetes.io/version: "20230924-b704ab14b"
     app.kubernetes.io/name: knative-eventing
   name: sinkbindings.sources.knative.dev
 spec:
@@ -2123,7 +2144,7 @@ metadata:
   name: subscriptions.messaging.knative.dev
   labels:
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20230918-ef994bef0"
+    app.kubernetes.io/version: "20230924-b704ab14b"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: messaging.knative.dev
@@ -2352,7 +2373,7 @@ metadata:
   name: triggers.eventing.knative.dev
   labels:
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20230918-ef994bef0"
+    app.kubernetes.io/version: "20230924-b704ab14b"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: eventing.knative.dev
