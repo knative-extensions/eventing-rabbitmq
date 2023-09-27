@@ -20,7 +20,7 @@ metadata:
     eventing.knative.dev/source: "true"
     duck.knative.dev/source: "true"
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20230924-b704ab14b"
+    app.kubernetes.io/version: "20230926-b898cf45c"
     app.kubernetes.io/name: knative-eventing
   annotations:
     # TODO add schemas
@@ -288,7 +288,7 @@ metadata:
   labels:
     knative.dev/crd-install: "true"
     duck.knative.dev/addressable: "true"
-    app.kubernetes.io/version: "20230924-b704ab14b"
+    app.kubernetes.io/version: "20230926-b898cf45c"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: eventing.knative.dev
@@ -488,7 +488,7 @@ metadata:
     knative.dev/crd-install: "true"
     messaging.knative.dev/subscribable: "true"
     duck.knative.dev/addressable: "true"
-    app.kubernetes.io/version: "20230924-b704ab14b"
+    app.kubernetes.io/version: "20230926-b898cf45c"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: messaging.knative.dev
@@ -632,11 +632,17 @@ spec:
                       replyCACerts:
                         description: Certification Authority (CA) certificates in PEM format according to https://www.rfc-editor.org/rfc/rfc7468.
                         type: string
+                      replyAudience:
+                        description: ReplyAudience is the OIDC audience for the replyUri.
+                        type: string
                       subscriberUri:
                         description: SubscriberURI is the endpoint for the subscriber
                         type: string
                       subscriberCACerts:
                         description: Certification Authority (CA) certificates in PEM format according to https://www.rfc-editor.org/rfc/rfc7468.
+                        type: string
+                      subscriberAudience:
+                        description: SubscriberAudience is the OIDC audience for the subscriberUri.
                         type: string
                       uid:
                         description: UID is used to understand the origin of the subscriber.
@@ -798,7 +804,7 @@ metadata:
     eventing.knative.dev/source: "true"
     duck.knative.dev/source: "true"
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20230924-b704ab14b"
+    app.kubernetes.io/version: "20230926-b898cf45c"
     app.kubernetes.io/name: knative-eventing
   name: containersources.sources.knative.dev
 spec:
@@ -955,7 +961,7 @@ metadata:
   name: eventtypes.eventing.knative.dev
   labels:
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20230924-b704ab14b"
+    app.kubernetes.io/version: "20230926-b898cf45c"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: eventing.knative.dev
@@ -1116,7 +1122,7 @@ metadata:
   labels:
     knative.dev/crd-install: "true"
     duck.knative.dev/addressable: "true"
-    app.kubernetes.io/version: "20230924-b704ab14b"
+    app.kubernetes.io/version: "20230926-b898cf45c"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: flows.knative.dev
@@ -1398,7 +1404,7 @@ metadata:
     eventing.knative.dev/source: "true"
     duck.knative.dev/source: "true"
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20230924-b704ab14b"
+    app.kubernetes.io/version: "20230926-b898cf45c"
     app.kubernetes.io/name: knative-eventing
   annotations:
     # TODO add schema
@@ -1596,7 +1602,7 @@ metadata:
   labels:
     knative.dev/crd-install: "true"
     duck.knative.dev/addressable: "true"
-    app.kubernetes.io/version: "20230924-b704ab14b"
+    app.kubernetes.io/version: "20230926-b898cf45c"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: flows.knative.dev
@@ -1950,7 +1956,7 @@ metadata:
     duck.knative.dev/source: "true"
     duck.knative.dev/binding: "true"
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20230924-b704ab14b"
+    app.kubernetes.io/version: "20230926-b898cf45c"
     app.kubernetes.io/name: knative-eventing
   name: sinkbindings.sources.knative.dev
 spec:
@@ -2144,7 +2150,7 @@ metadata:
   name: subscriptions.messaging.knative.dev
   labels:
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20230924-b704ab14b"
+    app.kubernetes.io/version: "20230926-b898cf45c"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: messaging.knative.dev
@@ -2324,11 +2330,17 @@ spec:
                     replyCACerts:
                       description: Certification Authority (CA) certificates in PEM format according to https://www.rfc-editor.org/rfc/rfc7468.
                       type: string
+                    replyAudience:
+                      description: ReplyAudience is the OIDC audience for the replyUri.
+                      type: string
                     subscriberUri:
                       description: SubscriberURI is the fully resolved URI for spec.subscriber.
                       type: string
                     subscriberCACerts:
                       description: Certification Authority (CA) certificates in PEM format according to https://www.rfc-editor.org/rfc/rfc7468.
+                      type: string
+                    subscriberAudience:
+                      description: SubscriberAudience is the OIDC audience for the subscriberUri.
                       type: string
       additionalPrinterColumns:
         - name: Age
@@ -2373,7 +2385,7 @@ metadata:
   name: triggers.eventing.knative.dev
   labels:
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20230924-b704ab14b"
+    app.kubernetes.io/version: "20230926-b898cf45c"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: eventing.knative.dev
