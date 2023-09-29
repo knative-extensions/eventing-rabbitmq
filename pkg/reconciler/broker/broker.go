@@ -290,7 +290,7 @@ func (r *Reconciler) reconcileRabbitResources(ctx context.Context, b *eventingv1
 
 	return r.reconcileCommonIngressResources(
 		ctx,
-		rabbit.MakeSecret(args.Broker.Name, "broker", args.Namespace, args.RabbitMQURL.String(), args.Broker),
+		rabbit.MakeSecret(args.Broker.Name, "broker", args.Namespace, args.RabbitMQURL, args.Broker),
 		b,
 		args.RabbitMQVhost,
 	)

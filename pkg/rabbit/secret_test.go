@@ -25,7 +25,6 @@ import (
 	"knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 
-	"knative.dev/pkg/apis"
 	"knative.dev/pkg/kmeta"
 	_ "knative.dev/pkg/system/testing"
 )
@@ -40,11 +39,6 @@ const (
 
 func TestMakeSecret(t *testing.T) {
 	var TrueValue = true
-	url, err := apis.ParseURL(testRabbitURL)
-	if err != nil {
-		t.Errorf("Failed to parse the test URL: %s", err)
-	}
-
 	for _, tt := range []struct {
 		name string
 		args *ExchangeArgs
@@ -54,7 +48,7 @@ func TestMakeSecret(t *testing.T) {
 			name: "test broker secret name",
 			args: &ExchangeArgs{
 				Broker:      &eventingv1.Broker{ObjectMeta: metav1.ObjectMeta{Name: brokerName, Namespace: ns}},
-				RabbitMQURL: url.URL(),
+				RabbitMQURL: testRabbitURL,
 			},
 			want: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
@@ -79,7 +73,7 @@ func TestMakeSecret(t *testing.T) {
 			name: "test source secret name",
 			args: &ExchangeArgs{
 				Source:      &v1alpha1.RabbitmqSource{ObjectMeta: metav1.ObjectMeta{Name: sourceName, Namespace: ns}},
-				RabbitMQURL: url.URL(),
+				RabbitMQURL: testRabbitURL,
 			},
 			want: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
@@ -115,7 +109,7 @@ func TestMakeSecret(t *testing.T) {
 				owner = tt.args.Source
 				name = tt.args.Source.Name
 			}
-			got := MakeSecret(name, typeString, ns, tt.args.RabbitMQURL.String(), owner)
+			got := MakeSecret(name, typeString, ns, tt.args.RabbitMQURL, owner)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Error("unexpected diff (-want, +got) = ", diff)
 			}
