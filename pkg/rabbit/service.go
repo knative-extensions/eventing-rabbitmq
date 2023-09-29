@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/url"
 	"strings"
 
 	"go.uber.org/zap"
@@ -254,25 +253,25 @@ func isReady(conditions []rabbitv1beta1.Condition) bool {
 	return numConditions == 0
 }
 
-func (r *Rabbit) RabbitMQURL(ctx context.Context, clusterRef *rabbitv1beta1.RabbitmqClusterReference) (*url.URL, error) {
+func (r *Rabbit) RabbitMQURL(ctx context.Context, clusterRef *rabbitv1beta1.RabbitmqClusterReference) (string, error) {
 	protocol := []byte("amqp")
 	if clusterRef.ConnectionSecret != nil {
 		s, err := r.kubeClientSet.CoreV1().Secrets(clusterRef.Namespace).Get(ctx, clusterRef.ConnectionSecret.Name, metav1.GetOptions{})
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 		uri, ok := s.Data["uri"]
 		if !ok {
-			return nil, fmt.Errorf("rabbit Secret missing key uri")
+			return "", fmt.Errorf("rabbit Secret missing key uri")
 		}
 		uriString := string(uri)
 		password, ok := s.Data["password"]
 		if !ok {
-			return nil, fmt.Errorf("rabbit Secret missing key password")
+			return "", fmt.Errorf("rabbit Secret missing key password")
 		}
 		username, ok := s.Data["username"]
 		if !ok {
-			return nil, fmt.Errorf("rabbit Secret missing key username")
+			return "", fmt.Errorf("rabbit Secret missing key username")
 		}
 		port, ok := s.Data["port"]
 		if !ok {
@@ -286,31 +285,31 @@ func (r *Rabbit) RabbitMQURL(ctx context.Context, clusterRef *rabbitv1beta1.Rabb
 		}
 		uriString = strings.TrimPrefix(uriString, prefix)
 		splittedUri := strings.Split(uriString, ":")
-		return url.Parse(fmt.Sprintf("%s://%s:%s@%s:%s", protocol, username, password, splittedUri[0], port))
+		return fmt.Sprintf("%s://%s:%s@%s:%s", protocol, username, password, splittedUri[0], port), nil
 	}
 
 	rab, err := r.getClusterFromReference(ctx, clusterRef)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	if rab.Status.DefaultUser == nil || rab.Status.DefaultUser.SecretReference == nil || rab.Status.DefaultUser.ServiceReference == nil {
-		return nil, fmt.Errorf("rabbit \"%s/%s\" not ready", rab.Namespace, rab.Name)
+		return "", fmt.Errorf("rabbit \"%s/%s\" not ready", rab.Namespace, rab.Name)
 	}
 
 	_ = rab.Status.DefaultUser.SecretReference
 
 	s, err := r.kubeClientSet.CoreV1().Secrets(rab.Status.DefaultUser.SecretReference.Namespace).Get(ctx, rab.Status.DefaultUser.SecretReference.Name, metav1.GetOptions{})
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	password, ok := s.Data[rab.Status.DefaultUser.SecretReference.Keys["password"]]
 	if !ok {
-		return nil, fmt.Errorf("rabbit Secret missing key %s", rab.Status.DefaultUser.SecretReference.Keys["password"])
+		return "", fmt.Errorf("rabbit Secret missing key %s", rab.Status.DefaultUser.SecretReference.Keys["password"])
 	}
 	username, ok := s.Data[rab.Status.DefaultUser.SecretReference.Keys["username"]]
 	if !ok {
-		return nil, fmt.Errorf("rabbit Secret missing key %s", rab.Status.DefaultUser.SecretReference.Keys["username"])
+		return "", fmt.Errorf("rabbit Secret missing key %s", rab.Status.DefaultUser.SecretReference.Keys["username"])
 	}
 	port, ok := s.Data["port"]
 	if !ok {
@@ -320,7 +319,7 @@ func (r *Rabbit) RabbitMQURL(ctx context.Context, clusterRef *rabbitv1beta1.Rabb
 		protocol = []byte("amqps")
 	}
 	host := network.GetServiceHostname(rab.Status.DefaultUser.ServiceReference.Name, rab.Status.DefaultUser.ServiceReference.Namespace)
-	return url.Parse(fmt.Sprintf("%s://%s:%s@%s:%s", protocol, username, password, host, port))
+	return fmt.Sprintf("%s://%s:%s@%s:%s", protocol, username, password, host, port), nil
 }
 
 func (r *Rabbit) GetRabbitMQCASecret(ctx context.Context, clusterRef *rabbitv1beta1.RabbitmqClusterReference) (string, error) {
