@@ -20,7 +20,7 @@ metadata:
     eventing.knative.dev/source: "true"
     duck.knative.dev/source: "true"
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20230926-b898cf45c"
+    app.kubernetes.io/version: "20231001-6915382b1"
     app.kubernetes.io/name: knative-eventing
   annotations:
     # TODO add schemas
@@ -157,6 +157,9 @@ spec:
                     CACerts:
                       description: CACerts is the Certification Authority (CA) certificates in PEM format that the source trusts when sending events to the sink.
                       type: string
+                    audience:
+                      description: Audience is the OIDC audience. This only needs to be set if the target is not an Addressable and thus the Audience can't be received from the Addressable itself. If the target is an Addressable and specifies an Audience, the target's Audience takes precedence.
+                      type: string
                 namespaceSelector:
                   description: NamespaceSelector is a label selector to capture the namespaces that should be watched by the source.
                   type: object
@@ -189,6 +192,13 @@ spec:
                   description: Annotations is additional Status fields for the Resource to save some additional State as well as convey more information to the user. This is roughly akin to Annotations on any k8s resource, just the reconciler conveying richer information outwards.
                   type: object
                   x-kubernetes-preserve-unknown-fields: true
+                auth:
+                  description: Auth provides the relevant information for OIDC authentication.
+                  type: object
+                  properties:
+                    serviceAccountName:
+                      description: ServiceAccountName is the name of the generated service account used for this components OIDC authentication.
+                      type: string
                 ceAttributes:
                   description: CloudEventAttributes are the specific attributes that the Source uses as part of its CloudEvents.
                   type: array
@@ -288,7 +298,7 @@ metadata:
   labels:
     knative.dev/crd-install: "true"
     duck.knative.dev/addressable: "true"
-    app.kubernetes.io/version: "20230926-b898cf45c"
+    app.kubernetes.io/version: "20231001-6915382b1"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: eventing.knative.dev
@@ -488,7 +498,7 @@ metadata:
     knative.dev/crd-install: "true"
     messaging.knative.dev/subscribable: "true"
     duck.knative.dev/addressable: "true"
-    app.kubernetes.io/version: "20230926-b898cf45c"
+    app.kubernetes.io/version: "20231001-6915382b1"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: messaging.knative.dev
@@ -769,6 +779,13 @@ spec:
                       uid:
                         description: UID is used to understand the origin of the subscriber.
                         type: string
+                      auth:
+                        description: Auth provides the relevant information for OIDC authentication.
+                        type: object
+                        properties:
+                          serviceAccountName:
+                            description: ServiceAccountName is the name of the generated service account used for this components OIDC authentication.
+                            type: string
   names:
     kind: Channel
     plural: channels
@@ -804,7 +821,7 @@ metadata:
     eventing.knative.dev/source: "true"
     duck.knative.dev/source: "true"
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20230926-b898cf45c"
+    app.kubernetes.io/version: "20231001-6915382b1"
     app.kubernetes.io/name: knative-eventing
   name: containersources.sources.knative.dev
 spec:
@@ -857,6 +874,9 @@ spec:
                     CACerts:
                       description: CACerts is the Certification Authority (CA) certificates in PEM format that the source trusts when sending events to the sink.
                       type: string
+                    audience:
+                      description: Audience is the OIDC audience. This only needs to be set if the target is not an Addressable and thus the Audience can't be received from the Addressable itself. If the target is an Addressable and specifies an Audience, the target's Audience takes precedence.
+                      type: string
                 # WARNING: the schema tool can not parse PodTemplateSpec, stub here and redirect to Deployment documentation.
                 template:
                   type: object
@@ -869,6 +889,13 @@ spec:
                   description: Annotations is additional Status fields for the Resource to save some additional State as well as convey more information to the user. This is roughly akin to Annotations on any k8s resource, just the reconciler conveying richer information outwards.
                   type: object
                   x-kubernetes-preserve-unknown-fields: true
+                auth:
+                  description: Auth provides the relevant information for OIDC authentication.
+                  type: object
+                  properties:
+                    serviceAccountName:
+                      description: ServiceAccountName is the name of the generated service account used for this components OIDC authentication.
+                      type: string
                 ceAttributes:
                   description: CloudEventAttributes are the specific attributes that the Source uses as part of its CloudEvents.
                   type: array
@@ -961,7 +988,7 @@ metadata:
   name: eventtypes.eventing.knative.dev
   labels:
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20230926-b898cf45c"
+    app.kubernetes.io/version: "20231001-6915382b1"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: eventing.knative.dev
@@ -1122,7 +1149,7 @@ metadata:
   labels:
     knative.dev/crd-install: "true"
     duck.knative.dev/addressable: "true"
-    app.kubernetes.io/version: "20230926-b898cf45c"
+    app.kubernetes.io/version: "20231001-6915382b1"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: flows.knative.dev
@@ -1260,6 +1287,13 @@ spec:
                   description: Annotations is additional Status fields for the Resource to save some additional State as well as convey more information to the user. This is roughly akin to Annotations on any k8s resource, just the reconciler conveying richer information outwards.
                   type: object
                   x-kubernetes-preserve-unknown-fields: true
+                auth:
+                  description: Auth provides the relevant information for OIDC authentication.
+                  type: object
+                  properties:
+                    serviceAccountName:
+                      description: ServiceAccountName is the name of the generated service account used for this components OIDC authentication.
+                      type: string
                 branchStatuses:
                   description: BranchStatuses is an array of corresponding to branch statuses. Matches the Spec.Branches array in the order.
                   type: array
@@ -1404,7 +1438,7 @@ metadata:
     eventing.knative.dev/source: "true"
     duck.knative.dev/source: "true"
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20230926-b898cf45c"
+    app.kubernetes.io/version: "20231001-6915382b1"
     app.kubernetes.io/name: knative-eventing
   annotations:
     # TODO add schema
@@ -1482,6 +1516,9 @@ spec:
                     CACerts:
                       description: CACerts is the Certification Authority (CA) certificates in PEM format that the source trusts when sending events to the sink.
                       type: string
+                    audience:
+                      description: Audience is the OIDC audience. This only needs to be set if the target is not an Addressable and thus the Audience can't be received from the Addressable itself. If the target is an Addressable and specifies an Audience, the target's Audience takes precedence.
+                      type: string
                 timezone:
                   description: 'Timezone modifies the actual time relative to the specified timezone. Defaults to the system time zone. More general information about time zones: https://www.iana.org/time-zones List of valid timezone values: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones'
                   type: string
@@ -1493,6 +1530,13 @@ spec:
                   description: 'Annotations is additional Status fields for the Resource to save some additional State as well as convey more information to the user. This is roughly akin to Annotations on any k8s resource, just the reconciler conveying richer information outwards.'
                   type: object
                   x-kubernetes-preserve-unknown-fields: true
+                auth:
+                  description: Auth provides the relevant information for OIDC authentication.
+                  type: object
+                  properties:
+                    serviceAccountName:
+                      description: ServiceAccountName is the name of the generated service account used for this components OIDC authentication.
+                      type: string
                 ceAttributes:
                   description: 'CloudEventAttributes are the specific attributes that the Source uses as part of its CloudEvents.'
                   type: array
@@ -1602,7 +1646,7 @@ metadata:
   labels:
     knative.dev/crd-install: "true"
     duck.knative.dev/addressable: "true"
-    app.kubernetes.io/version: "20230926-b898cf45c"
+    app.kubernetes.io/version: "20231001-6915382b1"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: flows.knative.dev
@@ -1767,6 +1811,13 @@ spec:
                   description: Annotations is additional Status fields for the Resource to save some additional State as well as convey more information to the user. This is roughly akin to Annotations on any k8s resource, just the reconciler conveying richer information outwards.
                   type: object
                   x-kubernetes-preserve-unknown-fields: true
+                auth:
+                  description: Auth provides the relevant information for OIDC authentication.
+                  type: object
+                  properties:
+                    serviceAccountName:
+                      description: ServiceAccountName is the name of the generated service account used for this components OIDC authentication.
+                      type: string
                 channelStatuses:
                   description: ChannelStatuses is an array of corresponding Channel statuses. Matches the Spec.Steps array in the order.
                   type: array
@@ -1956,7 +2007,7 @@ metadata:
     duck.knative.dev/source: "true"
     duck.knative.dev/binding: "true"
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20230926-b898cf45c"
+    app.kubernetes.io/version: "20231001-6915382b1"
     app.kubernetes.io/name: knative-eventing
   name: sinkbindings.sources.knative.dev
 spec:
@@ -2009,6 +2060,9 @@ spec:
                     CACerts:
                       description: CACerts is the Certification Authority (CA) certificates in PEM format that the source trusts when sending events to the sink.
                       type: string
+                    audience:
+                      description: Audience is the OIDC audience. This only needs to be set if the target is not an Addressable and thus the Audience can't be received from the Addressable itself. If the target is an Addressable and specifies an Audience, the target's Audience takes precedence.
+                      type: string
                 subject:
                   description: Subject references the resource(s) whose "runtime contract" should be augmented by Binding implementations.
                   type: object
@@ -2057,6 +2111,13 @@ spec:
                   description: Annotations is additional Status fields for the Resource to save some additional State as well as convey more information to the user. This is roughly akin to Annotations on any k8s resource, just the reconciler conveying richer information outwards.
                   type: object
                   x-kubernetes-preserve-unknown-fields: true
+                auth:
+                  description: Auth provides the relevant information for OIDC authentication.
+                  type: object
+                  properties:
+                    serviceAccountName:
+                      description: ServiceAccountName is the name of the generated service account used for this components OIDC authentication.
+                      type: string
                 ceAttributes:
                   description: CloudEventAttributes are the specific attributes that the Source uses as part of its CloudEvents.
                   type: array
@@ -2150,7 +2211,7 @@ metadata:
   name: subscriptions.messaging.knative.dev
   labels:
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20230926-b898cf45c"
+    app.kubernetes.io/version: "20231001-6915382b1"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: messaging.knative.dev
@@ -2218,6 +2279,9 @@ spec:
                         CACerts:
                           description: Certification Authority (CA) certificates in PEM format that the source trusts when sending events to the sink.
                           type: string
+                        audience:
+                          description: Audience is the OIDC audience. This only needs to be set if the target is not an Addressable and thus the Audience can't be received from the Addressable itself. If the target is an Addressable and specifies an Audience, the target's Audience takes precedence.
+                          type: string
                     retry:
                       description: Retry is the minimum number of retries the sender should attempt when sending an event before moving it to the dead letter sink.
                       type: integer
@@ -2249,6 +2313,9 @@ spec:
                     CACerts:
                       description: Certification Authority (CA) certificates in PEM format that the source trusts when sending events to the sink.
                       type: string
+                    audience:
+                      description: Audience is the OIDC audience. This only needs to be set if the target is not an Addressable and thus the Audience can't be received from the Addressable itself. If the target is an Addressable and specifies an Audience, the target's Audience takes precedence.
+                      type: string
                 subscriber:
                   description: Subscriber is reference to (optional) function for processing events. Events from the Channel will be delivered here and replies are sent to a Destination as specified by the Reply.
                   type: object
@@ -2276,6 +2343,9 @@ spec:
                     CACerts:
                       description: Certification Authority (CA) certificates in PEM format that the subscription trusts when sending events to the sink.
                       type: string
+                    audience:
+                      description: Audience is the OIDC audience. This only needs to be set if the target is not an Addressable and thus the Audience can't be received from the Addressable itself. If the target is an Addressable and specifies an Audience, the target's Audience takes precedence.
+                      type: string
             status:
               type: object
               properties:
@@ -2283,6 +2353,13 @@ spec:
                   description: Annotations is additional Status fields for the Resource to save some additional State as well as convey more information to the user. This is roughly akin to Annotations on any k8s resource, just the reconciler conveying richer information outwards.
                   type: object
                   x-kubernetes-preserve-unknown-fields: true
+                auth:
+                  description: Auth provides the relevant information for OIDC authentication.
+                  type: object
+                  properties:
+                    serviceAccountName:
+                      description: ServiceAccountName is the name of the generated service account used for this components OIDC authentication.
+                      type: string
                 conditions:
                   description: Conditions the latest available observations of a resource's current state.
                   type: array
@@ -2385,7 +2462,7 @@ metadata:
   name: triggers.eventing.knative.dev
   labels:
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20230926-b898cf45c"
+    app.kubernetes.io/version: "20231001-6915382b1"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: eventing.knative.dev
@@ -2461,6 +2538,9 @@ spec:
                         CACerts:
                           description: Certification Authority (CA) certificates in PEM format that the source trusts when sending events to the sink.
                           type: string
+                        audience:
+                          description: Audience is the OIDC audience. This only needs to be set if the target is not an Addressable and thus the Audience can't be received from the Addressable itself. If the target is an Addressable and specifies an Audience, the target's Audience takes precedence.
+                          type: string
                     retry:
                       description: Retry is the minimum number of retries the sender should attempt when sending an event before moving it to the dead letter sink.
                       type: integer
@@ -2499,6 +2579,9 @@ spec:
                     CACerts:
                       description: Certification Authority (CA) certificates in PEM format that the source trusts when sending events to the sink.
                       type: string
+                    audience:
+                      description: Audience is the OIDC audience. This only needs to be set if the target is not an Addressable and thus the Audience can't be received from the Addressable itself. If the target is an Addressable and specifies an Audience, the target's Audience takes precedence.
+                      type: string
             status:
               description: Status represents the current state of the Trigger. This data may be out of date.
               type: object
@@ -2507,6 +2590,13 @@ spec:
                   description: Annotations is additional Status fields for the Resource to save some additional State as well as convey more information to the user. This is roughly akin to Annotations on any k8s resource, just the reconciler conveying richer information outwards.
                   type: object
                   x-kubernetes-preserve-unknown-fields: true
+                auth:
+                  description: Auth provides the relevant information for OIDC authentication.
+                  type: object
+                  properties:
+                    serviceAccountName:
+                      description: ServiceAccountName is the name of the generated service account used for this components OIDC authentication.
+                      type: string
                 conditions:
                   description: Conditions the latest available observations of a resource's current state.
                   type: array
