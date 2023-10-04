@@ -21,10 +21,10 @@ require (
 	k8s.io/client-go v0.26.5
 	k8s.io/code-generator v0.26.5
 	k8s.io/kube-openapi v0.0.0-20221012153701-172d655c2280
-	knative.dev/eventing v0.38.1-0.20230922120019-37a0e3ceac14
-	knative.dev/hack v0.0.0-20230922114927-da6e74ccb8e8
-	knative.dev/pkg v0.0.0-20230922133149-dd819c0c8fec
-	knative.dev/reconciler-test v0.0.0-20230920080213-4b73d83f40fc
+	knative.dev/eventing v0.38.1-0.20231003175114-d1c3f1524125
+	knative.dev/hack v0.0.0-20230926181829-f2f9b6f91263
+	knative.dev/pkg v0.0.0-20230927121431-6cf4b051de4f
+	knative.dev/reconciler-test v0.0.0-20230928130937-1bc30a77ad78
 	sigs.k8s.io/controller-runtime v0.14.6
 )
 
@@ -111,12 +111,12 @@ require (
 	golang.org/x/tools v0.13.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	gonum.org/v1/gonum v0.0.0-20190331200053-3d26580ed485 // indirect
-	google.golang.org/api v0.141.0 // indirect
+	google.golang.org/api v0.143.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20230803162519-f966b187b2e5 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20230803162519-f966b187b2e5 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20230911183012-2d3300fd4832 // indirect
-	google.golang.org/grpc v1.58.1 // indirect
+	google.golang.org/genproto v0.0.0-20230913181813-007df8e322eb // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20230913181813-007df8e322eb // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230920204549-e6e6cdab5c13 // indirect
+	google.golang.org/grpc v1.58.2 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
