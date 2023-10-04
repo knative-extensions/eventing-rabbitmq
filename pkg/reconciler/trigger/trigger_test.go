@@ -453,7 +453,8 @@ func TestReconcile(t *testing.T) {
 						WithTriggerDependencyReady(),
 						WithTriggerSubscribed(),
 						WithTriggerSubscriberResolvedSucceeded(),
-						WithTriggerStatusSubscriberURI(subscriberURI)),
+						WithTriggerStatusSubscriberURI(subscriberURI),
+						WithTriggerOIDCIdentityCreatedNotSupported()),
 				}},
 			}, {
 				Name: fmt.Sprintf("%s: Creates everything with ref subscriber different ns", name),
@@ -482,7 +483,8 @@ func TestReconcile(t *testing.T) {
 						WithTriggerDependencyReady(),
 						WithTriggerSubscribed(),
 						WithTriggerSubscriberResolvedSucceeded(),
-						WithTriggerStatusSubscriberURI(subscriberURI)),
+						WithTriggerStatusSubscriberURI(subscriberURI),
+						WithTriggerOIDCIdentityCreatedNotSupported()),
 				}},
 			}, {
 				Name: fmt.Sprintf("%s: Creates everything with ref subscriber no ns provided", name),
@@ -511,7 +513,8 @@ func TestReconcile(t *testing.T) {
 						WithTriggerDependencyReady(),
 						WithTriggerSubscribed(),
 						WithTriggerSubscriberResolvedSucceeded(),
-						WithTriggerStatusSubscriberURI(subscriberURI)),
+						WithTriggerStatusSubscriberURI(subscriberURI),
+						WithTriggerOIDCIdentityCreatedNotSupported()),
 				}},
 			}, {
 				Name: fmt.Sprintf("%s: Fails to resolve ref", name),
@@ -639,7 +642,8 @@ func TestReconcile(t *testing.T) {
 						WithTriggerSubscribed(),
 						WithTriggerDependencyReady(),
 						WithTriggerSubscriberResolvedSucceeded(),
-						WithTriggerStatusSubscriberURI(subscriberURI)),
+						WithTriggerStatusSubscriberURI(subscriberURI),
+						WithTriggerOIDCIdentityCreatedNotSupported()),
 				}},
 			}, {
 				Name: fmt.Sprintf("%s: Everything ready with filter, nop", name),
@@ -837,6 +841,7 @@ func TestReconcile(t *testing.T) {
 						WithTriggerStatusSubscriberURI(subscriberURI),
 						WithTriggerSubscriberResolvedSucceeded(),
 						WithTriggerDependencyReady(),
+						WithTriggerOIDCIdentityCreatedNotSupported(),
 					),
 				}},
 			}, {
@@ -867,7 +872,8 @@ func TestReconcile(t *testing.T) {
 						WithTriggerSubscribed(),
 						WithTriggerDependencyReady(),
 						WithTriggerSubscriberResolvedSucceeded(),
-						WithTriggerStatusSubscriberURI(subscriberURI)),
+						WithTriggerStatusSubscriberURI(subscriberURI),
+						WithTriggerOIDCIdentityCreatedNotSupported()),
 				}},
 			},
 			{
@@ -963,6 +969,7 @@ func TestReconcile(t *testing.T) {
 				WithTriggerStatusSubscriberURI(subscriberURI),
 				WithTriggerSubscriberResolvedSucceeded(),
 				WithTriggerDependencyReady(),
+				WithTriggerOIDCIdentityCreatedNotSupported(),
 			),
 		}},
 	}, {
@@ -1005,6 +1012,7 @@ func TestReconcile(t *testing.T) {
 				WithTriggerStatusSubscriberURI(subscriberURI),
 				WithTriggerDependencyReady(),
 				WithTriggerSubscriberResolvedSucceeded(),
+				WithTriggerOIDCIdentityCreatedNotSupported(),
 			),
 		}},
 	}}...)
@@ -1182,7 +1190,8 @@ func triggerWithFilterReady() *eventingv1.Trigger {
 		WithTriggerDependencyReady(),
 		WithTriggerSubscribed(),
 		WithTriggerSubscriberResolvedSucceeded(),
-		WithTriggerStatusSubscriberURI(subscriberURI))
+		WithTriggerStatusSubscriberURI(subscriberURI),
+		WithTriggerOIDCIdentityCreatedNotSupported())
 	t.Spec.Filter = &eventingv1.TriggerFilter{
 		Attributes: map[string]string{"type": "dev.knative.sources.ping"},
 	}
@@ -1199,6 +1208,7 @@ func triggerWithResourceAnnotationsReady() *eventingv1.Trigger {
 		WithTriggerSubscribed(),
 		WithTriggerSubscriberResolvedSucceeded(),
 		WithTriggerStatusSubscriberURI(subscriberURI),
+		WithTriggerOIDCIdentityCreatedNotSupported(),
 		WithAnnotation(utils.CPURequestAnnotation, "500m"),
 		WithAnnotation(utils.CPULimitAnnotation, "1000m"),
 		WithAnnotation(utils.MemoryRequestAnnotation, "500Mi"),
@@ -1219,7 +1229,8 @@ func triggerWithDeliverySpecReady() *eventingv1.Trigger {
 		WithTriggerDependencyReady(),
 		WithTriggerSubscribed(),
 		WithTriggerSubscriberResolvedSucceeded(),
-		WithTriggerStatusSubscriberURI(subscriberURI))
+		WithTriggerStatusSubscriberURI(subscriberURI),
+		WithTriggerOIDCIdentityCreatedNotSupported())
 	t.Spec.Filter = &eventingv1.TriggerFilter{
 		Attributes: map[string]string{"type": "dev.knative.sources.ping"},
 	}
