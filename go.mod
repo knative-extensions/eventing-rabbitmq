@@ -15,15 +15,15 @@ require (
 	github.com/rabbitmq/messaging-topology-operator v1.6.0
 	go.opencensus.io v0.24.0
 	go.uber.org/zap v1.26.0
-	k8s.io/api v0.26.5
-	k8s.io/apiextensions-apiserver v0.26.5
-	k8s.io/apimachinery v0.26.5
-	k8s.io/client-go v0.26.5
-	k8s.io/code-generator v0.26.5
-	k8s.io/kube-openapi v0.0.0-20221012153701-172d655c2280
-	knative.dev/eventing v0.38.1-0.20231003175114-d1c3f1524125
+	k8s.io/api v0.27.6
+	k8s.io/apiextensions-apiserver v0.27.6
+	k8s.io/apimachinery v0.27.6
+	k8s.io/client-go v0.27.6
+	k8s.io/code-generator v0.27.6
+	k8s.io/kube-openapi v0.0.0-20230501164219-8b0f38b5fd1f
+	knative.dev/eventing v0.38.1-0.20231004152306-402f6acbe992
 	knative.dev/hack v0.0.0-20230926181829-f2f9b6f91263
-	knative.dev/pkg v0.0.0-20230927121431-6cf4b051de4f
+	knative.dev/pkg v0.0.0-20231003141102-833dd976f13d
 	knative.dev/reconciler-test v0.0.0-20230928130937-1bc30a77ad78
 	sigs.k8s.io/controller-runtime v0.14.6
 )
@@ -83,10 +83,10 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/openzipkin/zipkin-go v0.4.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/prometheus/client_golang v1.16.0 // indirect
-	github.com/prometheus/client_model v0.4.0 // indirect
+	github.com/prometheus/client_golang v1.17.0 // indirect
+	github.com/prometheus/client_model v0.4.1-0.20230718164431-9a2bf3000d16 // indirect
 	github.com/prometheus/common v0.44.0 // indirect
-	github.com/prometheus/procfs v0.10.1 // indirect
+	github.com/prometheus/procfs v0.11.1 // indirect
 	github.com/prometheus/statsd_exporter v0.22.7 // indirect
 	github.com/rickb777/plural v1.2.1 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
@@ -121,7 +121,7 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/component-base v0.26.5 // indirect
+	k8s.io/component-base v0.27.6 // indirect
 	k8s.io/gengo v0.0.0-20230306165830-ab3349d207d4 // indirect
 	k8s.io/klog/v2 v2.100.1 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect

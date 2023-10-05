@@ -23,7 +23,6 @@ import (
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -36,9 +35,9 @@ type FakeBindings struct {
 	ns   string
 }
 
-var bindingsResource = schema.GroupVersionResource{Group: "rabbitmq.com", Version: "v1beta1", Resource: "bindings"}
+var bindingsResource = v1beta1.SchemeGroupVersion.WithResource("bindings")
 
-var bindingsKind = schema.GroupVersionKind{Group: "rabbitmq.com", Version: "v1beta1", Kind: "Binding"}
+var bindingsKind = v1beta1.SchemeGroupVersion.WithKind("Binding")
 
 // Get takes name of the binding, and returns the corresponding binding object, and an error if there is any.
 func (c *FakeBindings) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta1.Binding, err error) {

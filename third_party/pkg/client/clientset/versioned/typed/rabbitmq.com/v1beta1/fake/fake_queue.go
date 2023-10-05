@@ -23,7 +23,6 @@ import (
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -36,9 +35,9 @@ type FakeQueues struct {
 	ns   string
 }
 
-var queuesResource = schema.GroupVersionResource{Group: "rabbitmq.com", Version: "v1beta1", Resource: "queues"}
+var queuesResource = v1beta1.SchemeGroupVersion.WithResource("queues")
 
-var queuesKind = schema.GroupVersionKind{Group: "rabbitmq.com", Version: "v1beta1", Kind: "Queue"}
+var queuesKind = v1beta1.SchemeGroupVersion.WithKind("Queue")
 
 // Get takes name of the queue, and returns the corresponding queue object, and an error if there is any.
 func (c *FakeQueues) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta1.Queue, err error) {

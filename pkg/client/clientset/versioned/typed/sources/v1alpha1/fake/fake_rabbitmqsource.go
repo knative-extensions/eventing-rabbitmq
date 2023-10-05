@@ -23,7 +23,6 @@ import (
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -36,9 +35,9 @@ type FakeRabbitmqSources struct {
 	ns   string
 }
 
-var rabbitmqsourcesResource = schema.GroupVersionResource{Group: "sources.knative.dev", Version: "v1alpha1", Resource: "rabbitmqsources"}
+var rabbitmqsourcesResource = v1alpha1.SchemeGroupVersion.WithResource("rabbitmqsources")
 
-var rabbitmqsourcesKind = schema.GroupVersionKind{Group: "sources.knative.dev", Version: "v1alpha1", Kind: "RabbitmqSource"}
+var rabbitmqsourcesKind = v1alpha1.SchemeGroupVersion.WithKind("RabbitmqSource")
 
 // Get takes name of the rabbitmqSource, and returns the corresponding rabbitmqSource object, and an error if there is any.
 func (c *FakeRabbitmqSources) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.RabbitmqSource, err error) {
