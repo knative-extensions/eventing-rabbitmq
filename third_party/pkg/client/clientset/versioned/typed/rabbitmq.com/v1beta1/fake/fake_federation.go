@@ -23,7 +23,6 @@ import (
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -36,9 +35,9 @@ type FakeFederations struct {
 	ns   string
 }
 
-var federationsResource = schema.GroupVersionResource{Group: "rabbitmq.com", Version: "v1beta1", Resource: "federations"}
+var federationsResource = v1beta1.SchemeGroupVersion.WithResource("federations")
 
-var federationsKind = schema.GroupVersionKind{Group: "rabbitmq.com", Version: "v1beta1", Kind: "Federation"}
+var federationsKind = v1beta1.SchemeGroupVersion.WithKind("Federation")
 
 // Get takes name of the federation, and returns the corresponding federation object, and an error if there is any.
 func (c *FakeFederations) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta1.Federation, err error) {

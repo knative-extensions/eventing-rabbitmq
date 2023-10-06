@@ -23,7 +23,6 @@ import (
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -36,9 +35,9 @@ type FakeShovels struct {
 	ns   string
 }
 
-var shovelsResource = schema.GroupVersionResource{Group: "rabbitmq.com", Version: "v1beta1", Resource: "shovels"}
+var shovelsResource = v1beta1.SchemeGroupVersion.WithResource("shovels")
 
-var shovelsKind = schema.GroupVersionKind{Group: "rabbitmq.com", Version: "v1beta1", Kind: "Shovel"}
+var shovelsKind = v1beta1.SchemeGroupVersion.WithKind("Shovel")
 
 // Get takes name of the shovel, and returns the corresponding shovel object, and an error if there is any.
 func (c *FakeShovels) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta1.Shovel, err error) {
