@@ -258,7 +258,7 @@ envrc:: bash-autocomplete
 
 .PHONY: go-dep-update
 go-dep-update: ## Update any Go dependency
-	@printf "Update dep in go.mod by running e.g. $(BOLD)go get -d github.com/rabbitmq/messaging-topology-operator@v1.2.1$(NORMAL)\n" \
+	@printf "Update dep in go.mod by running e.g. $(BOLD)go get -d github.com/rabbitmq/messaging-topology-operator@v1.12.0$(NORMAL)\n" \
 	; read -rp " (press any key when done)" -n 1
 	$(CURDIR)/hack/update-deps.sh
 	$(CURDIR)/hack/update-codegen.sh
@@ -289,11 +289,11 @@ KO_DOCKER_REPO := kind.local
 envrc::
 	@echo 'export KO_DOCKER_REPO="$(KO_DOCKER_REPO)"'
 export KO_DOCKER_REPO
-MIN_SUPPORTED_K8S_VERSION := 1.25.0
+MIN_SUPPORTED_K8S_VERSION := 1.26.6
 KIND_K8S_VERSION ?= $(MIN_SUPPORTED_K8S_VERSION)
 export KIND_K8S_VERSION
 # Find the corresponding version digest in https://github.com/kubernetes-sigs/kind/releases
-KIND_K8S_DIGEST ?= sha256:227fa11ce74ea76a0474eeefb84cb75d8dad1b08638371ecf0e86259b35be0c8
+KIND_K8S_DIGEST ?= sha256:6e2d8b28a5b601defe327b98bd1c2d1930b49e5d8c512e1895099e4504007adb
 export KIND_K8S_DIGEST
 
 .PHONY: kind-cluster
@@ -311,7 +311,7 @@ $(KUBECONFIG): | $(KUBECONFIG_DIR)
 kubeconfig: $(KUBECONFIG)
 
 # https://github.com/rabbitmq/cluster-operator/releases
-RABBITMQ_CLUSTER_OPERATOR_VERSION ?= 2.3.0
+RABBITMQ_CLUSTER_OPERATOR_VERSION ?= 2.5.0
 .PHONY: install-rabbitmq-cluster-operator
 install-rabbitmq-cluster-operator: | $(KUBECONFIG) $(KUBECTL) ## Install RabbitMQ Cluster Operator
 	$(KUBECTL) $(K_CMD) --filename \
