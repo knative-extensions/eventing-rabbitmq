@@ -4,6 +4,7 @@ metadata:
   name: default-config
   namespace: retry-config-sample
 spec:
+  # vhost: you-rabbitmq-vhost
   rabbitmqClusterReference:
     name: rabbitmq
     namespace: retry-config-sample

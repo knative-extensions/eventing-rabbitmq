@@ -4,6 +4,7 @@ metadata:
   name: default-config
   namespace: tracing-sample
 spec:
+  # vhost: you-rabbitmq-vhost
   rabbitmqClusterReference:
     name: cluster
     namespace: tracing-sample

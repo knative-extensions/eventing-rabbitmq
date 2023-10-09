@@ -4,6 +4,7 @@ metadata:
   name: default-config
   namespace: rabbitmq-mtls-sample
 spec:
+  # vhost: test-vhost
   rabbitmqClusterReference:
     namespace: rabbitmq-mtls-sample
     name: rabbitmq

@@ -12,6 +12,7 @@ spec:
     # A value of 1 RabbitMQ Source behaves as a FIFO queue
     # Values above 1 break message ordering guarantees and can be seen as more performance oriented
     # parallelism: 10
+    # vhost: you-rabbitmq-vhost
     predeclared: true
     exchangeName: "source-exchange"
     queueName: source-queue

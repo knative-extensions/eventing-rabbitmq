@@ -107,6 +107,7 @@ metadata:
   name: default-config
   namespace: retry-config-sample
 spec:
+  # vhost: you-rabbitmq-vhost
   rabbitmqClusterReference:
     name: rabbitmq
     namespace: retry-config-sample
@@ -366,6 +367,7 @@ spec:
     name: rabbitmq
     namespace: retry-config-sample
   rabbitmqResourcesConfig:
+    # vhost: you-rabbitmq-vhost
     exchangeName: "eventing-rabbitmq-source"
     queueName: "eventing-rabbitmq-source"
   delivery:
