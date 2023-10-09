@@ -23,7 +23,6 @@ import (
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -36,9 +35,9 @@ type FakePermissions struct {
 	ns   string
 }
 
-var permissionsResource = schema.GroupVersionResource{Group: "rabbitmq.com", Version: "v1beta1", Resource: "permissions"}
+var permissionsResource = v1beta1.SchemeGroupVersion.WithResource("permissions")
 
-var permissionsKind = schema.GroupVersionKind{Group: "rabbitmq.com", Version: "v1beta1", Kind: "Permission"}
+var permissionsKind = v1beta1.SchemeGroupVersion.WithKind("Permission")
 
 // Get takes name of the permission, and returns the corresponding permission object, and an error if there is any.
 func (c *FakePermissions) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta1.Permission, err error) {

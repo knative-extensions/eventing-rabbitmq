@@ -22,13 +22,30 @@ type SchemaReplicationSpec struct {
 	RabbitmqClusterReference RabbitmqClusterReference `json:"rabbitmqClusterReference"`
 	// Defines a Secret which contains credentials to be used for schema replication.
 	// The Secret must contain the keys `username` and `password` in its Data field, or operator will error.
-	// +kubebuilder:validation:Required
+	// Have to set either secretBackend.vault.secretPath or spec.upstreamSecret, but not both.
+	// +kubebuilder:validation:Optional
 	UpstreamSecret *corev1.LocalObjectReference `json:"upstreamSecret,omitempty"`
 	// endpoints should be one or multiple endpoints separated by ','.
 	// Must provide either spec.endpoints or endpoints in spec.upstreamSecret.
 	// When endpoints are provided in both spec.endpoints and spec.upstreamSecret, spec.endpoints takes
 	// precedence.
 	Endpoints string `json:"endpoints,omitempty"`
+	// Set to fetch user credentials from K8s external secret stores to be used for schema replication.
+	SecretBackend SecretBackend `json:"secretBackend,omitempty"`
+}
+
+// SecretBackend configures a single secret backend.
+// Today, only Vault exists as supported secret backend.
+type SecretBackend struct {
+	Vault *VaultSpec `json:"vault,omitempty"`
+}
+
+type VaultSpec struct {
+	// Path in Vault to access a KV (Key-Value) secret with the fields username and password to be used for replication.
+	// For example "secret/data/rabbitmq/config".
+	// Optional; if not provided, username and password will come from upstreamSecret instead.
+	// Have to set either secretBackend.vault.secretPath or upstreamSecret, but not both.
+	SecretPath string `json:"secretPath,omitempty"`
 }
 
 // SchemaReplicationStatus defines the observed state of SchemaReplication
@@ -63,13 +80,21 @@ type SchemaReplicationList struct {
 	Items           []SchemaReplication `json:"items"`
 }
 
-func init() {
-	SchemeBuilder.Register(&SchemaReplication{}, &SchemaReplicationList{})
-}
-
 func (s *SchemaReplication) GroupResource() schema.GroupResource {
 	return schema.GroupResource{
 		Group:    s.GroupVersionKind().Group,
 		Resource: s.GroupVersionKind().Kind,
 	}
+}
+
+func (s *SchemaReplication) RabbitReference() RabbitmqClusterReference {
+	return s.Spec.RabbitmqClusterReference
+}
+
+func (s *SchemaReplication) SetStatusConditions(c []Condition) {
+	s.Status.Conditions = c
+}
+
+func init() {
+	SchemeBuilder.Register(&SchemaReplication{}, &SchemaReplicationList{})
 }

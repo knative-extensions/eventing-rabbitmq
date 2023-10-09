@@ -23,7 +23,6 @@ import (
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -36,9 +35,9 @@ type FakeExchanges struct {
 	ns   string
 }
 
-var exchangesResource = schema.GroupVersionResource{Group: "rabbitmq.com", Version: "v1beta1", Resource: "exchanges"}
+var exchangesResource = v1beta1.SchemeGroupVersion.WithResource("exchanges")
 
-var exchangesKind = schema.GroupVersionKind{Group: "rabbitmq.com", Version: "v1beta1", Kind: "Exchange"}
+var exchangesKind = v1beta1.SchemeGroupVersion.WithKind("Exchange")
 
 // Get takes name of the exchange, and returns the corresponding exchange object, and an error if there is any.
 func (c *FakeExchanges) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta1.Exchange, err error) {

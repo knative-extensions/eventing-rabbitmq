@@ -2,14 +2,14 @@ name: KinD conformance tests
 
 on:
   push:
-    branches: ['main', 'release-*']
+    branches: ["main", "release-*"]
   pull_request:
-    branches: ['main', 'release-*']
+    branches: ["main", "release-*"]
 
   workflow_dispatch: # Manual trigger.
     inputs:
       milestoneEventsTarget:
-        description: 'Target Milestone Events to URL'
+        description: "Target Milestone Events to URL"
 
 jobs:
   run:
@@ -18,14 +18,14 @@ jobs:
       fail-fast: false # Keep running if one leg fails.
       matrix:
         k8s-version:
-          - v1.25.9
+          - v1.26.6
 
         # Map between K8s and KinD versions.
         # This is attempting to make it a bit clearer what's being tested.
         # See: https://github.com/kubernetes-sigs/kind/releases/tag/v0.17.0
         include:
-          - k8s-version: v1.25.9
-            kind-image-sha: sha256:c08d6c52820aa42e533b70bce0c2901183326d86dcdcbedecc9343681db45161
+          - k8s-version: v1.26.6
+            kind-image-sha: sha256:6e2d8b28a5b601defe327b98bd1c2d1930b49e5d8c512e1895099e4504007adb
 
     steps:
       - name: Defaults
@@ -121,8 +121,8 @@ jobs:
           SLACK_ICON: http://github.com/knative.png?size=48
           SLACK_USERNAME: github-actions
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-          SLACK_CHANNEL: 'eventing-delivery'
-          MSG_MINIMAL: 'true'
+          SLACK_CHANNEL: "eventing-delivery"
+          MSG_MINIMAL: "true"
           SLACK_TITLE: Periodic e2e for RabbitMQ on kind on (${{ matrix.k8s-version }} failed.
           SLACK_MESSAGE: |
             For detailed logs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
