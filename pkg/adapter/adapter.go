@@ -31,6 +31,7 @@ import (
 	"knative.dev/eventing-rabbitmq/pkg/utils"
 	"knative.dev/eventing/pkg/adapter/v2"
 	v1 "knative.dev/eventing/pkg/apis/duck/v1"
+	"knative.dev/eventing/pkg/auth"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/eventing/pkg/metrics/source"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -58,12 +59,13 @@ func NewEnvConfig() adapter.EnvConfigAccessor {
 }
 
 type Adapter struct {
-	config    *adapterConfig
-	sink      duckv1.Addressable
-	reporter  source.StatsReporter
-	logger    *zap.Logger
-	context   context.Context
-	rmqHelper rabbit.RabbitMQConnectionsHandlerInterface
+	config          *adapterConfig
+	sink            duckv1.Addressable
+	reporter        source.StatsReporter
+	logger          *zap.Logger
+	context         context.Context
+	rmqHelper       rabbit.RabbitMQConnectionsHandlerInterface
+	eventDispatcher *kncloudevents.Dispatcher
 }
 
 var _ adapter.MessageAdapter = (*Adapter)(nil)
@@ -76,12 +78,15 @@ var (
 func NewAdapter(ctx context.Context, processed adapter.EnvConfigAccessor, sink duckv1.Addressable, reporter source.StatsReporter) adapter.MessageAdapter {
 	logger := logging.FromContext(ctx).Desugar()
 	config := processed.(*adapterConfig)
+	oidcTokenProvider := auth.NewOIDCTokenProvider(ctx)
+
 	return &Adapter{
-		config:   config,
-		sink:     sink,
-		reporter: reporter,
-		logger:   logger,
-		context:  ctx,
+		config:          config,
+		sink:            sink,
+		reporter:        reporter,
+		logger:          logger,
+		context:         ctx,
+		eventDispatcher: kncloudevents.NewDispatcher(oidcTokenProvider),
 	}
 }
 
@@ -233,7 +238,7 @@ func (a *Adapter) postMessage(msg *amqp.Delivery) error {
 		return err
 	}
 
-	dispatchInfo, err := kncloudevents.SendEvent(a.context, *event, a.sink, kncloudevents.WithRetryConfig(retryConfig))
+	dispatchInfo, err := a.eventDispatcher.SendEvent(a.context, *event, a.sink, kncloudevents.WithRetryConfig(retryConfig))
 	if err != nil {
 		a.logger.Error("error while sending the message", zap.Error(err))
 		return err
