@@ -58,10 +58,6 @@ func MainMessageAdapterWithContext(ctx context.Context, component string, ector 
 	defer flush(logger)
 	ctx = logging.WithLogger(ctx, logger)
 
-	if ControllerFromContext(ctx) != nil || IsInjectorEnabled(ctx) {
-		ctx, _ = SetupInformers(ctx, env.GetLogger())
-	}
-
 	// Report stats on Go memory usage every 30 seconds.
 	msp := metrics.NewMemStatsAll()
 	msp.Start(ctx, 30*time.Second)
