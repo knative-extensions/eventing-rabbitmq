@@ -38,6 +38,10 @@ import (
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/logging"
+	rectesting "knative.dev/pkg/reconciler/testing"
+
+	// Fake injection client
+	_ "knative.dev/pkg/client/injection/kube/client/fake"
 )
 
 var serverTestName = "test-name"
@@ -271,7 +275,7 @@ func TestAdapter_NewEnvConfig(t *testing.T) {
 }
 
 func TestAdapter_NewAdapter(t *testing.T) {
-	ctx := context.TODO()
+	ctx, _ := rectesting.SetupFakeContext(t)
 	env := NewEnvConfig()
 	h := &fakeHandler{
 		handlers: []handlerFunc{sinkAccepted},
