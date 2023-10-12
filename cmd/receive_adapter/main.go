@@ -18,10 +18,16 @@ package main
 
 import (
 	"knative.dev/eventing/pkg/adapter/v2"
+	"knative.dev/pkg/injection"
+	"knative.dev/pkg/signals"
 
 	kadapter "knative.dev/eventing-rabbitmq/pkg/adapter"
 )
 
 func main() {
-	adapter.MainMessageAdapter("rabbitmqsource", kadapter.NewEnvConfig, kadapter.NewAdapter)
+	ctx := signals.NewContext()
+	cfg := injection.ParseAndGetRESTConfigOrDie()
+	ctx, _ = injection.Default.SetupInformers(ctx, cfg)
+
+	adapter.MainMessageAdapterWithContext(ctx, "rabbitmqsource", kadapter.NewEnvConfig, kadapter.NewAdapter)
 }
