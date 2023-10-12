@@ -128,6 +128,11 @@ func (mr *MagicEnvironment) Finish() {
 	var result milestone.Result = unknownResult{}
 	if mr.managedT != nil {
 		result = mr.managedT
+		if !result.Failed() {
+			if err := feature.DeleteResources(mr.c, mr.managedT, mr.References()); err != nil {
+				mr.managedT.Fatal(err)
+			}
+		}
 	}
 	if mr.milestones != nil {
 		mr.milestones.Finished(result)
@@ -178,7 +183,7 @@ func WithEmitter(emitter milestone.Emitter) EnvOpts {
 }
 
 func (mr *MagicGlobalEnvironment) Environment(opts ...EnvOpts) (context.Context, Environment) {
-	opts = append([]EnvOpts{inNamespace()}, opts...)
+	opts = append(opts, inNamespace())
 
 	env := &MagicEnvironment{
 		c:              mr.c,
