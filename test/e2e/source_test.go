@@ -56,7 +56,7 @@ func DirectSourceTest() *feature.Feature {
 		Must("the recorder received all sent events within the time",
 			func(ctx context.Context, t feature.T) {
 				// TODO: Use constraint matching instead of just counting number of events.
-				eventshub.StoreFromContext(ctx, "recorder").AssertAtLeast(t, eventsNumber)
+				eventshub.StoreFromContext(ctx, "recorder").AssertAtLeast(ctx, t, eventsNumber)
 			})
 	f.Teardown("Delete feature resources", f.DeleteResources)
 	return f
@@ -75,7 +75,7 @@ func DirectSourceTestWithCerts() *feature.Feature {
 		Must("the recorder received all sent events within the time",
 			func(ctx context.Context, t feature.T) {
 				// TODO: Use constraint matching instead of just counting number of events.
-				eventshub.StoreFromContext(ctx, "recorder").AssertAtLeast(t, eventsNumber)
+				eventshub.StoreFromContext(ctx, "recorder").AssertAtLeast(ctx, t, eventsNumber)
 			})
 	f.Teardown("Delete feature resources", f.DeleteResources)
 	return f
@@ -99,7 +99,7 @@ func DirectSourceConnectionSecretTest() *feature.Feature {
 		Must("the recorder received all sent events within the time",
 			func(ctx context.Context, t feature.T) {
 				// TODO: Use constraint matching instead of just counting number of events.
-				eventshub.StoreFromContext(ctx, "recorder").AssertAtLeast(t, eventsNumber)
+				eventshub.StoreFromContext(ctx, "recorder").AssertAtLeast(ctx, t, eventsNumber)
 			})
 	f.Teardown("Delete feature resources", f.DeleteResources)
 	return f
@@ -123,7 +123,7 @@ func VHostSourceTest() *feature.Feature {
 		Must("the recorder received all sent events within the time",
 			func(ctx context.Context, t feature.T) {
 				// TODO: Use constraint matching instead of just counting number of events.
-				eventshub.StoreFromContext(ctx, "recorder").AssertAtLeast(t, 10)
+				eventshub.StoreFromContext(ctx, "recorder").AssertAtLeast(ctx, t, 10)
 			})
 	f.Teardown("Delete feature resources", f.DeleteResources)
 	return f
@@ -147,7 +147,7 @@ func SourceConcurrentReceiveAdapterProcessingTest() *feature.Feature {
 
 	f.Requirement("install producer", sourceproducer.Install(sourceproducer.WithProducerCount(eventsNumber)))
 	f.Assert("the adapter sends events concurrently", func(ctx context.Context, t feature.T) {
-		events := eventshub.StoreFromContext(ctx, "recorder").AssertExact(t, eventsNumber)
+		events := eventshub.StoreFromContext(ctx, "recorder").AssertExact(ctx, t, eventsNumber)
 		diff := events[1].Time.Sub(events[0].Time)
 		if diff >= time.Second {
 			t.Fatalf("expected processing to happen concurrently but were sequential. time elapsed between events: %v", diff)

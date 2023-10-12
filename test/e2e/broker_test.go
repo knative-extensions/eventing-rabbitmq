@@ -70,7 +70,7 @@ func DirectTestBroker() *feature.Feature {
 		Must("the recorder received all sent events within the time",
 			func(ctx context.Context, t feature.T) {
 				// TODO: Use constraint matching instead of just counting number of events.
-				eventshub.StoreFromContext(ctx, "recorder").AssertAtLeast(t, 5)
+				eventshub.StoreFromContext(ctx, "recorder").AssertAtLeast(ctx, t, 5)
 			})
 	f.Teardown("Delete feature resources", f.DeleteResources)
 	return f
@@ -99,7 +99,7 @@ func DirectTestBrokerConnectionSecret() *feature.Feature {
 		Must("the recorder received all sent events within the time",
 			func(ctx context.Context, t feature.T) {
 				// TODO: Use constraint matching instead of just counting number of events.
-				eventshub.StoreFromContext(ctx, "recorder").AssertAtLeast(t, 5)
+				eventshub.StoreFromContext(ctx, "recorder").AssertAtLeast(ctx, t, 5)
 			})
 	f.Teardown("Delete feature resources", f.DeleteResources)
 	return f
@@ -133,7 +133,7 @@ func DirectVhostTestBroker() *feature.Feature {
 		Must("the recorder received all sent events within the time",
 			func(ctx context.Context, t feature.T) {
 				// TODO: Use constraint matching instead of just counting number of events.
-				eventshub.StoreFromContext(ctx, "recorder").AssertAtLeast(t, 5)
+				eventshub.StoreFromContext(ctx, "recorder").AssertAtLeast(ctx, t, 5)
 			})
 	f.Teardown("Delete feature resources", f.DeleteResources)
 	return f
@@ -164,7 +164,7 @@ func BrokerConcurrentDispatcherTest() *feature.Feature {
 	f.Requirement("sender is finished", prober.SenderDone("source"))
 
 	f.Assert("the dispatcher sends events concurrently", func(ctx context.Context, t feature.T) {
-		events := eventshub.StoreFromContext(ctx, "recorder").AssertExact(t, 2)
+		events := eventshub.StoreFromContext(ctx, "recorder").AssertExact(ctx, t, 2)
 		diff := events[1].Time.Sub(events[0].Time)
 		if diff >= 3*time.Second {
 			t.Fatalf("expected dispatch to happen concurrently but were sequential. time elapsed between events: %v", diff)
@@ -198,7 +198,7 @@ func BrokerDLQTest() *feature.Feature {
 		Must("the recorder received all sent events within the time",
 			func(ctx context.Context, t feature.T) {
 				// TODO: Use constraint matching instead of just counting number of events.
-				eventshub.StoreFromContext(ctx, "recorder").AssertAtLeast(t, 5)
+				eventshub.StoreFromContext(ctx, "recorder").AssertAtLeast(ctx, t, 5)
 			})
 	f.Teardown("Delete feature resources", f.DeleteResources)
 	return f
