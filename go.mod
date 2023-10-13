@@ -21,10 +21,10 @@ require (
 	k8s.io/client-go v0.27.6
 	k8s.io/code-generator v0.27.6
 	k8s.io/kube-openapi v0.0.0-20230928205116-a78145627833
-	knative.dev/eventing v0.38.1-0.20231011080842-a0e4c18a3748
+	knative.dev/eventing v0.38.1-0.20231012114646-f321ba576d89
 	knative.dev/hack v0.0.0-20231010131532-fc76874b28c6
-	knative.dev/pkg v0.0.0-20231010144348-ca8c009405dd
-	knative.dev/reconciler-test v0.0.0-20231011054953-1c4b386667b2
+	knative.dev/pkg v0.0.0-20231012104454-9051a454f03f
+	knative.dev/reconciler-test v0.0.0-20231012060156-362d56d92da9
 	sigs.k8s.io/controller-runtime v0.15.2
 )
 
@@ -98,7 +98,7 @@ require (
 	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/testify v1.8.4 // indirect
-	github.com/tsenart/vegeta/v12 v12.11.0 // indirect
+	github.com/tsenart/vegeta/v12 v12.11.1 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/automaxprocs v1.5.3 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
@@ -114,7 +114,7 @@ require (
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.14.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
-	google.golang.org/api v0.143.0 // indirect
+	google.golang.org/api v0.145.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto v0.0.0-20230913181813-007df8e322eb // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20230913181813-007df8e322eb // indirect

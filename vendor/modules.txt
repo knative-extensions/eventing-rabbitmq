@@ -327,7 +327,7 @@ github.com/spf13/pflag
 ## explicit; go 1.20
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
-# github.com/tsenart/vegeta/v12 v12.11.0
+# github.com/tsenart/vegeta/v12 v12.11.1
 ## explicit; go 1.20
 github.com/tsenart/vegeta/v12/lib
 # go.opencensus.io v0.24.0
@@ -445,7 +445,7 @@ golang.org/x/tools/internal/typeparams
 # gomodules.xyz/jsonpatch/v2 v2.4.0
 ## explicit; go 1.20
 gomodules.xyz/jsonpatch/v2
-# google.golang.org/api v0.143.0
+# google.golang.org/api v0.145.0
 ## explicit; go 1.19
 google.golang.org/api/support/bundler
 # google.golang.org/appengine v1.6.8
@@ -1086,7 +1086,7 @@ k8s.io/utils/pointer
 k8s.io/utils/ptr
 k8s.io/utils/strings/slices
 k8s.io/utils/trace
-# knative.dev/eventing v0.38.1-0.20231011080842-a0e4c18a3748
+# knative.dev/eventing v0.38.1-0.20231012114646-f321ba576d89
 ## explicit; go 1.19
 knative.dev/eventing/cmd/heartbeats
 knative.dev/eventing/pkg/adapter/v2
@@ -1200,7 +1200,7 @@ knative.dev/eventing/test/test_images/print
 # knative.dev/hack v0.0.0-20231010131532-fc76874b28c6
 ## explicit; go 1.18
 knative.dev/hack
-# knative.dev/pkg v0.0.0-20231010144348-ca8c009405dd
+# knative.dev/pkg v0.0.0-20231012104454-9051a454f03f
 ## explicit; go 1.18
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
@@ -1305,7 +1305,7 @@ knative.dev/pkg/webhook/json
 knative.dev/pkg/webhook/resourcesemantics
 knative.dev/pkg/webhook/resourcesemantics/defaulting
 knative.dev/pkg/webhook/resourcesemantics/validation
-# knative.dev/reconciler-test v0.0.0-20231011054953-1c4b386667b2
+# knative.dev/reconciler-test v0.0.0-20231012060156-362d56d92da9
 ## explicit; go 1.20
 knative.dev/reconciler-test/cmd/eventshub
 knative.dev/reconciler-test/pkg/environment
@@ -1331,6 +1331,7 @@ knative.dev/reconciler-test/pkg/milestone
 knative.dev/reconciler-test/pkg/resources/knativeservice
 knative.dev/reconciler-test/pkg/resources/secret
 knative.dev/reconciler-test/pkg/resources/service
+knative.dev/reconciler-test/pkg/resources/serviceaccount
 knative.dev/reconciler-test/pkg/state
 knative.dev/reconciler-test/resources/certificate
 # sigs.k8s.io/controller-runtime v0.15.2
