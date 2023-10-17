@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/cloudevents/sdk-go/observability/opencensus/v2 v2.13.0
 	github.com/cloudevents/sdk-go/v2 v2.13.0
-	github.com/google/go-cmp v0.5.9
+	github.com/google/go-cmp v0.6.0
 	github.com/google/licenseclassifier v0.0.0-20210325184830-bb04aff29e72
 	github.com/influxdata/tdigest v0.0.1 // indirect
 	github.com/kelseyhightower/envconfig v1.4.0
@@ -21,10 +21,10 @@ require (
 	k8s.io/client-go v0.27.6
 	k8s.io/code-generator v0.27.6
 	k8s.io/kube-openapi v0.0.0-20230928205116-a78145627833
-	knative.dev/eventing v0.38.1-0.20231012114646-f321ba576d89
-	knative.dev/hack v0.0.0-20231010131532-fc76874b28c6
-	knative.dev/pkg v0.0.0-20231012104454-9051a454f03f
-	knative.dev/reconciler-test v0.0.0-20231012060156-362d56d92da9
+	knative.dev/eventing v0.38.1-0.20231016213247-4a07fdcad340
+	knative.dev/hack v0.0.0-20231016131700-2c938d4918da
+	knative.dev/pkg v0.0.0-20231016185203-283df0be0668
+	knative.dev/reconciler-test v0.0.0-20231016143156-93ac412266a6
 	sigs.k8s.io/controller-runtime v0.15.2
 )
 
@@ -114,12 +114,12 @@ require (
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.14.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
-	google.golang.org/api v0.145.0 // indirect
+	google.golang.org/api v0.147.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
-	google.golang.org/genproto v0.0.0-20230913181813-007df8e322eb // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20230913181813-007df8e322eb // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20230920204549-e6e6cdab5c13 // indirect
-	google.golang.org/grpc v1.58.2 // indirect
+	google.golang.org/genproto v0.0.0-20231002182017-d307bd883b97 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20231002182017-d307bd883b97 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20231009173412-8bfb1ae86b6c // indirect
+	google.golang.org/grpc v1.58.3 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
