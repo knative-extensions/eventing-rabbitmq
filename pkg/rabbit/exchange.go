@@ -17,8 +17,6 @@ limitations under the License.
 package rabbit
 
 import (
-	"net/url"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/eventing-rabbitmq/pkg/apis/sources/v1alpha1"
 	"knative.dev/pkg/kmeta"
@@ -33,7 +31,7 @@ type ExchangeArgs struct {
 	Namespace                string
 	RabbitMQVhost            string
 	RabbitmqClusterReference *rabbitv1beta1.RabbitmqClusterReference
-	RabbitMQURL              *url.URL
+	RabbitMQURL              string
 	Broker                   *eventingv1.Broker
 	Trigger                  *eventingv1.Trigger
 	Source                   *v1alpha1.RabbitmqSource
