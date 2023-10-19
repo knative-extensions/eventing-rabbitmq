@@ -125,6 +125,18 @@ func Test_RabbitMQURL(t *testing.T) {
 		secretData: map[string][]byte{"uri": []byte("https://test-uri"), "password": []byte("1234"), "username": []byte("test"), "port": []byte("1234")},
 		wantUrl:    "amqps://test:1234@test-uri:1234",
 		wantErr:    false,
+	}, {
+		name:       "username with /",
+		conSecret:  true,
+		secretData: map[string][]byte{"uri": []byte("https://test-uri:5678"), "password": []byte("1234"), "username": []byte("my//domain/test"), "port": []byte("1234")},
+		wantUrl:    "amqps://my//domain/test:1234@test-uri:1234",
+		wantErr:    false,
+	}, {
+		name:       "username with \\",
+		conSecret:  true,
+		secretData: map[string][]byte{"uri": []byte("https://test-uri:5678"), "password": []byte("1234"), "username": []byte("mydomain\\test"), "port": []byte("1234")},
+		wantUrl:    "amqps://mydomain\\test:1234@test-uri:1234",
+		wantErr:    false,
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
 			tt := tt
@@ -149,7 +161,7 @@ func Test_RabbitMQURL(t *testing.T) {
 			gotUrl, err := r.RabbitMQURL(ctx, cr)
 			if (err != nil && !tt.wantErr) || (err == nil && tt.wantErr) {
 				t.Errorf("unexpected error checking conditions want: %v, got: %v", tt.wantErr, err)
-			} else if !tt.wantErr && gotUrl.String() != tt.wantUrl {
+			} else if !tt.wantErr && gotUrl != tt.wantUrl {
 				t.Errorf("got wrong url want: %s, got: %s", tt.wantUrl, gotUrl)
 			}
 		})
