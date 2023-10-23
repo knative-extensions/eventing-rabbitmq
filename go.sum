@@ -1876,8 +1876,8 @@ knative.dev/hack v0.0.0-20231016131700-2c938d4918da h1:xy+fvuz2LDOMsZ5UwXRaMF70N
 knative.dev/hack v0.0.0-20231016131700-2c938d4918da/go.mod h1:yk2OjGDsbEnQjfxdm0/HJKS2WqTLEFg/N6nUs6Rqx3Q=
 knative.dev/pkg v0.0.0-20231017113806-d6ab72900ea5 h1:9AvFZdEtuwKWDcTV1VSwmrgrRR9f38wbIAm+sNwLivQ=
 knative.dev/pkg v0.0.0-20231017113806-d6ab72900ea5/go.mod h1:HHRXEd7ZlFpthgE+rwAZ6MUVnuJOAeolnaFSthXloUQ=
-knative.dev/reconciler-test v0.0.0-20231017131250-999d077826b7 h1:zcFdS5167SauAvKmmPPUmXJtUxlBdKUWmO/a+F67+IM=
-knative.dev/reconciler-test v0.0.0-20231017131250-999d077826b7/go.mod h1:0jsKqMXLCIQNdceLuL2SL1LaAZSFtqUY7cLyHt0V2xY=
+knative.dev/reconciler-test v0.0.0-20231023113936-e3a9c2e9b06b h1:L43rzmujsuHa2C1SdFdouBd5QBlibgiXIFyY/+luWnU=
+knative.dev/reconciler-test v0.0.0-20231023113936-e3a9c2e9b06b/go.mod h1:0jsKqMXLCIQNdceLuL2SL1LaAZSFtqUY7cLyHt0V2xY=
 lukechampine.com/uint128 v1.1.1/go.mod h1:c4eWIwlEGaxC/+H1VguhU4PHXNWDCDMUlWdIWl2j1gk=
 lukechampine.com/uint128 v1.2.0/go.mod h1:c4eWIwlEGaxC/+H1VguhU4PHXNWDCDMUlWdIWl2j1gk=
 modernc.org/cc/v3 v3.36.0/go.mod h1:NFUHyPn4ekoC/JHeZFfZurN6ixxawE1BnVonP/oahEI=
