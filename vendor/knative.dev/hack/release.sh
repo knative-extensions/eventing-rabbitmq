@@ -652,24 +652,31 @@ function publish_artifacts() {
   fi
   [[ -n "${RELEASE_GCS_BUCKET}" ]] && publish_to_gcs "${ARTIFACTS_TO_PUBLISH}"
   publish_to_github "${ARTIFACTS_TO_PUBLISH}"
+  set_latest_to_highest_semver
   banner "New release published successfully"
 }
 
 # Sets the github release with the highest semver to 'latest'
 function set_latest_to_highest_semver() {
-  local last_version # don't combine with the line below, or $? will be 0
+  if ! (( PUBLISH_TO_GITHUB )); then
+    return 0
+  fi
+  echo "Setting latest release to highest semver"
+  
+  local last_version release_id  # don't combine with assignment else $? will be 0
+
   last_version="$(hub_tool -p release | cut -d'-' -f2 | grep '^v[0-9]\+\.[0-9]\+\.[0-9]\+$'| sort -r -V | head -1)"
   if ! [[ $? -eq 0 ]]; then
     abort "cannot list releases"
   fi
   
-  local release_id # don't combine with the line below, or $? will be 0
-  release_id="$(hub_tool api /repos/${ORG_NAME}/${REPO_NAME}/releases/tags/knative-${last_version} | jq .id)"
+  release_id="$(hub_tool api "/repos/${ORG_NAME}/${REPO_NAME}/releases/tags/knative-${last_version}" | jq .id)"
   if [[ $? -ne 0 ]]; then
     abort "cannot get relase id from github"
   fi
   
-  hub_tool api --method PATCH /repos/knative/serving/releases/$release_id -F make_latest=true > /dev/null || abort "error settomg $last_version to 'latest'"
+  hub_tool api --method PATCH "/repos/knative/serving/releases/$release_id" \
+    -F make_latest=true > /dev/null || abort "error settomg $last_version to 'latest'"
   echo "Github release ${last_version} set as 'latest'"
 }
 
@@ -699,6 +706,8 @@ function main() {
   function_exists build_release || abort "function 'build_release()' not defined"
   [[ -x ${VALIDATION_TESTS} ]] || abort "test script '${VALIDATION_TESTS}' doesn't exist"
 
+  banner "Environment variables"
+  env
   # Log what will be done and where.
   banner "Release configuration"
   if which gcloud &>/dev/null ; then
@@ -745,7 +754,6 @@ function main() {
   done
   echo "New release built successfully"
   publish_artifacts
-  set_latest_to_highest_semver
 }
 
 # Publishes a new release on GitHub, also git tagging it (unless this is not a versioned release).
