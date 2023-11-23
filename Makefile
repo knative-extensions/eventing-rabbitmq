@@ -334,7 +334,7 @@ install-rabbitmq-topology-operator: | install-cert-manager $(KUBECTL) ## Install
 	$(KUBECTL) $(K_CMD) --filename \
 		https://github.com/rabbitmq/messaging-topology-operator/releases/download/v$(RABBITMQ_TOPOLOGY_OPERATOR_VERSION)/messaging-topology-operator-with-certmanager.yaml
 
-KNATIVE_VERSION ?= 1.10.0
+KNATIVE_VERSION ?= 1.12.1
 EVENTING_CRDS ?= https://github.com/knative/eventing/releases/download/knative-v$(KNATIVE_VERSION)/eventing-crds.yaml
 EVENTING_CORE ?= https://github.com/knative/eventing/releases/download/knative-v$(KNATIVE_VERSION)/eventing-core.yaml
 
