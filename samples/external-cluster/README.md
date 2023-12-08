@@ -379,7 +379,8 @@ metadata:
 spec:
   rabbitmqClusterReference:
     namespace: external-cluster-sample
-    connectionSecret: rabbitmq-secret-credentials
+    connectionSecret:
+      name: rabbitmq-secret-credentials
   rabbitmqResourcesConfig:
     # vhost: you-rabbitmq-vhost
     predeclared: true
