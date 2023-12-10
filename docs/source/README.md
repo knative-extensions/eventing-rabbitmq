@@ -104,7 +104,7 @@ spec:
     namespace: default
     connectionSecret: # set this or rabbitmqClusterReference.name not both
       name: test-secret
-  rabbitmqResourcesConfig
+  rabbitmqResourcesConfig:
     exchangeName: "eventing-rabbitmq-source"
     queueName: "eventing-rabbitmq-source"
   sink:
