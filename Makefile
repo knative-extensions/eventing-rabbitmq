@@ -334,25 +334,26 @@ install-rabbitmq-topology-operator: | install-cert-manager $(KUBECTL) ## Install
 	$(KUBECTL) $(K_CMD) --filename \
 		https://github.com/rabbitmq/messaging-topology-operator/releases/download/v$(RABBITMQ_TOPOLOGY_OPERATOR_VERSION)/messaging-topology-operator-with-certmanager.yaml
 
-KNATIVE_VERSION ?= 1.10.0
-EVENTING_CRDS ?= https://github.com/knative/eventing/releases/download/knative-v$(KNATIVE_VERSION)/eventing-crds.yaml
-EVENTING_CORE ?= https://github.com/knative/eventing/releases/download/knative-v$(KNATIVE_VERSION)/eventing-core.yaml
+KNATIVE_EVENTING_VERSION ?= 1.12.0
+EVENTING_CRDS ?= https://github.com/knative/eventing/releases/download/knative-v$(KNATIVE_EVENTING_VERSION)/eventing-crds.yaml
+EVENTING_CORE ?= https://github.com/knative/eventing/releases/download/knative-v$(KNATIVE_EVENTING_VERSION)/eventing-core.yaml
 
 ifneq (,$(USE_LATEST_EVENTING))
 EVENTING_CRDS = ./third_party/eventing-latest/eventing-crds.yaml
 EVENTING_CORE = ./third_party/eventing-latest/eventing-core.yaml
 endif
 
+KNATIVE_SERVING_VERSION ?= 1.12.1
 # https://github.com/knative/serving/releases
 .PHONY: install-knative-serving
 install-knative-serving: | $(KUBECONFIG) $(KUBECTL) ## Install Knative Serving
 	$(KUBECTL) $(K_CMD) --filename \
-		https://github.com/knative/serving/releases/download/knative-v$(KNATIVE_VERSION)/serving-crds.yaml
+		https://github.com/knative/serving/releases/download/knative-v$(KNATIVE_SERVING_VERSION)/serving-crds.yaml
 	$(KUBECTL) $(K_CMD) --filename \
-		https://github.com/knative/serving/releases/download/knative-v$(KNATIVE_VERSION)/serving-core.yaml
+		https://github.com/knative/serving/releases/download/knative-v$(KNATIVE_SERVING_VERSION)/serving-core.yaml
 	$(KUBECTL) wait --for=condition=available deploy/controller --timeout=60s --namespace $(SERVING_NAMESPACE)
 	$(KUBECTL) wait --for=condition=available deploy/webhook --timeout=60s --namespace $(SERVING_NAMESPACE)
-	$(KUBECTL) apply --filename https://github.com/knative/net-kourier/releases/download/knative-v$(KNATIVE_VERSION)/kourier.yaml
+	$(KUBECTL) apply --filename https://github.com/knative/net-kourier/releases/download/knative-v$(KNATIVE_SERVING_VERSION)/kourier.yaml
 	$(KUBECTL) patch configmap/config-network --namespace $(SERVING_NAMESPACE) --type merge \
 		--patch '{"data":{"ingress.class":"kourier.ingress.networking.knative.dev"}}'
 
