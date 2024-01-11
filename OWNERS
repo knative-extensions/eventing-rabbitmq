@@ -4,3 +4,6 @@ approvers:
 - knative-release-leads
 - eventing-writers
 - eventing-rabbitmq-approvers
+
+reviewers:
+- eventing-rabbitmq-approvers
