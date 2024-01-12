@@ -8,7 +8,7 @@ kubeadmConfigPatches:
   - |
     apiVersion: kubeadm.k8s.io/v1beta3
     kind: ClusterConfiguration
-    kubernetesVersion: v1.26.6
+    kubernetesVersion: ${KIND_K8S_VERSION}
     metadata:
       name: config
     apiServer:

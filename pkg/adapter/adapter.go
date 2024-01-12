@@ -18,27 +18,21 @@ package rabbitmq
 
 import (
 	"context"
-	"fmt"
-	nethttp "net/http"
 	"sync"
 	"time"
 
 	"go.uber.org/zap"
 
 	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/rickb777/date/period"
+
+	cloudevents "github.com/cloudevents/sdk-go/v2"
 
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
-	"knative.dev/eventing-rabbitmq/pkg/utils"
 	"knative.dev/eventing/pkg/adapter/v2"
 	v1 "knative.dev/eventing/pkg/apis/duck/v1"
-	"knative.dev/eventing/pkg/auth"
-	"knative.dev/eventing/pkg/kncloudevents"
-	"knative.dev/eventing/pkg/metrics/source"
-	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/logging"
 )
-
-const resourceGroup = "rabbitmqsources.sources.knative.dev"
 
 type adapterConfig struct {
 	adapter.EnvConfig
@@ -59,34 +53,24 @@ func NewEnvConfig() adapter.EnvConfigAccessor {
 }
 
 type Adapter struct {
-	config          *adapterConfig
-	sink            duckv1.Addressable
-	reporter        source.StatsReporter
-	logger          *zap.Logger
-	context         context.Context
-	rmqHelper       rabbit.RabbitMQConnectionsHandlerInterface
-	eventDispatcher *kncloudevents.Dispatcher
+	config    *adapterConfig
+	logger    *zap.Logger
+	context   context.Context
+	rmqHelper rabbit.RabbitMQConnectionsHandlerInterface
+	client    cloudevents.Client
 }
 
 var _ adapter.MessageAdapter = (*Adapter)(nil)
-var _ adapter.MessageAdapterConstructor = NewAdapter
-var (
-	retryConfig  *kncloudevents.RetryConfig
-	retriesInt32 int32 = 0
-)
 
-func NewAdapter(ctx context.Context, processed adapter.EnvConfigAccessor, sink duckv1.Addressable, reporter source.StatsReporter) adapter.MessageAdapter {
+func NewAdapter(ctx context.Context, env adapter.EnvConfigAccessor, ceClient cloudevents.Client) adapter.Adapter {
 	logger := logging.FromContext(ctx).Desugar()
-	config := processed.(*adapterConfig)
-	oidcTokenProvider := auth.NewOIDCTokenProvider(ctx)
+	config := env.(*adapterConfig)
 
 	return &Adapter{
-		config:          config,
-		sink:            sink,
-		reporter:        reporter,
-		logger:          logger,
-		context:         ctx,
-		eventDispatcher: kncloudevents.NewDispatcher(oidcTokenProvider),
+		config:  config,
+		logger:  logger,
+		context: ctx,
+		client:  ceClient,
 	}
 }
 
@@ -134,24 +118,7 @@ func (a *Adapter) PollForMessages(stopCh <-chan struct{}) error {
 	var err error
 	var queue amqp.Queue
 	var msgs <-chan (amqp.Delivery)
-	auxRetryConfig := kncloudevents.NoRetries()
-	if a.config.BackoffDelay != "" {
-		retriesInt32 = int32(a.config.Retry)
-		backoffPolicy := utils.SetBackoffPolicy(a.context, a.config.BackoffPolicy)
-		if backoffPolicy == "" {
-			a.logger.Sugar().Fatalf("Invalid BACKOFF_POLICY specified: must be %q or %q", v1.BackoffPolicyExponential, v1.BackoffPolicyLinear)
-		}
-		auxRetryConfig, err = kncloudevents.RetryConfigFromDeliverySpec(v1.DeliverySpec{
-			BackoffPolicy: &backoffPolicy,
-			BackoffDelay:  &a.config.BackoffDelay,
-			Retry:         &retriesInt32,
-		})
-		if err != nil {
-			a.logger.Error("error retrieving retryConfig from deliverySpec", zap.Error(err))
-		}
-	}
 
-	retryConfig = &auxRetryConfig
 	wg := &sync.WaitGroup{}
 	workerCount := a.config.Parallelism
 	wg.Add(workerCount)
@@ -225,7 +192,6 @@ func (a *Adapter) processMessages(wg *sync.WaitGroup, queue <-chan amqp.Delivery
 }
 
 func (a *Adapter) postMessage(msg *amqp.Delivery) error {
-	a.logger.Info("target: " + a.sink.URL.String())
 	event, err := rabbit.ConvertDeliveryMessageToCloudevent(
 		a.context,
 		a.config.Name,
@@ -238,23 +204,19 @@ func (a *Adapter) postMessage(msg *amqp.Delivery) error {
 		return err
 	}
 
-	dispatchInfo, err := a.eventDispatcher.SendEvent(a.context, *event, a.sink, kncloudevents.WithRetryConfig(retryConfig))
-	if err != nil {
+	ctx := a.context
+	p, _ := period.Parse(a.config.BackoffDelay)
+	backoffDelay := p.DurationApprox()
+	if a.config.BackoffPolicy == string(v1.BackoffPolicyLinear) {
+		ctx = cloudevents.ContextWithRetriesLinearBackoff(ctx, backoffDelay, a.config.Retry)
+	} else {
+		ctx = cloudevents.ContextWithRetriesExponentialBackoff(ctx, backoffDelay, a.config.Retry)
+	}
+
+	if err := a.client.Send(ctx, *event); !cloudevents.IsACK(err) {
 		a.logger.Error("error while sending the message", zap.Error(err))
 		return err
 	}
 
-	if dispatchInfo.ResponseCode/100 != 2 {
-		a.logger.Error("unexpected status code", zap.Int("status code", dispatchInfo.ResponseCode))
-		return fmt.Errorf("%d %s", dispatchInfo.ResponseCode, nethttp.StatusText(dispatchInfo.ResponseCode))
-	}
-
-	reportArgs := &source.ReportArgs{
-		Namespace:     a.config.Namespace,
-		Name:          a.config.Name,
-		ResourceGroup: resourceGroup,
-	}
-
-	_ = a.reporter.ReportEventCount(reportArgs, dispatchInfo.ResponseCode)
 	return nil
 }

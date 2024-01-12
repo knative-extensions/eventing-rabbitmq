@@ -17,6 +17,13 @@ else
 	arch_alt = arm64
 endif
 
+### DEPS ##
+ifeq ($(PLATFORM),Darwin)
+	OPEN := open
+else
+	OPEN := xdg-open
+endif
+
 # https://stackoverflow.com/questions/4842424/list-of-ansi-color-escape-sequences
 RED := \033[0;31m
 GREEN := \033[0;32m
@@ -46,15 +53,6 @@ $(LOCAL_BIN):
 envrc::
 	@echo 'export PATH="$(PATH)"'
 
-
-
-### DEPS #
-#
-ifeq ($(PLATFORM),Darwin)
-	OPEN := open
-else
-	OPEN := xdg-open
-endif
 
 GCLOUD_SDK_VERSION := 437.0.1
 GCLOUD_BIN := gcloud-$(GCLOUD_SDK_VERSION)-$(PLATFORM)-x86_64
@@ -138,7 +136,7 @@ releases-envsubst:
 
 KUBECTL_RELEASES := https://github.com/kubernetes/kubernetes/tags
 # Keep this in sync with KIND_K8S_VERSION
-KUBECTL_VERSION := 1.26.6
+KUBECTL_VERSION := 1.27.3
 KUBECTL_BIN := kubectl-$(KUBECTL_VERSION)-$(platform)-$(arch_alt)
 KUBECTL_URL := https://storage.googleapis.com/kubernetes-release/release/v$(KUBECTL_VERSION)/bin/$(platform)/amd64/kubectl
 KUBECTL := $(LOCAL_BIN)/$(KUBECTL_BIN)
@@ -289,7 +287,7 @@ KO_DOCKER_REPO := kind.local
 envrc::
 	@echo 'export KO_DOCKER_REPO="$(KO_DOCKER_REPO)"'
 export KO_DOCKER_REPO
-MIN_SUPPORTED_K8S_VERSION := 1.26.6
+MIN_SUPPORTED_K8S_VERSION := 1.27.3
 KIND_K8S_VERSION ?= $(MIN_SUPPORTED_K8S_VERSION)
 export KIND_K8S_VERSION
 # Find the corresponding version digest in https://github.com/kubernetes-sigs/kind/releases
