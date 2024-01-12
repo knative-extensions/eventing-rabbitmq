@@ -29,5 +29,5 @@ func main() {
 	cfg := injection.ParseAndGetRESTConfigOrDie()
 	ctx, _ = injection.Default.SetupInformers(ctx, cfg)
 
-	adapter.MainMessageAdapterWithContext(ctx, "rabbitmqsource", kadapter.NewEnvConfig, kadapter.NewAdapter)
+	adapter.MainWithContext(ctx, "rabbitmqsource", kadapter.NewEnvConfig, kadapter.NewAdapter)
 }

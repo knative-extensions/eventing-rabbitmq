@@ -277,29 +277,11 @@ func TestAdapter_NewEnvConfig(t *testing.T) {
 func TestAdapter_NewAdapter(t *testing.T) {
 	ctx, _ := rectesting.SetupFakeContext(t)
 	env := NewEnvConfig()
-	h := &fakeHandler{
-		handlers: []handlerFunc{sinkAccepted},
-	}
-
-	sinkServer := httptest.NewServer(h)
-	defer sinkServer.Close()
-
-	target, err := apis.ParseURL(sinkServer.URL)
-	if err != nil {
-		t.Fatal(err)
-	}
-	sink := duckv1.Addressable{
-		Name: &serverTestName,
-		URL:  target,
-	}
-	statsReporter, _ := source.NewStatsReporter()
-	a := NewAdapter(ctx, env, sink, statsReporter)
+	a := NewAdapter(ctx, env, nil)
 	cmpA := &Adapter{
-		config:   env.(*adapterConfig),
-		sink:     sink,
-		reporter: statsReporter,
-		logger:   logging.FromContext(ctx).Desugar(),
-		context:  ctx,
+		config:  env.(*adapterConfig),
+		logger:  logging.FromContext(ctx).Desugar(),
+		context: ctx,
 	}
 
 	if a == cmpA {
