@@ -19,7 +19,6 @@ package dispatcher
 import (
 	"context"
 	"io"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -366,7 +365,7 @@ func TestDispatcher_dispatch(t *testing.T) {
 
 			client, err := v2.NewClient(tt.args.client)
 			if err != nil {
-				log.Fatalf("Failed to create protocol, %v", err)
+				t.Fatalf("Failed to create protocol, %v", err)
 			}
 
 			if d.DLX {

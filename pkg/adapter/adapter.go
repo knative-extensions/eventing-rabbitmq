@@ -33,8 +33,6 @@ import (
 	"knative.dev/eventing/pkg/adapter/v2"
 	v1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/eventing/pkg/kncloudevents"
-	"knative.dev/eventing/pkg/metrics/source"
-	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/logging"
 )
 
@@ -60,8 +58,6 @@ func NewEnvConfig() adapter.EnvConfigAccessor {
 
 type Adapter struct {
 	config    *adapterConfig
-	sink      duckv1.Addressable
-	reporter  source.StatsReporter
 	logger    *zap.Logger
 	context   context.Context
 	rmqHelper rabbit.RabbitMQConnectionsHandlerInterface
@@ -221,7 +217,6 @@ func (a *Adapter) processMessages(wg *sync.WaitGroup, queue <-chan amqp.Delivery
 }
 
 func (a *Adapter) postMessage(msg *amqp.Delivery) error {
-	a.logger.Info("target: " + a.sink.URL.String())
 	event, err := rabbit.ConvertDeliveryMessageToCloudevent(
 		a.context,
 		a.config.Name,
@@ -243,10 +238,10 @@ func (a *Adapter) postMessage(msg *amqp.Delivery) error {
 		ctx = cloudevents.ContextWithRetriesExponentialBackoff(ctx, backoffDelay, a.config.Retry)
 	}
 
-	if err := a.client.Send(ctx, *event); cloudevents.IsACK(err) {
-		return nil
+	if err := a.client.Send(ctx, *event); !cloudevents.IsACK(err) {
+		a.logger.Error("error while sending the message", zap.Error(err))
+		return err
 	}
 
-	a.logger.Error("error while sending the message", zap.Error(err))
-	return err
+	return nil
 }

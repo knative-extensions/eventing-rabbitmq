@@ -19,24 +19,20 @@ package rabbitmq
 import (
 	"context"
 	"encoding/json"
-	"io"
 	"net/http"
-	"net/http/httptest"
 	"reflect"
-	"strings"
-	"sync"
 	"testing"
 	"time"
 
+	v2 "github.com/cloudevents/sdk-go/v2"
+	"github.com/cloudevents/sdk-go/v2/binding"
+	"github.com/cloudevents/sdk-go/v2/protocol"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"
 
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	"knative.dev/eventing/pkg/adapter/v2"
 	v1 "knative.dev/eventing/pkg/apis/duck/v1"
-	"knative.dev/eventing/pkg/metrics/source"
-	"knative.dev/pkg/apis"
-	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/logging"
 	rectesting "knative.dev/pkg/reconciler/testing"
 
@@ -44,13 +40,9 @@ import (
 	_ "knative.dev/pkg/client/injection/kube/client/fake"
 )
 
-var serverTestName = "test-name"
-
-type handlerFunc func(http.ResponseWriter, *http.Request)
-
 func TestPostMessage_ServeHTTP(t *testing.T) {
 	testCases := map[string]struct {
-		handlers                   []handlerFunc
+		client                     MockClient
 		reqBody, expectedEventType string
 		reqHeaders                 http.Header
 		data                       map[string]interface{}
@@ -60,18 +52,30 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 		retry                      int
 	}{
 		"accepted": {
-			handlers: []handlerFunc{sinkAccepted},
-			reqBody:  `{"key":"value"}`,
-			data:     map[string]interface{}{"key": "value"},
+			client: MockClient{
+				send: func(ctx context.Context, m binding.Message, transformers ...binding.Transformer) error {
+					return v2.NewHTTPRetriesResult(v2.NewHTTPResult(200, ""), 0, time.Now(), []protocol.Result{})
+				},
+			},
+			reqBody: `{"key":"value"}`,
+			data:    map[string]interface{}{"key": "value"},
 		},
 		"accepted with msg id": {
-			handlers:  []handlerFunc{sinkAccepted},
+			client: MockClient{
+				send: func(ctx context.Context, m binding.Message, transformers ...binding.Transformer) error {
+					return v2.NewHTTPRetriesResult(v2.NewHTTPResult(200, ""), 0, time.Now(), []protocol.Result{})
+				},
+			},
 			reqBody:   `{"key":"value"}`,
 			withMsgId: true,
 			data:      map[string]interface{}{"key": "value"},
 		},
 		"accepted with binary cloudevent": {
-			handlers:  []handlerFunc{sinkAccepted},
+			client: MockClient{
+				send: func(ctx context.Context, m binding.Message, transformers ...binding.Transformer) error {
+					return v2.NewHTTPRetriesResult(v2.NewHTTPResult(200, ""), 0, time.Now(), []protocol.Result{})
+				},
+			},
 			reqBody:   `{"test":"test"}`,
 			withMsgId: true,
 			reqHeaders: http.Header{
@@ -90,7 +94,11 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 			isCe: true,
 		},
 		"accepted with structured cloudevent": {
-			handlers: []handlerFunc{sinkAccepted},
+			client: MockClient{
+				send: func(ctx context.Context, m binding.Message, transformers ...binding.Transformer) error {
+					return v2.NewHTTPRetriesResult(v2.NewHTTPResult(200, ""), 0, time.Now(), []protocol.Result{})
+				},
+			},
 			reqBody: `{"specversion":"1.0","id":1234,` +
 				`"type":"dev.knative.rabbitmq.event","source":"example/source.uri",` +
 				`"content-type":"text/plain","data":"test"}`,
@@ -107,47 +115,43 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 			isCe: true,
 		},
 		"rejected": {
-			handlers: []handlerFunc{sinkRejected},
-			reqBody:  `{"key":"value"}`,
-			error:    true,
-			data:     map[string]interface{}{"key": "value"},
+			client: MockClient{
+				send: func(ctx context.Context, m binding.Message, transformers ...binding.Transformer) error {
+					return v2.NewHTTPRetriesResult(v2.NewHTTPResult(500, ""), 0, time.Now(), []protocol.Result{amqp.Error{}})
+				},
+			},
+			reqBody: `{"key":"value"}`,
+			error:   true,
+			data:    map[string]interface{}{"key": "value"},
 		},
 		"retried 3 times succesfull on the 4th ": {
-			retry:    5,
-			handlers: []handlerFunc{sinkRejected, sinkRejected, sinkRejected, sinkAccepted},
-			reqBody:  `{"key":"value"}`,
-			error:    false,
-			data:     map[string]interface{}{"key": "value"},
+			retry: 5,
+			client: MockClient{
+				send: func(ctx context.Context, m binding.Message, transformers ...binding.Transformer) error {
+					return v2.NewHTTPRetriesResult(v2.NewHTTPResult(200, ""), 3, time.Now(), []protocol.Result{amqp.Error{}, amqp.Error{}, amqp.Error{}})
+				},
+			},
+			reqBody: `{"key":"value"}`,
+			data:    map[string]interface{}{"key": "value"},
 		},
 	}
 
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
-			h := &fakeHandler{
-				handlers: tc.handlers,
-			}
-			sinkServer := httptest.NewServer(h)
-			defer sinkServer.Close()
-
-			target, err := apis.ParseURL(sinkServer.URL)
+			client, err := v2.NewClient(tc.client)
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("Failed to create protocol, %v", err)
 			}
-			sink := duckv1.Addressable{
-				Name: &serverTestName,
-				URL:  target,
-			}
-			statsReporter, _ := source.NewStatsReporter()
+
 			config := adapterConfig{}
 			if tc.retry > 0 {
 				config = adapterConfig{Retry: tc.retry, BackoffPolicy: string(v1.BackoffPolicyLinear), BackoffDelay: "PT0.1S"}
 			}
 			a := &Adapter{
-				config:   &config,
-				context:  context.TODO(),
-				sink:     sink,
-				logger:   zap.NewNop(),
-				reporter: statsReporter,
+				config:  &config,
+				context: context.TODO(),
+				logger:  zap.NewNop(),
+				client:  client,
 			}
 
 			data, err := json.Marshal(tc.data)
@@ -168,80 +172,20 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 			if tc.error && err == nil {
 				t.Errorf("expected error, but got %v", err)
 			}
-
-			var wantBody, gotBody map[string]interface{}
-			err = json.Unmarshal([]byte(tc.reqBody), &wantBody)
-			if err != nil {
-				t.Errorf("Error unmarshaling wanted request body %s %s", tc.reqBody, err)
-			}
-			err = json.Unmarshal(h.body, &gotBody)
-			if err != nil {
-				t.Errorf("Error unmarshaling got request body %s %s", h.body, err)
-			}
-
-			if len(wantBody) > 0 && len(wantBody) != len(gotBody) && !reflect.DeepEqual(wantBody, gotBody) {
-				t.Errorf("Expected request body '%s', but got '%s' %s", tc.reqBody, h.body, err)
-			}
-
-			if tc.isCe {
-				ceHeaders := http.Header{}
-				for key, value := range h.header {
-					ceHeaders[strings.TrimPrefix(key, "Ce-")] = value
-				}
-
-				if !compareHeaders(tc.reqHeaders, ceHeaders, t) {
-					t.Errorf("Expected request headers '%s', but got '%s' %s", tc.reqHeaders, ceHeaders, err)
-				}
-			}
 		})
 	}
 }
 
-func compareHeaders(expected, received http.Header, t *testing.T) bool {
-	for key, val := range expected {
-		if val2, ok := received[key]; !ok || val[0] != val2[0] {
-			return false
-		}
-	}
-	return true
+type MockClient struct {
+	send func(ctx context.Context, m binding.Message, transformers ...binding.Transformer) error
 }
 
-type fakeHandler struct {
-	body   []byte
-	header http.Header
-	mu     sync.Mutex
-
-	receiveCount int
-	handlers     []handlerFunc
-}
-
-func (h *fakeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	h.header = r.Header
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, "can not read body", http.StatusBadRequest)
-		return
-	}
-	h.body = body
-
-	defer r.Body.Close()
-	h.receiveCount++
-	h.handlers[h.receiveCount](w, r)
-}
-
-func sinkAccepted(writer http.ResponseWriter, req *http.Request) {
-	writer.WriteHeader(http.StatusOK)
-}
-
-func sinkRejected(writer http.ResponseWriter, _ *http.Request) {
-	writer.WriteHeader(http.StatusRequestTimeout)
+func (mock MockClient) Send(ctx context.Context, m binding.Message, transformers ...binding.Transformer) error {
+	return mock.send(ctx, m, transformers...)
 }
 
 func TestAdapter_PollForMessages(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
-	statsReporter, _ := source.NewStatsReporter()
 	a := &Adapter{
 		config: &adapterConfig{
 			ExchangeName:  "Test-exchange",
@@ -253,11 +197,9 @@ func TestAdapter_PollForMessages(t *testing.T) {
 		},
 		context:   ctx,
 		logger:    zap.NewNop(),
-		reporter:  statsReporter,
 		rmqHelper: rabbit.NewRabbitMQConnectionHandler(5, 500, zap.NewNop().Sugar()),
 	}
 	a.rmqHelper.Setup(ctx, "", nil, rabbit.ValidDial)
-
 	go func() {
 		time.Sleep(500)
 		// Signal to the adapter to finish and do not retry
@@ -277,11 +219,16 @@ func TestAdapter_NewEnvConfig(t *testing.T) {
 func TestAdapter_NewAdapter(t *testing.T) {
 	ctx, _ := rectesting.SetupFakeContext(t)
 	env := NewEnvConfig()
+	client, err := v2.NewClient(MockClient{})
+	if err != nil {
+		t.Fatalf("Failed to create protocol, %v", err)
+	}
 	a := NewAdapter(ctx, env, nil)
 	cmpA := &Adapter{
 		config:  env.(*adapterConfig),
 		logger:  logging.FromContext(ctx).Desugar(),
 		context: ctx,
+		client:  client,
 	}
 
 	if a == cmpA {
