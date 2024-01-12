@@ -29,14 +29,10 @@ import (
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
-	"knative.dev/eventing-rabbitmq/pkg/utils"
 	"knative.dev/eventing/pkg/adapter/v2"
 	v1 "knative.dev/eventing/pkg/apis/duck/v1"
-	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/pkg/logging"
 )
-
-const resourceGroup = "rabbitmqsources.sources.knative.dev"
 
 type adapterConfig struct {
 	adapter.EnvConfig
@@ -65,10 +61,6 @@ type Adapter struct {
 }
 
 var _ adapter.MessageAdapter = (*Adapter)(nil)
-var (
-	retryConfig  *kncloudevents.RetryConfig
-	retriesInt32 int32 = 0
-)
 
 func NewAdapter(ctx context.Context, env adapter.EnvConfigAccessor, ceClient cloudevents.Client) adapter.Adapter {
 	logger := logging.FromContext(ctx).Desugar()
@@ -126,24 +118,7 @@ func (a *Adapter) PollForMessages(stopCh <-chan struct{}) error {
 	var err error
 	var queue amqp.Queue
 	var msgs <-chan (amqp.Delivery)
-	auxRetryConfig := kncloudevents.NoRetries()
-	if a.config.BackoffDelay != "" {
-		retriesInt32 = int32(a.config.Retry)
-		backoffPolicy := utils.SetBackoffPolicy(a.context, a.config.BackoffPolicy)
-		if backoffPolicy == "" {
-			a.logger.Sugar().Fatalf("Invalid BACKOFF_POLICY specified: must be %q or %q", v1.BackoffPolicyExponential, v1.BackoffPolicyLinear)
-		}
-		auxRetryConfig, err = kncloudevents.RetryConfigFromDeliverySpec(v1.DeliverySpec{
-			BackoffPolicy: &backoffPolicy,
-			BackoffDelay:  &a.config.BackoffDelay,
-			Retry:         &retriesInt32,
-		})
-		if err != nil {
-			a.logger.Error("error retrieving retryConfig from deliverySpec", zap.Error(err))
-		}
-	}
 
-	retryConfig = &auxRetryConfig
 	wg := &sync.WaitGroup{}
 	workerCount := a.config.Parallelism
 	wg.Add(workerCount)
