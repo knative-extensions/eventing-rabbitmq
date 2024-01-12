@@ -17,6 +17,13 @@ else
 	arch_alt = arm64
 endif
 
+### DEPS ##
+ifeq ($(PLATFORM),Darwin)
+	OPEN := open
+else
+	OPEN := xdg-open
+endif
+
 # https://stackoverflow.com/questions/4842424/list-of-ansi-color-escape-sequences
 RED := \033[0;31m
 GREEN := \033[0;32m
@@ -46,15 +53,6 @@ $(LOCAL_BIN):
 envrc::
 	@echo 'export PATH="$(PATH)"'
 
-
-
-### DEPS #
-#
-ifeq ($(PLATFORM),Darwin)
-	OPEN := open
-else
-	OPEN := xdg-open
-endif
 
 GCLOUD_SDK_VERSION := 437.0.1
 GCLOUD_BIN := gcloud-$(GCLOUD_SDK_VERSION)-$(PLATFORM)-x86_64
