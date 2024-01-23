@@ -1,6 +1,6 @@
 module knative.dev/eventing-rabbitmq
 
-go 1.18
+go 1.21
 
 require (
 	github.com/cloudevents/sdk-go/observability/opencensus/v2 v2.13.0
