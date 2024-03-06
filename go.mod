@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/cloudevents/sdk-go/observability/opencensus/v2 v2.13.0
-	github.com/cloudevents/sdk-go/v2 v2.13.0
+	github.com/cloudevents/sdk-go/v2 v2.15.2
 	github.com/google/go-cmp v0.6.0
 	github.com/google/licenseclassifier v0.0.0-20210325184830-bb04aff29e72
 	github.com/influxdata/tdigest v0.0.1 // indirect
