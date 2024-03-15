@@ -1,8 +1,5 @@
 # Eventing RabbitMQ
 
-> [!WARNING]  
-> This integration is deprecated and this repo will be archived the coming months. See: https://github.com/knative/eventing/issues/7670 for the timeline.
-
 **[These components are GA](https://github.com/knative/community/tree/main/mechanics/MATURITY-LEVELS.md)**
 
 [![go.dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white)](https://pkg.go.dev/knative.dev/eventing-rabbitmq)
