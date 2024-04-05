@@ -19,10 +19,6 @@ You can check out the [documentation here](docs/README.md).
 
 ## Community
 
-## Performance Testing & Benchmarks
-
-See [Benchmark and Test](./test/performance/)
-
 ---
 
 This repo falls under the

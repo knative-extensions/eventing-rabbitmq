@@ -11,10 +11,6 @@ See [Install and Demo](broker/)
 
 See [Install and Demo](source/)
 
-## Performance tests and results
-
-See [Performance](../test/performance/)
-
 ## Configuring self-signed certificates
 See [Self-Signed Certificates](self-signed-certs/)
 
