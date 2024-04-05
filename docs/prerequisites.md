@@ -1,6 +1,6 @@
 ### Eventing RabbitMQ Setup Prerequisites
 
-* Install Knative Eventing as documented [here](https://knative.dev/docs/install/) or [here](../../test/performance/README.md#pre-requisites).
+* Install Knative Eventing as documented [here](https://knative.dev/docs/install/)
 
 * Install latest released version of the [RabbitMQ Cluster Operator](https://github.com/rabbitmq/cluster-operator).
 
