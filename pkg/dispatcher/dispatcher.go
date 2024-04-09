@@ -122,12 +122,14 @@ func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, conn rabbit.RabbitMQC
 			return ctx.Err()
 		case err = <-connNotifyChannel:
 			finishConsuming(wg, workerQueue)
+			// No error will be available in case of a graceful connection close
 			if err == nil {
 				err = amqp.ErrClosed
 			}
 			return err
 		case err = <-chNotifyChannel:
 			finishConsuming(wg, workerQueue)
+			// No error will be available in case of a graceful connection close
 			if err == nil {
 				err = amqp.ErrClosed
 			}
