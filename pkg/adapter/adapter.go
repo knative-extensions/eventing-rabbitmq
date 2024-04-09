@@ -139,7 +139,7 @@ func (a *Adapter) PollForMessages(stopCh <-chan struct{}) error {
 				false,
 				amqp.Table{},
 			); err == nil {
-				connNotifyChannel, chNotifyChannel := a.rmqHelper.GetConnection().NotifyClose(make(chan *amqp.Error)), channel.NotifyClose(make(chan *amqp.Error))
+				connNotifyChannel, chNotifyChannel := a.rmqHelper.GetConnection().NotifyClose(make(chan *amqp.Error, 1)), channel.NotifyClose(make(chan *amqp.Error, 1))
 				if msgs, err = a.ConsumeMessages(&queue, channel, logger); err == nil {
 				loop:
 					for {

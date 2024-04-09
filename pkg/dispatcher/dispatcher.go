@@ -113,19 +113,25 @@ func (d *Dispatcher) ConsumeFromQueue(ctx context.Context, conn rabbit.RabbitMQC
 		}()
 	}
 	// get connections notify channel to watch for any unexpected disconnection
-	connNotifyChannel, chNotifyChannel := conn.NotifyClose(make(chan *amqp.Error)), channel.NotifyClose(make(chan *amqp.Error))
+	connNotifyChannel, chNotifyChannel := conn.NotifyClose(make(chan *amqp.Error, 1)), channel.NotifyClose(make(chan *amqp.Error, 1))
 	for {
 		select {
 		case <-ctx.Done():
 			logging.FromContext(ctx).Info("context done, stopping message consumers")
 			finishConsuming(wg, workerQueue)
 			return ctx.Err()
-		case <-connNotifyChannel:
+		case err = <-connNotifyChannel:
 			finishConsuming(wg, workerQueue)
-			return amqp.ErrClosed
-		case <-chNotifyChannel:
+			if err == nil {
+				err = amqp.ErrClosed
+			}
+			return err
+		case err = <-chNotifyChannel:
 			finishConsuming(wg, workerQueue)
-			return amqp.ErrClosed
+			if err == nil {
+				err = amqp.ErrClosed
+			}
+			return err
 		case msg, ok := <-msgs:
 			if !ok {
 				finishConsuming(wg, workerQueue)
