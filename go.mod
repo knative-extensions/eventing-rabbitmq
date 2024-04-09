@@ -21,9 +21,9 @@ require (
 	k8s.io/client-go v0.29.2
 	k8s.io/code-generator v0.29.2
 	k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00
-	knative.dev/eventing v0.40.1-0.20240404213911-734c413b0bf3
+	knative.dev/eventing v0.40.1-0.20240408154446-84115ea9bf55
 	knative.dev/hack v0.0.0-20240404013450-1133b37da8d7
-	knative.dev/pkg v0.0.0-20240404013351-5d4af76051e4
+	knative.dev/pkg v0.0.0-20240408131417-094f1527d5fc
 	knative.dev/reconciler-test v0.0.0-20240404013441-de880e87410f
 	sigs.k8s.io/controller-runtime v0.15.2
 )
@@ -86,7 +86,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.19.0 // indirect
 	github.com/prometheus/client_model v0.6.0 // indirect
-	github.com/prometheus/common v0.51.1 // indirect
+	github.com/prometheus/common v0.52.2 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/prometheus/statsd_exporter v0.22.7 // indirect
 	github.com/rickb777/plural v1.2.1 // indirect
@@ -106,7 +106,7 @@ require (
 	golang.org/x/mod v0.16.0 // indirect
 	golang.org/x/net v0.22.0 // indirect
 	golang.org/x/oauth2 v0.18.0 // indirect
-	golang.org/x/sync v0.6.0 // indirect
+	golang.org/x/sync v0.7.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/term v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
