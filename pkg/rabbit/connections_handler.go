@@ -168,8 +168,8 @@ func (r *RabbitMQConnectionHandler) watchRabbitMQConnections(
 			r.logger.Info("stopped watching for rabbitmq connections")
 			r.closeRabbitMQConnections()
 			return
-		case <-r.GetConnection().NotifyClose(make(chan *amqp091.Error)):
-		case <-r.GetChannel().NotifyClose(make(chan *amqp091.Error)):
+		case <-r.GetConnection().NotifyClose(make(chan *amqp091.Error, 1)):
+		case <-r.GetChannel().NotifyClose(make(chan *amqp091.Error, 1)):
 		}
 		r.closeRabbitMQConnections()
 		if err := r.createConnectionAndChannel(ctx, rabbitMQURL, configFunction, dialFunc); err != nil {
