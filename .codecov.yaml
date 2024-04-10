@@ -3,9 +3,10 @@ coverage:
   # to block PR based on coverage threshold.
   status:
     patch:
-      default:
-        target: auto
-        threshold: 8%
+      # Disable the coverage threshold of the patch, so that PRs are
+      # only failing because of overall project coverage threshold.
+      # See https://docs.codecov.io/docs/commit-status#disabling-a-status.
+      default: false
 comment:
   # Update existing comment or create new if deleted.
   behavior: default
