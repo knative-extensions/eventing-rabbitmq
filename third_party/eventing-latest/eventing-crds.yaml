@@ -20,7 +20,7 @@ metadata:
     eventing.knative.dev/source: "true"
     duck.knative.dev/source: "true"
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20240514-58d7920c4"
+    app.kubernetes.io/version: "20240515-35414080f"
     app.kubernetes.io/name: knative-eventing
   annotations:
     # TODO add schemas
@@ -200,6 +200,11 @@ spec:
                     serviceAccountName:
                       description: ServiceAccountName is the name of the generated service account used for this components OIDC authentication.
                       type: string
+                    serviceAccountNames:
+                      description: ServiceAccountNames is the list of names of the generated service accounts used for this components OIDC authentication.
+                      type: array
+                      items:
+                        type: string
                 ceAttributes:
                   description: CloudEventAttributes are the specific attributes that the Source uses as part of its CloudEvents.
                   type: array
@@ -302,7 +307,7 @@ metadata:
   labels:
     knative.dev/crd-install: "true"
     duck.knative.dev/addressable: "true"
-    app.kubernetes.io/version: "20240514-58d7920c4"
+    app.kubernetes.io/version: "20240515-35414080f"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: eventing.knative.dev
@@ -505,7 +510,7 @@ metadata:
     knative.dev/crd-install: "true"
     messaging.knative.dev/subscribable: "true"
     duck.knative.dev/addressable: "true"
-    app.kubernetes.io/version: "20240514-58d7920c4"
+    app.kubernetes.io/version: "20240515-35414080f"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: messaging.knative.dev
@@ -674,6 +679,11 @@ spec:
                           serviceAccountName:
                             description: ServiceAccountName is the name of the generated service account used for this components OIDC authentication.
                             type: string
+                          serviceAccountNames:
+                            description: ServiceAccountNames is the list of names of the generated service accounts used for this components OIDC authentication.
+                            type: array
+                            items:
+                              type: string
             status:
               description: Status represents the current state of the Channel. This data may be out of date.
               type: object
@@ -806,6 +816,11 @@ spec:
                           serviceAccountName:
                             description: ServiceAccountName is the name of the generated service account used for this components OIDC authentication.
                             type: string
+                          serviceAccountNames:
+                            description: ServiceAccountNames is the list of names of the generated service accounts used for this components OIDC authentication.
+                            type: array
+                            items:
+                              type: string
   names:
     kind: Channel
     plural: channels
@@ -841,7 +856,7 @@ metadata:
     eventing.knative.dev/source: "true"
     duck.knative.dev/source: "true"
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20240514-58d7920c4"
+    app.kubernetes.io/version: "20240515-35414080f"
     app.kubernetes.io/name: knative-eventing
   name: containersources.sources.knative.dev
 spec:
@@ -916,6 +931,11 @@ spec:
                     serviceAccountName:
                       description: ServiceAccountName is the name of the generated service account used for this components OIDC authentication.
                       type: string
+                    serviceAccountNames:
+                      description: ServiceAccountNames is the list of names of the generated service accounts used for this components OIDC authentication.
+                      type: array
+                      items:
+                        type: string
                 ceAttributes:
                   description: CloudEventAttributes are the specific attributes that the Source uses as part of its CloudEvents.
                   type: array
@@ -1011,7 +1031,7 @@ metadata:
   name: eventtypes.eventing.knative.dev
   labels:
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20240514-58d7920c4"
+    app.kubernetes.io/version: "20240515-35414080f"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: eventing.knative.dev
@@ -1394,7 +1414,7 @@ metadata:
   labels:
     knative.dev/crd-install: "true"
     duck.knative.dev/addressable: "true"
-    app.kubernetes.io/version: "20240514-58d7920c4"
+    app.kubernetes.io/version: "20240515-35414080f"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: flows.knative.dev
@@ -1635,6 +1655,11 @@ spec:
                     serviceAccountName:
                       description: ServiceAccountName is the name of the generated service account used for this components OIDC authentication.
                       type: string
+                    serviceAccountNames:
+                      description: ServiceAccountNames is the list of names of the generated service accounts used for this components OIDC authentication.
+                      type: array
+                      items:
+                        type: string
                 branchStatuses:
                   description: BranchStatuses is an array of corresponding to branch statuses. Matches the Spec.Branches array in the order.
                   type: array
@@ -1905,7 +1930,7 @@ metadata:
     eventing.knative.dev/source: "true"
     duck.knative.dev/source: "true"
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20240514-58d7920c4"
+    app.kubernetes.io/version: "20240515-35414080f"
     app.kubernetes.io/name: knative-eventing
   annotations:
     # TODO add schema
@@ -2003,6 +2028,11 @@ spec:
                     serviceAccountName:
                       description: ServiceAccountName is the name of the generated service account used for this components OIDC authentication.
                       type: string
+                    serviceAccountNames:
+                      description: ServiceAccountNames is the list of names of the generated service accounts used for this components OIDC authentication.
+                      type: array
+                      items:
+                        type: string
                 ceAttributes:
                   description: 'CloudEventAttributes are the specific attributes that the Source uses as part of its CloudEvents.'
                   type: array
@@ -2154,6 +2184,11 @@ spec:
                     serviceAccountName:
                       description: ServiceAccountName is the name of the generated service account used for this components OIDC authentication.
                       type: string
+                    serviceAccountNames:
+                      description: ServiceAccountNames is the list of names of the generated service accounts used for this components OIDC authentication.
+                      type: array
+                      items:
+                        type: string
                 ceAttributes:
                   description: 'CloudEventAttributes are the specific attributes that the Source uses as part of its CloudEvents.'
                   type: array
@@ -2267,7 +2302,7 @@ metadata:
   labels:
     knative.dev/crd-install: "true"
     duck.knative.dev/addressable: "true"
-    app.kubernetes.io/version: "20240514-58d7920c4"
+    app.kubernetes.io/version: "20240515-35414080f"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: flows.knative.dev
@@ -2445,6 +2480,11 @@ spec:
                     serviceAccountName:
                       description: ServiceAccountName is the name of the generated service account used for this components OIDC authentication.
                       type: string
+                    serviceAccountNames:
+                      description: ServiceAccountNames is the list of names of the generated service accounts used for this components OIDC authentication.
+                      type: array
+                      items:
+                        type: string
                 channelStatuses:
                   description: ChannelStatuses is an array of corresponding Channel statuses. Matches the Spec.Steps array in the order.
                   type: array
@@ -2634,7 +2674,7 @@ metadata:
     duck.knative.dev/source: "true"
     duck.knative.dev/binding: "true"
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20240514-58d7920c4"
+    app.kubernetes.io/version: "20240515-35414080f"
     app.kubernetes.io/name: knative-eventing
   name: sinkbindings.sources.knative.dev
 spec:
@@ -2745,6 +2785,11 @@ spec:
                     serviceAccountName:
                       description: ServiceAccountName is the name of the generated service account used for this components OIDC authentication.
                       type: string
+                    serviceAccountNames:
+                      description: ServiceAccountNames is the list of names of the generated service accounts used for this components OIDC authentication.
+                      type: array
+                      items:
+                        type: string
                 ceAttributes:
                   description: CloudEventAttributes are the specific attributes that the Source uses as part of its CloudEvents.
                   type: array
@@ -2844,7 +2889,7 @@ metadata:
   name: subscriptions.messaging.knative.dev
   labels:
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20240514-58d7920c4"
+    app.kubernetes.io/version: "20240515-35414080f"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: messaging.knative.dev
@@ -2996,6 +3041,11 @@ spec:
                     serviceAccountName:
                       description: ServiceAccountName is the name of the generated service account used for this components OIDC authentication.
                       type: string
+                    serviceAccountNames:
+                      description: ServiceAccountNames is the list of names of the generated service accounts used for this components OIDC authentication.
+                      type: array
+                      items:
+                        type: string
                 conditions:
                   description: Conditions the latest available observations of a resource's current state.
                   type: array
@@ -3101,7 +3151,7 @@ metadata:
   name: triggers.eventing.knative.dev
   labels:
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20240514-58d7920c4"
+    app.kubernetes.io/version: "20240515-35414080f"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: eventing.knative.dev
@@ -3252,6 +3302,11 @@ spec:
                     serviceAccountName:
                       description: ServiceAccountName is the name of the generated service account used for this components OIDC authentication.
                       type: string
+                    serviceAccountNames:
+                      description: ServiceAccountNames is the list of names of the generated service accounts used for this components OIDC authentication.
+                      type: array
+                      items:
+                        type: string
                 conditions:
                   description: Conditions the latest available observations of a resource's current state.
                   type: array
