@@ -134,7 +134,6 @@ github.com/golang/glog/internal/stackdump
 github.com/golang/groupcache/lru
 # github.com/golang/protobuf v1.5.4
 ## explicit; go 1.17
-github.com/golang/protobuf/jsonpb
 github.com/golang/protobuf/proto
 github.com/golang/protobuf/ptypes/timestamp
 # github.com/google/gnostic-models v0.6.9-0.20230804172637-c7be7c783f49
@@ -1298,13 +1297,11 @@ knative.dev/pkg/test/mako/alerter
 knative.dev/pkg/test/mako/alerter/github
 knative.dev/pkg/test/mako/alerter/slack
 knative.dev/pkg/test/mako/config
-knative.dev/pkg/test/mako/stub-sidecar
 knative.dev/pkg/test/monitoring
 knative.dev/pkg/test/security
 knative.dev/pkg/test/slackutil
 knative.dev/pkg/test/spoof
 knative.dev/pkg/test/zipkin
-knative.dev/pkg/third_party/mako/proto/quickstore_go_proto
 knative.dev/pkg/tracing
 knative.dev/pkg/tracing/config
 knative.dev/pkg/tracing/propagation
