@@ -48,7 +48,4 @@ import (
 
 	// eventshub is a cloudevents sender/receiver utility for e2e testing.
 	_ "knative.dev/reconciler-test/cmd/eventshub"
-
-	// For performance testing, this needs to be imported
-	_ "knative.dev/pkg/test/mako/stub-sidecar"
 )
