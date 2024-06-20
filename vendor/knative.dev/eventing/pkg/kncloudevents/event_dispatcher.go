@@ -289,11 +289,18 @@ func (d *Dispatcher) send(ctx context.Context, message binding.Message, destinat
 }
 
 func (d *Dispatcher) executeRequest(ctx context.Context, target duckv1.Addressable, message cloudevents.Message, additionalHeaders http.Header, retryConfig *RetryConfig, oidcServiceAccount *types.NamespacedName, transformers ...binding.Transformer) (context.Context, cloudevents.Message, *DispatchInfo, error) {
+	var scheme string
+	if target.URL != nil {
+		scheme = target.URL.Scheme
+	} else {
+		// assume that the scheme is http by default
+		scheme = "http"
+	}
 	dispatchInfo := DispatchInfo{
 		Duration:       NoDuration,
 		ResponseCode:   NoResponse,
 		ResponseHeader: make(http.Header),
-		Scheme:         target.URL.Scheme,
+		Scheme:         scheme,
 	}
 
 	ctx, span := trace.StartSpan(ctx, "knative.dev", trace.WithSpanKind(trace.SpanKindClient))
@@ -327,11 +334,11 @@ func (d *Dispatcher) executeRequest(ctx context.Context, target duckv1.Addressab
 	dispatchInfo.ResponseHeader = response.Header
 
 	body := new(bytes.Buffer)
-	_, readErr := body.ReadFrom(response.Body)
+	_, err = body.ReadFrom(response.Body)
 
 	if isFailure(response.StatusCode) {
 		// Read response body into dispatchInfo for failures
-		if readErr != nil && readErr != io.EOF {
+		if err != nil && err != io.EOF {
 			dispatchInfo.ResponseBody = []byte(fmt.Sprintf("dispatch resulted in status \"%s\". Could not read response body: error: %s", response.Status, err.Error()))
 		} else {
 			dispatchInfo.ResponseBody = body.Bytes()
@@ -343,8 +350,9 @@ func (d *Dispatcher) executeRequest(ctx context.Context, target duckv1.Addressab
 	}
 
 	var responseMessageBody []byte
-	if readErr != nil && readErr != io.EOF {
+	if err != nil && err != io.EOF {
 		responseMessageBody = []byte(fmt.Sprintf("Failed to read response body: %s", err.Error()))
+		dispatchInfo.ResponseCode = http.StatusInternalServerError
 	} else {
 		responseMessageBody = body.Bytes()
 		dispatchInfo.ResponseBody = responseMessageBody
