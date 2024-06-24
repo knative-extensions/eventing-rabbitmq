@@ -1,6 +1,3 @@
-# cloud.google.com/go/compute/metadata v0.3.0
-## explicit; go 1.19
-cloud.google.com/go/compute/metadata
 # contrib.go.opencensus.io/exporter/ocagent v0.7.1-0.20200907061046-05415f1de66d
 ## explicit; go 1.13
 contrib.go.opencensus.io/exporter/ocagent
@@ -124,11 +121,6 @@ github.com/gobuffalo/flect
 ## explicit; go 1.15
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/sortkeys
-# github.com/golang/glog v1.2.0
-## explicit; go 1.19
-github.com/golang/glog
-github.com/golang/glog/internal/logsink
-github.com/golang/glog/internal/stackdump
 # github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 ## explicit
 github.com/golang/groupcache/lru
@@ -151,12 +143,6 @@ github.com/google/go-cmp/cmp/internal/diff
 github.com/google/go-cmp/cmp/internal/flags
 github.com/google/go-cmp/cmp/internal/function
 github.com/google/go-cmp/cmp/internal/value
-# github.com/google/go-github/v27 v27.0.6
-## explicit
-github.com/google/go-github/v27/github
-# github.com/google/go-querystring v1.0.0
-## explicit
-github.com/google/go-querystring/query
 # github.com/google/gofuzz v1.2.0
 ## explicit; go 1.12
 github.com/google/gofuzz
@@ -170,16 +156,6 @@ github.com/google/licenseclassifier/stringclassifier
 github.com/google/licenseclassifier/stringclassifier/internal/pq
 github.com/google/licenseclassifier/stringclassifier/searchset
 github.com/google/licenseclassifier/stringclassifier/searchset/tokenizer
-# github.com/google/mako v0.0.0-20190821191249-122f8dcef9e3
-## explicit; go 1.12
-github.com/google/mako/clients/proto/analyzers/threshold_analyzer_go_proto
-github.com/google/mako/clients/proto/analyzers/utest_analyzer_go_proto
-github.com/google/mako/clients/proto/analyzers/window_deviation_go_proto
-github.com/google/mako/go/quickstore
-github.com/google/mako/internal/go/common
-github.com/google/mako/internal/quickstore_microservice/proto/quickstore_go_proto
-github.com/google/mako/proto/quickstore/quickstore_go_proto
-github.com/google/mako/spec/proto/mako_go_proto
 # github.com/google/uuid v1.6.0
 ## explicit
 github.com/google/uuid
@@ -201,9 +177,6 @@ github.com/hashicorp/golang-lru/simplelru
 # github.com/imdario/mergo v0.3.16
 ## explicit; go 1.13
 github.com/imdario/mergo
-# github.com/influxdata/tdigest v0.0.1
-## explicit; go 1.13
-github.com/influxdata/tdigest
 # github.com/josharian/intern v1.0.0
 ## explicit; go 1.5
 github.com/josharian/intern
@@ -215,7 +188,6 @@ github.com/json-iterator/go
 github.com/kelseyhightower/envconfig
 # github.com/mailru/easyjson v0.7.7
 ## explicit; go 1.12
-github.com/mailru/easyjson
 github.com/mailru/easyjson/buffer
 github.com/mailru/easyjson/jlexer
 github.com/mailru/easyjson/jwriter
@@ -300,12 +272,6 @@ github.com/rickb777/plural
 # github.com/robfig/cron/v3 v3.0.1
 ## explicit; go 1.12
 github.com/robfig/cron/v3
-# github.com/rogpeppe/fastuuid v1.2.0
-## explicit; go 1.12
-github.com/rogpeppe/fastuuid
-# github.com/rs/dnscache v0.0.0-20211102005908-e0241e321417
-## explicit; go 1.12
-github.com/rs/dnscache
 # github.com/sergi/go-diff v1.2.0
 ## explicit; go 1.12
 github.com/sergi/go-diff/diffmatchpatch
@@ -316,9 +282,6 @@ github.com/spf13/pflag
 ## explicit; go 1.17
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
-# github.com/tsenart/vegeta/v12 v12.11.1
-## explicit; go 1.20
-github.com/tsenart/vegeta/v12/lib
 # github.com/valyala/bytebufferpool v1.0.0
 ## explicit
 github.com/valyala/bytebufferpool
@@ -369,16 +332,7 @@ go.uber.org/zap/zapcore
 go.uber.org/zap/zaptest
 # golang.org/x/crypto v0.24.0
 ## explicit; go 1.18
-golang.org/x/crypto/cast5
-golang.org/x/crypto/openpgp
-golang.org/x/crypto/openpgp/armor
-golang.org/x/crypto/openpgp/elgamal
-golang.org/x/crypto/openpgp/errors
-golang.org/x/crypto/openpgp/packet
-golang.org/x/crypto/openpgp/s2k
 golang.org/x/crypto/pbkdf2
-# golang.org/x/exp v0.0.0-20231006140011-7918f672742d
-## explicit; go 1.20
 # golang.org/x/mod v0.18.0
 ## explicit; go 1.18
 golang.org/x/mod/internal/lazyregexp
@@ -401,7 +355,6 @@ golang.org/x/oauth2/internal
 ## explicit; go 1.18
 golang.org/x/sync/errgroup
 golang.org/x/sync/semaphore
-golang.org/x/sync/singleflight
 # golang.org/x/sys v0.21.0
 ## explicit; go 1.18
 golang.org/x/sys/plan9
@@ -434,8 +387,6 @@ golang.org/x/tools/internal/stdlib
 # gomodules.xyz/jsonpatch/v2 v2.4.0
 ## explicit; go 1.20
 gomodules.xyz/jsonpatch/v2
-# gonum.org/v1/gonum v0.11.0
-## explicit; go 1.17
 # google.golang.org/api v0.183.0
 ## explicit; go 1.20
 google.golang.org/api/support/bundler
@@ -1184,12 +1135,6 @@ knative.dev/eventing/pkg/reconciler/testing/v1beta2
 knative.dev/eventing/pkg/tracing
 knative.dev/eventing/pkg/utils
 knative.dev/eventing/test/lib/sender
-knative.dev/eventing/test/performance/infra
-knative.dev/eventing/test/performance/infra/aggregator
-knative.dev/eventing/test/performance/infra/common
-knative.dev/eventing/test/performance/infra/event_state
-knative.dev/eventing/test/performance/infra/receiver
-knative.dev/eventing/test/performance/infra/sender
 knative.dev/eventing/test/rekt/features
 knative.dev/eventing/test/rekt/features/broker
 knative.dev/eventing/test/rekt/features/featureflags
@@ -1205,7 +1150,6 @@ knative.dev/eventing/test/rekt/resources/subscription
 knative.dev/eventing/test/rekt/resources/trigger
 knative.dev/eventing/test/test_images
 knative.dev/eventing/test/test_images/event-sender
-knative.dev/eventing/test/test_images/performance
 knative.dev/eventing/test/test_images/print
 # knative.dev/hack v0.0.0-20240607132042-09143140a254
 ## explicit; go 1.18
@@ -1288,18 +1232,11 @@ knative.dev/pkg/system
 knative.dev/pkg/system/testing
 knative.dev/pkg/test
 knative.dev/pkg/test/environment
-knative.dev/pkg/test/ghutil
 knative.dev/pkg/test/helpers
 knative.dev/pkg/test/ingress
 knative.dev/pkg/test/logging
-knative.dev/pkg/test/mako
-knative.dev/pkg/test/mako/alerter
-knative.dev/pkg/test/mako/alerter/github
-knative.dev/pkg/test/mako/alerter/slack
-knative.dev/pkg/test/mako/config
 knative.dev/pkg/test/monitoring
 knative.dev/pkg/test/security
-knative.dev/pkg/test/slackutil
 knative.dev/pkg/test/spoof
 knative.dev/pkg/test/zipkin
 knative.dev/pkg/tracing
