@@ -20,10 +20,10 @@ require (
 	k8s.io/client-go v0.29.2
 	k8s.io/code-generator v0.29.2
 	k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00
-	knative.dev/eventing v0.41.1-0.20240621162417-825202fdffc5
+	knative.dev/eventing v0.41.1-0.20240701131713-96c30bd21612
 	knative.dev/hack v0.0.0-20240607132042-09143140a254
-	knative.dev/pkg v0.0.0-20240621201938-fc0720b7a660
-	knative.dev/reconciler-test v0.0.0-20240618170853-5bf0b86114f8
+	knative.dev/pkg v0.0.0-20240626134149-3f6a546ac3a4
+	knative.dev/reconciler-test v0.0.0-20240627154632-0377f8e368ad
 	sigs.k8s.io/controller-runtime v0.15.2
 )
 
@@ -66,7 +66,7 @@ require (
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.16.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
-	github.com/hashicorp/go-retryablehttp v0.7.4 // indirect
+	github.com/hashicorp/go-retryablehttp v0.7.7 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
