@@ -20,6 +20,9 @@ import (
 	"fmt"
 	"strings"
 
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
+	"knative.dev/eventing/pkg/apis/feature"
+
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 
@@ -30,6 +33,10 @@ import (
 	"knative.dev/eventing/pkg/apis/eventing/v1alpha1"
 	listerseventingv1alpha1 "knative.dev/eventing/pkg/client/listers/eventing/v1alpha1"
 	"knative.dev/pkg/resolver"
+)
+
+const (
+	kubernetesServiceAccountPrefix = "system:serviceaccount"
 )
 
 // GetEventPoliciesForResource returns the applying EventPolicies for a given resource
@@ -191,7 +198,7 @@ func resolveSubjectsFromReference(resolver *resolver.AuthenticatableResolver, re
 
 	objFullSANames := make([]string, 0, len(objSAs))
 	for _, sa := range objSAs {
-		objFullSANames = append(objFullSANames, fmt.Sprintf("system:serviceaccount:%s:%s", reference.Namespace, sa))
+		objFullSANames = append(objFullSANames, fmt.Sprintf("%s:%s:%s", kubernetesServiceAccountPrefix, reference.Namespace, sa))
 	}
 
 	return objFullSANames, nil
@@ -286,4 +293,53 @@ func EventPolicyEventHandler(indexer cache.Indexer, gk schema.GroupKind, enqueue
 			})
 		},
 	}
+}
+
+type EventPolicyStatusMarker interface {
+	MarkEventPoliciesFailed(reason, messageFormat string, messageA ...interface{})
+	MarkEventPoliciesUnknown(reason, messageFormat string, messageA ...interface{})
+	MarkEventPoliciesTrue()
+	MarkEventPoliciesTrueWithReason(reason, messageFormat string, messageA ...interface{})
+}
+
+func UpdateStatusWithEventPolicies(featureFlags feature.Flags, status *eventingduckv1.AppliedEventPoliciesStatus, statusMarker EventPolicyStatusMarker, eventPolicyLister listerseventingv1alpha1.EventPolicyLister, gvk schema.GroupVersionKind, objectMeta metav1.ObjectMeta) error {
+	status.Policies = nil
+
+	applyingEvenPolicies, err := GetEventPoliciesForResource(eventPolicyLister, gvk, objectMeta)
+	if err != nil {
+		statusMarker.MarkEventPoliciesFailed("EventPoliciesGetFailed", "Failed to get applying event policies")
+		return fmt.Errorf("unable to get applying event policies: %w", err)
+	}
+
+	if len(applyingEvenPolicies) > 0 {
+		unreadyEventPolicies := []string{}
+		for _, policy := range applyingEvenPolicies {
+			if !policy.Status.IsReady() {
+				unreadyEventPolicies = append(unreadyEventPolicies, policy.Name)
+			} else {
+				// only add Ready policies to the list
+				status.Policies = append(status.Policies, eventingduckv1.AppliedEventPolicyRef{
+					Name:       policy.Name,
+					APIVersion: v1alpha1.SchemeGroupVersion.String(),
+				})
+			}
+		}
+
+		if len(unreadyEventPolicies) == 0 {
+			statusMarker.MarkEventPoliciesTrue()
+		} else {
+			statusMarker.MarkEventPoliciesFailed("EventPoliciesNotReady", "event policies %s are not ready", strings.Join(unreadyEventPolicies, ", "))
+		}
+	} else {
+		// we have no applying event policy. So we set the EP condition to True
+		if featureFlags.IsOIDCAuthentication() {
+			// in case of OIDC auth, we also set the message with the default authorization mode
+			statusMarker.MarkEventPoliciesTrueWithReason("DefaultAuthorizationMode", "Default authz mode is %q", featureFlags[feature.AuthorizationDefaultMode])
+		} else {
+			// in case OIDC is disabled, we set EP condition to true too, but give some message that authz (EPs) require OIDC
+			statusMarker.MarkEventPoliciesTrueWithReason("OIDCDisabled", "Feature %q must be enabled to support Authorization", feature.OIDCAuthentication)
+		}
+	}
+
+	return nil
 }
