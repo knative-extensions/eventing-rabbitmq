@@ -92,6 +92,8 @@ rules:
       - "eventing.knative.dev"
     resources:
       - "brokers"
+      - "eventpolicies"
+      - "eventpolicies/status"
     verbs:
       - "get"
       - "list"
