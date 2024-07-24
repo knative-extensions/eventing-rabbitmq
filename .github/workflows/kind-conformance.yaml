@@ -38,9 +38,7 @@ jobs:
           fi
 
       - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: 1.21.x
+        uses: knative/actions/setup-go@main
 
       - name: Check out code
         uses: actions/checkout@v4
