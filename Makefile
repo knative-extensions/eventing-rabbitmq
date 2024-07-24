@@ -332,7 +332,7 @@ install-rabbitmq-topology-operator: | install-cert-manager $(KUBECTL) ## Install
 	$(KUBECTL) $(K_CMD) --filename \
 		https://github.com/rabbitmq/messaging-topology-operator/releases/download/v$(RABBITMQ_TOPOLOGY_OPERATOR_VERSION)/messaging-topology-operator-with-certmanager.yaml
 
-KNATIVE_EVENTING_VERSION ?= 1.12.0
+KNATIVE_EVENTING_VERSION ?= 1.15.0
 EVENTING_CRDS ?= https://github.com/knative/eventing/releases/download/knative-v$(KNATIVE_EVENTING_VERSION)/eventing-crds.yaml
 EVENTING_CORE ?= https://github.com/knative/eventing/releases/download/knative-v$(KNATIVE_EVENTING_VERSION)/eventing-core.yaml
 
@@ -341,7 +341,7 @@ EVENTING_CRDS = ./third_party/eventing-latest/eventing-crds.yaml
 EVENTING_CORE = ./third_party/eventing-latest/eventing-core.yaml
 endif
 
-KNATIVE_SERVING_VERSION ?= 1.12.1
+KNATIVE_SERVING_VERSION ?= 1.15.0
 # https://github.com/knative/serving/releases
 .PHONY: install-knative-serving
 install-knative-serving: | $(KUBECONFIG) $(KUBECTL) ## Install Knative Serving
