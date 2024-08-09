@@ -350,7 +350,7 @@ golang.org/x/net/trace
 ## explicit; go 1.18
 golang.org/x/oauth2
 golang.org/x/oauth2/internal
-# golang.org/x/sync v0.7.0
+# golang.org/x/sync v0.8.0
 ## explicit; go 1.18
 golang.org/x/sync/errgroup
 golang.org/x/sync/semaphore
@@ -1026,7 +1026,7 @@ k8s.io/utils/pointer
 k8s.io/utils/ptr
 k8s.io/utils/strings/slices
 k8s.io/utils/trace
-# knative.dev/eventing v0.42.1-0.20240801183138-ff37e4e2fc0f
+# knative.dev/eventing v0.42.1-0.20240809130604-d69b8b46e9d0
 ## explicit; go 1.22
 knative.dev/eventing/cmd/heartbeats
 knative.dev/eventing/pkg/adapter/v2
@@ -1145,16 +1145,17 @@ knative.dev/eventing/test/rekt/resources/broker
 knative.dev/eventing/test/rekt/resources/channel
 knative.dev/eventing/test/rekt/resources/channel_impl
 knative.dev/eventing/test/rekt/resources/delivery
+knative.dev/eventing/test/rekt/resources/eventpolicy
 knative.dev/eventing/test/rekt/resources/pingsource
 knative.dev/eventing/test/rekt/resources/subscription
 knative.dev/eventing/test/rekt/resources/trigger
 knative.dev/eventing/test/test_images
 knative.dev/eventing/test/test_images/event-sender
 knative.dev/eventing/test/test_images/print
-# knative.dev/hack v0.0.0-20240801232131-441a19fc9ead
+# knative.dev/hack v0.0.0-20240808014239-452e340cbb4b
 ## explicit; go 1.21
 knative.dev/hack
-# knative.dev/pkg v0.0.0-20240802082807-433889b44ec7
+# knative.dev/pkg v0.0.0-20240808013630-0991b2f920f4
 ## explicit; go 1.22
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
@@ -1253,7 +1254,7 @@ knative.dev/pkg/webhook/json
 knative.dev/pkg/webhook/resourcesemantics
 knative.dev/pkg/webhook/resourcesemantics/defaulting
 knative.dev/pkg/webhook/resourcesemantics/validation
-# knative.dev/reconciler-test v0.0.0-20240730134611-dd2ded3ede25
+# knative.dev/reconciler-test v0.0.0-20240808014154-0ff820e7a190
 ## explicit; go 1.22
 knative.dev/reconciler-test/cmd/eventshub
 knative.dev/reconciler-test/pkg/environment
