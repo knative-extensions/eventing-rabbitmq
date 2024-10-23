@@ -10,6 +10,8 @@ What this demo shows is how the Dead Letter Queue works with the RabbitMQ using
 a very simple example. It demonstrates how failed events get sent to Dead Letter
 Sink while successfully processed events do not.
 
+![workflow](./images/workflow.png)
+
 ## Components
 
 - [failer](../../cmd/failer/main.go) is a function which takes in a
