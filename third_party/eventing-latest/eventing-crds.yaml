@@ -20,7 +20,7 @@ metadata:
     eventing.knative.dev/source: "true"
     duck.knative.dev/source: "true"
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20241114-bc6e878f4"
+    app.kubernetes.io/version: "20241119-63d4da59c"
     app.kubernetes.io/name: knative-eventing
   annotations:
     # TODO add schemas
@@ -307,7 +307,7 @@ metadata:
   labels:
     knative.dev/crd-install: "true"
     duck.knative.dev/addressable: "true"
-    app.kubernetes.io/version: "20241114-bc6e878f4"
+    app.kubernetes.io/version: "20241119-63d4da59c"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: eventing.knative.dev
@@ -522,7 +522,7 @@ metadata:
     knative.dev/crd-install: "true"
     messaging.knative.dev/subscribable: "true"
     duck.knative.dev/addressable: "true"
-    app.kubernetes.io/version: "20241114-bc6e878f4"
+    app.kubernetes.io/version: "20241119-63d4da59c"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: messaging.knative.dev
@@ -880,7 +880,7 @@ metadata:
     eventing.knative.dev/source: "true"
     duck.knative.dev/source: "true"
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20241114-bc6e878f4"
+    app.kubernetes.io/version: "20241119-63d4da59c"
     app.kubernetes.io/name: knative-eventing
   name: containersources.sources.knative.dev
 spec:
@@ -1055,7 +1055,7 @@ metadata:
   name: eventpolicies.eventing.knative.dev
   labels:
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20241114-bc6e878f4"
+    app.kubernetes.io/version: "20241119-63d4da59c"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: eventing.knative.dev
@@ -1274,7 +1274,7 @@ metadata:
   name: eventtypes.eventing.knative.dev
   labels:
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20241114-bc6e878f4"
+    app.kubernetes.io/version: "20241119-63d4da59c"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: eventing.knative.dev
@@ -1667,7 +1667,7 @@ metadata:
     eventing.knative.dev/source: "true"
     duck.knative.dev/source: "true"
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20241114-bc6e878f4"
+    app.kubernetes.io/version: "20241119-63d4da59c"
     app.kubernetes.io/name: knative-eventing
   name: integrationsources.sources.knative.dev
 spec:
@@ -1751,7 +1751,7 @@ spec:
                     s3:
                       type: object
                       properties:
-                        bucketNameOrArn:
+                        arn:
                           type: string
                           title: Bucket Name
                           description: The S3 Bucket name or Amazon Resource Name (ARN).
@@ -1831,7 +1831,7 @@ spec:
                     sqs:
                       type: object
                       properties:
-                        queueNameOrArn:
+                        arn:
                           type: string
                           title: Queue Name
                           description: The SQS Queue Name or ARN
@@ -1849,7 +1849,7 @@ spec:
                           title: Autocreate Queue
                           description: Setting the autocreation of the SQS queue.
                           default: false
-                        amazonAWSHost:
+                        host:
                           type: string
                           title: AWS Host
                           description: The hostname of the Amazon AWS cloud.
@@ -1904,7 +1904,7 @@ spec:
                           type: integer
                           title: Visibility Timeout
                           description: The duration (in seconds) that the received messages are hidden from subsequent retrieve requests after being retrieved by a ReceiveMessage request.
-                    ddb-streams:
+                    ddbStreams:
                       type: object
                       properties:
                         table:
@@ -2076,7 +2076,7 @@ metadata:
   labels:
     knative.dev/crd-install: "true"
     duck.knative.dev/addressable: "true"
-    app.kubernetes.io/version: "20241114-bc6e878f4"
+    app.kubernetes.io/version: "20241119-63d4da59c"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: sinks.knative.dev
@@ -2227,7 +2227,7 @@ metadata:
   labels:
     knative.dev/crd-install: "true"
     duck.knative.dev/addressable: "true"
-    app.kubernetes.io/version: "20241114-bc6e878f4"
+    app.kubernetes.io/version: "20241119-63d4da59c"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: flows.knative.dev
@@ -2755,7 +2755,7 @@ metadata:
     eventing.knative.dev/source: "true"
     duck.knative.dev/source: "true"
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20241114-bc6e878f4"
+    app.kubernetes.io/version: "20241119-63d4da59c"
     app.kubernetes.io/name: knative-eventing
   annotations:
     # TODO add schema
@@ -3127,7 +3127,7 @@ metadata:
   labels:
     knative.dev/crd-install: "true"
     duck.knative.dev/addressable: "true"
-    app.kubernetes.io/version: "20241114-bc6e878f4"
+    app.kubernetes.io/version: "20241119-63d4da59c"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: flows.knative.dev
@@ -3511,7 +3511,7 @@ metadata:
     duck.knative.dev/source: "true"
     duck.knative.dev/binding: "true"
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20241114-bc6e878f4"
+    app.kubernetes.io/version: "20241119-63d4da59c"
     app.kubernetes.io/name: knative-eventing
   name: sinkbindings.sources.knative.dev
 spec:
@@ -3726,7 +3726,7 @@ metadata:
   name: subscriptions.messaging.knative.dev
   labels:
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20241114-bc6e878f4"
+    app.kubernetes.io/version: "20241119-63d4da59c"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: messaging.knative.dev
@@ -3988,7 +3988,7 @@ metadata:
   name: triggers.eventing.knative.dev
   labels:
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20241114-bc6e878f4"
+    app.kubernetes.io/version: "20241119-63d4da59c"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: eventing.knative.dev
