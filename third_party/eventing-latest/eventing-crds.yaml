@@ -20,7 +20,7 @@ metadata:
     eventing.knative.dev/source: "true"
     duck.knative.dev/source: "true"
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20241124-7176ce645"
+    app.kubernetes.io/version: "20241208-bff7b0318"
     app.kubernetes.io/name: knative-eventing
   annotations:
     # TODO add schemas
@@ -307,7 +307,7 @@ metadata:
   labels:
     knative.dev/crd-install: "true"
     duck.knative.dev/addressable: "true"
-    app.kubernetes.io/version: "20241124-7176ce645"
+    app.kubernetes.io/version: "20241208-bff7b0318"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: eventing.knative.dev
@@ -522,7 +522,7 @@ metadata:
     knative.dev/crd-install: "true"
     messaging.knative.dev/subscribable: "true"
     duck.knative.dev/addressable: "true"
-    app.kubernetes.io/version: "20241124-7176ce645"
+    app.kubernetes.io/version: "20241208-bff7b0318"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: messaging.knative.dev
@@ -880,7 +880,7 @@ metadata:
     eventing.knative.dev/source: "true"
     duck.knative.dev/source: "true"
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20241124-7176ce645"
+    app.kubernetes.io/version: "20241208-bff7b0318"
     app.kubernetes.io/name: knative-eventing
   name: containersources.sources.knative.dev
 spec:
@@ -1055,7 +1055,7 @@ metadata:
   name: eventpolicies.eventing.knative.dev
   labels:
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20241124-7176ce645"
+    app.kubernetes.io/version: "20241208-bff7b0318"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: eventing.knative.dev
@@ -1274,7 +1274,7 @@ metadata:
   name: eventtypes.eventing.knative.dev
   labels:
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20241124-7176ce645"
+    app.kubernetes.io/version: "20241208-bff7b0318"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: eventing.knative.dev
@@ -1667,7 +1667,7 @@ metadata:
   labels:
     knative.dev/crd-install: "true"
     duck.knative.dev/addressable: "true"
-    app.kubernetes.io/version: "20241124-7176ce645"
+    app.kubernetes.io/version: "20241208-bff7b0318"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: sinks.knative.dev
@@ -1679,7 +1679,7 @@ spec:
         status: {}
       schema:
         openAPIV3Schema:
-          description: 'IntegrationSink triggers long-running jobs when an event occur.'
+          description: 'IntegrationSink sends events to generic event sink'
           type: object
           properties:
             spec:
@@ -1759,7 +1759,7 @@ spec:
                     s3:
                       type: object
                       properties:
-                        bucketNameOrArn:
+                        arn:
                           type: string
                           title: Bucket Name
                           description: The S3 Bucket name or Amazon Resource Name (ARN).
@@ -1804,14 +1804,6 @@ spec:
                           title: Ignore Body
                           description: If true, the S3 Object body is ignored. Setting this to true overrides any behavior defined by the `includeBody` option. If false, the S3 object is put in the body.
                           default: false
-                        profileCredentialsName:
-                          type: string
-                          title: Profile Credentials Name
-                          description: If using a profile credentials provider this parameter will set the profile name.
-                        sessionToken:
-                          type: string
-                          title: Session Token
-                          description: Amazon AWS Session Token used when the user needs to assume a IAM role.
                         uriEndpointOverride:
                           type: string
                           title: Overwrite Endpoint URI
@@ -1839,7 +1831,7 @@ spec:
                     sqs:
                       type: object
                       properties:
-                        queueNameOrArn:
+                        arn:
                           type: string
                           title: Queue Name
                           description: The SQS Queue Name or ARN
@@ -1857,7 +1849,7 @@ spec:
                           title: Autocreate Queue
                           description: Setting the autocreation of the SQS queue.
                           default: false
-                        amazonAWSHost:
+                        host:
                           type: string
                           title: AWS Host
                           description: The hostname of the Amazon AWS cloud.
@@ -1872,14 +1864,6 @@ spec:
                           type: string
                           title: Queue URL
                           description: The full SQS Queue URL (required if using KEDA)
-                        profileCredentialsName:
-                          type: string
-                          title: Profile Credentials Name
-                          description: If using a profile credentials provider this parameter will set the profile name.
-                        sessionToken:
-                          type: string
-                          title: Session Token
-                          description: Amazon AWS Session Token used when the user needs to assume a IAM role.
                         uriEndpointOverride:
                           type: string
                           title: Overwrite Endpoint URI
@@ -1912,6 +1896,31 @@ spec:
                           type: integer
                           title: Visibility Timeout
                           description: The duration (in seconds) that the received messages are hidden from subsequent retrieve requests after being retrieved by a ReceiveMessage request.
+                    sns:
+                      type: object
+                      properties:
+                        arn:
+                          type: string
+                          title: Topic Name
+                          description: The SNS topic name name or Amazon Resource Name (ARN).
+                        region:
+                          type: string
+                          title: AWS Region
+                          description: The AWS region to access.
+                        autoCreateTopic:
+                          type: boolean
+                          title: Autocreate Topic
+                          description: Setting the autocreation of the SNS topic.
+                          default: false
+                        uriEndpointOverride:
+                          type: string
+                          title: Overwrite Endpoint URI
+                          description: The overriding endpoint URI. To use this option, you must also select the `overrideEndpoint` option.
+                        overrideEndpoint:
+                          type: boolean
+                          title: Endpoint Overwrite
+                          description: Select this option to override the endpoint URI. To use this option, you must also provide a URI for the `uriEndpointOverride` option.
+                          default: false
                     auth:
                       description: 'Auth configurations'
                       type: object
@@ -1935,7 +1944,7 @@ spec:
               type: object
               properties:
                 address:
-                  description: IntegrationSink is Addressable. It exposes the endpoint as an URI to schedule long running jobs when an even occurs.
+                  description: IntegrationSink is Addressable. It exposes the endpoints as URIs to get events delivered into the used Kamelet.
                   type: object
                   properties:
                     name:
@@ -1947,7 +1956,7 @@ spec:
                     audience:
                       type: string
                 addresses:
-                  description: IntegrationSink is Addressable. It exposes the endpoint as an URI to schedule long running jobs when an even occurs.
+                  description: IntegrationSink is Addressable. It exposes the endpoints as URIs to get events delivered into the used Kamelet.
                   type: array
                   items:
                     type: object
@@ -1960,12 +1969,6 @@ spec:
                         type: string
                       audience:
                         type: string
-                job:
-                  type: object
-                  properties:
-                    selector:
-                      type: string
-                      description: Label selector for all scheduled jobs
                 annotations:
                   description: Annotations is additional Status fields for the Resource to save some additional State as well as convey more information to the user. This is roughly akin to Annotations on any k8s resource, just the reconciler conveying richer information outwards.
                   type: object
@@ -2059,7 +2062,7 @@ metadata:
     eventing.knative.dev/source: "true"
     duck.knative.dev/source: "true"
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20241124-7176ce645"
+    app.kubernetes.io/version: "20241208-bff7b0318"
     app.kubernetes.io/name: knative-eventing
   name: integrationsources.sources.knative.dev
 spec:
@@ -2188,14 +2191,6 @@ spec:
                           title: Ignore Body
                           description: If true, the S3 Object body is ignored. Setting this to true overrides any behavior defined by the `includeBody` option. If false, the S3 object is put in the body.
                           default: false
-                        profileCredentialsName:
-                          type: string
-                          title: Profile Credentials Name
-                          description: If using a profile credentials provider this parameter will set the profile name.
-                        sessionToken:
-                          type: string
-                          title: Session Token
-                          description: Amazon AWS Session Token used when the user needs to assume a IAM role.
                         uriEndpointOverride:
                           type: string
                           title: Overwrite Endpoint URI
@@ -2256,14 +2251,6 @@ spec:
                           type: string
                           title: Queue URL
                           description: The full SQS Queue URL (required if using KEDA)
-                        profileCredentialsName:
-                          type: string
-                          title: Profile Credentials Name
-                          description: If using a profile credentials provider this parameter will set the profile name.
-                        sessionToken:
-                          type: string
-                          title: Session Token
-                          description: Amazon AWS Session Token used when the user needs to assume a IAM role.
                         uriEndpointOverride:
                           type: string
                           title: Overwrite Endpoint URI
@@ -2312,14 +2299,6 @@ spec:
                           title: Stream Iterator Type
                           description: Defines where in the DynamoDB stream to start getting records. There are two enums and the value can be one of FROM_LATEST and FROM_START. Note that using FROM_START can cause a significant delay before the stream has caught up to real-time.
                           default: FROM_LATEST
-                        profileCredentialsName:
-                          type: string
-                          title: Profile Credentials Name
-                          description: If using a profile credentials provider this parameter will set the profile name.
-                        sessionToken:
-                          type: string
-                          title: Session Token
-                          description: Amazon AWS Session Token used when the user needs to assume an IAM role.
                         uriEndpointOverride:
                           type: string
                           title: Overwrite Endpoint URI
@@ -2468,7 +2447,7 @@ metadata:
   labels:
     knative.dev/crd-install: "true"
     duck.knative.dev/addressable: "true"
-    app.kubernetes.io/version: "20241124-7176ce645"
+    app.kubernetes.io/version: "20241208-bff7b0318"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: sinks.knative.dev
@@ -2619,7 +2598,7 @@ metadata:
   labels:
     knative.dev/crd-install: "true"
     duck.knative.dev/addressable: "true"
-    app.kubernetes.io/version: "20241124-7176ce645"
+    app.kubernetes.io/version: "20241208-bff7b0318"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: flows.knative.dev
@@ -3147,7 +3126,7 @@ metadata:
     eventing.knative.dev/source: "true"
     duck.knative.dev/source: "true"
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20241124-7176ce645"
+    app.kubernetes.io/version: "20241208-bff7b0318"
     app.kubernetes.io/name: knative-eventing
   annotations:
     # TODO add schema
@@ -3518,7 +3497,7 @@ metadata:
   name: requestreplies.eventing.knative.dev
   labels:
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20241124-7176ce645"
+    app.kubernetes.io/version: "20241208-bff7b0318"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: eventing.knative.dev
@@ -3733,7 +3712,7 @@ metadata:
   labels:
     knative.dev/crd-install: "true"
     duck.knative.dev/addressable: "true"
-    app.kubernetes.io/version: "20241124-7176ce645"
+    app.kubernetes.io/version: "20241208-bff7b0318"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: flows.knative.dev
@@ -4117,7 +4096,7 @@ metadata:
     duck.knative.dev/source: "true"
     duck.knative.dev/binding: "true"
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20241124-7176ce645"
+    app.kubernetes.io/version: "20241208-bff7b0318"
     app.kubernetes.io/name: knative-eventing
   name: sinkbindings.sources.knative.dev
 spec:
@@ -4332,7 +4311,7 @@ metadata:
   name: subscriptions.messaging.knative.dev
   labels:
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20241124-7176ce645"
+    app.kubernetes.io/version: "20241208-bff7b0318"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: messaging.knative.dev
@@ -4594,7 +4573,7 @@ metadata:
   name: triggers.eventing.knative.dev
   labels:
     knative.dev/crd-install: "true"
-    app.kubernetes.io/version: "20241124-7176ce645"
+    app.kubernetes.io/version: "20241208-bff7b0318"
     app.kubernetes.io/name: knative-eventing
 spec:
   group: eventing.knative.dev
