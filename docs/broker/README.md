@@ -84,19 +84,23 @@ If the messaging topology isn't working as expected, the conditions on brokers a
 
 The [Broker/Trigger](https://knative.dev/docs/eventing/broker/) implementation adds a few components that could become points of failure. Consider the following trivial case of a single producer and single consumer:
 
+```
                 +------------+
 +----------+    |            |    +----------+
 | Producer +---->  RabbitMQ  +----> Consumer |
 +----------+    |            |    +----------+
                 +------------+
+```
 
 If this was accomplished using Knative and eventing-rabbitmq, it would result in the following components:
 
+```
                                     +------------+
 +----------+   +--------------+     |            |     +------------+   +----------+
 | Producer +--->    Ingress   +----->  RabbitMQ  +-----> Dispatcher +---> Consumer |
 +----------+   +--------------+     |            |     +------------+   +----------+
                                     +------------+
+```
 
 The Broker will always create a single `Ingress` pod that's responsible for ingress into the system. Any source that wishes to post events to the system will send requests to the ingress pod.
 `Dispatcher` pods are means of egress from the system. They act as consumers of RabbitMQ and pass the event along to the sinks. Note: Dispatcher pods are also used for dead letter messaging.
