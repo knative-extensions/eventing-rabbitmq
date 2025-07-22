@@ -66,16 +66,16 @@ var (
 
 // PropagateTrustBundles propagates Trust bundles ConfigMaps from the system.Namespace() to the
 // obj namespace.
-func PropagateTrustBundles(ctx context.Context, k8s kubernetes.Interface, trustBundleConfigMapLister corev1listers.ConfigMapLister, gvk schema.GroupVersionKind, obj kmeta.Accessor) ([]*corev1.ConfigMap, error) {
+func PropagateTrustBundles(ctx context.Context, k8s kubernetes.Interface, trustBundleConfigMapLister corev1listers.ConfigMapLister, gvk schema.GroupVersionKind, obj kmeta.Accessor) error {
 
 	systemNamespaceBundles, err := trustBundleConfigMapLister.ConfigMaps(system.Namespace()).List(TrustBundleSelector)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list trust bundle ConfigMaps in %q: %w", system.Namespace(), err)
+		return fmt.Errorf("failed to list trust bundle ConfigMaps in %q: %w", system.Namespace(), err)
 	}
 
 	userNamespaceBundles, err := trustBundleConfigMapLister.ConfigMaps(obj.GetNamespace()).List(TrustBundleSelector)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list trust bundles ConfigMaps in %q: %w", obj.GetNamespace(), err)
+		return fmt.Errorf("failed to list trust bundles ConfigMaps in %q: %w", obj.GetNamespace(), err)
 	}
 
 	logging.FromContext(ctx).Debugw("Existing bundles",
@@ -85,10 +85,8 @@ func PropagateTrustBundles(ctx context.Context, k8s kubernetes.Interface, trustB
 
 	var combinedBundle bytes.Buffer
 	if err := combineValidTrustBundles(systemNamespaceBundles, &combinedBundle); err != nil {
-		return nil, err
+		return err
 	}
-
-	outputUserNamespaceBundles := make([]*corev1.ConfigMap, 0, len(systemNamespaceBundles))
 
 	type Pair struct {
 		sysCM  *corev1.ConfigMap
@@ -155,7 +153,7 @@ func PropagateTrustBundles(ctx context.Context, k8s kubernetes.Interface, trustB
 				// Only delete the ConfigMap if the object owns it
 				if equality.Semantic.DeepDerivative(expectedOr, or) {
 					if err := deleteConfigMap(ctx, k8s, obj, p.userCm); err != nil {
-						return nil, err
+						return err
 					}
 				}
 			}
@@ -177,9 +175,8 @@ func PropagateTrustBundles(ctx context.Context, k8s kubernetes.Interface, trustB
 			// Update owner references
 			expected.OwnerReferences = withOwnerReferences(obj, gvk, []metav1.OwnerReference{})
 			if err := createConfigMap(ctx, k8s, expected); err != nil {
-				return nil, err
+				return err
 			}
-			outputUserNamespaceBundles = append(outputUserNamespaceBundles, expected)
 			continue
 		}
 
@@ -188,17 +185,13 @@ func PropagateTrustBundles(ctx context.Context, k8s kubernetes.Interface, trustB
 		// Update owner references
 		expected.OwnerReferences = withOwnerReferences(obj, gvk, p.userCm.OwnerReferences)
 
-		if !equality.Semantic.DeepDerivative(expected.Data, p.userCm.Data) ||
-			!equality.Semantic.DeepDerivative(expected.BinaryData, p.userCm.BinaryData) ||
-			!equality.Semantic.DeepDerivative(expected.Labels, p.userCm.Labels) {
+		if !equality.Semantic.DeepDerivative(expected, p.userCm) {
 			if err := updateConfigMap(ctx, k8s, expected); err != nil {
-				return nil, err
+				return err
 			}
 		}
-		outputUserNamespaceBundles = append(outputUserNamespaceBundles, expected)
 	}
-
-	return outputUserNamespaceBundles, nil
+	return nil
 }
 
 // CombinedBundlePresent will check if PropagateTrustBundles and AddTrustBundleVolumes will add the TrustBundleCombined
@@ -219,20 +212,11 @@ func CombinedBundlePresent(trustBundleLister corev1listers.ConfigMapLister) (boo
 	return combinedBundle.Len() > 0, nil
 }
 
-// AddTrustBundleVolumes adds the trust bundle volumes to the given PodSpec.
 func AddTrustBundleVolumes(trustBundleLister corev1listers.ConfigMapLister, obj kmeta.Accessor, pt *corev1.PodSpec) (*corev1.PodSpec, error) {
 	cms, err := trustBundleLister.ConfigMaps(obj.GetNamespace()).List(TrustBundleSelector)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list trust bundles ConfigMaps in %q: %w", obj.GetNamespace(), err)
 	}
-	return AddTrustBundleVolumesFromConfigMaps(cms, pt)
-}
-
-func AddTrustBundleVolumesFromConfigMaps(cms []*corev1.ConfigMap, pt *corev1.PodSpec) (*corev1.PodSpec, error) {
-	// Sort ConfigMaps by name to ensure consistent ordering
-	sort.SliceStable(cms, func(i, j int) bool {
-		return cms[i].Name < cms[j].Name
-	})
 
 	pt = pt.DeepCopy()
 	sources := make([]corev1.VolumeProjection, 0, len(cms))
