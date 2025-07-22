@@ -136,7 +136,7 @@ releases-envsubst:
 
 KUBECTL_RELEASES := https://github.com/kubernetes/kubernetes/tags
 # Keep this in sync with KIND_K8S_VERSION
-KUBECTL_VERSION := 1.33.1
+KUBECTL_VERSION := v1.33.1
 KUBECTL_BIN := kubectl-$(KUBECTL_VERSION)-$(platform)-$(arch_alt)
 KUBECTL_URL := https://dl.k8s.io/release/$(KUBECTL_VERSION)/bin/$(platform)/amd64/kubectl
 KUBECTL := $(LOCAL_BIN)/$(KUBECTL_BIN)
