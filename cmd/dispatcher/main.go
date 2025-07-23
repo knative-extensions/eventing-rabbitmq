@@ -25,14 +25,12 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
-	"github.com/google/uuid"
 	"github.com/kelseyhightower/envconfig"
 
 	"knative.dev/eventing-rabbitmq/pkg/dispatcher"
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	"knative.dev/eventing-rabbitmq/pkg/utils"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
-	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/signals"
