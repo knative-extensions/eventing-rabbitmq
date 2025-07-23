@@ -37,7 +37,7 @@ type ReceiveAdapterArgs struct {
 	Source               *v1alpha1.RabbitmqSource
 	Labels               map[string]string
 	SinkURI              *apis.URL
-	MetricsConfig        string
+	ObservabilityConfig  string
 	LoggingConfig        string
 	RabbitMQSecretName   string
 	RabbitMQCASecretName string
@@ -92,8 +92,8 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 			Value: args.LoggingConfig,
 		},
 		{
-			Name:  "K_METRICS_CONFIG",
-			Value: args.MetricsConfig,
+			Name:  "K_OBSERVABILITY_CONFIG",
+			Value: args.ObservabilityConfig,
 		},
 		{
 			Name:  "RABBITMQ_VHOST",

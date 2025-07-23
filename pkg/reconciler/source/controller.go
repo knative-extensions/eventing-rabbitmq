@@ -31,12 +31,12 @@ import (
 	rabbitmqclient "knative.dev/eventing-rabbitmq/pkg/client/injection/client"
 	rabbitmqinformer "knative.dev/eventing-rabbitmq/pkg/client/injection/informers/sources/v1alpha1/rabbitmqsource"
 	"knative.dev/eventing-rabbitmq/pkg/client/injection/reconciler/sources/v1alpha1/rabbitmqsource"
+	o11yconfigmap "knative.dev/eventing/pkg/observability/configmap"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
-	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/resolver"
 )
 
@@ -104,6 +104,6 @@ func NewController(
 	})
 
 	cmw.Watch(logging.ConfigMapName(), c.UpdateFromLoggingConfigMap)
-	cmw.Watch(metrics.ConfigMapName(), c.UpdateFromMetricsConfigMap)
+	cmw.Watch(o11yconfigmap.Name(), c.UpdateFromObservabilityConfigMap)
 	return impl
 }

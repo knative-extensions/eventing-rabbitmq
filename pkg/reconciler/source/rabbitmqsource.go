@@ -18,12 +18,14 @@ package rabbitmq
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	naming "knative.dev/eventing-rabbitmq/pkg/rabbitmqnaming"
 	"knative.dev/eventing-rabbitmq/pkg/utils"
 	rabbitlisters "knative.dev/eventing-rabbitmq/third_party/pkg/client/listers/rabbitmq.com/v1beta1"
+	"knative.dev/eventing/pkg/observability"
 	eventingutils "knative.dev/eventing/pkg/utils"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/kmeta"
@@ -42,11 +44,11 @@ import (
 	reconcilerrabbitmqsource "knative.dev/eventing-rabbitmq/pkg/client/injection/reconciler/sources/v1alpha1/rabbitmqsource"
 	listers "knative.dev/eventing-rabbitmq/pkg/client/listers/sources/v1alpha1"
 	"knative.dev/eventing-rabbitmq/pkg/reconciler/source/resources"
+	o11yconfigmap "knative.dev/eventing/pkg/observability/configmap"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/logging"
 	pkgLogging "knative.dev/pkg/logging"
-	"knative.dev/pkg/metrics"
 	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/resolver"
 )
@@ -85,10 +87,10 @@ type Reconciler struct {
 	exchangeLister   rabbitlisters.ExchangeLister
 	queueLister      rabbitlisters.QueueLister
 
-	rabbitmqClientSet versioned.Interface
-	loggingContext    context.Context
-	loggingConfig     *pkgLogging.Config
-	metricsConfig     *metrics.ExporterOptions
+	rabbitmqClientSet   versioned.Interface
+	loggingContext      context.Context
+	loggingConfig       *pkgLogging.Config
+	observabilityConfig *observability.Config
 
 	sinkResolver *resolver.URIResolver
 
@@ -210,9 +212,13 @@ func (r *Reconciler) createReceiveAdapter(ctx context.Context, src *v1alpha1.Rab
 		logging.FromContext(ctx).Error("error while converting logging config to JSON", zap.Any("receiveAdapter", err))
 	}
 
-	metricsConfig, err := metrics.OptionsToJSON(r.metricsConfig)
-	if err != nil {
-		logging.FromContext(ctx).Error("error while converting metrics config to JSON", zap.Any("receiveAdapter", err))
+	observabilityConfig := ""
+	if r.observabilityConfig != nil {
+		observabilityConfigBytes, err := json.Marshal(r.observabilityConfig)
+		if err != nil {
+			logging.FromContext(ctx).Error("error while converting observability config to JSON", zap.Error(err))
+		}
+		observabilityConfig = string(observabilityConfigBytes)
 	}
 
 	secretName, err := r.rabbit.GetRabbitMQCASecret(ctx, src.Spec.RabbitmqClusterReference)
@@ -230,7 +236,7 @@ func (r *Reconciler) createReceiveAdapter(ctx context.Context, src *v1alpha1.Rab
 		Source:               src,
 		Labels:               resources.GetLabels(src.Name),
 		SinkURI:              sinkURI,
-		MetricsConfig:        metricsConfig,
+		ObservabilityConfig:  observabilityConfig,
 		LoggingConfig:        loggingConfig,
 		RabbitMQSecretName:   rabbit.SecretName(src.Name, "source"),
 		RabbitMQCASecretName: secretName,
@@ -301,16 +307,18 @@ func (r *Reconciler) UpdateFromLoggingConfigMap(cfg *corev1.ConfigMap) {
 	logging.FromContext(r.loggingContext).Info("Update from logging ConfigMap", zap.Any("ConfigMap", cfg))
 }
 
-func (r *Reconciler) UpdateFromMetricsConfigMap(cfg *corev1.ConfigMap) {
+func (r *Reconciler) UpdateFromObservabilityConfigMap(cfg *corev1.ConfigMap) {
 	if cfg != nil {
 		delete(cfg.Data, "_example")
 	}
 
-	r.metricsConfig = &metrics.ExporterOptions{
-		Domain:    metrics.Domain(),
-		Component: component,
-		ConfigMap: cfg.Data,
+	obsCfg, err := o11yconfigmap.Parse(cfg)
+	if err != nil {
+		logging.FromContext(r.loggingContext).Warn("failed to create observability config from configmap", zap.String("cfg.Name", cfg.Name))
+		return
 	}
+
+	r.observabilityConfig = obsCfg
 	logging.FromContext(r.loggingContext).Info("Update from metrics ConfigMap", zap.Any("ConfigMap", cfg))
 }
 
