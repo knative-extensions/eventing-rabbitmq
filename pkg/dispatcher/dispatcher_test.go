@@ -27,20 +27,23 @@ import (
 
 	v2 "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/metric"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	amqp "github.com/rabbitmq/amqp091-go"
-	"go.opencensus.io/plugin/ochttp/propagation/tracecontext"
-	"go.opencensus.io/trace"
 
-	dispatcherstats "knative.dev/eventing-rabbitmq/pkg/broker/dispatcher"
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	v1 "knative.dev/eventing/pkg/apis/duck/v1"
+	"knative.dev/pkg/observability/tracing"
 )
 
 func TestDispatcher_ConsumeFromQueue(t *testing.T) {
-	statsReporter := dispatcherstats.NewStatsReporter("test-container", "test-name", "test-ns")
 	h := &fakeHandler{
 		handlers: []handlerFunc{requestAccepted},
 	}
@@ -52,7 +55,6 @@ func TestDispatcher_ConsumeFromQueue(t *testing.T) {
 		Timeout:       time.Duration(500),
 		BackoffDelay:  time.Duration(500),
 		WorkerCount:   10,
-		Reporter:      statsReporter,
 	}
 	ctx, cancelFunc := context.WithCancel(context.TODO())
 	go func() {
@@ -89,15 +91,22 @@ func TestDispatcher_ReadSpan(t *testing.T) {
 			tt := tt
 			t.Parallel()
 			ctx := context.TODO()
+
+			exporter := tracetest.NewInMemoryExporter()
+			tp := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exporter))
+			tracer := tp.Tracer("")
+
 			d := tt.delivery
+			var span trace.Span
 			if !tt.err {
-				var span *trace.Span
-				ctx, span = trace.StartSpanWithRemoteParent(ctx, "test-span", trace.SpanContext{})
-				tp, ts := (&tracecontext.HTTPFormat{}).SpanContextToHeaders(span.SpanContext())
+				ctx, span = tracer.Start(ctx, "test-span")
+				defer span.End()
+				tp, ts := extractSpanHeaders(ctx)
+
 				d = amqp.Delivery{Headers: amqp.Table{"traceparent": tp, "tracestate": ts}}
 			}
 
-			_, span := readSpan(ctx, d)
+			_, span = readSpan(ctx, d, tracer)
 			if span != nil && tt.err {
 				t.Error("invalid context is returning a valid span")
 			} else if span == nil && !tt.err {
@@ -206,17 +215,6 @@ func (mock MockClient) Request(ctx context.Context, m binding.Message, transform
 	return mock.request(ctx, m, transformers...)
 }
 
-type MockStatsReporter struct {
-}
-
-func (m MockStatsReporter) ReportEventCount(args *dispatcherstats.ReportArgs, responseCode int) error {
-	return nil
-}
-
-func (m MockStatsReporter) ReportEventDispatchTime(args *dispatcherstats.ReportArgs, responseCode int, d time.Duration) error {
-	return nil
-}
-
 func TestDispatcher_dispatch(t *testing.T) {
 	channel := rabbit.RabbitMQChannelMock{}
 
@@ -229,7 +227,6 @@ func TestDispatcher_dispatch(t *testing.T) {
 		Timeout           time.Duration
 		BackoffPolicy     v1.BackoffPolicyType
 		WorkerCount       int
-		Reporter          dispatcherstats.StatsReporter
 		DLX               bool
 	}
 	type args struct {
@@ -260,10 +257,8 @@ func TestDispatcher_dispatch(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "invalid request",
-			fields: fields{
-				Reporter: &MockStatsReporter{},
-			},
+			name:   "invalid request",
+			fields: fields{},
 			args: args{
 				ctx: context.TODO(),
 				msg: amqp.Delivery{
@@ -284,8 +279,7 @@ func TestDispatcher_dispatch(t *testing.T) {
 		{
 			name: "invalid request dlq",
 			fields: fields{
-				Reporter: &MockStatsReporter{},
-				DLX:      true,
+				DLX: true,
 			},
 			args: args{
 				ctx: context.TODO(),
@@ -305,10 +299,8 @@ func TestDispatcher_dispatch(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "valid event",
-			fields: fields{
-				Reporter: &MockStatsReporter{},
-			},
+			name:   "valid event",
+			fields: fields{},
 			args: args{
 				ctx: context.TODO(),
 				msg: amqp.Delivery{
@@ -328,8 +320,7 @@ func TestDispatcher_dispatch(t *testing.T) {
 		{
 			name: "valid event dlq",
 			fields: fields{
-				Reporter: &MockStatsReporter{},
-				DLX:      true,
+				DLX: true,
 			},
 			args: args{
 				ctx: context.TODO(),
@@ -359,8 +350,30 @@ func TestDispatcher_dispatch(t *testing.T) {
 				Timeout:           tt.fields.Timeout,
 				BackoffPolicy:     tt.fields.BackoffPolicy,
 				WorkerCount:       tt.fields.WorkerCount,
-				Reporter:          tt.fields.Reporter,
 				DLX:               tt.fields.DLX,
+			}
+
+			reader := sdkmetric.NewManualReader()
+			mp := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
+			otel.SetMeterProvider(mp)
+
+			exporter := tracetest.NewInMemoryExporter()
+			tp := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exporter))
+			otel.SetTracerProvider(tp)
+			otel.SetTextMapPropagator(tracing.DefaultTextMapPropagator())
+
+			d.Tracer = tp.Tracer("")
+
+			meter := mp.Meter("")
+
+			var err error
+			d.DispatchDuration, err = meter.Float64Histogram(
+				"kn.eventing.dispatch.duration",
+				metric.WithDescription("The duration to dispatch the event"),
+				metric.WithUnit("s"),
+			)
+			if err != nil {
+				t.Fatalf("Failed to create dispatch duration metric, %v", err)
 			}
 
 			client, err := v2.NewClient(tt.args.client)

@@ -22,19 +22,23 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strconv"
 	"time"
 
-	"go.opencensus.io/plugin/ochttp"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"knative.dev/pkg/network"
 	"knative.dev/pkg/network/handlers"
-	"knative.dev/pkg/tracing/propagation/tracecontextb3"
+	"knative.dev/pkg/observability/tracing"
 )
 
 const (
 	DefaultShutdownTimeout = time.Minute * 1
+	TracerName             = "knative.dev/eventing/pkg/kncloudevents"
 )
 
 type HTTPEventReceiver struct {
-	port int
+	desiredPort int
+	port        int
 
 	server   *http.Server
 	listener net.Listener
@@ -49,12 +53,13 @@ type HTTPEventReceiver struct {
 // HTTPEventReceiverOption enables further configuration of a HTTPEventReceiver.
 type HTTPEventReceiverOption func(*HTTPEventReceiver)
 
-func NewHTTPEventReceiver(port int, o ...HTTPEventReceiverOption) *HTTPEventReceiver {
+// NewHTTPEventReceiver creates a new HTTPEventReceiver. When desiredPort is set to 0, a free port will be chosen.
+// The final port of the running server will be stored in receiver.Port.
+func NewHTTPEventReceiver(desiredPort int, o ...HTTPEventReceiverOption) *HTTPEventReceiver {
 	h := &HTTPEventReceiver{
-		port: port,
+		desiredPort: desiredPort,
+		Ready:       make(chan interface{}),
 	}
-
-	h.Ready = make(chan interface{})
 
 	for _, opt := range o {
 		opt(h)
@@ -122,15 +127,24 @@ func (recv *HTTPEventReceiver) GetAddr() string {
 	return ""
 }
 
+// GetPort returns the final assigned port of the server.
+// This is blocking, as we need to wait until the server is running.
+func (recv *HTTPEventReceiver) GetPort() int {
+	// wait until server is ready, as only then the port is assigned
+	<-recv.Ready
+
+	return recv.port
+}
+
 // Blocking
-func (recv *HTTPEventReceiver) StartListen(ctx context.Context, handler http.Handler) error {
+func (recv *HTTPEventReceiver) StartListen(ctx context.Context, handler http.Handler, otelOpts ...otelhttp.Option) error {
 	var err error
-	if recv.listener, err = net.Listen("tcp", fmt.Sprintf(":%d", recv.port)); err != nil {
+	if recv.listener, err = net.Listen("tcp", fmt.Sprintf(":%d", recv.desiredPort)); err != nil {
 		return err
 	}
 
 	drainer := &handlers.Drainer{
-		Inner:       CreateHandler(handler),
+		Inner:       CreateHandler(handler, otelOpts...),
 		HealthCheck: recv.checker,
 		QuietPeriod: recv.drainQuietPeriod,
 	}
@@ -139,6 +153,18 @@ func (recv *HTTPEventReceiver) StartListen(ctx context.Context, handler http.Han
 	}
 	recv.server.Addr = recv.listener.Addr().String()
 	recv.server.Handler = drainer
+
+	_, portStr, err := net.SplitHostPort(recv.server.Addr)
+	if err != nil {
+		return fmt.Errorf("could not get port of server: %w", err)
+	}
+
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
+		return fmt.Errorf("could not convert port to int: %w", err)
+	}
+
+	recv.port = port
 
 	errChan := make(chan error, 1)
 	go func() {
@@ -180,11 +206,19 @@ func WithShutdownTimeout(ctx context.Context, timeout time.Duration) context.Con
 	return context.WithValue(ctx, shutdownTimeoutKey{}, timeout)
 }
 
-func CreateHandler(handler http.Handler) http.Handler {
-	return &ochttp.Handler{
-		Propagation: tracecontextb3.TraceContextEgress,
-		Handler:     handler,
-	}
+func CreateHandler(handler http.Handler, otelOpts ...otelhttp.Option) http.Handler {
+	opts := append([]otelhttp.Option{
+		otelhttp.WithPropagators(tracing.DefaultTextMapPropagator()),
+		otelhttp.WithFilter(func(r *http.Request) bool {
+			// Don't trace kubelet probes
+			return !network.IsKubeletProbe(r)
+		}),
+	}, otelOpts...)
+	return otelhttp.NewHandler(
+		handler,
+		"kncloudevents.receive",
+		opts...,
+	)
 }
 
 func newServer() *http.Server {

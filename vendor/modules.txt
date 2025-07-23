@@ -57,6 +57,10 @@ github.com/cloudevents/conformance/pkg/http
 ## explicit; go 1.18
 github.com/cloudevents/sdk-go/observability/opencensus/v2/client
 github.com/cloudevents/sdk-go/observability/opencensus/v2/http
+# github.com/cloudevents/sdk-go/observability/opentelemetry/v2 v2.16.1
+## explicit; go 1.23.0
+github.com/cloudevents/sdk-go/observability/opentelemetry/v2/client
+github.com/cloudevents/sdk-go/observability/opentelemetry/v2/http
 # github.com/cloudevents/sdk-go/sql/v2 v2.15.2
 ## explicit; go 1.18
 github.com/cloudevents/sdk-go/sql/v2
@@ -82,6 +86,7 @@ github.com/cloudevents/sdk-go/v2/event/datacodec
 github.com/cloudevents/sdk-go/v2/event/datacodec/json
 github.com/cloudevents/sdk-go/v2/event/datacodec/text
 github.com/cloudevents/sdk-go/v2/event/datacodec/xml
+github.com/cloudevents/sdk-go/v2/extensions
 github.com/cloudevents/sdk-go/v2/observability
 github.com/cloudevents/sdk-go/v2/protocol
 github.com/cloudevents/sdk-go/v2/protocol/http
@@ -359,11 +364,13 @@ go.opentelemetry.io/otel/codes
 go.opentelemetry.io/otel/internal/baggage
 go.opentelemetry.io/otel/internal/global
 go.opentelemetry.io/otel/propagation
+go.opentelemetry.io/otel/semconv/internal
 go.opentelemetry.io/otel/semconv/v1.20.0
 go.opentelemetry.io/otel/semconv/v1.26.0
 go.opentelemetry.io/otel/semconv/v1.34.0
 go.opentelemetry.io/otel/semconv/v1.34.0/goconv
 go.opentelemetry.io/otel/semconv/v1.34.0/httpconv
+go.opentelemetry.io/otel/semconv/v1.4.0
 # go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.37.0
 ## explicit; go 1.23.0
 go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc
@@ -1230,8 +1237,8 @@ k8s.io/utils/net
 k8s.io/utils/pointer
 k8s.io/utils/ptr
 k8s.io/utils/trace
-# knative.dev/eventing v0.45.2
-## explicit; go 1.23.0
+# knative.dev/eventing v0.46.0
+## explicit; go 1.24.0
 knative.dev/eventing/cmd/heartbeats
 knative.dev/eventing/pkg/adapter/v2
 knative.dev/eventing/pkg/adapter/v2/util/crstatusevent
@@ -1337,16 +1344,16 @@ knative.dev/eventing/pkg/eventingtls/eventingtlstesting
 knative.dev/eventing/pkg/eventtype
 knative.dev/eventing/pkg/kncloudevents
 knative.dev/eventing/pkg/kncloudevents/attributes
-knative.dev/eventing/pkg/metrics
 knative.dev/eventing/pkg/metrics/source
 knative.dev/eventing/pkg/observability
-knative.dev/eventing/pkg/observability/client
+knative.dev/eventing/pkg/observability/configmap
+knative.dev/eventing/pkg/observability/otel
+knative.dev/eventing/pkg/observability/resource
 knative.dev/eventing/pkg/reconciler/source
 knative.dev/eventing/pkg/reconciler/testing
 knative.dev/eventing/pkg/reconciler/testing/scheme
 knative.dev/eventing/pkg/reconciler/testing/v1
 knative.dev/eventing/pkg/reconciler/testing/v1beta2
-knative.dev/eventing/pkg/tracing
 knative.dev/eventing/pkg/utils
 knative.dev/eventing/test/lib/sender
 knative.dev/eventing/test/rekt/features
@@ -1358,6 +1365,7 @@ knative.dev/eventing/test/rekt/resources/addressable
 knative.dev/eventing/test/rekt/resources/broker
 knative.dev/eventing/test/rekt/resources/channel
 knative.dev/eventing/test/rekt/resources/channel_impl
+knative.dev/eventing/test/rekt/resources/configmap
 knative.dev/eventing/test/rekt/resources/delivery
 knative.dev/eventing/test/rekt/resources/pingsource
 knative.dev/eventing/test/rekt/resources/subscription
@@ -1440,7 +1448,6 @@ knative.dev/pkg/logging/logkey
 knative.dev/pkg/logging/testing
 knative.dev/pkg/metrics
 knative.dev/pkg/metrics/metricskey
-knative.dev/pkg/metrics/metricstest
 knative.dev/pkg/metrics/testing
 knative.dev/pkg/network
 knative.dev/pkg/network/handlers
@@ -1454,7 +1461,6 @@ knative.dev/pkg/observability/resource
 knative.dev/pkg/observability/runtime
 knative.dev/pkg/observability/runtime/k8s
 knative.dev/pkg/observability/tracing
-knative.dev/pkg/profiling
 knative.dev/pkg/ptr
 knative.dev/pkg/reconciler
 knative.dev/pkg/reconciler/testing

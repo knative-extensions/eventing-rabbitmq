@@ -21,19 +21,17 @@ import (
 	"errors"
 	"time"
 
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
-	"github.com/google/uuid"
 	"github.com/kelseyhightower/envconfig"
 
-	dispatcherstats "knative.dev/eventing-rabbitmq/pkg/broker/dispatcher"
 	"knative.dev/eventing-rabbitmq/pkg/dispatcher"
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	"knative.dev/eventing-rabbitmq/pkg/utils"
 	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
-	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
-	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/signals"
 )
 
@@ -61,10 +59,16 @@ type envConfig struct {
 	Namespace     string `envconfig:"NAMESPACE"`
 }
 
+const (
+	scopeName = "knative.dev/eventing-rabbitmq/cmd/dispatcher"
+)
+
+var (
+	latencyBounds = []float64{0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10}
+)
+
 func main() {
 	ctx := signals.NewContext()
-	// Report stats on Go memory usage every 30 seconds.
-	metrics.MemStatsOrDie(ctx)
 
 	var env envConfig
 	if err := envconfig.Process("", &env); err != nil {
@@ -74,12 +78,15 @@ func main() {
 	env.SetComponent(dispatcher.ComponentName)
 	logger := env.GetLogger()
 	ctx = logging.WithLogger(ctx, logger)
-	if err := env.SetupTracing(); err != nil {
-		logger.Errorw("Failed setting up trace publishing", zap.Error(err))
+	if err := env.SetupObservability(ctx); err != nil {
+		logger.Errorw("Failed setting up observability", zap.Error(err))
 	}
-	if err := env.SetupMetrics(ctx); err != nil {
-		logger.Errorw("Failed to create the metrics exporter", zap.Error(err))
-	}
+	defer func() {
+		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		defer cancel()
+
+		env.ShutdownObservability(ctx)
+	}()
 
 	backoffPolicy := utils.SetBackoffPolicy(ctx, env.BackoffPolicy)
 	if backoffPolicy == "" {
@@ -88,7 +95,6 @@ func main() {
 	backoffDelay := env.BackoffDelay
 	logging.FromContext(ctx).Infow("Setting BackoffDelay", zap.Any("backoffDelay", backoffDelay))
 
-	reporter := dispatcherstats.NewStatsReporter(env.ContainerName, kmeta.ChildName(env.PodName, uuid.New().String()), env.Namespace)
 	d := &dispatcher.Dispatcher{
 		BrokerIngressURL:  env.BrokerIngressURL,
 		SubscriberURL:     env.SubscriberURL,
@@ -98,12 +104,24 @@ func main() {
 		Timeout:           env.Timeout,
 		BackoffPolicy:     backoffPolicy,
 		WorkerCount:       env.Parallelism,
-		Reporter:          reporter,
 		DLX:               env.DLX,
 		DLXName:           env.DLXName,
+		Tracer:            otel.GetTracerProvider().Tracer(scopeName),
 	}
 
+	meter := otel.GetMeterProvider().Meter(scopeName)
+
 	var err error
+	d.DispatchDuration, err = meter.Float64Histogram(
+		"kn.eventing.dispatch.duration",
+		metric.WithDescription("The time to dispatch the event"),
+		metric.WithUnit("s"),
+		metric.WithExplicitBucketBoundaries(latencyBounds...),
+	)
+	if err != nil {
+		logger.Fatalw("failed to set up dispatch metric", zap.Error(err))
+	}
+
 	rmqHelper := rabbit.NewRabbitMQConnectionHandler(5, 1000, logger)
 	rmqHelper.Setup(ctx, rabbit.VHostHandler(
 		env.RabbitURL,
