@@ -23,7 +23,6 @@ import (
 
 	"go.opencensus.io/resource"
 	broker "knative.dev/eventing/pkg/broker"
-	"knative.dev/eventing/pkg/metrics"
 	"knative.dev/pkg/metrics/metricstest"
 	_ "knative.dev/pkg/metrics/testing"
 )

@@ -104,6 +104,8 @@ github.com/cloudevents/conformance v0.4.1 h1:MMq+jviOHHNINGWQdvr2yj4g8CdeL59M81O
 github.com/cloudevents/conformance v0.4.1/go.mod h1:bOMTKxs/Aqx4rM/dp+AYvdGTHU6tEa9+R5ORr5cJnqc=
 github.com/cloudevents/sdk-go/observability/opencensus/v2 v2.15.2 h1:AbtPqiUDzKup5JpTZzO297/QXgL/TAdpdXQCNwLzlaM=
 github.com/cloudevents/sdk-go/observability/opencensus/v2 v2.15.2/go.mod h1:ZbYLE+yaEQ2j4vbRc9qzvGmg30A9LhwFt/1bSebNnbU=
+github.com/cloudevents/sdk-go/observability/opentelemetry/v2 v2.16.1 h1:bm82HgAOzK9VSrVtC0lWWrrQLJaRYqqAKEIx2jdPQbU=
+github.com/cloudevents/sdk-go/observability/opentelemetry/v2 v2.16.1/go.mod h1:H46knbku1a1zLw3lAsaWdtVryvG1/QaNZRCRO69elKA=
 github.com/cloudevents/sdk-go/sql/v2 v2.15.2 h1:TNaTeWIbDaci89xgXbmmNVGccawQOvEfWYLWrr7Fk/k=
 github.com/cloudevents/sdk-go/sql/v2 v2.15.2/go.mod h1:us+PSk8OXdk8pDbRfvxy5w8ub5goKE7UP9PjKDY7TPw=
 github.com/cloudevents/sdk-go/v2 v2.16.1 h1:G91iUdqvl88BZ1GYYr9vScTj5zzXSyEuqbfE63gbu9Q=
@@ -1151,8 +1153,8 @@ k8s.io/kube-openapi v0.0.0-20250318190949-c8a335a9a2ff h1:/usPimJzUKKu+m+TE36gUy
 k8s.io/kube-openapi v0.0.0-20250318190949-c8a335a9a2ff/go.mod h1:5jIi+8yX4RIb8wk3XwBo5Pq2ccx4FP10ohkbSKCZoK8=
 k8s.io/utils v0.0.0-20241210054802-24370beab758 h1:sdbE21q2nlQtFh65saZY+rRM6x6aJJI8IUa1AmH/qa0=
 k8s.io/utils v0.0.0-20241210054802-24370beab758/go.mod h1:OLgZIPagt7ERELqWJFomSt595RzquPNLL48iOWgYOg0=
-knative.dev/eventing v0.45.2 h1:FA093S4latA57V4GWoSteemHLEP9XOJIZJuJZKhNuC8=
-knative.dev/eventing v0.45.2/go.mod h1:Fz5VjV/vWVN93UfTX3lzc+uFrvJ9wxiiKrRIPhQxoj8=
+knative.dev/eventing v0.46.0 h1:DGkvUcZagkvvcRxf5jh/usdictP8BWa7kHgIocfT4MY=
+knative.dev/eventing v0.46.0/go.mod h1:w5YnKVzZBuXXTJb8QN3POXTgXhM07d0tihBZYoSNF+I=
 knative.dev/hack v0.0.0-20250708013849-70d4b00da6ba h1:PkOTBI8DRfvUKD8HTvYYT94NJ49J++llrDo3y0/ZAwc=
 knative.dev/hack v0.0.0-20250708013849-70d4b00da6ba/go.mod h1:R0ritgYtjLDO9527h5vb5X6gfvt5LCrJ55BNbVDsWiY=
 knative.dev/pkg v0.0.0-20250716115900-19d3cc2da0b9 h1:P9GFsqTmX4WokSVVUK1IbHOnbJLi8EW1pd4PvbUEodo=

@@ -20,7 +20,7 @@ require (
 	k8s.io/client-go v0.33.1
 	k8s.io/code-generator v0.33.1
 	k8s.io/kube-openapi v0.0.0-20250318190949-c8a335a9a2ff
-	knative.dev/eventing v0.45.2
+	knative.dev/eventing v0.46.0
 	knative.dev/hack v0.0.0-20250708013849-70d4b00da6ba
 	knative.dev/pkg v0.0.0-20250716115900-19d3cc2da0b9
 	knative.dev/reconciler-test v0.0.0-20250716152301-806fb6ae0da7
@@ -46,6 +46,7 @@ require (
 	github.com/cert-manager/cert-manager v1.16.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cloudevents/conformance v0.4.1 // indirect
+	github.com/cloudevents/sdk-go/observability/opentelemetry/v2 v2.16.1 // indirect
 	github.com/cloudevents/sdk-go/sql/v2 v2.15.2 // indirect
 	github.com/coreos/go-oidc/v3 v3.9.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect

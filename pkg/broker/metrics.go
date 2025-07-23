@@ -18,7 +18,7 @@ package broker
 
 import (
 	"go.opencensus.io/tag"
-	"knative.dev/eventing/pkg/metrics"
+	"knative.dev/pkg/metrics/metricskey"
 )
 
 const (
@@ -32,7 +32,7 @@ const (
 	LabelUniqueName = "unique_name"
 
 	// LabelContainerName is the label for the immutable name of the container.
-	LabelContainerName = metrics.LabelContainerName
+	LabelContainerName = metricskey.ContainerName
 )
 
 var (
