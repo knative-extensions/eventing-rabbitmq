@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -25,18 +26,19 @@ import (
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
-	"github.com/google/uuid"
 	"github.com/kelseyhightower/envconfig"
-	"go.opencensus.io/plugin/ochttp/propagation/tracecontext"
-	"go.opencensus.io/trace"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
-	"knative.dev/eventing-rabbitmq/pkg/broker/ingress"
+	"k8s.io/apimachinery/pkg/types"
 	"knative.dev/eventing-rabbitmq/pkg/rabbit"
 	"knative.dev/eventing-rabbitmq/pkg/utils"
 	"knative.dev/eventing/pkg/kncloudevents"
-	"knative.dev/pkg/kmeta"
+	"knative.dev/eventing/pkg/observability"
 	"knative.dev/pkg/logging"
-	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/signals"
 )
 
@@ -47,6 +49,13 @@ const (
 
 	// noDuration signals that the dispatch step hasn't started
 	noDuration = -1
+
+	scopeName = "knative.dev/eventing-rabbitmq/cmd/ingress"
+)
+
+var (
+	latencyBounds      = []float64{0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10}
+	propagationContext = propagation.TraceContext{}
 )
 
 type envConfig struct {
@@ -64,15 +73,13 @@ type envConfig struct {
 	BrokerName      string `envconfig:"BROKER_NAME"`
 	BrokerNamespace string `envconfig:"BROKER_NAMESPACE"`
 
-	reporter ingress.StatsReporter
+	tracer           trace.Tracer
+	dispatchDuration metric.Float64Histogram
 }
 
 func main() {
 	ctx := signals.NewContext()
 	var err error
-
-	// Report stats on Go memory usage every 30 seconds.
-	metrics.MemStatsOrDie(ctx)
 
 	var env envConfig
 	if err = envconfig.Process("", &env); err != nil {
@@ -83,18 +90,30 @@ func main() {
 	logger := env.GetLogger()
 	ctx = logging.WithLogger(ctx, logger)
 
-	if err = env.SetupTracing(); err != nil {
-		logger.Errorw("failed setting up trace publishing", zap.Error(err))
-	}
+	err = env.SetupObservability(ctx)
+	defer func() {
+		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		defer cancel()
 
-	if err = env.SetupMetrics(ctx); err != nil {
-		logger.Errorw("failed to create the metrics exporter", zap.Error(err))
-	}
+		env.ShutdownObservability(ctx)
+	}()
 
 	env.rmqHelper = rabbit.NewRabbitMQConnectionHandler(5, 1000, logger)
 	env.rmqHelper.Setup(ctx, rabbit.VHostHandler(env.BrokerURL, env.RabbitMQVhost), rabbit.ChannelConfirm, rabbit.DialWrapper)
 
-	env.reporter = ingress.NewStatsReporter(env.ContainerName, kmeta.ChildName(env.PodName, uuid.New().String()))
+	env.tracer = otel.GetTracerProvider().Tracer(scopeName)
+
+	meter := otel.GetMeterProvider().Meter(scopeName)
+	env.dispatchDuration, err = meter.Float64Histogram(
+		"kn.eventing.dispatch.duration",
+		metric.WithDescription("The time to dispatch the event"),
+		metric.WithUnit("s"),
+		metric.WithExplicitBucketBoundaries(latencyBounds...),
+	)
+	if err != nil {
+		logger.Fatalf("failed to create dispatch metric: %s", err.Error())
+	}
+
 	connectionArgs := kncloudevents.ConnectionArgs{
 		MaxIdleConns:        defaultMaxIdleConnections,
 		MaxIdleConnsPerHost: defaultMaxIdleConnectionsPerHost,
@@ -141,29 +160,35 @@ func (env *envConfig) ServeHTTP(writer http.ResponseWriter, request *http.Reques
 		return
 	}
 
-	span := trace.FromContext(ctx)
-	defer span.End()
+	ctx = observability.WithBrokerLabels(ctx, types.NamespacedName{Name: env.BrokerName, Namespace: env.BrokerNamespace})
 
-	reporterArgs := &ingress.ReportArgs{
-		Namespace:  env.BrokerNamespace,
-		BrokerName: env.BrokerName,
-		EventType:  event.Type(),
-	}
+	span := trace.SpanFromContext(ctx)
+	defer func() {
+		if span.IsRecording() {
+			ctx = observability.WithEventLabels(ctx, event)
+			labeler, _ := otelhttp.LabelerFromContext(ctx)
+			span.SetAttributes(labeler.Get()...)
+		}
+		span.End()
+	}()
 
-	statusCode, dispatchTime, err := env.send(event, span)
+	statusCode, dispatchTime, err := env.send(ctx, event)
 	if err != nil {
 		logger.Errorw("failed to send event", zap.Error(err))
 	}
 	if dispatchTime > noDuration {
-		_ = env.reporter.ReportEventDispatchTime(reporterArgs, statusCode, dispatchTime)
+		labeler, _ := otelhttp.LabelerFromContext(ctx)
+		env.dispatchDuration.Record(ctx, dispatchTime.Seconds(), metric.WithAttributes(labeler.Get()...))
 	}
-	_ = env.reporter.ReportEventCount(reporterArgs, statusCode)
 
 	writer.WriteHeader(statusCode)
 }
 
-func (env *envConfig) send(event *cloudevents.Event, span *trace.Span) (int, time.Duration, error) {
-	tp, ts := (&tracecontext.HTTPFormat{}).SpanContextToHeaders(span.SpanContext())
+func (env *envConfig) send(ctx context.Context, event *cloudevents.Event) (int, time.Duration, error) {
+	headerCarrier := propagation.HeaderCarrier{}
+	propagationContext.Inject(ctx, headerCarrier)
+	tp := headerCarrier.Get("traceparent")
+	ts := headerCarrier.Get("tracestate")
 	channel := env.rmqHelper.GetChannel()
 	if channel != nil {
 		start := time.Now()
