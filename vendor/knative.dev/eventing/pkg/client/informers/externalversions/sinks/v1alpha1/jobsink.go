@@ -19,24 +19,24 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
-	sinksv1alpha1 "knative.dev/eventing/pkg/apis/sinks/v1alpha1"
+	apissinksv1alpha1 "knative.dev/eventing/pkg/apis/sinks/v1alpha1"
 	versioned "knative.dev/eventing/pkg/client/clientset/versioned"
 	internalinterfaces "knative.dev/eventing/pkg/client/informers/externalversions/internalinterfaces"
-	v1alpha1 "knative.dev/eventing/pkg/client/listers/sinks/v1alpha1"
+	sinksv1alpha1 "knative.dev/eventing/pkg/client/listers/sinks/v1alpha1"
 )
 
 // JobSinkInformer provides access to a shared informer and lister for
 // JobSinks.
 type JobSinkInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha1.JobSinkLister
+	Lister() sinksv1alpha1.JobSinkLister
 }
 
 type jobSinkInformer struct {
@@ -62,16 +62,28 @@ func NewFilteredJobSinkInformer(client versioned.Interface, namespace string, re
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.SinksV1alpha1().JobSinks(namespace).List(context.TODO(), options)
+				return client.SinksV1alpha1().JobSinks(namespace).List(context.Background(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.SinksV1alpha1().JobSinks(namespace).Watch(context.TODO(), options)
+				return client.SinksV1alpha1().JobSinks(namespace).Watch(context.Background(), options)
+			},
+			ListWithContextFunc: func(ctx context.Context, options v1.ListOptions) (runtime.Object, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.SinksV1alpha1().JobSinks(namespace).List(ctx, options)
+			},
+			WatchFuncWithContext: func(ctx context.Context, options v1.ListOptions) (watch.Interface, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.SinksV1alpha1().JobSinks(namespace).Watch(ctx, options)
 			},
 		},
-		&sinksv1alpha1.JobSink{},
+		&apissinksv1alpha1.JobSink{},
 		resyncPeriod,
 		indexers,
 	)
@@ -82,9 +94,9 @@ func (f *jobSinkInformer) defaultInformer(client versioned.Interface, resyncPeri
 }
 
 func (f *jobSinkInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&sinksv1alpha1.JobSink{}, f.defaultInformer)
+	return f.factory.InformerFor(&apissinksv1alpha1.JobSink{}, f.defaultInformer)
 }
 
-func (f *jobSinkInformer) Lister() v1alpha1.JobSinkLister {
-	return v1alpha1.NewJobSinkLister(f.Informer().GetIndexer())
+func (f *jobSinkInformer) Lister() sinksv1alpha1.JobSinkLister {
+	return sinksv1alpha1.NewJobSinkLister(f.Informer().GetIndexer())
 }

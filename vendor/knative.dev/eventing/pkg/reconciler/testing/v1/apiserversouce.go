@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -182,5 +182,31 @@ func WithApiServerSourceOIDCServiceAccountName(name string) ApiServerSourceOptio
 		}
 
 		c.Status.Auth.ServiceAccountName = &name
+	}
+}
+
+// WithApiServerSourceSkipPermissions adds the skip permissions annotation to the ApiServerSource
+func WithApiServerSourceSkipPermissions(skip bool) ApiServerSourceOption {
+	return func(c *v1.ApiServerSource) {
+		if c.Annotations == nil {
+			c.Annotations = make(map[string]string)
+		}
+		if skip {
+			c.Annotations["features.knative.dev/apiserversource-skip-permissions-check"] = "true"
+		} else {
+			c.Annotations["features.knative.dev/apiserversource-skip-permissions-check"] = "false"
+		}
+	}
+}
+
+// WithApiServerSourceAnnotations adds custom annotations to the ApiServerSource
+func WithApiServerSourceAnnotations(annotations map[string]string) ApiServerSourceOption {
+	return func(c *v1.ApiServerSource) {
+		if c.Annotations == nil {
+			c.Annotations = make(map[string]string)
+		}
+		for k, v := range annotations {
+			c.Annotations[k] = v
+		}
 	}
 }

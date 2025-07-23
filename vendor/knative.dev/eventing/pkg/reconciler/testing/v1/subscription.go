@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -148,6 +148,7 @@ func WithSubscriptionChannelUsingGroup(gvk metav1.GroupVersionKind, name string)
 	}
 }
 
+//nolist:staticcheck  // Should be "API"
 func WithSubscriptionChannelUsingApiVersionAndGroup(gvk metav1.GroupVersionKind, name string) SubscriptionOption {
 	return func(s *v1.Subscription) {
 		s.Spec.Channel = duckv1.KReference{
@@ -170,6 +171,7 @@ func WithSubscriptionChannelRefUsingGroup(gvk metav1.GroupVersionKind, name stri
 	}
 }
 
+// nolint: staticcheck  // Should be "API"
 func WithSubscriptionChannelRefUsingApiVersionAndGroup(gvk metav1.GroupVersionKind, name string, namespace string) SubscriptionOption {
 	return func(s *v1.Subscription) {
 		s.Spec.Channel = duckv1.KReference{
@@ -208,6 +210,7 @@ func WithSubscriptionSubscriberRefUsingGroup(gvk metav1.GroupVersionKind, name, 
 	}
 }
 
+//nolist:staticcheck  // Should be "API"
 func WithSubscriptionSubscriberRefUsingApiVersionAndGroup(gvk metav1.GroupVersionKind, name, namespace string) SubscriptionOption {
 	return func(s *v1.Subscription) {
 		s.Spec.Subscriber = &duckv1.Destination{

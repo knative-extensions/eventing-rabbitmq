@@ -19,24 +19,24 @@ limitations under the License.
 package v1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
-	messagingv1 "knative.dev/eventing/pkg/apis/messaging/v1"
+	apismessagingv1 "knative.dev/eventing/pkg/apis/messaging/v1"
 	versioned "knative.dev/eventing/pkg/client/clientset/versioned"
 	internalinterfaces "knative.dev/eventing/pkg/client/informers/externalversions/internalinterfaces"
-	v1 "knative.dev/eventing/pkg/client/listers/messaging/v1"
+	messagingv1 "knative.dev/eventing/pkg/client/listers/messaging/v1"
 )
 
 // InMemoryChannelInformer provides access to a shared informer and lister for
 // InMemoryChannels.
 type InMemoryChannelInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1.InMemoryChannelLister
+	Lister() messagingv1.InMemoryChannelLister
 }
 
 type inMemoryChannelInformer struct {
@@ -62,16 +62,28 @@ func NewFilteredInMemoryChannelInformer(client versioned.Interface, namespace st
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.MessagingV1().InMemoryChannels(namespace).List(context.TODO(), options)
+				return client.MessagingV1().InMemoryChannels(namespace).List(context.Background(), options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.MessagingV1().InMemoryChannels(namespace).Watch(context.TODO(), options)
+				return client.MessagingV1().InMemoryChannels(namespace).Watch(context.Background(), options)
+			},
+			ListWithContextFunc: func(ctx context.Context, options metav1.ListOptions) (runtime.Object, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.MessagingV1().InMemoryChannels(namespace).List(ctx, options)
+			},
+			WatchFuncWithContext: func(ctx context.Context, options metav1.ListOptions) (watch.Interface, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.MessagingV1().InMemoryChannels(namespace).Watch(ctx, options)
 			},
 		},
-		&messagingv1.InMemoryChannel{},
+		&apismessagingv1.InMemoryChannel{},
 		resyncPeriod,
 		indexers,
 	)
@@ -82,9 +94,9 @@ func (f *inMemoryChannelInformer) defaultInformer(client versioned.Interface, re
 }
 
 func (f *inMemoryChannelInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&messagingv1.InMemoryChannel{}, f.defaultInformer)
+	return f.factory.InformerFor(&apismessagingv1.InMemoryChannel{}, f.defaultInformer)
 }
 
-func (f *inMemoryChannelInformer) Lister() v1.InMemoryChannelLister {
-	return v1.NewInMemoryChannelLister(f.Informer().GetIndexer())
+func (f *inMemoryChannelInformer) Lister() messagingv1.InMemoryChannelLister {
+	return messagingv1.NewInMemoryChannelLister(f.Informer().GetIndexer())
 }

@@ -20,10 +20,19 @@ import (
 	"context"
 	"strings"
 
+	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
+	"knative.dev/eventing/pkg/apis/feature"
 	"knative.dev/pkg/apis"
 )
 
 func (ep *EventPolicy) Validate(ctx context.Context) *apis.FieldError {
+	// To not allow creation or spec updates of EventPolicy CRs
+	// if the oidc-authentication feature is not enabled
+	if apis.IsInCreate(ctx) || (apis.IsInUpdate(ctx) && apis.IsInSpec(ctx)) {
+		if !feature.FromContext(ctx).IsOIDCAuthentication() {
+			return apis.ErrGeneric("oidc-authentication feature not enabled")
+		}
+	}
 	return ep.Spec.Validate(ctx).ViaField("spec")
 }
 
@@ -51,6 +60,8 @@ func (ets *EventPolicySpec) Validate(ctx context.Context) *apis.FieldError {
 			err = err.Also(t.Ref.Validate().ViaField("ref").ViaFieldIndex("to", i))
 		}
 	}
+
+	err = err.Also(eventingv1.ValidateSubscriptionAPIFiltersList(ctx, ets.Filters).ViaField("filters"))
 
 	return err
 }

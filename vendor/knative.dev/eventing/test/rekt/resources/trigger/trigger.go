@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,6 +25,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
+	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/feature"
 	"knative.dev/reconciler-test/pkg/k8s"
 	"knative.dev/reconciler-test/pkg/manifest"
@@ -157,6 +158,33 @@ func WithExtensions(extensions map[string]interface{}) manifest.CfgFn {
 	}
 }
 
+func WithBrokerName(brokerName string) manifest.CfgFn {
+	return func(cfg map[string]interface{}) {
+		if brokerName != "" {
+			cfg["brokerName"] = brokerName
+		}
+	}
+}
+
+// WithBrokerRef adds the brokerRef related config to a Trigger spec.
+func WithBrokerRef(ref *duckv1.KReference) manifest.CfgFn {
+	return func(cfg map[string]interface{}) {
+		if _, set := cfg["brokerRef"]; !set {
+			cfg["brokerRef"] = map[string]interface{}{}
+		}
+		brokerRef := cfg["brokerRef"].(map[string]interface{})
+
+		if ref != nil {
+			brokerRef["apiVersion"] = ref.APIVersion
+			brokerRef["kind"] = ref.Kind
+			brokerRef["name"] = ref.Name
+			brokerRef["namespace"] = ref.Namespace
+		}
+
+		cfg["brokerRef"] = brokerRef
+	}
+}
+
 // WithDeadLetterSink adds the dead letter sink related config to a Trigger spec.
 var WithDeadLetterSink = delivery.WithDeadLetterSink
 
@@ -169,13 +197,13 @@ var WithRetry = delivery.WithRetry
 // WithTimeout adds the timeout related config to the config.
 var WithTimeout = delivery.WithTimeout
 
+// WithFormat adds the format related config to a Trigger spec
+var WithFormat = delivery.WithFormat
+
 // Install will create a Trigger resource, augmented with the config fn options.
-func Install(name, brokerName string, opts ...manifest.CfgFn) feature.StepFn {
+func Install(name string, opts ...manifest.CfgFn) feature.StepFn {
 	cfg := map[string]interface{}{
 		"name": name,
-	}
-	if len(brokerName) > 0 {
-		cfg["brokerName"] = brokerName
 	}
 	for _, fn := range opts {
 		fn(cfg)
@@ -190,6 +218,29 @@ func Install(name, brokerName string, opts ...manifest.CfgFn) feature.StepFn {
 // IsReady tests to see if a Trigger becomes ready within the time given.
 func IsReady(name string, timing ...time.Duration) feature.StepFn {
 	return k8s.IsReady(GVR(), name, timing...)
+}
+
+// IsNotReady tests to see if a Trigger is not ready within the time given.
+func IsNotReady(name string, timing ...time.Duration) feature.StepFn {
+	return k8s.IsNotReady(GVR(), name, timing...)
+}
+
+// DependencyDoesNotExist tests to see if a Trigger meets the DependencyDoesNotExist condition within the time given.
+func DependencyDoesNotExist(name string, timing ...time.Duration) feature.StepFn {
+	return func(ctx context.Context, t feature.T) {
+		err := k8s.WaitForResourceCondition(ctx, t, environment.FromContext(ctx).Namespace(), name, GVR(),
+			func(obj duckv1.KResource) bool {
+				condition := obj.Status.GetCondition(eventingv1.TriggerConditionDependency)
+				if condition != nil && condition.Reason == "DependencyDoesNotExist" {
+					return true
+				}
+				return false
+			}, timing...)
+
+		if err != nil {
+			t.Error("trigger did not meet DependencyDoesNotExist condition", err)
+		}
+	}
 }
 
 func WithNewFilters(filters []eventingv1.SubscriptionsAPIFilter) manifest.CfgFn {

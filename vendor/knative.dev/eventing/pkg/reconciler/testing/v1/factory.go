@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,6 +26,7 @@ import (
 	authv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	cmclient "knative.dev/eventing/pkg/client/certmanager/injection/client/fake"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/logging"
 
@@ -33,19 +34,20 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	clientgotesting "k8s.io/client-go/testing"
 
+	ktesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/record"
 
 	"go.uber.org/zap"
-	ktesting "k8s.io/client-go/testing"
 	"knative.dev/pkg/controller"
 
+	"knative.dev/eventing/pkg/apis/sinks"
 	fakeeventingclient "knative.dev/eventing/pkg/client/injection/client/fake"
 	fakekubeclient "knative.dev/pkg/client/injection/kube/client/fake"
 	fakedynamicclient "knative.dev/pkg/injection/clients/dynamicclient/fake"
 
 	"knative.dev/pkg/reconciler"
+	//nolint:staticcheck  // Not sure why this is dot imported...
 	. "knative.dev/pkg/reconciler/testing"
 )
 
@@ -69,12 +71,16 @@ func MakeFactory(ctor Ctor, unstructured bool, logger *zap.SugaredLogger) Factor
 		} else {
 			ctx = context.Background()
 		}
+		r.Ctx = logging.WithLogger(ctx, logger)
 		ctx = logging.WithLogger(ctx, logger)
 
 		ctx, kubeClient := fakekubeclient.With(ctx, ls.GetKubeObjects()...)
 		ctx, client := fakeeventingclient.With(ctx, ls.GetEventingObjects()...)
 		ctx, dynamicClient := fakedynamicclient.With(ctx,
 			NewScheme(), ToUnstructured(t, r.Objects)...)
+		ctx, cmClient := cmclient.With(ctx, ls.GetCertManagerObjects()...)
+
+		ctx = sinks.WithConfig(ctx, &sinks.Config{KubeClient: kubeClient})
 
 		// The dynamic client's support for patching is BS.  Implement it
 		// here via PrependReactor (this can be overridden below by the
@@ -113,7 +119,7 @@ func MakeFactory(ctor Ctor, unstructured bool, logger *zap.SugaredLogger) Factor
 		})
 
 		kubeClient.PrependReactor("create", "subjectaccessreviews", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
-			obj := action.(clientgotesting.CreateAction).GetObject()
+			obj := action.(ktesting.CreateAction).GetObject()
 			sar, ok := obj.(*authv1.SubjectAccessReview)
 			if !ok {
 				return false, nil, nil
@@ -161,9 +167,10 @@ func MakeFactory(ctor Ctor, unstructured bool, logger *zap.SugaredLogger) Factor
 			kubeClient.PrependReactor("*", "*", reactor)
 			client.PrependReactor("*", "*", reactor)
 			dynamicClient.PrependReactor("*", "*", reactor)
+			cmClient.PrependReactor("*", "*", reactor)
 		}
 
-		actionRecorderList := ActionRecorderList{dynamicClient, client, kubeClient}
+		actionRecorderList := ActionRecorderList{dynamicClient, client, kubeClient, cmClient}
 		eventList := EventList{Recorder: eventRecorder}
 
 		return c, actionRecorderList, eventList

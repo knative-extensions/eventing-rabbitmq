@@ -19,6 +19,8 @@ package testing
 import (
 	"context"
 
+	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/eventing/pkg/apis/eventing/v1alpha1"
@@ -44,45 +46,111 @@ func NewEventPolicy(name, namespace string, o ...EventPolicyOption) *v1alpha1.Ev
 	return ep
 }
 
-func WithInitEventPolicyConditions(et *v1alpha1.EventPolicy) {
-	et.Status.InitializeConditions()
+func WithInitEventPolicyConditions(ep *v1alpha1.EventPolicy) {
+	ep.Status.InitializeConditions()
+}
+
+func WithEventPolicyAuthenticationEnabledCondition(ep *v1alpha1.EventPolicy) {
+	ep.Status.Conditions = append(ep.Status.Conditions,
+		apis.Condition{
+			Type:   v1alpha1.EventPolicyConditionAuthenticationEnabled,
+			Status: corev1.ConditionTrue,
+		})
+}
+
+func WithEventPolicyAuthenticationDisabledCondition(ep *v1alpha1.EventPolicy) {
+	ep.Status.Conditions = append(ep.Status.Conditions,
+		apis.Condition{
+			Type:   v1alpha1.EventPolicyConditionAuthenticationEnabled,
+			Status: corev1.ConditionFalse,
+			Reason: "OIDCAuthenticationDisabled",
+		})
+}
+
+func WithEventPolicySubjectsResolvedSucceeded(ep *v1alpha1.EventPolicy) {
+	ep.Status.Conditions = append(ep.Status.Conditions,
+		apis.Condition{
+			Type:   v1alpha1.EventPolicyConditionSubjectsResolved,
+			Status: corev1.ConditionTrue,
+		})
+}
+
+func WithEventPolicySubjectsResolvedFailed(reason, message string) EventPolicyOption {
+	return func(ep *v1alpha1.EventPolicy) {
+		ep.Status.Conditions = append(ep.Status.Conditions,
+			apis.Condition{
+				Type:    v1alpha1.EventPolicyConditionSubjectsResolved,
+				Status:  corev1.ConditionFalse,
+				Reason:  reason,
+				Message: message,
+			})
+	}
+}
+
+func WithEventPolicySubjectsResolvedUnknown(ep *v1alpha1.EventPolicy) {
+	ep.Status.Conditions = append(ep.Status.Conditions,
+		apis.Condition{
+			Type:   v1alpha1.EventPolicyConditionSubjectsResolved,
+			Status: corev1.ConditionUnknown,
+		})
 }
 
 func WithReadyEventPolicyCondition(ep *v1alpha1.EventPolicy) {
-	ep.Status.Conditions = []apis.Condition{
-		{
+	ep.Status.Conditions = append(ep.Status.Conditions,
+		apis.Condition{
 			Type:   v1alpha1.EventPolicyConditionReady,
 			Status: corev1.ConditionTrue,
-		},
-	}
+		})
 }
 
-func WithUnreadyEventPolicyCondition(ep *v1alpha1.EventPolicy) {
-	ep.Status.Conditions = []apis.Condition{
-		{
-			Type:   v1alpha1.EventPolicyConditionReady,
-			Status: corev1.ConditionFalse,
-		},
-	}
-}
-
-func WithEventPolicyTo(tos ...v1alpha1.EventPolicySpecTo) EventPolicyOption {
+func WithUnreadyEventPolicyCondition(reason, message string) EventPolicyOption {
 	return func(ep *v1alpha1.EventPolicy) {
-		ep.Spec.To = append(ep.Spec.To, tos...)
+		ep.Status.Conditions = append(ep.Status.Conditions,
+			apis.Condition{
+				Type:    v1alpha1.EventPolicyConditionReady,
+				Status:  corev1.ConditionFalse,
+				Reason:  reason,
+				Message: message,
+			})
 	}
 }
 
-func WithEventPolicyToRef(ref v1alpha1.EventPolicyToReference) EventPolicyOption {
+func WithEventPolicyToRef(gvk metav1.GroupVersionKind, name string) EventPolicyOption {
 	return func(ep *v1alpha1.EventPolicy) {
 		ep.Spec.To = append(ep.Spec.To, v1alpha1.EventPolicySpecTo{
-			Ref: &ref,
+			Ref: &v1alpha1.EventPolicyToReference{
+				APIVersion: apiVersion(gvk),
+				Kind:       gvk.Kind,
+				Name:       name,
+			},
 		})
 	}
 }
 
-func WithEventPolicyFrom(froms ...v1alpha1.EventPolicySpecFrom) EventPolicyOption {
+func WithEventPolicyFrom(gvk metav1.GroupVersionKind, name, namespace string) EventPolicyOption {
 	return func(ep *v1alpha1.EventPolicy) {
-		ep.Spec.From = append(ep.Spec.From, froms...)
+		ep.Spec.From = append(ep.Spec.From, v1alpha1.EventPolicySpecFrom{
+			Ref: &v1alpha1.EventPolicyFromReference{
+				APIVersion: apiVersion(gvk),
+				Kind:       gvk.Kind,
+				Name:       name,
+				Namespace:  namespace,
+			},
+		})
+	}
+}
+
+func WithEventPolicyFromSub(sub string) EventPolicyOption {
+	return func(ep *v1alpha1.EventPolicy) {
+		ep.Spec.From = append(ep.Spec.From, v1alpha1.EventPolicySpecFrom{
+			Sub: &sub,
+		})
+	}
+}
+
+func WithEventPolicyFilter(filter eventingv1.SubscriptionsAPIFilter) EventPolicyOption {
+	return func(ep *v1alpha1.EventPolicy) {
+		ep.Spec.Filters = append(ep.Spec.Filters, filter)
 	}
 }
 
@@ -92,10 +160,14 @@ func WithEventPolicyLabels(labels map[string]string) EventPolicyOption {
 	}
 }
 
-func WithEventPolicyOwnerReference(ownerRef metav1.OwnerReference) EventPolicyOption {
+func WithEventPolicyOwnerReferences(ownerRefs ...metav1.OwnerReference) EventPolicyOption {
 	return func(ep *v1alpha1.EventPolicy) {
-		ep.ObjectMeta.OwnerReferences = []metav1.OwnerReference{
-			ownerRef,
-		}
+		ep.ObjectMeta.OwnerReferences = append(ep.ObjectMeta.OwnerReferences, ownerRefs...)
+	}
+}
+
+func WithEventPolicyStatusFromSub(subs []string) EventPolicyOption {
+	return func(ep *v1alpha1.EventPolicy) {
+		ep.Status.From = append(ep.Status.From, subs...)
 	}
 }

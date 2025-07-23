@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -70,13 +70,17 @@ type SinkBindingSpec struct {
 }
 
 const (
-	// SinkBindingConditionReady is configured to indicate whether the Binding
+	// SinkBindingConditionAvailable is configured to indicate whether the Binding
 	// has been configured for resources subject to its runtime contract.
-	SinkBindingConditionReady = apis.ConditionReady
+	SinkBindingConditionAvailable apis.ConditionType = "SinkBindingAvailable"
 
 	// SinkBindingConditionSinkProvided is configured to indicate whether the
 	// sink has been properly extracted from the resolver.
 	SinkBindingConditionSinkProvided apis.ConditionType = "SinkProvided"
+
+	// SinkBindingTrustBundlePropagated is configured to indicate whether the
+	// TLS trust bundle has been properly propagated.
+	SinkBindingTrustBundlePropagated apis.ConditionType = "TrustBundlePropagated"
 
 	// SinkBindingConditionOIDCIdentityCreated is configured to indicate whether
 	// the OIDC identity has been created for the sink.

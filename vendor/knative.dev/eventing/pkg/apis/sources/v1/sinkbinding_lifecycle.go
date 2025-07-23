@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"go.uber.org/zap"
+	"k8s.io/client-go/kubernetes"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 
 	corev1 "k8s.io/api/core/v1"
@@ -42,9 +43,11 @@ const (
 )
 
 var sbCondSet = apis.NewLivingConditionSet(
+	SinkBindingConditionAvailable,
 	SinkBindingConditionSinkProvided,
 	SinkBindingConditionOIDCIdentityCreated,
 	SinkBindingConditionOIDCTokenSecretCreated,
+	SinkBindingTrustBundlePropagated,
 )
 
 // GetConditionSet retrieves the condition set for this resource. Implements the KRShaped interface.
@@ -86,12 +89,23 @@ func (sbs *SinkBindingStatus) InitializeConditions() {
 // MarkBindingUnavailable marks the SinkBinding's Ready condition to False with
 // the provided reason and message.
 func (sbs *SinkBindingStatus) MarkBindingUnavailable(reason, message string) {
-	sbCondSet.Manage(sbs).MarkFalse(SinkBindingConditionReady, reason, message)
+	sbCondSet.Manage(sbs).MarkFalse(SinkBindingConditionAvailable, reason, message)
 }
 
 // MarkBindingAvailable marks the SinkBinding's Ready condition to True.
 func (sbs *SinkBindingStatus) MarkBindingAvailable() {
-	sbCondSet.Manage(sbs).MarkTrue(SinkBindingConditionReady)
+	sbCondSet.Manage(sbs).MarkTrue(SinkBindingConditionAvailable)
+}
+
+// MarkFailedTrustBundlePropagation marks the SinkBinding's SinkBindingTrustBundlePropagated condition to False with
+// the provided reason and message.
+func (sbs *SinkBindingStatus) MarkFailedTrustBundlePropagation(reason, message string) {
+	sbCondSet.Manage(sbs).MarkFalse(SinkBindingTrustBundlePropagated, reason, message)
+}
+
+// MarkTrustBundlePropagated marks the SinkBinding's SinkBindingTrustBundlePropagated condition to True.
+func (sbs *SinkBindingStatus) MarkTrustBundlePropagated() {
+	sbCondSet.Manage(sbs).MarkTrue(SinkBindingTrustBundlePropagated)
 }
 
 // MarkSink sets the condition that the source has a sink configured.
@@ -104,6 +118,11 @@ func (sbs *SinkBindingStatus) MarkSink(addr *duckv1.Addressable) {
 	} else {
 		sbCondSet.Manage(sbs).MarkFalse(SinkBindingConditionSinkProvided, "SinkEmpty", "Sink has resolved to empty.%s", "")
 	}
+}
+
+// MarkSinkFailed sets the condition that the source has a sink configured.
+func (sbs *SinkBindingStatus) MarkSinkFailed(reason, messageFormat string, messageA ...interface{}) {
+	sbCondSet.Manage(sbs).MarkFalse(SinkBindingConditionSinkProvided, reason, messageFormat, messageA...)
 }
 
 func (sbs *SinkBindingStatus) MarkOIDCIdentityCreatedSucceeded() {
@@ -196,13 +215,30 @@ func (sb *SinkBinding) Do(ctx context.Context, ps *duckv1.WithPod) {
 			Value: ceOverrides,
 		})
 	}
-
-	pss, err := eventingtls.AddTrustBundleVolumes(GetTrustBundleConfigMapLister(ctx), sb, &ps.Spec.Template.Spec)
-	if err != nil {
-		logging.FromContext(ctx).Errorw("Failed to add trust bundle volumes %s/%s: %+v", zap.Error(err))
-		return
+	gvk := schema.GroupVersionKind{
+		Group:   SchemeGroupVersion.Group,
+		Version: SchemeGroupVersion.Version,
+		Kind:    "SinkBinding",
 	}
-	ps.Spec.Template.Spec = *pss
+	bundles, err := eventingtls.PropagateTrustBundles(ctx, getKubeClient(ctx), GetTrustBundleConfigMapLister(ctx), gvk, sb)
+	if err != nil {
+		logging.FromContext(ctx).Errorw("Failed to propagate trust bundles", zap.Error(err))
+	}
+	if len(bundles) > 0 {
+		pss, err := eventingtls.AddTrustBundleVolumesFromConfigMaps(bundles, &ps.Spec.Template.Spec)
+		if err != nil {
+			logging.FromContext(ctx).Errorw("Failed to add trust bundle volumes from configmaps %s/%s: %+v", zap.Error(err))
+			return
+		}
+		ps.Spec.Template.Spec = *pss
+	} else {
+		pss, err := eventingtls.AddTrustBundleVolumes(GetTrustBundleConfigMapLister(ctx), sb, &ps.Spec.Template.Spec)
+		if err != nil {
+			logging.FromContext(ctx).Errorw("Failed to add trust bundle volumes %s/%s: %+v", zap.Error(err))
+			return
+		}
+		ps.Spec.Template.Spec = *pss
+	}
 
 	if sb.Status.OIDCTokenSecretName != nil {
 		ps.Spec.Template.Spec.Volumes = append(ps.Spec.Template.Spec.Volumes, corev1.Volume{
@@ -308,6 +344,20 @@ func (sb *SinkBinding) Undo(ctx context.Context, ps *duckv1.WithPod) {
 		}
 		ps.Spec.Template.Spec.Volumes = volumes
 	}
+}
+
+type kubeClientKey struct{}
+
+func WithKubeClient(ctx context.Context, k kubernetes.Interface) context.Context {
+	return context.WithValue(ctx, kubeClientKey{}, k)
+}
+
+func getKubeClient(ctx context.Context) kubernetes.Interface {
+	k := ctx.Value(kubeClientKey{})
+	if k == nil {
+		panic("No Kube client found in context.")
+	}
+	return k.(kubernetes.Interface)
 }
 
 type configMapListerKey struct{}

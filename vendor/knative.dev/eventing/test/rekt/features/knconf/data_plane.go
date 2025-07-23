@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,7 +20,7 @@ import (
 	"context"
 	"errors"
 
-	. "github.com/cloudevents/sdk-go/v2/test"
+	ceTest "github.com/cloudevents/sdk-go/v2/test"
 	"github.com/google/uuid"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/eventing/test/rekt/resources/addressable"
@@ -44,7 +44,7 @@ func AcceptsCEVersions(ctx context.Context, t feature.T, gvr schema.GroupVersion
 		// We need to use a different source name, otherwise, it will try to update
 		// the pod, which is immutable.
 		source := feature.MakeRandomK8sName("source")
-		event := FullEvent()
+		event := ceTest.FullEvent()
 		event.SetID(id)
 		event.SetSpecVersion(version)
 		opts = append(opts, eventshub.InputEvent(event))

@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -30,13 +30,18 @@ import (
 func (b *Broker) SetDefaults(ctx context.Context) {
 	// Default Spec fields.
 	withNS := apis.WithinParent(ctx, b.ObjectMeta)
-	b.Spec.SetDefaults(withNS)
+	b.Spec.SetDefaults(withNS, b.Annotations["eventing.knative.dev/broker.class"])
 	eventing.DefaultBrokerClassIfUnset(withNS, &b.ObjectMeta)
 }
 
-func (bs *BrokerSpec) SetDefaults(ctx context.Context) {
+func (bs *BrokerSpec) SetDefaults(ctx context.Context, brokerClass string) {
 	cfg := config.FromContextOrDefaults(ctx)
-	c, err := cfg.Defaults.GetBrokerConfig(apis.ParentMeta(ctx).Namespace)
+	c, err := cfg.Defaults.GetBrokerConfig(apis.ParentMeta(ctx).Namespace, &brokerClass)
+
+	if bs.Config != nil {
+		c, err = cfg.Defaults.GetBrokerConfig(apis.ParentMeta(ctx).Namespace, &bs.Config.Kind)
+	}
+
 	if err == nil {
 		if bs.Config == nil {
 			bs.Config = c.KReference
@@ -49,10 +54,14 @@ func (bs *BrokerSpec) SetDefaults(ctx context.Context) {
 				BackoffDelay:   c.Delivery.BackoffDelay,
 			}
 		}
+
 	}
+
 	// Default the namespace if not given
 	if bs.Config != nil {
 		bs.Config.SetDefaults(ctx)
 	}
+
 	bs.Delivery.SetDefaults(ctx)
+
 }

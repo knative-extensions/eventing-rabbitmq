@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -49,6 +49,10 @@ var EnvCfg EnvConfig
 type EnvConfig struct {
 	BrokerClass        string `envconfig:"BROKER_CLASS" default:"MTChannelBasedBroker" required:"true"`
 	BrokerTemplatesDir string `envconfig:"BROKER_TEMPLATES"`
+}
+
+func (cfg EnvConfig) IsMTChannelBasedBroker() bool {
+	return cfg.BrokerClass == "" || cfg.BrokerClass == "MTChannelBasedBroker"
 }
 
 func init() {
@@ -101,6 +105,12 @@ func WithConfig(name string) manifest.CfgFn {
 		cfg["apiVersion"] = "v1"
 		cfg["name"] = name
 		templateData["config"] = cfg
+	}
+}
+
+func WithNamespace(namespace string) manifest.CfgFn {
+	return func(cfg map[string]interface{}) {
+		cfg["namespace"] = namespace
 	}
 }
 

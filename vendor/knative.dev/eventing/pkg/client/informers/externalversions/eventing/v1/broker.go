@@ -19,24 +19,24 @@ limitations under the License.
 package v1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
-	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
+	apiseventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	versioned "knative.dev/eventing/pkg/client/clientset/versioned"
 	internalinterfaces "knative.dev/eventing/pkg/client/informers/externalversions/internalinterfaces"
-	v1 "knative.dev/eventing/pkg/client/listers/eventing/v1"
+	eventingv1 "knative.dev/eventing/pkg/client/listers/eventing/v1"
 )
 
 // BrokerInformer provides access to a shared informer and lister for
 // Brokers.
 type BrokerInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1.BrokerLister
+	Lister() eventingv1.BrokerLister
 }
 
 type brokerInformer struct {
@@ -62,16 +62,28 @@ func NewFilteredBrokerInformer(client versioned.Interface, namespace string, res
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.EventingV1().Brokers(namespace).List(context.TODO(), options)
+				return client.EventingV1().Brokers(namespace).List(context.Background(), options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.EventingV1().Brokers(namespace).Watch(context.TODO(), options)
+				return client.EventingV1().Brokers(namespace).Watch(context.Background(), options)
+			},
+			ListWithContextFunc: func(ctx context.Context, options metav1.ListOptions) (runtime.Object, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.EventingV1().Brokers(namespace).List(ctx, options)
+			},
+			WatchFuncWithContext: func(ctx context.Context, options metav1.ListOptions) (watch.Interface, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.EventingV1().Brokers(namespace).Watch(ctx, options)
 			},
 		},
-		&eventingv1.Broker{},
+		&apiseventingv1.Broker{},
 		resyncPeriod,
 		indexers,
 	)
@@ -82,9 +94,9 @@ func (f *brokerInformer) defaultInformer(client versioned.Interface, resyncPerio
 }
 
 func (f *brokerInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&eventingv1.Broker{}, f.defaultInformer)
+	return f.factory.InformerFor(&apiseventingv1.Broker{}, f.defaultInformer)
 }
 
-func (f *brokerInformer) Lister() v1.BrokerLister {
-	return v1.NewBrokerLister(f.Informer().GetIndexer())
+func (f *brokerInformer) Lister() eventingv1.BrokerLister {
+	return eventingv1.NewBrokerLister(f.Informer().GetIndexer())
 }

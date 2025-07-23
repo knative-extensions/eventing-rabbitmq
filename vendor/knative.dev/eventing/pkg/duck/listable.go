@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -42,6 +42,12 @@ type ListableTracker interface {
 	// TrackInNamespaceKReference returns a function that can be used to watch arbitrary apis.Listable resources
 	// in the same namespace as obj. Any change will cause a callback for obj.
 	TrackInNamespaceKReference(ctx context.Context, obj metav1.Object) TrackKReference
+	// Track returns a function that can be used to watch arbitrary apis.Listable resources in the
+	// provided namespace. Any change will cause a callback for obj.
+	Track(ctx context.Context, obj metav1.Object, namespace string) Track
+	// TrackKReference returns a function that can be used to watch arbitrary apis.Listable resources
+	// in the provided namespace. Any change will cause a callback for obj.
+	TrackKReference(ctx context.Context, obj metav1.Object, namespace string) TrackKReference
 	// ListerFor returns the lister for the object reference. It returns an error if the lister does not exist.
 	ListerFor(ref corev1.ObjectReference) (cache.GenericLister, error)
 	// InformerFor returns the informer for the object reference. It returns an error if the informer does not exist.
@@ -151,6 +157,45 @@ func (t *listableTracker) TrackInNamespaceKReference(ctx context.Context, obj me
 			APIVersion: ref.APIVersion,
 			Kind:       ref.Kind,
 			Namespace:  obj.GetNamespace(),
+			Name:       ref.Name,
+		}, obj)
+	}
+}
+
+// Track satisfies the ListableTracker interface.
+func (t *listableTracker) Track(ctx context.Context, obj metav1.Object, namespace string) Track {
+	return func(ref corev1.ObjectReference) error {
+		// This is often used by Trigger and Subscription, both of which pass in refs that do not
+		// specify the namespace.
+		ref.Namespace = namespace
+		if err := t.ensureTracking(ctx, ref); err != nil {
+			return err
+		}
+
+		return t.tracker.TrackReference(tracker.Reference{
+			APIVersion: ref.APIVersion,
+			Kind:       ref.Kind,
+			Namespace:  namespace,
+			Name:       ref.Name,
+		}, obj)
+	}
+}
+
+// TrackKReference satisfies the ListableTracker interface.
+func (t *listableTracker) TrackKReference(ctx context.Context, obj metav1.Object, namespace string) TrackKReference {
+	return func(ref duckv1.KReference) error {
+		// This is often used by Trigger and Subscription, both of which pass in refs that do not
+		// specify the namespace.
+		ref.Namespace = namespace
+		coreRef := corev1.ObjectReference{APIVersion: ref.APIVersion, Kind: ref.Kind, Name: ref.Name, Namespace: ref.Namespace}
+		if err := t.ensureTracking(ctx, coreRef); err != nil {
+			return err
+		}
+
+		return t.tracker.TrackReference(tracker.Reference{
+			APIVersion: ref.APIVersion,
+			Kind:       ref.Kind,
+			Namespace:  namespace,
 			Name:       ref.Name,
 		}, obj)
 	}

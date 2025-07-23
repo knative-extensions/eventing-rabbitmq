@@ -3,7 +3,7 @@ Copyright 2020 The Knative Authors
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,11 +18,14 @@ import (
 	"fmt"
 	"time"
 
+	eventingv1alpha1 "knative.dev/eventing/pkg/apis/eventing/v1alpha1"
+	"knative.dev/eventing/pkg/apis/feature"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 
-	eventingv1 "knative.dev/eventing/pkg/apis/duck/v1"
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
 	"knative.dev/eventing/pkg/apis/eventing"
 	v1 "knative.dev/eventing/pkg/apis/eventing/v1"
 	"knative.dev/eventing/pkg/client/injection/reconciler/eventing/v1/broker"
@@ -54,6 +57,15 @@ func WithInitBrokerConditions(b *v1.Broker) {
 func WithBrokerFinalizers(finalizers ...string) BrokerOption {
 	return func(b *v1.Broker) {
 		b.Finalizers = finalizers
+	}
+}
+
+func WithBrokerAnnotation(key, value string) BrokerOption {
+	return func(b *v1.Broker) {
+		if b.Annotations == nil {
+			b.Annotations = map[string]string{}
+		}
+		b.Annotations[key] = value
 	}
 }
 
@@ -194,7 +206,7 @@ func WithChannelAudienceAnnotation(audience string) BrokerOption {
 
 func WithBrokerStatusDLS(dls duckv1.Addressable) BrokerOption {
 	return func(b *v1.Broker) {
-		b.Status.MarkDeadLetterSinkResolvedSucceeded(eventingv1.NewDeliveryStatusFromAddressable(&dls))
+		b.Status.MarkDeadLetterSinkResolvedSucceeded(eventingduckv1.NewDeliveryStatusFromAddressable(&dls))
 	}
 }
 
@@ -237,7 +249,7 @@ func WithChannelNamespaceAnnotation(namespace string) BrokerOption {
 func WithDeadLeaderSink(d duckv1.Destination) BrokerOption {
 	return func(b *v1.Broker) {
 		if b.Spec.Delivery == nil {
-			b.Spec.Delivery = new(eventingv1.DeliverySpec)
+			b.Spec.Delivery = new(eventingduckv1.DeliverySpec)
 		}
 		b.Spec.Delivery.DeadLetterSink = &d
 	}
@@ -246,7 +258,7 @@ func WithDeadLeaderSink(d duckv1.Destination) BrokerOption {
 func WithBrokerDeliveryRetries(retry int32) BrokerOption {
 	return func(b *v1.Broker) {
 		if b.Spec.Delivery == nil {
-			b.Spec.Delivery = new(eventingv1.DeliverySpec)
+			b.Spec.Delivery = new(eventingduckv1.DeliverySpec)
 		}
 		b.Spec.Delivery.Retry = &retry
 	}
@@ -286,5 +298,46 @@ func WithBrokersAddresses(addresses []duckv1.Addressable) BrokerOption {
 	return func(b *v1.Broker) {
 		b.Status.Addresses = addresses
 		b.GetConditionSet().Manage(b.GetStatus()).MarkTrue(v1.BrokerConditionAddressable)
+	}
+}
+
+func WithBrokerEventPoliciesReady() BrokerOption {
+	return func(b *v1.Broker) {
+		b.Status.MarkEventPoliciesTrue()
+	}
+}
+
+func WithBrokerEventPoliciesNotReady(reason, message string) BrokerOption {
+	return func(b *v1.Broker) {
+		b.Status.MarkEventPoliciesFailed(reason, message)
+	}
+}
+
+func WithBrokerEventPoliciesListed(policyNames ...string) BrokerOption {
+	return func(b *v1.Broker) {
+		for _, name := range policyNames {
+			b.Status.Policies = append(b.Status.Policies, eventingduckv1.AppliedEventPolicyRef{
+				APIVersion: eventingv1alpha1.SchemeGroupVersion.String(),
+				Name:       name,
+			})
+		}
+	}
+}
+
+func WithBrokerEventPoliciesReadyBecauseOIDCDisabled() BrokerOption {
+	return func(b *v1.Broker) {
+		b.Status.MarkEventPoliciesTrueWithReason("OIDCDisabled", "Feature %q must be enabled to support Authorization", feature.OIDCAuthentication)
+	}
+}
+
+func WithBrokerEventPoliciesReadyBecauseNoPolicyAndOIDCEnabled() BrokerOption {
+	return func(b *v1.Broker) {
+		b.Status.MarkEventPoliciesTrueWithReason("DefaultAuthorizationMode", "Default authz mode is %q", feature.AuthorizationAllowSameNamespace)
+	}
+}
+
+func WithBrokerEventPoliciesReadyAndDefaultAuthorizationMode(authMode string) BrokerOption {
+	return func(b *v1.Broker) {
+		b.Status.MarkEventPoliciesTrueWithReason("DefaultAuthorizationMode", "Default authz mode is %q", authMode)
 	}
 }

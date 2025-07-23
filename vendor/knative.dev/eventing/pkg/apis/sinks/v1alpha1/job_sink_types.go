@@ -24,6 +24,18 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
+
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
+)
+
+const (
+	ExecutionModeEnvVar = "K_EXECUTION_MODE"
+)
+
+type ExecutionMode string
+
+const (
+	ExecutionModeBatch ExecutionMode = "batch"
 )
 
 // +genclient
@@ -48,6 +60,7 @@ var (
 	_ apis.Defaultable   = (*JobSink)(nil)
 	_ apis.HasSpec       = (*JobSink)(nil)
 	_ duckv1.KRShaped    = (*JobSink)(nil)
+	_ apis.Convertible   = (*JobSink)(nil)
 )
 
 // JobSinkSpec defines the desired state of the JobSink.
@@ -68,6 +81,10 @@ type JobSinkStatus struct {
 
 	// +optional
 	JobStatus JobStatus `json:"job,omitempty"`
+
+	// AppliedEventPoliciesStatus contains the list of EventPolicies which apply to this JobSink
+	// +optional
+	eventingduckv1.AppliedEventPoliciesStatus `json:",inline"`
 }
 
 type JobStatus struct {

@@ -17,8 +17,18 @@ limitations under the License.
 package auth
 
 import (
+	"context"
 	"fmt"
+	"sort"
 	"strings"
+
+	cloudevents "github.com/cloudevents/sdk-go/v2"
+	"go.uber.org/zap"
+	"knative.dev/eventing/pkg/eventfilter"
+	"knative.dev/eventing/pkg/eventfilter/subscriptionsapi"
+
+	eventingduckv1 "knative.dev/eventing/pkg/apis/duck/v1"
+	"knative.dev/eventing/pkg/apis/feature"
 
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
@@ -30,6 +40,10 @@ import (
 	"knative.dev/eventing/pkg/apis/eventing/v1alpha1"
 	listerseventingv1alpha1 "knative.dev/eventing/pkg/client/listers/eventing/v1alpha1"
 	"knative.dev/pkg/resolver"
+)
+
+const (
+	kubernetesServiceAccountPrefix = "system:serviceaccount"
 )
 
 // GetEventPoliciesForResource returns the applying EventPolicies for a given resource
@@ -85,6 +99,11 @@ func GetEventPoliciesForResource(lister listerseventingv1alpha1.EventPolicyListe
 			}
 		}
 	}
+
+	// Sort the policies by name to ensure deterministic order
+	sort.Slice(relevantPolicies, func(i, j int) bool {
+		return relevantPolicies[i].Name < relevantPolicies[j].Name
+	})
 
 	return relevantPolicies, nil
 }
@@ -191,23 +210,25 @@ func resolveSubjectsFromReference(resolver *resolver.AuthenticatableResolver, re
 
 	objFullSANames := make([]string, 0, len(objSAs))
 	for _, sa := range objSAs {
-		objFullSANames = append(objFullSANames, fmt.Sprintf("system:serviceaccount:%s:%s", reference.Namespace, sa))
+		objFullSANames = append(objFullSANames, fmt.Sprintf("%s:%s:%s", kubernetesServiceAccountPrefix, reference.Namespace, sa))
 	}
 
 	return objFullSANames, nil
 }
 
-// SubjectContained checks if the given sub is contained in the list of allowedSubs
-// or if it matches a prefix pattern in subs (e.g. system:serviceaccounts:my-ns:*)
-func SubjectContained(sub string, allowedSubs []string) bool {
-	for _, s := range allowedSubs {
-		if strings.EqualFold(s, sub) {
-			return true
-		}
+// SubjectAndFiltersPass checks if the given sub is contained in the list of allowedSubs
+// or if it matches a prefix pattern in subs (e.g. system:serviceaccounts:my-ns:*), as
+// well as if the event passes any filters associated with the subjects for an event policy
+func SubjectAndFiltersPass(ctx context.Context, sub string, allowedSubsWithFilters []subjectsWithFilters, event *cloudevents.Event, logger *zap.SugaredLogger) bool {
+	if event == nil {
+		return false
+	}
 
-		if strings.HasSuffix(s, "*") &&
-			strings.HasPrefix(sub, strings.TrimSuffix(s, "*")) {
-			return true
+	for _, swf := range allowedSubsWithFilters {
+		for _, s := range swf.subjects {
+			if strings.EqualFold(s, sub) || (strings.HasSuffix(s, "*") && strings.HasPrefix(sub, strings.TrimSuffix(s, "*"))) {
+				return subscriptionsapi.CreateSubscriptionsAPIFilters(logger.Desugar(), swf.filters).Filter(ctx, *event) != eventfilter.FailFilter
+			}
 		}
 	}
 
@@ -286,4 +307,57 @@ func EventPolicyEventHandler(indexer cache.Indexer, gk schema.GroupKind, enqueue
 			})
 		},
 	}
+}
+
+type EventPolicyStatusMarker interface {
+	MarkEventPoliciesFailed(reason, messageFormat string, messageA ...interface{})
+	MarkEventPoliciesUnknown(reason, messageFormat string, messageA ...interface{})
+	MarkEventPoliciesTrue()
+	MarkEventPoliciesTrueWithReason(reason, messageFormat string, messageA ...interface{})
+}
+
+func UpdateStatusWithProvidedEventPolicies(featureFlags feature.Flags, status *eventingduckv1.AppliedEventPoliciesStatus, statusMarker EventPolicyStatusMarker, applyingEventPolicies []*v1alpha1.EventPolicy) error {
+	status.Policies = nil
+
+	if len(applyingEventPolicies) > 0 {
+		unreadyEventPolicies := []string{}
+		for _, policy := range applyingEventPolicies {
+			if !policy.Status.IsReady() {
+				unreadyEventPolicies = append(unreadyEventPolicies, policy.Name)
+			} else {
+				// only add Ready policies to the list
+				status.Policies = append(status.Policies, eventingduckv1.AppliedEventPolicyRef{
+					Name:       policy.Name,
+					APIVersion: v1alpha1.SchemeGroupVersion.String(),
+				})
+			}
+		}
+
+		if len(unreadyEventPolicies) == 0 {
+			statusMarker.MarkEventPoliciesTrue()
+		} else {
+			statusMarker.MarkEventPoliciesFailed("EventPoliciesNotReady", "event policies %s are not ready", strings.Join(unreadyEventPolicies, ", "))
+		}
+	} else {
+		// we have no applying event policy. So we set the EP condition to True
+		if featureFlags.IsOIDCAuthentication() {
+			// in case of OIDC auth, we also set the message with the default authorization mode
+			statusMarker.MarkEventPoliciesTrueWithReason("DefaultAuthorizationMode", "Default authz mode is %q", featureFlags[feature.AuthorizationDefaultMode])
+		} else {
+			// in case OIDC is disabled, we set EP condition to true too, but give some message that authz (EPs) require OIDC
+			statusMarker.MarkEventPoliciesTrueWithReason("OIDCDisabled", "Feature %q must be enabled to support Authorization", feature.OIDCAuthentication)
+		}
+	}
+
+	return nil
+}
+
+func UpdateStatusWithEventPolicies(featureFlags feature.Flags, status *eventingduckv1.AppliedEventPoliciesStatus, statusMarker EventPolicyStatusMarker, eventPolicyLister listerseventingv1alpha1.EventPolicyLister, gvk schema.GroupVersionKind, objectMeta metav1.ObjectMeta) error {
+	applyingEvenPolicies, err := GetEventPoliciesForResource(eventPolicyLister, gvk, objectMeta)
+	if err != nil {
+		statusMarker.MarkEventPoliciesFailed("EventPoliciesGetFailed", "Failed to get applying event policies")
+		return fmt.Errorf("unable to get applying event policies: %w", err)
+	}
+
+	return UpdateStatusWithProvidedEventPolicies(featureFlags, status, statusMarker, applyingEvenPolicies)
 }

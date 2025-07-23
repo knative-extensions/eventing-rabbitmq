@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,6 +18,7 @@ package feature
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
@@ -63,6 +64,13 @@ const (
 	// This configuration is applied when there is no EventPolicy with a "to" referencing a given
 	// resource.
 	AuthorizationAllowSameNamespace Flag = "Allow-Same-Namespace"
+
+	// DefaultOIDCDiscoveryURL is the default OIDC Discovery URL used in most Kubernetes clusters.
+	DefaultOIDCDiscoveryBaseURL Flag = "https://kubernetes.default.svc"
+
+	// DefaultRequestReplyTimeout is a value for RequestReplyDefaultTimeout that indicates to timeout
+	// a RequestReply resource after 30 seconds by default.
+	DefaultRequestReplyTimeout Flag = "30s"
 )
 
 // Flags is a map containing all the enabled/disabled flags for the experimental features.
@@ -71,16 +79,17 @@ type Flags map[string]Flag
 
 func newDefaults() Flags {
 	return map[string]Flag{
-		KReferenceGroup:          Disabled,
-		DeliveryRetryAfter:       Disabled,
-		DeliveryTimeout:          Enabled,
-		KReferenceMapping:        Disabled,
-		NewTriggerFilters:        Enabled,
-		TransportEncryption:      Disabled,
-		OIDCAuthentication:       Disabled,
-		EvenTypeAutoCreate:       Disabled,
-		NewAPIServerFilters:      Disabled,
-		AuthorizationDefaultMode: AuthorizationAllowSameNamespace,
+		KReferenceGroup:            Disabled,
+		DeliveryRetryAfter:         Disabled,
+		DeliveryTimeout:            Enabled,
+		KReferenceMapping:          Disabled,
+		TransportEncryption:        Disabled,
+		OIDCAuthentication:         Disabled,
+		EvenTypeAutoCreate:         Disabled,
+		NewAPIServerFilters:        Disabled,
+		AuthorizationDefaultMode:   AuthorizationAllowSameNamespace,
+		OIDCDiscoveryBaseURL:       DefaultOIDCDiscoveryBaseURL,
+		RequestReplyDefaultTimeout: DefaultRequestReplyTimeout,
 	}
 }
 
@@ -134,6 +143,33 @@ func (e Flags) IsAuthorizationDefaultModeSameNamespace() bool {
 	return e != nil && e[AuthorizationDefaultMode] == AuthorizationAllowSameNamespace
 }
 
+func (e Flags) OIDCDiscoveryBaseURL() string {
+	if e == nil {
+		return string(DefaultOIDCDiscoveryBaseURL)
+	}
+
+	//nolint:staticcheck
+	discoveryUrl, ok := e[OIDCDiscoveryBaseURL]
+	if !ok {
+		return string(DefaultOIDCDiscoveryBaseURL)
+	}
+
+	return string(discoveryUrl)
+}
+
+func (e Flags) RequestReplyDefaultTimeout() string {
+	if e == nil {
+		return string(DefaultRequestReplyTimeout)
+	}
+
+	timeout, ok := e[RequestReplyDefaultTimeout]
+	if !ok {
+		return string(DefaultRequestReplyTimeout)
+	}
+
+	return string(timeout)
+}
+
 func (e Flags) String() string {
 	return fmt.Sprintf("%+v", map[string]Flag(e))
 }
@@ -183,10 +219,11 @@ func NewFlagsConfigFromMap(data map[string]string) (Flags, error) {
 			flags[sanitizedKey] = AuthorizationDenyAll
 		} else if sanitizedKey == AuthorizationDefaultMode && strings.EqualFold(v, string(AuthorizationAllowSameNamespace)) {
 			flags[sanitizedKey] = AuthorizationAllowSameNamespace
-		} else if strings.Contains(k, NodeSelectorLabel) {
+		} else if strings.Contains(k, NodeSelectorLabel) || sanitizedKey == OIDCDiscoveryBaseURL {
 			flags[sanitizedKey] = Flag(v)
 		} else {
-			return flags, fmt.Errorf("cannot parse the feature flag '%s' = '%s'", k, v)
+			flags[k] = Flag(v)
+			log.Printf("Warning: unknown feature flag value %q=%q\n", k, v)
 		}
 	}
 
