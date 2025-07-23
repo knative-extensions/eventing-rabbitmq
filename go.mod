@@ -20,7 +20,7 @@ require (
 	k8s.io/client-go v0.33.1
 	k8s.io/code-generator v0.33.1
 	k8s.io/kube-openapi v0.0.0-20250318190949-c8a335a9a2ff
-	knative.dev/eventing v0.46.1-0.20250723120508-88be38ab185d
+	knative.dev/eventing v0.46.0
 	knative.dev/hack v0.0.0-20250708013849-70d4b00da6ba
 	knative.dev/pkg v0.0.0-20250716115900-19d3cc2da0b9
 	knative.dev/reconciler-test v0.0.0-20250716152301-806fb6ae0da7
@@ -29,7 +29,6 @@ require (
 
 require (
 	github.com/cloudevents/sdk-go/observability/opentelemetry/v2 v2.16.1
-	github.com/google/uuid v1.6.0
 	github.com/rickb777/date v1.13.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.62.0
 	go.opentelemetry.io/contrib/instrumentation/runtime v0.62.0
@@ -76,6 +75,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/gnostic-models v0.6.9 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.1 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.7 // indirect

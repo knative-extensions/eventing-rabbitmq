@@ -65,6 +65,8 @@ rules:
     - eventing.knative.dev
     resources:
     - rabbitmqbrokerconfigs
+    - eventpolicies
+    - eventpolicies/status
     verbs:
     - "get"
     - "list"

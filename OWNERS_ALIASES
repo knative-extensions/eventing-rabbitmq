@@ -3,29 +3,25 @@
 
 aliases:
   autoscaler-keda-approvers:
-  - ReToCode
   - skonto
   backstage-plugins-reviewers:
+  - Leo6Leo
   - aliok
   - cali0707
-  - leo6leo
-  - pierdipi
+  - pierDipi
   backstage-plugins-writers:
+  - Leo6Leo
   - aliok
   - cali0707
-  - leo6leo
-  - pierdipi
+  - pierDipi
   client-wg-leads:
   - dsimansk
-  - rhuss
   client-writers:
   - dsimansk
-  - rhuss
   discovery-approvers:
   - lberk
   docs-writers:
   - csantanapr
-  - retocode
   - skonto
   eventing-autoscaler-keda-approvers: []
   eventing-awssqs-approvers:
@@ -58,17 +54,13 @@ aliases:
   - Leo6Leo
   - cali0707
   eventing-kafka-writers: []
-  eventing-kogito-approvers:
-  - ricardozanini
   eventing-natss-approvers:
   - astelmashenko
   - dan-j
-  - zhaojizhuang
   eventing-prometheus-approvers:
   - lberk
   - matzew
   eventing-rabbitmq-approvers:
-  - Zerpet
   - ikavgo
   - mkuratczyk
   eventing-redis-approvers:
@@ -80,8 +72,10 @@ aliases:
   - cali0707
   - creydr
   eventing-wg-leads:
+  - creydr
   - pierDipi
   eventing-writers:
+  - Leo6Leo
   - aliok
   - cali0707
   - creydr
@@ -117,62 +111,45 @@ aliases:
   - salaboy
   homebrew-kn-plugins-approvers:
   - dsimansk
-  - maximilien
-  - rhuss
   kn-plugin-admin-approvers:
-  - maximilien
-  - rhuss
-  - zhanggbj
+  - dsimansk
   kn-plugin-event-approvers:
   - cardil
-  - rhuss
   kn-plugin-operator-approvers:
   - dsimansk
   - houshengbo
-  - maximilien
-  - rhuss
   kn-plugin-quickstart-approvers:
   - dsimansk
   - psschwei
-  - rhuss
   kn-plugin-sample-approvers:
-  - maximilien
-  - rhuss
+  - dsimansk
   kn-plugin-service-log-approvers:
-  - rhuss
+  - dsimansk
   kn-plugin-source-kafka-approvers:
   - daisy-ycguo
   - dsimansk
-  - maximilien
-  - rhuss
   kn-plugin-source-kamelet-approvers:
   - christophd
-  - rhuss
   knative-admin:
-  - Cali0707
-  - Leo6Leo
-  - ReToCode
   - aliok
   - cardil
-  - davidhadas
   - dprotaso
   - dsimansk
   - evankanderson
+  - gauron99
   - knative-automation
   - knative-prow-releaser-robot
   - knative-prow-robot
   - knative-prow-updater-robot
   - knative-test-reporter-robot
-  - nainaz
-  - psschwei
-  - salaboy
+  - matzew
+  - nrrso
   - skonto
   - upodroid
   knative-release-leads:
-  - Cali0707
-  - Leo6Leo
-  - ReToCode
+  - dprotaso
   - dsimansk
+  - gauron99
   - skonto
   knative-robots:
   - knative-automation
@@ -207,9 +184,6 @@ aliases:
   - upodroid
   security-guard-approvers:
   - davidhadas
-  - maximilien
-  - psschwei
-  - rhuss
   security-wg-leads:
   - davidhadas
   - evankanderson
@@ -217,7 +191,7 @@ aliases:
   - davidhadas
   - evankanderson
   serving-approvers:
-  - ReToCode
+  - dsimansk
   - skonto
   serving-progressive-rollout-approvers:
   - alexagriffith
@@ -225,36 +199,28 @@ aliases:
   - sukumargaonkar
   - yuzisun
   serving-reviewers:
-  - izabelacg
-  - retocode
   - skonto
   serving-triage:
-  - izabelacg
-  - retocode
   - skonto
   serving-wg-leads:
   - dprotaso
   serving-writers:
-  - ReToCode
   - dprotaso
+  - dsimansk
   - skonto
   steering-committee:
   - aliok
-  - evankanderson
-  - nainaz
-  - salaboy
-  technical-oversight-committee:
-  - davidhadas
   - dprotaso
-  - dsimansk
-  - psschwei
+  - evankanderson
+  - matzew
+  - nrrso
   ux-wg-leads:
+  - Leo6Leo
   - cali0707
-  - leo6leo
   - mmejia02
   - zainabhusain227
   ux-writers:
+  - Leo6Leo
   - cali0707
-  - leo6leo
   - mmejia02
   - zainabhusain227
