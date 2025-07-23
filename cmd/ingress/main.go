@@ -91,6 +91,9 @@ func main() {
 	ctx = logging.WithLogger(ctx, logger)
 
 	err = env.SetupObservability(ctx)
+	if err != nil {
+		logger.Errorw("Failed setting up observability", zap.Error(err))
+	}
 	defer func() {
 		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
