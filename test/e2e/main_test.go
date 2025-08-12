@@ -69,7 +69,7 @@ func TestBrokerDirect(t *testing.T) {
 	ctx, env := global.Environment(
 		knative.WithKnativeNamespace(system.Namespace()),
 		knative.WithLoggingConfig,
-		knative.WithTracingConfig,
+		knative.WithObservabilityConfig,
 		k8s.WithEventListener,
 	)
 	env.Test(ctx, t, RabbitMQCluster())
@@ -84,7 +84,7 @@ func TestVhostBrokerDirect(t *testing.T) {
 	ctx, env := global.Environment(
 		knative.WithKnativeNamespace(system.Namespace()),
 		knative.WithLoggingConfig,
-		knative.WithTracingConfig,
+		knative.WithObservabilityConfig,
 		k8s.WithEventListener,
 	)
 	env.Test(ctx, t, RabbitMQClusterVHost())
@@ -99,7 +99,7 @@ func TestBrokerDirectWithConnectionSecret(t *testing.T) {
 	ctx, env := global.Environment(
 		knative.WithKnativeNamespace(system.Namespace()),
 		knative.WithLoggingConfig,
-		knative.WithTracingConfig,
+		knative.WithObservabilityConfig,
 		k8s.WithEventListener,
 	)
 	env.Test(ctx, t, RabbitMQClusterWithConnectionSecretUri())
@@ -113,7 +113,7 @@ func TestBrokerDirectSelfSignedCerts(t *testing.T) {
 	ctx, env := global.Environment(
 		knative.WithKnativeNamespace(system.Namespace()),
 		knative.WithLoggingConfig,
-		knative.WithTracingConfig,
+		knative.WithObservabilityConfig,
 		k8s.WithEventListener,
 	)
 	env.Test(ctx, t, SetupSelfSignedCerts())
@@ -130,7 +130,7 @@ func TestBrokerDLQ(t *testing.T) {
 	ctx, env := global.Environment(
 		knative.WithKnativeNamespace(system.Namespace()),
 		knative.WithLoggingConfig,
-		knative.WithTracingConfig,
+		knative.WithObservabilityConfig,
 		k8s.WithEventListener,
 	)
 	env.Test(ctx, t, RabbitMQCluster())
@@ -152,7 +152,7 @@ func TestBrokerDispatcherConcurrency(t *testing.T) {
 	ctx, env := global.Environment(
 		knative.WithKnativeNamespace(system.Namespace()),
 		knative.WithLoggingConfig,
-		knative.WithTracingConfig,
+		knative.WithObservabilityConfig,
 		k8s.WithEventListener,
 	)
 	env.Test(ctx, t, RabbitMQCluster())
@@ -166,7 +166,7 @@ func TestSourceDirectSelfSignedCerts(t *testing.T) {
 	ctx, env := global.Environment(
 		knative.WithKnativeNamespace(system.Namespace()),
 		knative.WithLoggingConfig,
-		knative.WithTracingConfig,
+		knative.WithObservabilityConfig,
 		k8s.WithEventListener,
 	)
 	env.Test(ctx, t, SetupSelfSignedCerts())
@@ -184,7 +184,7 @@ func TestSourceDirect(t *testing.T) {
 	ctx, env := global.Environment(
 		knative.WithKnativeNamespace(system.Namespace()),
 		knative.WithLoggingConfig,
-		knative.WithTracingConfig,
+		knative.WithObservabilityConfig,
 		k8s.WithEventListener,
 	)
 	env.Test(ctx, t, RabbitMQCluster())
@@ -200,7 +200,7 @@ func TestSourceDirectWithConnectionSecret(t *testing.T) {
 	ctx, env := global.Environment(
 		knative.WithKnativeNamespace(system.Namespace()),
 		knative.WithLoggingConfig,
-		knative.WithTracingConfig,
+		knative.WithObservabilityConfig,
 		k8s.WithEventListener,
 	)
 	env.Test(ctx, t, RabbitMQClusterWithConnectionSecretUri())
@@ -214,7 +214,7 @@ func TestSourceVhostSetup(t *testing.T) {
 	ctx, env := global.Environment(
 		knative.WithKnativeNamespace(system.Namespace()),
 		knative.WithLoggingConfig,
-		knative.WithTracingConfig,
+		knative.WithObservabilityConfig,
 		k8s.WithEventListener,
 	)
 	env.Test(ctx, t, RabbitMQClusterVHost())
@@ -228,7 +228,7 @@ func TestSourceAdapterConcurrency(t *testing.T) {
 	ctx, env := global.Environment(
 		knative.WithKnativeNamespace(system.Namespace()),
 		knative.WithLoggingConfig,
-		knative.WithTracingConfig,
+		knative.WithObservabilityConfig,
 		k8s.WithEventListener,
 	)
 	env.Test(ctx, t, RabbitMQCluster())
