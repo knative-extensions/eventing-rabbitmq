@@ -1340,7 +1340,7 @@ knative.dev/eventing/test/test_images/print
 # knative.dev/hack v0.0.0-20250902153942-1499de21e119
 ## explicit; go 1.21
 knative.dev/hack
-# knative.dev/pkg v0.0.0-20251007132912-72b164e68f86
+# knative.dev/pkg v0.0.0-20251007184713-a624c759bede
 ## explicit; go 1.24.0
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
@@ -1421,6 +1421,8 @@ knative.dev/pkg/observability/metrics/prometheus
 knative.dev/pkg/observability/resource
 knative.dev/pkg/observability/runtime
 knative.dev/pkg/observability/runtime/k8s
+knative.dev/pkg/observability/semconv
+knative.dev/pkg/observability/semconv/httpconv
 knative.dev/pkg/observability/tracing
 knative.dev/pkg/ptr
 knative.dev/pkg/reconciler

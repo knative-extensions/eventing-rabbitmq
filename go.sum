@@ -1083,8 +1083,8 @@ knative.dev/eventing v0.46.1-0.20251007025010-8f709d0e332f h1:AKNHqGwWU8iRGUs0bM
 knative.dev/eventing v0.46.1-0.20251007025010-8f709d0e332f/go.mod h1:1WlpUBqZSSfKQfCxW7enI1Yutn4WpQv0eFQ+KoAXPOw=
 knative.dev/hack v0.0.0-20250902153942-1499de21e119 h1:NbQvjnFK1tL489LN0qAybWy0E17Jpziwcv/XIHwfp6M=
 knative.dev/hack v0.0.0-20250902153942-1499de21e119/go.mod h1:R0ritgYtjLDO9527h5vb5X6gfvt5LCrJ55BNbVDsWiY=
-knative.dev/pkg v0.0.0-20251007132912-72b164e68f86 h1:ez6Q3QIqKs9r4fKkEGlwsOAqxvhP9OlEAyy5ObMpePM=
-knative.dev/pkg v0.0.0-20251007132912-72b164e68f86/go.mod h1:pNETfvzYq5MmPTi+XGGIjjgvQSYvu4pxxLF1muKunhs=
+knative.dev/pkg v0.0.0-20251007184713-a624c759bede h1:ADQEXMQlfbjBjicJdou8R5WjPHm0/5FyyV58RQ9eYPU=
+knative.dev/pkg v0.0.0-20251007184713-a624c759bede/go.mod h1:pNETfvzYq5MmPTi+XGGIjjgvQSYvu4pxxLF1muKunhs=
 knative.dev/reconciler-test v0.0.0-20251007021513-a949d880f543 h1:nG4LXLAsOh+eiU469MQFTGZMvmxUZF5SCPB4K3x5PXA=
 knative.dev/reconciler-test v0.0.0-20251007021513-a949d880f543/go.mod h1:K7XNSbnqdVU0bJF1BYHPTA52q/XMGAbKUanOfQFWzjY=
 rsc.io/binaryregexp v0.2.0/go.mod h1:qTv7/COck+e2FymRvadv62gMdZztPaShugOCi3I+8D8=
