@@ -1360,7 +1360,7 @@ knative.dev/eventing/test/test_images/print
 # knative.dev/hack v0.0.0-20251126013634-1484a9e9b641
 ## explicit; go 1.24
 knative.dev/hack
-# knative.dev/pkg v0.0.0-20251216153728-9c8140b780d1
+# knative.dev/pkg v0.0.0-20251217214024-80c8bc434670
 ## explicit; go 1.24.0
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
@@ -1467,7 +1467,7 @@ knative.dev/pkg/webhook/json
 knative.dev/pkg/webhook/resourcesemantics
 knative.dev/pkg/webhook/resourcesemantics/defaulting
 knative.dev/pkg/webhook/resourcesemantics/validation
-# knative.dev/reconciler-test v0.0.0-20251216135827-7b51b2a66f40
+# knative.dev/reconciler-test v0.0.0-20251217021727-d67001b5cfe8
 ## explicit; go 1.24.0
 knative.dev/reconciler-test/cmd/eventshub
 knative.dev/reconciler-test/pkg/environment
