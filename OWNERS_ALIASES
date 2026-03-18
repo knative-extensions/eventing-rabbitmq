@@ -58,7 +58,6 @@ aliases:
   eventing-rabbitmq-approvers:
   - ikavgo
   eventing-redis-approvers:
-  - aavarghese
   - matzew
   eventing-reviewers:
   - Leo6Leo
@@ -77,22 +76,18 @@ aliases:
   func-tastic-approvers:
   - lkingland
   - matejvasek
-  - salaboy
   functastic-writers:
   - lkingland
   - matejvasek
   - matzew
-  - salaboy
   function-runtime-approvers:
   - lkingland
   - matejvasek
   - matzew
-  - salaboy
   function-runtime-writers:
   - lkingland
   - matejvasek
   - matzew
-  - salaboy
   homebrew-kn-plugins-approvers:
   - dsimansk
   kn-plugin-admin-approvers:
@@ -190,6 +185,7 @@ aliases:
   - evankanderson
   - matzew
   ux-approvers:
+  - ankitajana21
   - prajjwalyd
   ux-wg-leads:
   - Leo6Leo
@@ -198,6 +194,7 @@ aliases:
   - zainabhusain227
   ux-writers:
   - Leo6Leo
+  - ankitajana21
   - cali0707
   - mmejia02
   - prajjwalyd
