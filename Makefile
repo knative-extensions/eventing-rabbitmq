@@ -100,7 +100,7 @@ releases-ko:
 	$(OPEN) $(KO_RELEASES)
 
 KIND_RELEASES := https://github.com/kubernetes-sigs/kind/releases
-KIND_VERSION := 0.20.0
+KIND_VERSION := 0.31.0
 KIND_URL := $(KIND_RELEASES)/download/v$(KIND_VERSION)/kind-$(platform)-$(arch_alt)
 KIND := $(LOCAL_BIN)/kind_$(KIND_VERSION)_$(platform)_$(arch_alt)
 $(KIND): | $(CURL) $(LOCAL_BIN)
@@ -136,7 +136,7 @@ releases-envsubst:
 
 KUBECTL_RELEASES := https://github.com/kubernetes/kubernetes/tags
 # Keep this in sync with KIND_K8S_VERSION
-KUBECTL_VERSION := v1.33.1
+KUBECTL_VERSION := v1.34.3
 KUBECTL_BIN := kubectl-$(KUBECTL_VERSION)-$(platform)-$(arch_alt)
 KUBECTL_URL := https://dl.k8s.io/release/$(KUBECTL_VERSION)/bin/$(platform)/amd64/kubectl
 KUBECTL := $(LOCAL_BIN)/$(KUBECTL_BIN)
