@@ -1224,7 +1224,7 @@ k8s.io/utils/net
 k8s.io/utils/pointer
 k8s.io/utils/ptr
 k8s.io/utils/trace
-# knative.dev/eventing v0.48.1-0.20260407031326-e88c518ea768
+# knative.dev/eventing v0.48.1-0.20260409081128-a29cbfbe8787
 ## explicit; go 1.25.0
 knative.dev/eventing/cmd/heartbeats
 knative.dev/eventing/pkg/adapter/v2
