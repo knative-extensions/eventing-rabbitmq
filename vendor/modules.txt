@@ -99,7 +99,7 @@ github.com/fsnotify/fsnotify/internal
 # github.com/fxamacker/cbor/v2 v2.9.0
 ## explicit; go 1.20
 github.com/fxamacker/cbor/v2
-# github.com/go-jose/go-jose/v3 v3.0.4
+# github.com/go-jose/go-jose/v3 v3.0.5
 ## explicit; go 1.12
 github.com/go-jose/go-jose/v3
 github.com/go-jose/go-jose/v3/cipher
@@ -1223,7 +1223,7 @@ k8s.io/utils/net
 k8s.io/utils/pointer
 k8s.io/utils/ptr
 k8s.io/utils/trace
-# knative.dev/eventing v0.48.1-0.20260424085315-0b7f22cc0488
+# knative.dev/eventing v0.48.1-0.20260424165618-9ba4c6c223fe
 ## explicit; go 1.25.0
 knative.dev/eventing/cmd/heartbeats
 knative.dev/eventing/pkg/adapter/v2
