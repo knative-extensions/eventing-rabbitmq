@@ -29,6 +29,7 @@ import (
 
 	"knative.dev/eventing/pkg/observability"
 	o11yconfigmap "knative.dev/eventing/pkg/observability/configmap"
+	pkgutils "knative.dev/eventing/pkg/utils"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/logging"
 )
@@ -36,6 +37,7 @@ import (
 const (
 	EnvLoggingCfg       = "K_LOGGING_CONFIG"
 	EnvObservabilityCfg = "K_OBSERVABILITY_CONFIG"
+	EnvKlogVerbosity    = "K_KLOG_VERBOSITY"
 )
 
 type ConfigAccessor interface {
@@ -56,6 +58,8 @@ type ConfigWatcher struct {
 	// configurations remain nil if disabled
 	loggingCfg       *logging.Config
 	observabilityCfg *observability.Config
+
+	klogVerbosity string
 }
 
 // configWatcherOption is a function option for ConfigWatchers.
@@ -130,6 +134,7 @@ func (cw *ConfigWatcher) updateFromLoggingConfigMap(cfg *corev1.ConfigMap) {
 	}
 
 	cw.loggingCfg = loggingCfg
+	cw.klogVerbosity = cfg.Data[pkgutils.KlogVerbosityKey]
 
 	cw.logger.Debugw("Updated logging config from ConfigMap", zap.Any("ConfigMap", cfg))
 }
@@ -164,6 +169,7 @@ func (cw *ConfigWatcher) ToEnvVars() []corev1.EnvVar {
 	envs := make([]corev1.EnvVar, 0, 3)
 
 	envs = maybeAppendEnvVar(envs, cw.loggingConfigEnvVar(), cw.LoggingConfig() != nil)
+	envs = maybeAppendEnvVar(envs, cw.klogVerbosityEnvVar(), cw.LoggingConfig() != nil)
 	envs = maybeAppendEnvVar(envs, cw.observabilityConfigEnvVar(), cw.ObservabilityConfig() != nil)
 
 	return envs
@@ -203,6 +209,17 @@ func (cw *ConfigWatcher) loggingConfigEnvVar() corev1.EnvVar {
 	return corev1.EnvVar{
 		Name:  EnvLoggingCfg,
 		Value: cfg,
+	}
+}
+
+func (cw *ConfigWatcher) klogVerbosityEnvVar() corev1.EnvVar {
+	level := cw.klogVerbosity
+	if level == "" {
+		level = "0"
+	}
+	return corev1.EnvVar{
+		Name:  EnvKlogVerbosity,
+		Value: level,
 	}
 }
 
@@ -254,6 +271,7 @@ var _ ConfigAccessor = (*EmptyVarsGenerator)(nil)
 func (g *EmptyVarsGenerator) ToEnvVars() []corev1.EnvVar {
 	return []corev1.EnvVar{
 		{Name: EnvLoggingCfg},
+		{Name: EnvKlogVerbosity},
 		{Name: EnvObservabilityCfg},
 	}
 }
