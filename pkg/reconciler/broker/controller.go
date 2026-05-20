@@ -91,6 +91,9 @@ func NewController(
 	brokerInformer := brokerinformer.Get(ctx)
 	serviceInformer := serviceinformer.Get(ctx)
 	endpointSliceInformer := kubeinformerfactory.Get(ctx).Discovery().V1().EndpointSlices()
+	if err := controller.StartInformers(ctx.Done(), endpointSliceInformer.Informer()); err != nil {
+		log.Fatal("Failed to start EndpointSlice informer", zap.Error(err))
+	}
 	rabbitInformer := rabbitv1.Get(ctx)
 	exchangeInformer := exchangeinformer.Get(ctx)
 	policyInformer := policyinformer.Get(ctx)
