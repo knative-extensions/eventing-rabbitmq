@@ -17,7 +17,7 @@
 package broker
 
 import (
-	corev1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 
 	"knative.dev/eventing/pkg/apis/duck"
 	eventingv1 "knative.dev/eventing/pkg/apis/eventing/v1"
@@ -32,11 +32,11 @@ func MarkIngressFailed(bs *eventingv1.BrokerStatus, reason, format string, args 
 	bs.GetConditionSet().Manage(bs).MarkFalse(BrokerConditionIngress, reason, format, args...)
 }
 
-func PropagateIngressAvailability(bs *eventingv1.BrokerStatus, ep *corev1.Endpoints) {
-	if duck.EndpointsAreAvailable(ep) {
+func PropagateIngressAvailability(bs *eventingv1.BrokerStatus, epSlices []*discoveryv1.EndpointSlice) {
+	if duck.EndpointSlicesAreAvailable(epSlices) {
 		bs.GetConditionSet().Manage(bs).MarkTrue(BrokerConditionIngress)
 	} else {
-		bs.MarkIngressFailed("EndpointsUnavailable", "Endpoints %q are unavailable.", ep.Name)
+		bs.MarkIngressFailed("EndpointSlicesUnavailable", "EndpointSlices are unavailable.")
 	}
 }
 

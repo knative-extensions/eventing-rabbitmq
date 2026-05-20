@@ -24,6 +24,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -682,7 +683,7 @@ func TestReconcile(t *testing.T) {
 						WithDeadLetterSinkFailed("PolicyFailure", `RabbitMQ Policy "b.test-namespace.test-broker.dlq.broker-test-uid" is not ready`)),
 				}},
 			}, {
-				Name: fmt.Sprintf("%s: Both exchanges exist, creates secret, deployment, and service, endpoints not ready", configName),
+				Name: fmt.Sprintf("%s: Both exchanges exist, creates secret, deployment, and service, no endpoint slices ready", configName),
 				Key:  testKey,
 				Objects: []runtime.Object{
 					NewBroker(brokerName, testNS,
@@ -707,16 +708,15 @@ func TestReconcile(t *testing.T) {
 						WithBrokerClass(brokerClass),
 						WithInitBrokerConditions,
 						WithBrokerConfig(config),
-						WithIngressFailed("ServiceFailure", `Failed to reconcile service: endpoints "test-broker-broker-ingress" not found`),
+						WithIngressFailed("EndpointSlicesUnavailable", "EndpointSlices are unavailable."),
+						WithBrokerAddressURI(brokerAddress),
 						WithSecretReady(),
 						WithExchangeReady(),
 						WithDLXNotConfigured(),
+						WithDeadLetterSinkResolvedNotConfigured(),
 						WithDeadLetterSinkNotConfigured()),
 				}},
-				WantEvents: []string{
-					Eventf(corev1.EventTypeWarning, "InternalError", `endpoints "test-broker-broker-ingress" not found`),
-				},
-				WantErr: true,
+				WantErr: false,
 			}, {
 				Name: fmt.Sprintf("%s: Both exchanges exist, creates secret, deployment, and service, endpoints ready", configName),
 				Key:  testKey,
@@ -733,9 +733,9 @@ func TestReconcile(t *testing.T) {
 					createReadyExchange(true, ""),
 					createReadyQueue(true, config, ""),
 					createReadyBinding(true, ""),
-					rt.NewEndpoints(ingressServiceName, testNS,
-						rt.WithEndpointsLabels(IngressLabels()),
-						rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
+					rt.NewEndpointSlice(ingressServiceName, testNS,
+						rt.WithEndpointSliceLabels(endpointSliceLabels()),
+						rt.WithEndpointSliceAddresses(readyEndpoint("127.0.0.1"))),
 				},
 				WantCreates: []runtime.Object{
 					createBrokerSecretFromRabbitmqCluster(),
@@ -772,9 +772,9 @@ func TestReconcile(t *testing.T) {
 					createReadyExchange(true, ""),
 					createReadyQueue(true, config, ""),
 					createReadyBinding(true, ""),
-					rt.NewEndpoints(ingressServiceName, testNS,
-						rt.WithEndpointsLabels(IngressLabels()),
-						rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
+					rt.NewEndpointSlice(ingressServiceName, testNS,
+						rt.WithEndpointSliceLabels(endpointSliceLabels()),
+						rt.WithEndpointSliceAddresses(readyEndpoint("127.0.0.1"))),
 				},
 				WithReactors: []clientgotesting.ReactionFunc{
 					InduceFailure("create", "secrets"),
@@ -814,9 +814,9 @@ func TestReconcile(t *testing.T) {
 					createReadyQueue(true, config, ""),
 					createReadyBinding(true, ""),
 					createReadyPolicy(""),
-					rt.NewEndpoints(ingressServiceName, testNS,
-						rt.WithEndpointsLabels(IngressLabels()),
-						rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
+					rt.NewEndpointSlice(ingressServiceName, testNS,
+						rt.WithEndpointSliceLabels(endpointSliceLabels()),
+						rt.WithEndpointSliceAddresses(readyEndpoint("127.0.0.1"))),
 					createDifferentExchangeSecret(),
 				},
 				WithReactors: []clientgotesting.ReactionFunc{
@@ -857,9 +857,9 @@ func TestReconcile(t *testing.T) {
 					createReadyQueue(true, config, ""),
 					createReadyBinding(true, ""),
 					createReadyPolicy(""),
-					rt.NewEndpoints(ingressServiceName, testNS,
-						rt.WithEndpointsLabels(IngressLabels()),
-						rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
+					rt.NewEndpointSlice(ingressServiceName, testNS,
+						rt.WithEndpointSliceLabels(endpointSliceLabels()),
+						rt.WithEndpointSliceAddresses(readyEndpoint("127.0.0.1"))),
 					createSecret(rabbitURL),
 					createExchangeSecret(""),
 				},
@@ -902,9 +902,9 @@ func TestReconcile(t *testing.T) {
 					createReadyQueue(true, config, ""),
 					createReadyBinding(true, ""),
 					createReadyPolicy(""),
-					rt.NewEndpoints(ingressServiceName, testNS,
-						rt.WithEndpointsLabels(IngressLabels()),
-						rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
+					rt.NewEndpointSlice(ingressServiceName, testNS,
+						rt.WithEndpointSliceLabels(endpointSliceLabels()),
+						rt.WithEndpointSliceAddresses(readyEndpoint("127.0.0.1"))),
 					createExchangeSecret(""),
 					createDifferentIngressDeployment(),
 				},
@@ -947,9 +947,9 @@ func TestReconcile(t *testing.T) {
 					createReadyQueue(true, config, ""),
 					createReadyBinding(true, ""),
 					createReadyPolicy(""),
-					rt.NewEndpoints(ingressServiceName, testNS,
-						rt.WithEndpointsLabels(IngressLabels()),
-						rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
+					rt.NewEndpointSlice(ingressServiceName, testNS,
+						rt.WithEndpointSliceLabels(endpointSliceLabels()),
+						rt.WithEndpointSliceAddresses(readyEndpoint("127.0.0.1"))),
 					createExchangeSecret(""),
 					createIngressDeployment(),
 				},
@@ -992,9 +992,9 @@ func TestReconcile(t *testing.T) {
 					createReadyQueue(true, config, ""),
 					createReadyBinding(true, ""),
 					createReadyPolicy(""),
-					rt.NewEndpoints(ingressServiceName, testNS,
-						rt.WithEndpointsLabels(IngressLabels()),
-						rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
+					rt.NewEndpointSlice(ingressServiceName, testNS,
+						rt.WithEndpointSliceLabels(endpointSliceLabels()),
+						rt.WithEndpointSliceAddresses(readyEndpoint("127.0.0.1"))),
 					createExchangeSecret(""),
 					createIngressDeployment(),
 					createDifferentIngressService(),
@@ -1039,9 +1039,9 @@ func TestReconcile(t *testing.T) {
 					createReadyQueue(true, config, ""),
 					createReadyBinding(true, ""),
 					createReadyPolicy(""),
-					rt.NewEndpoints(ingressServiceName, testNS,
-						rt.WithEndpointsLabels(IngressLabels()),
-						rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
+					rt.NewEndpointSlice(ingressServiceName, testNS,
+						rt.WithEndpointSliceLabels(endpointSliceLabels()),
+						rt.WithEndpointSliceAddresses(readyEndpoint("127.0.0.1"))),
 					createExchangeSecret(""),
 					createIngressDeployment(),
 				},
@@ -1087,9 +1087,9 @@ func TestReconcile(t *testing.T) {
 					createReadyQueue(true, config, ""),
 					createReadyBinding(true, ""),
 					createReadyPolicy(""),
-					rt.NewEndpoints(ingressServiceName, testNS,
-						rt.WithEndpointsLabels(IngressLabels()),
-						rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
+					rt.NewEndpointSlice(ingressServiceName, testNS,
+						rt.WithEndpointSliceLabels(endpointSliceLabels()),
+						rt.WithEndpointSliceAddresses(readyEndpoint("127.0.0.1"))),
 					createExchangeSecret(""),
 				},
 				WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
@@ -1157,9 +1157,9 @@ func TestReconcile(t *testing.T) {
 					createReadyQueue(true, config, ""),
 					createReadyBinding(true, ""),
 					createReadyPolicy(""),
-					rt.NewEndpoints(ingressServiceName, testNS,
-						rt.WithEndpointsLabels(IngressLabels()),
-						rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
+					rt.NewEndpointSlice(ingressServiceName, testNS,
+						rt.WithEndpointSliceLabels(endpointSliceLabels()),
+						rt.WithEndpointSliceAddresses(readyEndpoint("127.0.0.1"))),
 					createExchangeSecret(""),
 					createIngressDeployment(),
 					createIngressService(),
@@ -1212,9 +1212,9 @@ func TestReconcile(t *testing.T) {
 			createReadyQueue(true, rabbitmqClusterConfigRefNoNS(), ""),
 			createReadyBinding(true, ""),
 			createReadyPolicy(""),
-			rt.NewEndpoints(ingressServiceName, testNS,
-				rt.WithEndpointsLabels(IngressLabels()),
-				rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
+			rt.NewEndpointSlice(ingressServiceName, testNS,
+				rt.WithEndpointSliceLabels(endpointSliceLabels()),
+				rt.WithEndpointSliceAddresses(readyEndpoint("127.0.0.1"))),
 			createExchangeSecret(""),
 			createIngressDeployment(),
 		},
@@ -1254,9 +1254,9 @@ func TestReconcile(t *testing.T) {
 			createRabbitMQCluster(rabbitMQVhost),
 			createRabbitMQBrokerConfig(rabbitMQVhost),
 			createReadyExchange(false, rabbitMQVhost),
-			rt.NewEndpoints(ingressServiceName, testNS,
-				rt.WithEndpointsLabels(IngressLabels()),
-				rt.WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
+			rt.NewEndpointSlice(ingressServiceName, testNS,
+				rt.WithEndpointSliceLabels(endpointSliceLabels()),
+				rt.WithEndpointSliceAddresses(readyEndpoint("127.0.0.1"))),
 			createExchangeSecret(rabbitMQVhost),
 			createIngressDeployment(),
 		},
@@ -1294,22 +1294,22 @@ func TestReconcile(t *testing.T) {
 		ctx = rabbitduck.WithDuck(ctx)
 		eventingv1.RegisterAlternateBrokerConditionSet(rabbitBrokerCondSet)
 		r := &Reconciler{
-			eventingClientSet:  fakeeventingclient.Get(ctx),
-			kubeClientSet:      fakekubeclient.Get(ctx),
-			endpointsLister:    listers.GetEndpointsLister(),
-			serviceLister:      listers.GetServiceLister(),
-			secretLister:       listers.GetSecretLister(),
-			deploymentLister:   listers.GetDeploymentLister(),
-			kresourceTracker:   duck.NewListableTrackerFromTracker(ctx, conditions.Get, tracker.New(func(types.NamespacedName) {}, 0)),
-			addressableTracker: duck.NewListableTrackerFromTracker(ctx, v1a1addr.Get, tracker.New(func(types.NamespacedName) {}, 0)),
-			uriResolver:        resolver.NewURIResolverFromTracker(ctx, tracker.New(func(types.NamespacedName) {}, 0)),
-			brokerClass:        "RabbitMQBroker",
-			ingressImage:       ingressImage,
-			dispatcherImage:    dispatcherImage,
-			rabbitClientSet:    fakerabbitclient.Get(ctx),
-			rabbitLister:       rabbitduck.Get(ctx),
-			rabbit:             rabbit.New(ctx),
-			brokerConfig:       brokerconfig.New(ctx),
+			eventingClientSet:   fakeeventingclient.Get(ctx),
+			kubeClientSet:       fakekubeclient.Get(ctx),
+			endpointSliceLister: listers.GetEndpointSliceLister(),
+			serviceLister:       listers.GetServiceLister(),
+			secretLister:        listers.GetSecretLister(),
+			deploymentLister:    listers.GetDeploymentLister(),
+			kresourceTracker:    duck.NewListableTrackerFromTracker(ctx, conditions.Get, tracker.New(func(types.NamespacedName) {}, 0)),
+			addressableTracker:  duck.NewListableTrackerFromTracker(ctx, v1a1addr.Get, tracker.New(func(types.NamespacedName) {}, 0)),
+			uriResolver:         resolver.NewURIResolverFromTracker(ctx, tracker.New(func(types.NamespacedName) {}, 0)),
+			brokerClass:         "RabbitMQBroker",
+			ingressImage:        ingressImage,
+			dispatcherImage:     dispatcherImage,
+			rabbitClientSet:     fakerabbitclient.Get(ctx),
+			rabbitLister:        rabbitduck.Get(ctx),
+			rabbit:              rabbit.New(ctx),
+			brokerConfig:        brokerconfig.New(ctx),
 		}
 		return broker.NewReconciler(ctx, logger,
 			fakeeventingclient.Get(ctx), listers.GetBrokerLister(),
@@ -1519,6 +1519,20 @@ func invalidConfigForRabbitOperator() *duckv1.KReference {
 func IngressLabels() map[string]string {
 	return map[string]string{
 		"eventing.knative.dev/brokerRole": "ingress",
+	}
+}
+
+func endpointSliceLabels() map[string]string {
+	return map[string]string{
+		discoveryv1.LabelServiceName: ingressServiceName,
+	}
+}
+
+func readyEndpoint(ip string) discoveryv1.Endpoint {
+	ready := true
+	return discoveryv1.Endpoint{
+		Addresses:  []string{ip},
+		Conditions: discoveryv1.EndpointConditions{Ready: &ready},
 	}
 }
 

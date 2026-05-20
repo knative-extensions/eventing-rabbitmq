@@ -47,9 +47,9 @@ import (
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
 	configmapinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/configmap"
-	endpointsinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/endpoints"
 	secretinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/secret"
 	serviceinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/service"
+	kubeinformerfactory "knative.dev/pkg/client/injection/kube/informers/factory"
 
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
@@ -90,7 +90,10 @@ func NewController(
 	deploymentInformer := deploymentinformer.Get(ctx)
 	brokerInformer := brokerinformer.Get(ctx)
 	serviceInformer := serviceinformer.Get(ctx)
-	endpointsInformer := endpointsinformer.Get(ctx)
+	endpointSliceInformer := kubeinformerfactory.Get(ctx).Discovery().V1().EndpointSlices()
+	if err := controller.StartInformers(ctx.Done(), endpointSliceInformer.Informer()); err != nil {
+		log.Fatal("Failed to start EndpointSlice informer", zap.Error(err))
+	}
 	rabbitInformer := rabbitv1.Get(ctx)
 	exchangeInformer := exchangeinformer.Get(ctx)
 	policyInformer := policyinformer.Get(ctx)
@@ -104,7 +107,7 @@ func NewController(
 		brokerLister:              brokerInformer.Lister(),
 		secretLister:              secretInformer.Lister(),
 		serviceLister:             serviceInformer.Lister(),
-		endpointsLister:           endpointsInformer.Lister(),
+		endpointSliceLister:       endpointSliceInformer.Lister(),
 		deploymentLister:          deploymentInformer.Lister(),
 		rabbitLister:              rabbitInformer,
 		ingressImage:              env.IngressImage,
@@ -140,7 +143,7 @@ func NewController(
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
-	endpointsInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+	endpointSliceInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: pkgreconciler.LabelExistsFilterFunc(eventing.BrokerLabelKey),
 		Handler:    controller.HandleAll(impl.EnqueueLabelOfNamespaceScopedResource("" /*any namespace*/, eventing.BrokerLabelKey)),
 	})

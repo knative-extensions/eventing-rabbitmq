@@ -27,11 +27,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	corev1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
+	discoveryv1listers "k8s.io/client-go/listers/discovery/v1"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
@@ -63,12 +66,12 @@ type Reconciler struct {
 	rabbitClientSet   rabbitclientset.Interface
 
 	// listers index properties about resources
-	brokerLister     eventinglisters.BrokerLister
-	serviceLister    corev1listers.ServiceLister
-	endpointsLister  corev1listers.EndpointsLister
-	secretLister     corev1listers.SecretLister
-	deploymentLister appsv1listers.DeploymentLister
-	rabbitLister     apisduck.InformerFactory
+	brokerLister        eventinglisters.BrokerLister
+	serviceLister       corev1listers.ServiceLister
+	endpointSliceLister discoveryv1listers.EndpointSliceLister
+	secretLister        corev1listers.SecretLister
+	deploymentLister    appsv1listers.DeploymentLister
+	rabbitLister        apisduck.InformerFactory
 
 	ingressImage              string
 	ingressServiceAccountName string
@@ -156,7 +159,7 @@ func (r *Reconciler) reconcileDeployment(ctx context.Context, d *v1.Deployment) 
 }
 
 // reconcileService reconciles the K8s Service 'svc'.
-func (r *Reconciler) reconcileService(ctx context.Context, svc *corev1.Service) (*corev1.Endpoints, error) {
+func (r *Reconciler) reconcileService(ctx context.Context, svc *corev1.Service) (*corev1.Service, error) {
 	current, err := r.serviceLister.Services(svc.Namespace).Get(svc.Name)
 	if apierrs.IsNotFound(err) {
 		current, err = r.kubeClientSet.CoreV1().Services(svc.Namespace).Create(ctx, svc, metav1.CreateOptions{})
@@ -179,7 +182,7 @@ func (r *Reconciler) reconcileService(ctx context.Context, svc *corev1.Service) 
 		}
 	}
 
-	return r.endpointsLister.Endpoints(svc.Namespace).Get(svc.Name)
+	return current, nil
 }
 
 // reconcileIngressDeploymentCRD reconciles the Ingress Deployment.
@@ -210,7 +213,7 @@ func (r *Reconciler) reconcileIngressDeployment(ctx context.Context, b *eventing
 }
 
 // reconcileIngressService reconciles the Ingress Service.
-func (r *Reconciler) reconcileIngressService(ctx context.Context, b *eventingv1.Broker) (*corev1.Endpoints, error) {
+func (r *Reconciler) reconcileIngressService(ctx context.Context, b *eventingv1.Broker) (*corev1.Service, error) {
 	expected := resources.MakeIngressService(b)
 	return r.reconcileService(ctx, expected)
 }
@@ -401,19 +404,28 @@ func (r *Reconciler) reconcileCommonIngressResources(ctx context.Context, s *cor
 		return err
 	}
 
-	ingressEndpoints, err := r.reconcileIngressService(ctx, b)
+	ingressSvc, err := r.reconcileIngressService(ctx, b)
 	if err != nil {
 		logging.FromContext(ctx).Errorw("Problem reconciling ingress Service", zap.Error(err))
 		MarkIngressFailed(&b.Status, "ServiceFailure", "Failed to reconcile service: %s", err)
 		return err
 	}
-	PropagateIngressAvailability(&b.Status, ingressEndpoints)
+
+	ingressEpSlices, err := r.endpointSliceLister.EndpointSlices(ingressSvc.Namespace).List(labels.SelectorFromSet(labels.Set{
+		discoveryv1.LabelServiceName: ingressSvc.Name,
+	}))
+	if err != nil {
+		logging.FromContext(ctx).Errorw("Problem getting EndpointSlices for ingress", zap.Error(err))
+		MarkIngressFailed(&b.Status, "EndpointSliceFailure", "Failed to list EndpointSlices: %s", err)
+		return err
+	}
+	PropagateIngressAvailability(&b.Status, ingressEpSlices)
 
 	b.Status.SetAddress(&duckv1.Addressable{
 		Name: pointer.String("http"),
 		URL: &apis.URL{
 			Scheme: "http",
-			Host:   network.GetServiceHostname(ingressEndpoints.GetName(), ingressEndpoints.GetNamespace()),
+			Host:   network.GetServiceHostname(ingressSvc.Name, ingressSvc.Namespace),
 		},
 	})
 
