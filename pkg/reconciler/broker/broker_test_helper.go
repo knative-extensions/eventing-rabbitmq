@@ -218,7 +218,7 @@ func WithIngressFailed(reason, msg string) BrokerOption {
 
 func WithIngressAvailable() BrokerOption {
 	return func(b *v1.Broker) {
-		b.Status.PropagateIngressAvailability(v1.TestHelper.AvailableEndpoints())
+		b.Status.PropagateIngressAvailability(v1.TestHelper.AvailableEndpointSlices())
 	}
 }
 
