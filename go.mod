@@ -20,10 +20,10 @@ require (
 	k8s.io/client-go v0.35.5
 	k8s.io/code-generator v0.35.5
 	k8s.io/kube-openapi v0.0.0-20250910181357-589584f1c912
-	knative.dev/eventing v0.49.1-0.20260601121530-94496617307a
+	knative.dev/eventing v0.49.1-0.20260611075324-69b976f7fd56
 	knative.dev/hack v0.0.0-20260428014158-b2a37f1b6e7b
 	knative.dev/pkg v0.0.0-20260602142205-ac97e43f6622
-	knative.dev/reconciler-test v0.0.0-20260529022136-ec384da06e43
+	knative.dev/reconciler-test v0.0.0-20260602150814-125bf8d48e1c
 	sigs.k8s.io/controller-runtime v0.19.0
 )
 
