@@ -103,6 +103,8 @@ func main() {
 
 	env.rmqHelper = rabbit.NewRabbitMQConnectionHandler(5, 1000, logger)
 	env.rmqHelper.Setup(ctx, rabbit.VHostHandler(env.BrokerURL, env.RabbitMQVhost), rabbit.ChannelConfirm, rabbit.DialWrapper)
+	// close rmq connection the last
+	defer env.rmqHelper.Close()
 
 	env.tracer = otel.GetTracerProvider().Tracer(scopeName)
 

@@ -28,13 +28,12 @@ import (
 
 func Test_ValidSetupRabbitMQ(t *testing.T) {
 	logger := zap.NewNop().Sugar()
-	ctx, cancelFunc := context.WithCancel(context.Background())
 	rabbitMQHelper := NewRabbitMQConnectionHandler(1, 100, logger).(*RabbitMQConnectionHandler)
-	rabbitMQHelper.Setup(ctx, "amqp://localhost:5672/%2f", ConfigTest, ValidDial)
+	rabbitMQHelper.Setup(context.Background(), "amqp://localhost:5672/%2f", ConfigTest, ValidDial)
 	if rabbitMQHelper.Connection == nil || rabbitMQHelper.Channel == nil {
 		t.Errorf("rabbitMQHelper connection and channel should be set %s %s", rabbitMQHelper.Connection, rabbitMQHelper.Channel)
 	}
-	cancelFunc()
+	rabbitMQHelper.Close() // stops the watcher; it no longer ends on ctx cancel
 }
 
 func Test_InvalidSetupRabbitMQ(t *testing.T) {
@@ -89,19 +88,18 @@ func Test_WatchConnectionsRabbitMQ(t *testing.T) {
 	for _, tt := range []struct {
 		name, endFunc string
 	}{{
-		name:    "end watcher by context cancel func",
-		endFunc: "cancel",
+		name:    "end watcher by closing stop channel",
+		endFunc: "stop",
 	}, {
-		name:    "reset watcher via connection and end via context cancel func",
+		name:    "reset watcher via connection and end by closing stop channel",
 		endFunc: "connection",
 	}, {
-		name:    "reset watcher via channel and end via context cancel func",
+		name:    "reset watcher via channel and end by closing stop channel",
 		endFunc: "channel",
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
 			tt := tt
 			t.Parallel()
-			ctx, cancelFunc := context.WithCancel(context.Background())
 			logger := zap.NewNop().Sugar()
 			// test invalid connection setup
 			rabbitMQHelper := NewRabbitMQConnectionHandler(1, 100, logger).(*RabbitMQConnectionHandler)
@@ -113,9 +111,9 @@ func Test_WatchConnectionsRabbitMQ(t *testing.T) {
 				} else if tt.endFunc == "channel" {
 					rabbitMQHelper.Channel.(*RabbitMQChannelMock).NotifyCloseChannel <- amqp091.ErrClosed
 				}
-				cancelFunc()
+				rabbitMQHelper.Close()
 			}()
-			rabbitMQHelper.watchRabbitMQConnections(ctx, "amqp://localhost:5672/%2f", nil, ValidDial)
+			rabbitMQHelper.watchRabbitMQConnections(context.Background(), "amqp://localhost:5672/%2f", nil, ValidDial)
 		})
 	}
 }

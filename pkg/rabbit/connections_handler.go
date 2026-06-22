@@ -30,7 +30,10 @@ import (
 type RabbitMQConnectionsHandlerInterface interface {
 	GetConnection() RabbitMQConnectionInterface
 	GetChannel() RabbitMQChannelInterface
+	// should be called exactly once
 	Setup(context.Context, string, func(RabbitMQConnectionInterface, RabbitMQChannelInterface) error, func(string) (RabbitMQConnectionWrapperInterface, error))
+	// used to explicitly Close rmq connection, not ctx.Done as before
+	Close()
 }
 
 type RabbitMQConnectionInterface interface {
@@ -55,11 +58,14 @@ type RabbitMQChannelInterface interface {
 }
 
 type RabbitMQConnectionHandler struct {
-	firstSetup                              bool
 	reconnTries, reconnectionTriesThreshold int
 	cycleDuration                           time.Duration
 	Connection                              RabbitMQConnectionWrapperInterface
 	Channel                                 RabbitMQChannelInterface
+
+	// stopCh signals the watcher to stop and tear down the connection.
+	// used instead of previous ctx.Done
+	stopCh chan struct{}
 
 	logger *zap.SugaredLogger
 }
@@ -106,8 +112,8 @@ func (r *RabbitMQConnection) IsClosed() bool {
 func NewRabbitMQConnectionHandler(reconnectionTriesThreshold int, cycleDuration time.Duration, logger *zap.SugaredLogger) RabbitMQConnectionsHandlerInterface {
 	return &RabbitMQConnectionHandler{
 		reconnectionTriesThreshold: reconnectionTriesThreshold,
-		firstSetup:                 true,
 		cycleDuration:              cycleDuration,
+		stopCh:                     make(chan struct{}),
 		logger:                     logger,
 	}
 }
@@ -118,11 +124,7 @@ func (r *RabbitMQConnectionHandler) Setup(
 	configFunction func(RabbitMQConnectionInterface, RabbitMQChannelInterface) error,
 	dialFunc func(string) (RabbitMQConnectionWrapperInterface, error)) {
 	r.createConnectionAndChannel(ctx, rabbitMQURL, configFunction, dialFunc)
-	// watch for any connection unexpected closures
-	if r.firstSetup {
-		r.firstSetup = false
-		go r.watchRabbitMQConnections(ctx, rabbitMQURL, configFunction, dialFunc)
-	}
+	go r.watchRabbitMQConnections(ctx, rabbitMQURL, configFunction, dialFunc)
 }
 
 func (r *RabbitMQConnectionHandler) createConnectionAndChannel(
@@ -164,7 +166,8 @@ func (r *RabbitMQConnectionHandler) watchRabbitMQConnections(
 	dialFunc func(string) (RabbitMQConnectionWrapperInterface, error)) {
 	for {
 		select {
-		case <-ctx.Done():
+		// previously ctx.Done() trigger was used, which raced against HTTP-side draining.
+		case <-r.stopCh:
 			r.logger.Info("stopped watching for rabbitmq connections")
 			r.closeRabbitMQConnections()
 			return
@@ -211,6 +214,10 @@ func (r *RabbitMQConnectionHandler) configConnectionAndChannel(configFunction fu
 		}
 	}
 	return err
+}
+
+func (r *RabbitMQConnectionHandler) Close() {
+	close(r.stopCh)
 }
 
 func (r *RabbitMQConnectionHandler) closeRabbitMQConnections() {

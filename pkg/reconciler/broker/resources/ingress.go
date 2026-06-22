@@ -127,16 +127,19 @@ func MakeIngressDeployment(args *IngressArgs) *appsv1.Deployment {
 					Containers: []corev1.Container{{
 						Image: args.Image,
 						Name:  ingressContainerName,
-						// LivenessProbe: &corev1.Probe{
-						// 	Handler: corev1.Handler{
-						// 		HTTPGet: &corev1.HTTPGetAction{
-						// 			Path: "/healthz",
-						// 			Port: intstr.IntOrString{Type: intstr.Int, IntVal: 8080},
-						// 		},
-						// 	},
-						// 	InitialDelaySeconds: 5,
-						// 	PeriodSeconds:       2,
-						// },
+						// another side for the #1669 - trip readiness
+						// and via drain as soon as ctx.Done closed
+						// be aware of QuietPeriod!
+						ReadinessProbe: &corev1.Probe{
+							ProbeHandler: corev1.ProbeHandler{
+								HTTPGet: &corev1.HTTPGetAction{
+									Path: "/",
+									Port: intstr.FromInt(8080),
+								},
+							},
+							PeriodSeconds:    2,
+							FailureThreshold: 1,
+						},
 						Env: envs,
 						Ports: []corev1.ContainerPort{{
 							ContainerPort: 8080,

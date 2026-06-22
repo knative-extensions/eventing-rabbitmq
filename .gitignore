@@ -10,3 +10,6 @@ bin/
 .envrc
 .env
 .config
+
+# transient test output
+*.log

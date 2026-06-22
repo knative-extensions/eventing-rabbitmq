@@ -124,6 +124,22 @@ func TestBrokerDirectSelfSignedCerts(t *testing.T) {
 	env.Finish()
 }
 
+// TestBrokerIngressRollingRestart makes sure a rolling restart of the broker
+// ingress does not fail or drop in-flight events (issue #1669).
+func TestBrokerIngressRollingRestart(t *testing.T) {
+	t.Parallel()
+	ctx, env := global.Environment(
+		knative.WithKnativeNamespace(system.Namespace()),
+		knative.WithLoggingConfig,
+		knative.WithObservabilityConfig,
+		k8s.WithEventListener,
+	)
+	env.Test(ctx, t, RabbitMQCluster())
+	env.Test(ctx, t, RecorderFeature())
+	env.Test(ctx, t, BrokerIngressRollingRestartNoEventLoss())
+	env.Finish()
+}
+
 // TestBrokerDLQ makes sure a Broker delivers events to a DLQ.
 func TestBrokerDLQ(t *testing.T) {
 	t.Parallel()
