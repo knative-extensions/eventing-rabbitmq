@@ -32,6 +32,8 @@ import (
 	"knative.dev/pkg/ptr"
 )
 
+const defaultAdapterContainerName = "receive-adapter"
+
 type ReceiveAdapterArgs struct {
 	Image                string
 	Source               *v1alpha1.RabbitmqSource
@@ -142,6 +144,11 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 		}
 	}
 
+	containerName := defaultAdapterContainerName
+	if args.Source.Spec.AdapterContainerName != "" {
+		containerName = args.Source.Spec.AdapterContainerName
+	}
+
 	deployment := &v1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:         kmeta.ChildName(fmt.Sprintf("rabbitmqsource-%s-", args.Source.Name), string(args.Source.UID)),
@@ -167,7 +174,7 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 				Spec: corev1.PodSpec{
 					ServiceAccountName: args.Source.Spec.ServiceAccountName,
 					Containers: []corev1.Container{{
-						Name:            "receive-adapter",
+						Name:            containerName,
 						Image:           args.Image,
 						ImagePullPolicy: "IfNotPresent",
 						Env:             env,
