@@ -118,6 +118,9 @@ type RabbitmqSourceSpec struct {
 	// Adapter Deployment.
 	// +optional
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
+	// AdapterContainerName is the name of the container in the Receive Adapter Deployment.
+	// +optional
+	AdapterContainerName string `json:"adapterContainerName,omitempty"`
 }
 
 // SecretValueFromSource represents the source of a secret value
