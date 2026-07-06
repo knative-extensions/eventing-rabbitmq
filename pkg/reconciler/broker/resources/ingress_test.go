@@ -94,6 +94,16 @@ func TestMakeIngressDeployment(t *testing.T) {
 					Containers: []corev1.Container{{
 						Image: image,
 						Name:  "ingress",
+						ReadinessProbe: &corev1.Probe{
+							ProbeHandler: corev1.ProbeHandler{
+								HTTPGet: &corev1.HTTPGetAction{
+									Path: "/",
+									Port: intstr.FromInt(8080),
+								},
+							},
+							PeriodSeconds:    2,
+							FailureThreshold: 1,
+						},
 						Resources: corev1.ResourceRequirements{
 							Requests: corev1.ResourceList{
 								corev1.ResourceCPU:    resource.MustParse("50m"),

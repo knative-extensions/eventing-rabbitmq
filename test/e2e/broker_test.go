@@ -21,9 +21,14 @@ package e2e
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
 	brokere2e "knative.dev/eventing-rabbitmq/test/e2e/config/broker"
 	"knative.dev/eventing-rabbitmq/test/e2e/config/brokersecret"
 	"knative.dev/eventing-rabbitmq/test/e2e/config/brokertrigger"
@@ -32,6 +37,7 @@ import (
 	smokebrokere2e "knative.dev/eventing-rabbitmq/test/e2e/config/smoke/broker"
 	smokebrokertriggere2e "knative.dev/eventing-rabbitmq/test/e2e/config/smoke/brokertrigger"
 	brokerresources "knative.dev/eventing/test/rekt/resources/broker"
+	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/reconciler-test/pkg/environment"
 	"knative.dev/reconciler-test/pkg/eventshub"
 	"knative.dev/reconciler-test/pkg/feature"
@@ -74,6 +80,96 @@ func DirectTestBroker() *feature.Feature {
 			})
 	f.Teardown("Delete feature resources", f.DeleteResources)
 	return f
+}
+
+const ingressRestartEventCount = 60
+
+// start sending events and od restarts, all events must be sent and all must
+// be received. see #1669
+func BrokerIngressRollingRestartNoEventLoss() *feature.Feature {
+	f := new(feature.Feature)
+	prober := eventshub.NewProber()
+	prober.SetTargetResource(brokerresources.GVR(), "testbroker")
+	prober.SenderFullEvents(ingressRestartEventCount)
+
+	f.Setup("install test resources", brokertrigger.Install(brokertrigger.Topology{
+		Triggers: []duckv1.KReference{
+			{
+				Kind: "Service",
+				Name: "recorder",
+			},
+		},
+	}))
+	f.Setup("RabbitMQ broker goes ready", AllGoReady)
+	f.Requirement("start streaming events", prober.SenderInstall("source"))
+
+	const minSentBeforeRestart = 5
+	f.Requirement("rolling-restart the ingress mid-stream", rolloutRestartAndWait("testbroker-broker-ingress", prober, "source", minSentBeforeRestart))
+
+	f.Assert("ingress accepted every event during the restart", prober.AssertSentAll("source"))
+
+	f.Assert("recorder received every event", func(ctx context.Context, t feature.T) {
+		eventshub.StoreFromContext(ctx, "recorder").AssertExact(ctx, t, ingressRestartEventCount)
+	})
+
+	f.Teardown("Delete feature resources", f.DeleteResources)
+	return f
+}
+
+func rolloutRestartAndWait(deploymentName string, prober *eventshub.EventProber, senderPrefix string, minSent int) feature.StepFn {
+	return func(ctx context.Context, t feature.T) {
+		ns := environment.FromContext(ctx).Namespace()
+		deployments := kubeclient.Get(ctx).AppsV1().Deployments(ns)
+
+		if err := wait.PollUntilContextTimeout(ctx, time.Second, 2*time.Minute, true, func(ctx context.Context) (bool, error) {
+			_, err := deployments.Get(ctx, deploymentName, metav1.GetOptions{})
+			if apierrors.IsNotFound(err) {
+				return false, nil
+			}
+			return err == nil, err
+		}); err != nil {
+			t.Fatalf("ingress deployment %s never appeared: %v", deploymentName, err)
+		}
+
+		// wait until the sender is actually streaming so the rollout overlaps in-flight traffic.
+		if err := wait.PollUntilContextTimeout(ctx, 500*time.Millisecond, 2*time.Minute, true, func(ctx context.Context) (done bool, err error) {
+			defer func() {
+				if r := recover(); r != nil {
+					done = false
+				}
+			}()
+			return len(prober.SentBy(ctx, senderPrefix)) >= minSent, nil
+		}); err != nil {
+			t.Fatalf("sender %q did not reach %d sent events before rollout: %v", senderPrefix, minSent, err)
+		}
+
+		// Trigger a rollout the same way `kubectl rollout restart` does.
+		patch := []byte(fmt.Sprintf(
+			`{"spec":{"template":{"metadata":{"annotations":{"kubectl.kubernetes.io/restartedAt":%q}}}}}`,
+			time.Now().Format(time.RFC3339)))
+		updated, err := deployments.Patch(ctx, deploymentName, types.StrategicMergePatchType, patch, metav1.PatchOptions{})
+		if err != nil {
+			t.Fatalf("failed to trigger rollout restart of %s: %v", deploymentName, err)
+		}
+		targetGen := updated.Generation
+
+		if err := wait.PollUntilContextTimeout(ctx, time.Second, 3*time.Minute, true, func(ctx context.Context) (bool, error) {
+			d, err := deployments.Get(ctx, deploymentName, metav1.GetOptions{})
+			if err != nil {
+				return false, err
+			}
+			desired := int32(1)
+			if d.Spec.Replicas != nil {
+				desired = *d.Spec.Replicas
+			}
+			return d.Status.ObservedGeneration >= targetGen &&
+				d.Status.UpdatedReplicas == desired &&
+				d.Status.Replicas == desired &&
+				d.Status.AvailableReplicas == desired, nil
+		}); err != nil {
+			t.Fatalf("ingress rollout did not complete: %v", err)
+		}
+	}
 }
 
 func DirectTestBrokerConnectionSecret() *feature.Feature {

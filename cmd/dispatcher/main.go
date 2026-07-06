@@ -137,6 +137,8 @@ func main() {
 			return nil
 		},
 		rabbit.DialWrapper)
+	// close rmq connection the last
+	defer rmqHelper.Close()
 	for {
 		if err = d.ConsumeFromQueue(ctx, rmqHelper.GetConnection(), rmqHelper.GetChannel(), env.QueueName); err != nil {
 			if errors.Is(err, context.Canceled) {

@@ -90,6 +90,8 @@ func (a *Adapter) start(stopCh <-chan struct{}) error {
 		a.rmqHelper = rabbit.NewRabbitMQConnectionHandler(5, 1000, logger)
 		a.rmqHelper.Setup(a.context, rabbit.VHostHandler(a.config.RabbitURL, a.config.Vhost), rabbit.ChannelQoS, rabbit.DialWrapper)
 	}
+	// close rmq connection the last
+	defer a.rmqHelper.Close()
 	return a.PollForMessages(stopCh)
 }
 
