@@ -244,3 +244,39 @@ func TestMakeReceiveAdapter(t *testing.T) {
 		})
 	}
 }
+
+func TestMakeReceiveAdapterCustomContainerName(t *testing.T) {
+	parallelism := 10
+	url, _ := apis.ParseURL("sink-uri")
+
+	src := &v1alpha12.RabbitmqSource{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "source-name",
+			Namespace: "source-namespace",
+		},
+		Spec: v1alpha12.RabbitmqSourceSpec{
+			ServiceAccountName:   "source-svc-acct",
+			AdapterContainerName: "my-custom-adapter",
+			RabbitmqResourcesConfig: &v1alpha12.RabbitmqResourcesConfigSpec{
+				Predeclared:  true,
+				ExchangeName: "logs",
+				QueueName:    "",
+				Parallelism:  &parallelism,
+			},
+		},
+	}
+
+	got := MakeReceiveAdapter(&ReceiveAdapterArgs{
+		Image:                "test-image",
+		Source:               src,
+		Labels:               map[string]string{"test-key": "test-value"},
+		SinkURI:              url,
+		RabbitMQSecretName:   secretName,
+		RabbitMQCASecretName: "",
+		BrokerUrlSecretKey:   brokerURLKey,
+	})
+
+	if got.Spec.Template.Spec.Containers[0].Name != "my-custom-adapter" {
+		t.Errorf("expected container name 'my-custom-adapter', got %q", got.Spec.Template.Spec.Containers[0].Name)
+	}
+}
