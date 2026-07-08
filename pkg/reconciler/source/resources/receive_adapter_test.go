@@ -255,8 +255,8 @@ func TestMakeReceiveAdapterCustomContainerName(t *testing.T) {
 			Namespace: "source-namespace",
 		},
 		Spec: v1alpha12.RabbitmqSourceSpec{
-			ServiceAccountName:    "source-svc-acct",
-			AdapterContainerName:  "my-custom-adapter",
+			ServiceAccountName:   "source-svc-acct",
+			AdapterContainerName: "my-custom-adapter",
 			RabbitmqResourcesConfig: &v1alpha12.RabbitmqResourcesConfigSpec{
 				Predeclared:  true,
 				ExchangeName: "logs",
