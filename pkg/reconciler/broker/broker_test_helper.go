@@ -124,7 +124,7 @@ func WithBrokerReady(b *v1.Broker) {
 // WithExchangeFailed sets exchange condition to failed.
 func WithExchangeFailed(reason, msg string) BrokerOption {
 	return func(b *v1.Broker) {
-		MarkExchangeFailed(&b.Status, reason, msg)
+		MarkExchangeFailed(&b.Status, reason, "%s", msg)
 	}
 }
 
@@ -138,7 +138,7 @@ func WithExchangeReady() BrokerOption {
 // WithDLXFailed sets DLX condition to failed.
 func WithDLXFailed(reason, msg string) BrokerOption {
 	return func(b *v1.Broker) {
-		MarkDLXFailed(&b.Status, reason, msg)
+		MarkDLXFailed(&b.Status, reason, "%s", msg)
 	}
 }
 
@@ -166,7 +166,7 @@ func WithDeadLetterSinkReady() BrokerOption {
 // WithDeadLetterSinkFailed sets DeadLetterSink condition to failed.
 func WithDeadLetterSinkFailed(reason, msg string) BrokerOption {
 	return func(b *v1.Broker) {
-		MarkDeadLetterSinkFailed(&b.Status, reason, msg)
+		MarkDeadLetterSinkFailed(&b.Status, reason, "%s", msg)
 	}
 }
 
@@ -185,7 +185,7 @@ func WithDeadLetterSinkResolvedSucceeded(addr *duckv1.Addressable) BrokerOption 
 
 func WithDeadLetterSinkResolvedFailed(reason, msg string) BrokerOption {
 	return func(b *v1.Broker) {
-		b.Status.MarkDeadLetterSinkResolvedFailed(reason, msg)
+		b.Status.MarkDeadLetterSinkResolvedFailed(reason, "%s", msg)
 	}
 }
 
@@ -205,14 +205,14 @@ func WithSecretReady() BrokerOption {
 // WithSecretFailed sets secret condition to ready.
 func WithSecretFailed(reason, msg string) BrokerOption {
 	return func(b *v1.Broker) {
-		MarkSecretFailed(&b.Status, reason, msg)
+		MarkSecretFailed(&b.Status, reason, "%s", msg)
 	}
 }
 
 // WithIngressFailed calls .Status.MarkIngressFailed on the Broker.
 func WithIngressFailed(reason, msg string) BrokerOption {
 	return func(b *v1.Broker) {
-		MarkIngressFailed(&b.Status, reason, msg)
+		MarkIngressFailed(&b.Status, reason, "%s", msg)
 	}
 }
 
