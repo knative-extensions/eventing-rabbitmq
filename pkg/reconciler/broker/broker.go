@@ -18,7 +18,6 @@ package broker
 
 import (
 	"context"
-	"fmt"
 
 	"k8s.io/utils/ptr"
 
@@ -269,12 +268,12 @@ func (r *Reconciler) reconcileRabbitResources(ctx context.Context, b *eventingv1
 	args.Name = naming.BrokerExchangeName(b, false)
 	exchange, err := r.rabbit.ReconcileExchange(ctx, args)
 	if err != nil {
-		MarkExchangeFailed(&b.Status, "ExchangeFailure", fmt.Sprintf("Failed to reconcile exchange %q: %s", naming.BrokerExchangeName(args.Broker, false), err))
+		MarkExchangeFailed(&b.Status, "ExchangeFailure", "Failed to reconcile exchange %q: %s", naming.BrokerExchangeName(args.Broker, false), err)
 		return err
 	}
 	if !exchange.Ready {
 		logging.FromContext(ctx).Warnf("Exchange %q is not ready", exchange.Name)
-		MarkExchangeFailed(&b.Status, "ExchangeFailure", fmt.Sprintf("exchange %q is not ready", exchange.Name))
+		MarkExchangeFailed(&b.Status, "ExchangeFailure", "exchange %q is not ready", exchange.Name)
 		return nil
 	}
 	args.Name = naming.BrokerExchangeName(b, true)
@@ -302,12 +301,12 @@ func (r *Reconciler) reconcileRabbitResources(ctx context.Context, b *eventingv1
 func (r *Reconciler) reconcileDeadLetterResources(ctx context.Context, b *eventingv1.Broker, args *rabbit.ExchangeArgs) (error, bool) {
 	dlxExchange, err := r.rabbit.ReconcileExchange(ctx, args)
 	if err != nil {
-		MarkExchangeFailed(&b.Status, "ExchangeFailure", fmt.Sprintf("Failed to reconcile DLX exchange %q: %s", naming.BrokerExchangeName(args.Broker, true), err))
+		MarkExchangeFailed(&b.Status, "ExchangeFailure", "Failed to reconcile DLX exchange %q: %s", naming.BrokerExchangeName(args.Broker, true), err)
 		return err, false
 	}
 	if !dlxExchange.Ready {
 		logging.FromContext(ctx).Warnf("DLX exchange %q is not ready", dlxExchange.Name)
-		MarkExchangeFailed(&b.Status, "ExchangeFailure", fmt.Sprintf("DLX exchange %q is not ready", dlxExchange.Name))
+		MarkExchangeFailed(&b.Status, "ExchangeFailure", "DLX exchange %q is not ready", dlxExchange.Name)
 		return nil, false
 	}
 
@@ -329,12 +328,12 @@ func (r *Reconciler) reconcileDeadLetterResources(ctx context.Context, b *eventi
 		QueueType:                queueType,
 	})
 	if err != nil {
-		MarkDLXFailed(&b.Status, "QueueFailure", fmt.Sprintf("Failed to reconcile Dead Letter Queue %q : %s", naming.CreateBrokerDeadLetterQueueName(b), err))
+		MarkDLXFailed(&b.Status, "QueueFailure", "Failed to reconcile Dead Letter Queue %q : %s", naming.CreateBrokerDeadLetterQueueName(b), err)
 		return err, false
 	}
 	if !queue.Ready {
 		logging.FromContext(ctx).Warnf("Queue %q is not ready", queue.Name)
-		MarkDLXFailed(&b.Status, "QueueFailure", fmt.Sprintf("Dead Letter Queue %q is not ready", queue.Name))
+		MarkDLXFailed(&b.Status, "QueueFailure", "Dead Letter Queue %q is not ready", queue.Name)
 		return nil, false
 	}
 	MarkDLXReady(&b.Status)
@@ -355,12 +354,12 @@ func (r *Reconciler) reconcileDeadLetterResources(ctx context.Context, b *eventi
 	})
 	if err != nil {
 		// NB, binding has the same name as the queue.
-		MarkDeadLetterSinkFailed(&b.Status, "DLQ binding", fmt.Sprintf("Failed to reconcile DLQ binding %q : %s", bindingName, err))
+		MarkDeadLetterSinkFailed(&b.Status, "DLQ binding", "Failed to reconcile DLQ binding %q : %s", bindingName, err)
 		return err, false
 	}
 	if !binding.Ready {
 		logging.FromContext(ctx).Warnf("Binding %q is not ready", binding.Name)
-		MarkDeadLetterSinkFailed(&b.Status, "DLQ binding", fmt.Sprintf("DLQ binding %q is not ready", binding.Name))
+		MarkDeadLetterSinkFailed(&b.Status, "DLQ binding", "DLQ binding %q is not ready", binding.Name)
 		return nil, false
 	}
 
@@ -376,12 +375,12 @@ func (r *Reconciler) reconcileDeadLetterResources(ctx context.Context, b *eventi
 		BrokerUID:                string(b.GetUID()),
 	})
 	if err != nil {
-		MarkDeadLetterSinkFailed(&b.Status, "PolicyFailure", fmt.Sprintf("Failed to reconcile RabbitMQ Policy %q : %s", policyName, err))
+		MarkDeadLetterSinkFailed(&b.Status, "PolicyFailure", "Failed to reconcile RabbitMQ Policy %q : %s", policyName, err)
 		return err, false
 	}
 	if !policy.Ready {
 		logging.FromContext(ctx).Warnf("RabbitMQ Policy %q is not ready", policyName)
-		MarkDeadLetterSinkFailed(&b.Status, "PolicyFailure", fmt.Sprintf("RabbitMQ Policy %q is not ready", policyName))
+		MarkDeadLetterSinkFailed(&b.Status, "PolicyFailure", "RabbitMQ Policy %q is not ready", policyName)
 		return nil, false
 	}
 

@@ -157,12 +157,12 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1.Trigger) p
 		}
 		dlx, err := r.rabbit.ReconcileExchange(ctx, args)
 		if err != nil {
-			t.Status.MarkDependencyFailed("ExchangeFailure", fmt.Sprintf("Failed to reconcile DLX exchange %q: %s", naming.TriggerDLXExchangeName(t), err))
+			t.Status.MarkDependencyFailed("ExchangeFailure", "Failed to reconcile DLX exchange %q: %s", naming.TriggerDLXExchangeName(t), err)
 			return err
 		}
 		if !dlx.Ready {
 			logging.FromContext(ctx).Warnf("DLX exchange %q is not ready", dlx.Name)
-			t.Status.MarkDependencyFailed("ExchangeFailure", fmt.Sprintf("DLX exchange %q is not ready", dlx.Name))
+			t.Status.MarkDependencyFailed("ExchangeFailure", "DLX exchange %q is not ready", dlx.Name)
 			return nil
 		}
 
