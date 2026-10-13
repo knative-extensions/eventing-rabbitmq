@@ -1258,8 +1258,8 @@ k8s.io/utils/net
 k8s.io/utils/pointer
 k8s.io/utils/ptr
 k8s.io/utils/trace
-# knative.dev/eventing v0.50.1-0.20261009134929-2cf34602ed80
-## explicit; go 1.25.0
+# knative.dev/eventing v0.50.1-0.20261013110331-6fad7f57a5f0
+## explicit; go 1.26.0
 knative.dev/eventing/cmd/heartbeats
 knative.dev/eventing/pkg/adapter/v2
 knative.dev/eventing/pkg/adapter/v2/util/crstatusevent
@@ -1397,7 +1397,7 @@ knative.dev/eventing/test/test_images/print
 # knative.dev/hack v0.0.0-20260428014158-b2a37f1b6e7b
 ## explicit; go 1.24
 knative.dev/hack
-# knative.dev/pkg v0.0.0-20261009131428-795a0f63c441
+# knative.dev/pkg v0.0.0-20261013112044-81e236f55748
 ## explicit; go 1.26.0
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
