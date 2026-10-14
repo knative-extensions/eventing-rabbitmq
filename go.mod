@@ -21,8 +21,8 @@ require (
 	k8s.io/code-generator v0.36.5
 	k8s.io/kube-openapi v0.0.0-20260721132016-d427ff9ee9ad
 	knative.dev/eventing v0.50.1-0.20261013110331-6fad7f57a5f0
-	knative.dev/hack v0.0.0-20260428014158-b2a37f1b6e7b
-	knative.dev/pkg v0.0.0-20261013112044-81e236f55748
+	knative.dev/hack v0.0.0-20261013205032-c7ef19b7f274
+	knative.dev/pkg v0.0.0-20261013193643-0795cb87d2bd
 	knative.dev/reconciler-test v0.0.0-20261012140414-fde2b5c55940
 	sigs.k8s.io/controller-runtime v0.23.3
 )
