@@ -1101,10 +1101,10 @@ k8s.io/utils v0.0.0-20260707023825-cf1189d6abe3 h1:jVkFFVfXdXP74B/zbO3hM3hpSFD0x
 k8s.io/utils v0.0.0-20260707023825-cf1189d6abe3/go.mod h1:M2s5JB1lIYP3jzZdorPLHXIPJzt9vv2muW5a6L9DtNM=
 knative.dev/eventing v0.50.1-0.20261013110331-6fad7f57a5f0 h1:H9BLJcqRd40B588n7QfnBDtrhxJQE77ZJfiLaqlNRuk=
 knative.dev/eventing v0.50.1-0.20261013110331-6fad7f57a5f0/go.mod h1:zsBOyUs5bb4U/+jDW3afqpY45sVZnTyaOZcahJ6m1Ic=
-knative.dev/hack v0.0.0-20260428014158-b2a37f1b6e7b h1:MvbV2F2BdI8qKrYYUhDwbUZbX0BAYRSIpXM2TOtTvs0=
-knative.dev/hack v0.0.0-20260428014158-b2a37f1b6e7b/go.mod h1:L5RzHgbvam0u8QFHfzCX6MKxu/a/gIGEdaRBqNiVbl0=
-knative.dev/pkg v0.0.0-20261013112044-81e236f55748 h1:yvBVRRjr2lA4ZbdmgR0NAROwm2nit123S0zHdeBX3ek=
-knative.dev/pkg v0.0.0-20261013112044-81e236f55748/go.mod h1:Y0IP1sZCnEcIrKXcM9tSqO0a5326ISSngHWc/iCbzlo=
+knative.dev/hack v0.0.0-20261013205032-c7ef19b7f274 h1:w/K53tSwQ8LaTA8RDJIVc06+5Fg1rM9EeqIrYaZ4tj0=
+knative.dev/hack v0.0.0-20261013205032-c7ef19b7f274/go.mod h1:L5RzHgbvam0u8QFHfzCX6MKxu/a/gIGEdaRBqNiVbl0=
+knative.dev/pkg v0.0.0-20261013193643-0795cb87d2bd h1:z6f9oaPeMBaxQSbqLix2xF0AR0CxhHhR+Npqh/1KSTA=
+knative.dev/pkg v0.0.0-20261013193643-0795cb87d2bd/go.mod h1:Y0IP1sZCnEcIrKXcM9tSqO0a5326ISSngHWc/iCbzlo=
 knative.dev/reconciler-test v0.0.0-20261012140414-fde2b5c55940 h1:Y0u7q2OPdGM/xb2vOIAK7+Dr4ZGbFC/NCIXN6dkKmxM=
 knative.dev/reconciler-test v0.0.0-20261012140414-fde2b5c55940/go.mod h1:EWanKYmrTugi2eiTn7vuc4wC34nwGbl+jj0LKXrjp/0=
 rsc.io/binaryregexp v0.2.0/go.mod h1:qTv7/COck+e2FymRvadv62gMdZztPaShugOCi3I+8D8=
