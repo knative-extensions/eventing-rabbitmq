@@ -238,12 +238,19 @@ func (r *RabbitMQConnectionHandler) GetChannel() RabbitMQChannelInterface {
 	return r.Channel
 }
 
-func ChannelQoS(connection RabbitMQConnectionInterface, channel RabbitMQChannelInterface) error {
-	return channel.Qos(
-		100,
-		0,
-		false,
-	)
+// MinPrefetch is the prefetch floor; it is raised to the worker count when that is larger.
+const MinPrefetch = 100
+
+// PrefetchForWorkers returns a prefetch count that keeps every worker busy.
+func PrefetchForWorkers(workers int) int {
+	return max(MinPrefetch, workers)
+}
+
+// ChannelQoS returns a channel config function that sets the prefetch count sized for the given worker count.
+func ChannelQoS(workers int) func(RabbitMQConnectionInterface, RabbitMQChannelInterface) error {
+	return func(connection RabbitMQConnectionInterface, channel RabbitMQChannelInterface) error {
+		return channel.Qos(PrefetchForWorkers(workers), 0, false)
+	}
 }
 
 func ChannelConfirm(connection RabbitMQConnectionInterface, channel RabbitMQChannelInterface) error {
