@@ -127,7 +127,7 @@ func main() {
 		env.RabbitURL,
 		env.RabbitMQVhost),
 		func(c rabbit.RabbitMQConnectionInterface, ch rabbit.RabbitMQChannelInterface) error {
-			if err := rabbit.ChannelQoS(c, ch); err != nil {
+			if err := rabbit.ChannelQoS(env.Parallelism)(c, ch); err != nil {
 				return err
 			}
 
