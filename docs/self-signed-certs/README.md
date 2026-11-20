@@ -10,11 +10,13 @@ The certificate will need to have additional Subject Alternative Names (SAN) if 
 - <RABBITMQ_CLUSTER_NAME>.<RABBITMQ_CLUSTER_NAMESPACE>.svc.<KUBERNETES_CLUSTER_DOMAIN>
 
 Create a Kubernetes Secret with the data from the server certificate and private key. The <NAMESPACE> should be the namespace of the RabbitMQ Cluster if using cluster operator or the namespace of the Secret when connecting to an external RabbitMQ instance:
+
 ```
 kubectl -n <NAMESPACE> create secret tls <TLS_SECRET_NAME> --cert=<path-to-server-cert> --key=<path-to-server-key>
 ```
 
 Create a Kubernetes Secret in the same namespace as the RabbitMQ cluster with the CA certificate of the signing entity:
+
 ```
 kubectl -n <NAMESPACE> create secret generic <CA_SECRET_NAME> --from-file=ca.crt=<path-to-ca-crt>
 ```
@@ -26,6 +28,7 @@ Follow the instruction [here](https://www.rabbitmq.com/kubernetes/operator/tls-t
 ## Cluster Operator Setup
 
 The RabbitMQ cluster's spec will need to include references to the TLS Secret as well as the CA certificate Secret for a self-signed setup:
+
 ```
 apiVersion: rabbitmq.com/v1beta1
 kind: RabbitmqCluster

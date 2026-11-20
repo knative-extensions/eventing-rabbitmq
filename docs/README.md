@@ -12,9 +12,11 @@ See [Install and Demo](broker/)
 See [Install and Demo](source/)
 
 ## Configuring self-signed certificates
+
 See [Self-Signed Certificates](self-signed-certs/)
 
 ## Configuring pod resources
+
 See [Pod Resources](pod-resources) to configure the resource requests and limits for pods
 
 ## Contributing

@@ -7,9 +7,11 @@
 - Set `KO_DOCKER_REPO` to an accessible container registry
 
 ## Overview
+
 The following demo highlights the benefits and tradeoffs of setting the parallelism to > 1 and leaving it as 1.
 
 #### Configuration
+
 - Create a RabbitMQ cluster and broker
 - Create a source that will send 10 events all at once to a broker
 - Create a first-in-first-out (FIFO) trigger with parallelism unset (defaults to 1)
@@ -18,24 +20,29 @@ The following demo highlights the benefits and tradeoffs of setting the parallel
 - Observe the results through the logs of the sinks
 
 #### Components
+
 New components introduced in this demo:
 
 - [event-sender](./event-sender)
-Is used to send `n` messages to a broker.
+  Is used to send `n` messages to a broker.
 
 - [event-display](./event-display)
-Is used as a "slow" sink. It will wait for `delay` number of seconds for each event it consumes.
+  Is used as a "slow" sink. It will wait for `delay` number of seconds for each event it consumes.
 
 #### Steps
+
 Execute the following steps/commands from the root of this repo.
 
 #### Create a namespace
+
 Create a new namespace for the demo. This will make cleanup easier.
 
 ```sh
 kubectl apply -f samples/trigger-customizations/100-namespace.yaml
 ```
+
 or
+
 ```sh
 kubectl create ns trigger-customizations-sample
 ```
@@ -45,7 +52,9 @@ kubectl create ns trigger-customizations-sample
 ```sh
 kubectl apply -f samples/trigger-customizations/200-rabbitmq.yaml
 ```
+
 or
+
 ```sh
 kubectl apply -f - << EOF
 apiVersion: rabbitmq.com/v1beta1
@@ -70,13 +79,14 @@ EOF
 
 _NOTE_: here we set ERL_MAX_PORTS to prevent unnecessary memory allocation by RabbitMQ and potential memory limit problems. [Read more here](https://github.com/rabbitmq/cluster-operator/issues/959)
 
-
 ### Create the RabbitMQ Broker Config
 
 ```sh
 kubectl apply -f samples/trigger-customizations/250-broker-config.yaml
 ```
+
 or
+
 ```sh
 kubectl apply -f - << EOF
 apiVersion: eventing.knative.dev/v1alpha1
@@ -93,10 +103,13 @@ EOF
 ```
 
 #### Create a Broker
+
 ```sh
 kubectl apply -f samples/trigger-customizations/300-broker.yaml
 ```
+
 or
+
 ```sh
 kubectl apply -f - << EOF
 apiVersion: eventing.knative.dev/v1
@@ -119,7 +132,9 @@ EOF
 ```sh
 kubectl apply -f samples/trigger-customizations/400-trigger.yaml
 ```
+
 or
+
 ```sh
 kubectl apply -f - << EOF
 apiVersion: eventing.knative.dev/v1
@@ -158,11 +173,15 @@ EOF
 ```
 
 #### Create the 2 Sinks
+
 NOTE: ko is used here to create the custom images. Ensure `KO_DOCKER_REPO` is set to an accessible repository for the images.
+
 ```sh
 ko apply -f samples/trigger-customizations/500-sink.yaml
 ```
+
 or
+
 ```sh
 ko apply -f - << EOF
 apiVersion: serving.knative.dev/v1
@@ -200,7 +219,9 @@ EOF
 ```
 
 #### Wait for resources to become ready
+
 Before sending messages, wait for all relevant resources to become Ready
+
 ```sh
 kubectl get broker -n trigger-customizations-sample
 NAME      URL                                                            AGE   READY   REASON
@@ -218,6 +239,7 @@ high-throughput-event-display   http://high-throughput-event-display.trigger-cus
 ```
 
 #### Create the Source
+
 Create the source to start sending messages.
 <br/>
 NOTE: ensure the `--sink` is set to the broker's ingress URL.
@@ -225,7 +247,9 @@ NOTE: ensure the `--sink` is set to the broker's ingress URL.
 ```sh
 ko apply -f samples/trigger-customizations/600-event-sender.yaml
 ```
+
 or
+
 ```sh
 ko apply -f - << EOF
 apiVersion: v1
@@ -246,6 +270,7 @@ EOF
 ```
 
 ### Start watching the results
+
 Once the event-display pods are up and running, watch for logs in the FIFO event display. Once the sender has been created (and after the delay), you should see
 events being consumed in order. But this sink will take longer to process all the incoming events.
 
@@ -281,12 +306,15 @@ processed event with ID: 5
 ```
 
 #### Cleanup
+
 Delete the trigger-customizations-sample namespace to easily remove all the created resources
 
 ```sh
 kubectl delete -f samples/trigger-customizations/100-namespace.yaml
 ```
+
 or
+
 ```sh
 kubectl delete ns trigger-customizations-sample
 ```

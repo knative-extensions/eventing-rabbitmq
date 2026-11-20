@@ -7,7 +7,7 @@ When topologies with Brokers, Trigger and RabbitMQSources are created, they crea
 The following annotations are available to be attached to Brokers, Triggers and RabbitMQSources. Click [here](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/) for more information on Kubernetes resource requirements.
 
 | Annotation                                   | Usage                             |
-|----------------------------------------------|-----------------------------------|
+| -------------------------------------------- | --------------------------------- |
 | rabbitmq.eventing.knative.dev/cpu-request    | Requested CPU resource units      |
 | rabbitmq.eventing.knative.dev/cpu-limit      | Upper limit of CPU resource units |
 | rabbitmq.eventing.knative.dev/memory-request | Requested memory                  |
@@ -18,7 +18,7 @@ The following annotations are available to be attached to Brokers, Triggers and 
 The above annotations can be used on Brokers, Triggers and RabbitMQSources. The following table describes which pods will get affected when the annotations are used.
 
 | Kind           | Pods Affected                                                                 |
-|----------------|-------------------------------------------------------------------------------|
+| -------------- | ----------------------------------------------------------------------------- |
 | Broker         | Ingress pod. DLQ dispatcher pod if a Dead Letter Queue (DLQ) is configured    |
 | Trigger        | Dispatcher pod. DLQ dispatcher pod if a Dead Letter Queue (DLQ) is configured |
 | RabbitMQSource | Receiver adapter pod.                                                         |
