@@ -49,7 +49,9 @@ executed from the root of this repo.
 ```sh
 kubectl apply -f samples/quick-setup/100-namespace.yaml
 ```
+
 or
+
 ```sh
 kubectl create ns quick-setup-sample
 ```
@@ -61,7 +63,9 @@ Create a RabbitMQ Cluster:
 ```sh
 kubectl apply -f samples/quick-setup/200-rabbitmq.yaml
 ```
+
 or
+
 ```
 kubectl apply -f - << EOF
 apiVersion: rabbitmq.com/v1beta1
@@ -86,8 +90,8 @@ EOF
 
 _NOTE_: here we set ERL_MAX_PORTS to prevent unnecessary memory allocation by RabbitMQ and potential memory limit problems. [Read more here](https://github.com/rabbitmq/cluster-operator/issues/959)
 
-
 After this two steps you are ready to the next steps:
+
 - [Eventing RabbitMQ Broker Setup](#eventing-rabbitmq-broker-setup)
 - [Eventing RabbitMQ Source Setup](#eventing-rabbitmq-source-setup)
 
@@ -98,7 +102,9 @@ After this two steps you are ready to the next steps:
 ```sh
 kubectl apply -f samples/quick-setup/broker-files/100-broker-config.yaml
 ```
+
 or
+
 ```sh
 kubectl apply -f - << EOF
 apiVersion: eventing.knative.dev/v1alpha1
@@ -128,7 +134,9 @@ Note: Configuring queue type is only supported when using the `RabbitmqBrokerCon
 ```sh
 kubectl apply -f samples/quick-setup/broker-files/200-broker.yaml
 ```
+
 or
+
 ```sh
 kubectl apply -f - << EOF
 apiVersion: eventing.knative.dev/v1
@@ -188,7 +196,9 @@ Then create the Knative Serving Service which will receive any failed events.
 ```sh
 kubectl apply -f samples/quick-setup/300-sink.yaml
 ```
+
 or
+
 ```sh
 kubectl apply -f - << EOF
 apiVersion: serving.knative.dev/v1
@@ -218,7 +228,9 @@ default   http://default-broker-ingress.quick-setup-sample.svc.cluster.local   2
 ```sh
 kubectl apply -f samples/quick-setup/broker-files/300-ping-sources.yaml
 ```
+
 or
+
 ```sh
 kubectl apply -f - << EOF
 apiVersion: sources.knative.dev/v1
@@ -262,7 +274,9 @@ EOF
 ```sh
 kubectl apply -f samples/quick-setup/broker-files/400-trigger.yaml
 ```
+
 or
+
 ```sh
 kubectl apply -f - << EOF
 apiVersion: eventing.knative.dev/v1
@@ -294,7 +308,9 @@ EOF
 ```sh
 kubectl apply -f samples/quick-setup/broker-files/500-failer.yaml
 ```
+
 or
+
 ```sh
 kubectl apply -f 'https://storage.googleapis.com/knative-nightly/eventing-rabbitmq/latest/failer.yaml' -n quick-setup-sample
 ```
@@ -383,7 +399,9 @@ Then create the Knative Serving Service which will receive translated events.
 ```sh
 kubectl apply -f samples/quick-setup/300-sink.yaml
 ```
+
 or
+
 ```sh
 kubectl apply -f - << EOF
 apiVersion: serving.knative.dev/v1
@@ -404,7 +422,9 @@ EOF
 ```sh
 kubectl apply -f samples/quick-setup/source-files/200-source.yaml
 ```
+
 or
+
 ```sh
 kubectl apply -f - << EOF
 apiVersion: sources.knative.dev/v1alpha1

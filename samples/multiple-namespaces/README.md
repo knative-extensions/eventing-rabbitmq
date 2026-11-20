@@ -15,7 +15,9 @@ What this demo shows is how to manage multiple namespaces with one single Rabbit
 ```sh
 kubectl apply -f samples/multiple-namespaces/100-namespaces.yaml
 ```
+
 or
+
 ```sh
 kubectl ns create ping pong
 ```
@@ -55,6 +57,7 @@ Data,
     ...
   }
 ```
+
 ```sh
 kubectl -n pong -l='serving.knative.dev/service=pong-cloudevents-player-rabbitmq' logs -c user-container
 ☁️  cloudevents.Event
@@ -77,4 +80,3 @@ Data,
 ```sh
 kubectl delete -f samples/multiple-namespaces/
 ```
-

@@ -15,7 +15,9 @@ executed from the root of this repo.
 ```sh
 kubectl apply -f samples/external-cluster/100-namespace.yaml
 ```
+
 or
+
 ```sh
 kubectl create ns external-cluster-sample
 ```
@@ -27,7 +29,9 @@ This are the credentials from your external RabbitMQ instance
 ```sh
 kubectl apply -f samples/external-cluster/200-secret.yaml
 ```
+
 or
+
 ```sh
 kubectl apply -f - << EOF
 apiVersion: v1
@@ -46,6 +50,7 @@ EOF
 ```
 
 After this two steps you are ready to the next steps:
+
 - [Eventing RabbitMQ Broker Setup](#eventing-rabbitmq-broker-setup)
 - [Eventing RabbitMQ Source Setup](#eventing-rabbitmq-source-setup)
 
@@ -91,7 +96,9 @@ Demo creates a `Trigger` that wires `PingSource` events to go to the `failer`.
 ```sh
 kubectl apply -f samples/external-cluster/broker-files/100-broker-config.yaml
 ```
+
 or
+
 ```sh
 kubectl apply -f - << EOF
 apiVersion: eventing.knative.dev/v1alpha1
@@ -113,7 +120,9 @@ EOF
 ```sh
 kubectl apply -f samples/external-cluster/broker-files/200-broker.yaml
 ```
+
 or
+
 ```sh
 kubectl apply -f - << EOF
 apiVersion: eventing.knative.dev/v1
@@ -146,7 +155,9 @@ Then create the Knative Serving Service which will receive any failed events.
 ```sh
 kubectl apply -f samples/external-cluster/300-sink.yaml
 ```
+
 or
+
 ```sh
 kubectl apply -f - << EOF
 apiVersion: serving.knative.dev/v1
@@ -176,7 +187,9 @@ default   http://default-broker-ingress.external-cluster-sample.svc.cluster.loca
 ```sh
 kubectl apply -f samples/external-cluster/broker-files/300-ping-sources.yaml
 ```
+
 or
+
 ```sh
 kubectl apply -f - << EOF
 apiVersion: sources.knative.dev/v1
@@ -220,7 +233,9 @@ EOF
 ```sh
 kubectl apply -f samples/external-cluster/broker-files/400-trigger.yaml
 ```
+
 or
+
 ```sh
 kubectl apply -f - << EOF
 apiVersion: eventing.knative.dev/v1
@@ -252,7 +267,9 @@ EOF
 ```sh
 kubectl apply -f samples/external-cluster/broker-files/500-failer.yaml
 ```
+
 or
+
 ```sh
 kubectl apply -f 'https://storage.googleapis.com/knative-nightly/eventing-rabbitmq/latest/failer.yaml' -n external-cluster-sample
 ```
@@ -347,7 +364,9 @@ Then create the Knative Serving Service which will receive translated events.
 ```sh
 kubectl apply -f samples/external-cluster/300-sink.yaml
 ```
+
 or
+
 ```sh
 kubectl apply -f - << EOF
 apiVersion: serving.knative.dev/v1
@@ -368,7 +387,9 @@ EOF
 ```sh
 kubectl apply -f samples/external-cluster/source-files/200-source.yaml
 ```
+
 or
+
 ```sh
 kubectl apply -f - << EOF
 apiVersion: sources.knative.dev/v1alpha1
