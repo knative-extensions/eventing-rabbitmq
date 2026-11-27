@@ -26,7 +26,6 @@ make kind-cluster
 
 This will install `kind` to ./bin and initialize the cluster. `Kind` uses [kind.yaml](../test/e2e/kind.yaml) as cluster configuration.
 
-
 ### Install Knative, Certificate manager, RabbitMQ
 
 ```

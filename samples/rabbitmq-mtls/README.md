@@ -18,7 +18,9 @@ executed from the root of this repo.
 ```sh
 kubectl apply -f samples/rabbitmq-mtls/100-namespace.yaml
 ```
+
 or
+
 ```sh
 kubectl create ns rabbitmq-mtls-sample
 ```
@@ -30,16 +32,19 @@ kubectl apply -f samples/rabbitmq-mtls/200-selfsigned-issuer-and-cert.yaml
 ```
 
 We'll need this secrets in the `cert-manager` namespace for the `ClusterIssuer` to work:
+
 ```sh
 kubectl get secret ca-secret --namespace=rabbitmq-mtls-sample -oyaml | grep -v '^\s*namespace:\s' | kubectl apply --namespace=cert-manager -f -
 ```
 
 We'll need this secrets in the `rabbitmq-system` namespace too:
+
 ```sh
 kubectl get secret ca-secret --namespace=rabbitmq-mtls-sample -oyaml | grep -v '^\s*namespace:\s' | kubectl apply --namespace=rabbitmq-system -f -
 ```
 
 Now let's create the certificate:
+
 ```sh
 kubectl apply -f samples/rabbitmq-mtls/300-cluster-issuer-and-cert.yaml
 ```
@@ -51,7 +56,9 @@ Create a RabbitMQ Cluster:
 ```sh
 kubectl apply -f samples/rabbitmq-mtls/400-rabbitmq.yaml
 ```
+
 or
+
 ```
 kubectl apply -f - << EOF
 apiVersion: rabbitmq.com/v1beta1
@@ -77,6 +84,7 @@ EOF
 For the RabbitMQ Topology Operator to recognize the CA we need to patch it as explained here: [RabbitMQ Topology Operator to trust the CA](https://www.rabbitmq.com/kubernetes/operator/tls-topology-operator.html)
 
 TL;DR:
+
 ```sh
 kubectl -n rabbitmq-system patch deployment messaging-topology-operator --patch "spec:
   template:
@@ -95,6 +103,7 @@ kubectl -n rabbitmq-system patch deployment messaging-topology-operator --patch 
 ```
 
 After this steps you are ready to the next steps:
+
 - [Eventing RabbitMQ Broker Setup](#eventing-rabbitmq-broker-setup)
 - [Eventing RabbitMQ Source Setup](#eventing-rabbitmq-source-setup)
 
@@ -139,7 +148,9 @@ Demo creates a `Trigger` that wires `PingSource` events to go to the `failer`.
 ```sh
 kubectl apply -f samples/rabbitmq-mtls/broker-files/100-broker-config.yaml
 ```
+
 or
+
 ```sh
 kubectl apply -f - << EOF
 apiVersion: eventing.knative.dev/v1alpha1
@@ -161,7 +172,9 @@ EOF
 ```sh
 kubectl apply -f samples/rabbitmq-mtls/broker-files/200-broker.yaml
 ```
+
 or
+
 ```sh
 kubectl apply -f - << EOF
 apiVersion: eventing.knative.dev/v1
@@ -194,7 +207,9 @@ Then create the Knative Serving Service which will receive any failed events.
 ```sh
 kubectl apply -f samples/rabbitmq-mtls/500-sink.yaml
 ```
+
 or
+
 ```sh
 kubectl apply -f - << EOF
 apiVersion: serving.knative.dev/v1
@@ -224,7 +239,9 @@ default   http://default-broker-ingress.rabbitmq-mtls-sample.svc.cluster.local  
 ```sh
 kubectl apply -f samples/rabbitmq-mtls/broker-files/300-ping-sources.yaml
 ```
+
 or
+
 ```sh
 kubectl apply -f - << EOF
 apiVersion: sources.knative.dev/v1
@@ -268,7 +285,9 @@ EOF
 ```sh
 kubectl apply -f samples/rabbitmq-mtls/broker-files/400-trigger.yaml
 ```
+
 or
+
 ```sh
 kubectl apply -f - << EOF
 apiVersion: eventing.knative.dev/v1
@@ -300,7 +319,9 @@ EOF
 ```sh
 kubectl apply -f samples/rabbitmq-mtls/broker-files/500-failer.yaml
 ```
+
 or
+
 ```sh
 kubectl apply -f 'https://storage.googleapis.com/knative-nightly/eventing-rabbitmq/latest/failer.yaml' -n rabbitmq-mtls-sample
 ```
@@ -390,7 +411,9 @@ Then create the Knative Serving Service which will receive translated events.
 ```sh
 kubectl apply -f samples/rabbitmq-mtls/500-sink.yaml
 ```
+
 or
+
 ```sh
 kubectl apply -f - << EOF
 apiVersion: serving.knative.dev/v1
@@ -411,7 +434,9 @@ EOF
 ```sh
 kubectl apply -f samples/rabbitmq-mtls/source-files/200-source.yaml
 ```
+
 or
+
 ```sh
 kubectl apply -f - << EOF
 apiVersion: sources.knative.dev/v1alpha1

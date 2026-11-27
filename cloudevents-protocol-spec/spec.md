@@ -1,4 +1,5 @@
 # RabbitMQ Protocol Binding for CloudEvents - Version 1.0.2-wip
+
 ## Abstract
 
 The RabbitMQ Binding for CloudEvents defines how events are mapped to [RabbitMQ messages][rabbit-msg].
@@ -44,8 +45,6 @@ This binding specification defines how attributes and data of a CloudEvent is ma
 
 This specification assumes use of the default [RabbitMQ message properties][rabbit-msg].
 
-
-
 ### 1.3. Content Modes
 
 This specification defines two content modes for transferring events: _binary_ and _structured_. Every compliant implementation SHOULD support the _structured_ and _binary_ modes.
@@ -78,7 +77,6 @@ specification, RabbitMQ delivery provides data available as a sequence of bytes.
 For instance, if the declared `datacontenttype` is
 `application/json;charset=utf-8`, the expectation is that the `data`
 value is made available as [UTF-8][rfc3629] encoded JSON text.
-
 
 ## 3. RabbitMQ Message Mapping
 
@@ -139,6 +137,7 @@ Example for the [JSON format][json-format]:
 ```text
 content-type: application/cloudevents+json
 ```
+
 #### 3.2.2. Event Data Encoding
 
 The chosen [event format](#14-event-formats) defines how all attributes and `data` are represented.
@@ -176,6 +175,7 @@ This example shows a JSON event format encoded event:
 
 ----------------------------------------------------------
 ```
+
 This example shows a Binary event format encoded event:
 
 ```text
