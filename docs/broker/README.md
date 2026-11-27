@@ -1,6 +1,6 @@
 # Eventing RabbitMQ Broker
 
-RabbitMQ *is a Messaging Broker* - an intermediary for messaging. It gives your applications a common platform to send and receive messages, and your messages a safe place to live until received.
+RabbitMQ _is a Messaging Broker_ - an intermediary for messaging. It gives your applications a common platform to send and receive messages, and your messages a safe place to live until received.
 
 ![Eventing RabbitMQ Broker](rabbitmq-knative-broker.png)
 
@@ -54,6 +54,7 @@ install
 [KEDA based autoscaler](https://github.com/knative-extensions/eventing-autoscaler-keda).
 
 ### Trigger Parallelism Count
+
 Trigger has a configurable annotation `rabbitmq.eventing.knative.dev/parallelism`. If set to `n`, the trigger will create `n` workers to consume messages off the queue and dispatch to the sink.
 If this value is unset, it will default to `1`. This means that the trigger will only have a single worker consuming messages. This will preserve the order of the messages in a queue but
 can make the trigger a bottleneck. A slow processing sink will result in low overall throughput. Setting a value higher than 1 will result in `n` events being handled at
@@ -62,6 +63,7 @@ a time by the trigger but ordering won't be guaranteed as events are sent to the
 More details and samples of this can be found [here](../../samples/broker-trigger/trigger-customizations)
 
 ## Delivery Failures and Delivery Spec
+
 A subset of HTTP status codes from a sink are considered a [retryable error](https://github.com/knative/specs/blob/main/specs/eventing/data-plane.md#event-acknowledgement-and-delivery-retry). When this occurs, delivery spec (available on Trigger and Broker) can specify how messages are retried and "dead-lettered". Reference
 [Configuring Broker event delivery](https://knative.dev/docs/eventing/event-delivery/#configuring-broker-event-delivery)
 for more information.
@@ -70,10 +72,11 @@ If no delivery spec is defined on a trigger, it will fallback to the broker deli
 broker either, the message will be NACK-ed and dropped after the first failure.
 
 ## Troubleshooting
+
 If the messaging topology isn't working as expected, the conditions on brokers and triggers can highlight errors encountered as well as give a reason for the failure. Below is a list of conditions and how they're used:
 
 | Component | Condition              | Usage                                                                                                                                                                                                                                     |
-|-----------|------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| --------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Broker    | ExchangeReady          | Used to show progress with creating exchanges for the broker as well as any dead letter exchanges.                                                                                                                                        |
 | Broker    | DLXReady               | For any errors related to creating or updating the dead letter queue for the broker. Will say `DeadLetterSinkNotConfigured` when delivery spec isn't defined.                                                                             |
 | Broker    | DeadLetterSinkReady    | For any errors with creating a binding between the dead letter exchange and queue. Also used for any error with creating a dispatcher for the dead letter queue. Will say `DeadLetterSinkNotConfigured` when delivery spec isn't defined. |
@@ -107,6 +110,7 @@ The Broker will always create a single `Ingress` pod that's responsible for ingr
 The following outlines some of the issues that users can encounter with eventing-rabbitmq components and ways to mitigate them:
 
 ### Common Issues
+
 1. Broker not Ready
    - Check the conditions on the Broker.
    - If conditions weren't helpful, check logs of `rabbitmq-broker-controller` pod.
@@ -135,6 +139,7 @@ For reference, the ingress and dispatcher pods' code can be found [here](../../c
 Consult the [RabbitMQ Troubleshooting Guide](https://www.rabbitmq.com/troubleshooting.html) for any RabbitMQ specific issues that may arise.
 
 ## Next Steps
+
 - Check out the [Broker-Trigger Samples Directory](../../samples/broker-trigger) in this repo and start building your topology with Eventing RabbitMQ!
 - Follow [CloudEvents Player Source](https://knative.dev/docs/getting-started/first-source/) to setup a Knative Service as a source.
 
@@ -146,17 +151,21 @@ Consult the [RabbitMQ Troubleshooting Guide](https://www.rabbitmq.com/troublesho
 - [Knative Docs](https://knative.dev/docs/)
 
 ## Upgrade
+
 - Prior to upgrading eventing-rabbitmq, Knative and its components should be updated according to instructions [here](https://knative.dev/docs/install/upgrade/). Be sure to pay attention to any
-steps for upgrading Custom Resource Definitions (CRDs) and only upgrade one minor version at a time.
+  steps for upgrading Custom Resource Definitions (CRDs) and only upgrade one minor version at a time.
 - Upgrade [RabbitMQ Cluster Operator](https://github.com/rabbitmq/cluster-operator) and [RabbitMQ Topology Operator](https://github.com/rabbitmq/messaging-topology-operator)
 
 Upgrade eventing-rabbitmq by applying the newer version:
+
 ```shell
 kubectl apply --filename https://github.com/knative-extensions/eventing-rabbitmq/releases/download/knative-v1.4.0/rabbitmq-broker.yaml
 ```
 
 ## Uninstall
+
 ### Remove eventing-rabbitmq components and resources
+
 Use `kubectl delete --filename <installation-file>` to remove the components installed during [Installation](#install-eventing-rabbitmq-broker). For example:
 
 ```shell
@@ -178,4 +187,5 @@ kubectl delete -f https://github.com/rabbitmq/cluster-operator/releases/latest/d
 ```
 
 ### Uninstall Knative Serving and Eventing
+
 Follow the instructions [here](https://knative.dev/docs/install/uninstall/#uninstalling-optional-channel-messaging-layers) to uninstall Knative components.

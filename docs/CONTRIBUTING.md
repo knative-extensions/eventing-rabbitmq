@@ -14,9 +14,9 @@ You need to install:
 - [`ko`](https://github.com/google/ko)
 - [`docker`](https://www.docker.com/)
 - [`Go`](https://golang.org/)
-    - check
-      [go \<version\>](https://github.com/knative-extensions/eventing-rabbitmq/blob/master/go.mod)
-      for the required Go version used in this project
+  - check
+    [go \<version\>](https://github.com/knative-extensions/eventing-rabbitmq/blob/master/go.mod)
+    for the required Go version used in this project
 
 If a specific version of a requirement is not explicitly defined above, any version will work during development.
 

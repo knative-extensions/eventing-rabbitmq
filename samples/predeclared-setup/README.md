@@ -14,7 +14,9 @@ executed from the root of this repo.
 ```sh
 kubectl apply -f samples/predeclared-setup/100-namespace.yaml
 ```
+
 or
+
 ```sh
 kubectl create ns predeclared-setup-sample
 ```
@@ -26,7 +28,9 @@ Create a RabbitMQ Cluster:
 ```sh
 kubectl apply -f samples/predeclared-setup/200-rabbitmq.yaml
 ```
+
 or
+
 ```
 kubectl apply -f - << EOF
 apiVersion: rabbitmq.com/v1beta1
@@ -51,8 +55,8 @@ EOF
 
 _NOTE_: here we set ERL_MAX_PORTS to prevent unnecessary memory allocation by RabbitMQ and potential memory limit problems. [Read more here](https://github.com/rabbitmq/cluster-operator/issues/959)
 
-
 After this two steps you are ready to the next steps:
+
 - [Eventing RabbitMQ Broker Setup](#eventing-rabbitmq-broker-setup)
 - [Eventing RabbitMQ Source Setup](#eventing-rabbitmq-source-setup)
 
@@ -89,7 +93,6 @@ Demo creates a `PerfTest` and has it executes a loop where it sends 1 event per 
 
 Demo creates a `Source` with and exchange configuration for it to read messages from the `eventing-rabbitmq-source` `Exchange` and to send them to the `event-display` `sink` after the translation to CloudEvents.
 
-
 ### Create the Predeclared Topology
 
 #### Using the RabbitMQ Messaging Topology Operator (optional)
@@ -119,7 +122,9 @@ Then create the Knative Serving Service which will receive translated events.
 ```sh
 kubectl apply -f samples/predeclared-setup/300-sink.yaml
 ```
+
 or
+
 ```sh
 kubectl apply -f - << EOF
 apiVersion: serving.knative.dev/v1
@@ -140,7 +145,9 @@ EOF
 ```sh
 kubectl apply -f samples/predeclared-setup/source-files/300-source.yaml
 ```
+
 or
+
 ```sh
 kubectl apply -f - << EOF
 apiVersion: sources.knative.dev/v1alpha1
