@@ -121,7 +121,7 @@ func Test_WatchConnectionsRabbitMQ(t *testing.T) {
 
 func ConfigTest(conn RabbitMQConnectionInterface, channel RabbitMQChannelInterface) error {
 	ChannelConfirm(conn, channel)
-	ChannelQoS(conn, channel)
+	ChannelQoS(1)(conn, channel)
 	return nil
 }
 
